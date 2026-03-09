@@ -17,7 +17,7 @@
   <a href="https://ziwenhahaha.github.io/daily-paper-reader">
     <img src="https://img.shields.io/badge/Demo-GitHub%20Pages-2ea44f?style=flat-square" alt="Demo" />
   </a>
-  <a href="https://ziwenhahaha.github.io/daily-paper-reader/#/newbie/README">
+  <a href="https://ziwenhahaha.github.io/daily-paper-reader/#/tutorial/README">
     <img src="https://img.shields.io/badge/Docs-Quick%20Start-blue?style=flat-square" alt="Docs" />
   </a>
 </p>
