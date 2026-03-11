@@ -5,6 +5,7 @@
 // 3) 保存前仅保留 intent_profiles
 
 window.SubscriptionsManager = (function () {
+  const MAX_KEYWORDS_PER_PROFILE = 6;
   const MAX_INTENT_QUERIES_PER_PROFILE = 4;
   let overlay = null;
   let panel = null;
@@ -342,6 +343,9 @@ window.SubscriptionsManager = (function () {
       const intentQueries = normalizeIntentQueries(profile.intent_queries);
       if (!keywords.length) {
         return `词条「${tag}」至少需要 1 条关键词。`;
+      }
+      if (keywords.length > MAX_KEYWORDS_PER_PROFILE) {
+        return `词条「${tag}」的关键词最多只能保留 ${MAX_KEYWORDS_PER_PROFILE} 条。`;
       }
       if (!intentQueries.length) {
         return `词条「${tag}」至少需要 1 条意图Query。`;

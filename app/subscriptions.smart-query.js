@@ -5,6 +5,7 @@
 // - 修改面板：复用会话式流程，通过对话生成/更新词条
 
 window.SubscriptionsSmartQuery = (function () {
+  const MAX_KEYWORDS_PER_PROFILE = 6;
   const MAX_INTENT_QUERIES_PER_PROFILE = 4;
   let displayListEl = null;
   let createBtn = null;
@@ -62,17 +63,28 @@ window.SubscriptionsSmartQuery = (function () {
   ].join('\n');
 
   const normalizeText = (v) => String(v || '').trim();
-  const countSelectedIntentQueries = (items) =>
+  const getSelectionLimit = (kind) => (
+    normalizeCandidateKind(kind) === 'intent'
+      ? MAX_INTENT_QUERIES_PER_PROFILE
+      : MAX_KEYWORDS_PER_PROFILE
+  );
+
+  const getKindLabel = (kind) => (
+    normalizeCandidateKind(kind) === 'intent' ? '意图Query' : '关键词'
+  );
+
+  const countSelectedCandidates = (items) =>
     (Array.isArray(items) ? items : []).filter((item) => item && !item._isDraftSlot && item._selected).length;
 
-  const clampIntentSelections = (items) => {
+  const clampSelectionsByLimit = (items, kind) => {
+    const limit = getSelectionLimit(kind);
     let selectedCount = 0;
     return (Array.isArray(items) ? items : []).map((item) => {
       if (!item || item._isDraftSlot) return item;
       const next = { ...item };
       if (next._selected) {
         selectedCount += 1;
-        if (selectedCount > MAX_INTENT_QUERIES_PER_PROFILE) {
+        if (selectedCount > limit) {
           next._selected = false;
         }
       }
@@ -90,6 +102,9 @@ window.SubscriptionsSmartQuery = (function () {
     if (!selectedKeywords.length) {
       return '请至少保留 1 条关键词。';
     }
+    if (selectedKeywords.length > MAX_KEYWORDS_PER_PROFILE) {
+      return `关键词最多只能保留 ${MAX_KEYWORDS_PER_PROFILE} 条。`;
+    }
     if (!selectedIntentQueries.length) {
       return '请至少保留 1 条意图Query。';
     }
@@ -99,9 +114,14 @@ window.SubscriptionsSmartQuery = (function () {
     return '';
   };
 
-  const canSelectMoreIntentQueries = (items, nextSelected) => {
+  const canSelectMoreCandidates = (items, nextSelected, kind) => {
     if (!nextSelected) return true;
-    return countSelectedIntentQueries(items) < MAX_INTENT_QUERIES_PER_PROFILE;
+    return countSelectedCandidates(items) < getSelectionLimit(kind);
+  };
+
+  const isCandidateDisabled = (items, item, kind) => {
+    if (!item || item._isDraftSlot || item._selected) return false;
+    return countSelectedCandidates(items) >= getSelectionLimit(kind);
   };
 
   const sanitizeNoYear = (value) => {
@@ -921,9 +941,13 @@ window.SubscriptionsSmartQuery = (function () {
 
   const parseCandidatesForState = (candidates, selected = true) => {
     return {
-      keywords: (candidates.keywords || []).map((x) => ({ ...x, _selected: selected })),
-      intent_queries: clampIntentSelections(
+      keywords: clampSelectionsByLimit(
+        (candidates.keywords || []).map((x) => ({ ...x, _selected: selected })),
+        'keyword',
+      ),
+      intent_queries: clampSelectionsByLimit(
         (candidates.intent_queries || []).map((x) => ({ ...x, _selected: selected })),
+        'intent',
       ),
     };
   };
@@ -1037,8 +1061,8 @@ window.SubscriptionsSmartQuery = (function () {
 
     const created = buildDraftItemFromSlot(realKind, slot);
     if (!created) return false;
-    if (realKind === 'intent' && !canSelectMoreIntentQueries(list, true)) {
-      setMessage(`意图Query 最多只能选择 ${MAX_INTENT_QUERIES_PER_PROFILE} 条。`, '#c00');
+    if (!canSelectMoreCandidates(list, true, realKind)) {
+      setMessage(`${getKindLabel(realKind)} 最多只能选择 ${getSelectionLimit(realKind)} 条。`, '#c00');
       return false;
     }
     const next = list.slice();
@@ -1227,12 +1251,15 @@ window.SubscriptionsSmartQuery = (function () {
         }
         const action = realKind === 'intent' ? 'toggle-intent-query-card' : 'toggle-kw-card';
         const selected = !!item._selected;
+        const disabled = isCandidateDisabled(items, item, realKind);
         return `
           <div
-            class="dpr-pick-card ${selected ? 'selected' : ''}"
+            class="dpr-pick-card ${selected ? 'selected' : ''} ${disabled ? 'dpr-choice-disabled' : ''}"
             data-action="${action}"
             data-kind="${realKind}"
             data-index="${idx}"
+            data-disabled="${disabled ? '1' : '0'}"
+            aria-disabled="${disabled ? 'true' : 'false'}"
           >
             ${renderEditableField(
               realKind,
@@ -1327,14 +1354,16 @@ window.SubscriptionsSmartQuery = (function () {
         );
         const selected = !!item._selected;
         const checked = selected ? 'checked' : '';
+        const disabled = isCandidateDisabled(items, item, realKind);
         return `
-        <label class="dpr-cloud-item ${selected ? 'selected' : ''}" data-kind="${kind}" data-index="${idx}">
+        <label class="dpr-cloud-item ${selected ? 'selected' : ''} ${disabled ? 'dpr-choice-disabled' : ''}" data-kind="${kind}" data-index="${idx}" data-disabled="${disabled ? '1' : '0'}" aria-disabled="${disabled ? 'true' : 'false'}">
           <input
             type="checkbox"
             data-action="toggle-chat-choice"
             data-kind="${kind}"
             data-index="${idx}"
             ${checked}
+            ${disabled ? 'disabled' : ''}
           />
           <span class="dpr-cloud-item-body">
             ${renderEditableField(
@@ -1463,7 +1492,8 @@ window.SubscriptionsSmartQuery = (function () {
       customKeywordLogic: '',
       customQuery: '',
     };
-    modalState.intent_queries = clampIntentSelections(modalState.intent_queries);
+    modalState.keywords = clampSelectionsByLimit(modalState.keywords, 'keyword');
+    modalState.intent_queries = clampSelectionsByLimit(modalState.intent_queries, 'intent');
     renderAddModal();
     openModal();
   };
@@ -1491,7 +1521,8 @@ window.SubscriptionsSmartQuery = (function () {
       pending: false,
       chatStatus: '',
     };
-    modalState.intent_queries = clampIntentSelections(modalState.intent_queries);
+    modalState.keywords = clampSelectionsByLimit(modalState.keywords, 'keyword');
+    modalState.intent_queries = clampSelectionsByLimit(modalState.intent_queries, 'intent');
     renderChatModal();
     openModal();
   };
@@ -1504,7 +1535,7 @@ window.SubscriptionsSmartQuery = (function () {
     const hasIntentQueries = (modalState.intent_queries || []).length > 0;
     const keywordBlock =
       `<div class="dpr-combo-block">
-        <div class="dpr-modal-group-title">关键词（用于召回）</div>
+        <div class="dpr-modal-group-title">关键词（必选，最多 6 条，用于召回）</div>
         <div class="dpr-pick-grid">${kwHtml || '<div style="color:#999;">无关键词候选</div>'}</div>
       </div>`;
     const intentBlock =
@@ -1633,7 +1664,7 @@ window.SubscriptionsSmartQuery = (function () {
       : '';
     const kwSection = hasKeywordSection
       ? `<div class="dpr-chat-result-block">
-           <div class="dpr-modal-group-title">关键词（用于召回）</div>
+           <div class="dpr-modal-group-title">关键词（必选，最多 6 条，用于召回）</div>
            <div class="dpr-chat-slot-area ${hasKeywords ? 'has-candidates' : 'draft-only'}">
              <div class="dpr-chat-slot-scroll">
                <div class="dpr-cloud-grid dpr-cloud-grid-keywords">${kwHtml}</div>
@@ -1917,7 +1948,12 @@ window.SubscriptionsSmartQuery = (function () {
           idx < (modalState.keywords || []).length &&
           !isDraftSlot(modalState.keywords[idx])
         ) {
-          modalState.keywords[idx]._selected = !modalState.keywords[idx]._selected;
+          const nextSelected = !modalState.keywords[idx]._selected;
+          if (!canSelectMoreCandidates(modalState.keywords, nextSelected, 'keyword')) {
+            setMessage(`关键词最多只能选择 ${MAX_KEYWORDS_PER_PROFILE} 条。`, '#c00');
+            return;
+          }
+          modalState.keywords[idx]._selected = nextSelected;
           renderAddModal();
         }
         return;
@@ -1930,7 +1966,7 @@ window.SubscriptionsSmartQuery = (function () {
           !isDraftSlot(modalState.intent_queries[idx])
         ) {
           const nextSelected = !modalState.intent_queries[idx]._selected;
-          if (!canSelectMoreIntentQueries(modalState.intent_queries, nextSelected)) {
+          if (!canSelectMoreCandidates(modalState.intent_queries, nextSelected, 'intent')) {
             setMessage(`意图Query 最多只能选择 ${MAX_INTENT_QUERIES_PER_PROFILE} 条。`, '#c00');
             return;
           }
@@ -1952,6 +1988,10 @@ window.SubscriptionsSmartQuery = (function () {
         );
         if (existed) {
           setMessage('该关键词已在候选中。', '#c00');
+          return;
+        }
+        if (!canSelectMoreCandidates(modalState.keywords, true, 'keyword')) {
+          setMessage(`关键词最多只能选择 ${MAX_KEYWORDS_PER_PROFILE} 条。`, '#c00');
           return;
         }
         modalState.keywords.push({
@@ -2004,12 +2044,12 @@ window.SubscriptionsSmartQuery = (function () {
     }
     const selected = !!target.checked;
     const card = target.closest('.dpr-cloud-item');
-    if (kind === 'intent' && !canSelectMoreIntentQueries(list, selected)) {
+    if (!canSelectMoreCandidates(list, selected, kind)) {
       target.checked = false;
       if (card) {
         card.classList.remove('selected');
       }
-      setMessage(`意图Query 最多只能选择 ${MAX_INTENT_QUERIES_PER_PROFILE} 条。`, '#c00');
+      setMessage(`${getKindLabel(kind)} 最多只能选择 ${getSelectionLimit(kind)} 条。`, '#c00');
       return;
     }
     if (card) {
