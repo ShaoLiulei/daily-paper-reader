@@ -1,0 +1,767 @@
+Title: Arabic Morphosyntactic Tagging and Dependency Parsing with Large Language Models
+
+URL Source: https://arxiv.org/pdf/2603.16718v1
+
+Published Time: Wed, 18 Mar 2026 01:32:07 GMT
+
+Number of Pages: 18
+
+Markdown Content:
+## Arabic Morphosyntactic Tagging and Dependency Parsing with Large Language Models 
+
+Mohamed Adel 1 Bashar Alhafni 2 Nizar Habash 1
+
+Computational Approaches to Modeling Language Lab 
+
+> 1
+
+New York University Abu Dhabi 
+
+> 2
+
+Mohamed bin Zayed University of Artificial Intelligence 
+
+{mohamed.adel,nizar.habash}@nyu.edu, bashar.alhafni@mbzuai.ac.ae 
+
+Abstract 
+
+Large language models (LLMs) perform strongly on many NLP tasks, but their ability to produce explicit linguistic structure remains unclear. We evaluate instruction-tuned LLMs on two structured prediction tasks for Standard Arabic: morphosyntactic tagging and labeled dependency parsing . Arabic provides a chal-lenging testbed due to its rich morphology and orthographic ambiguity, which create strong morphology–syntax interactions. We compare zero-shot prompting with retrieval-based in-context learning (ICL) using examples from Arabic treebanks. Results show that prompt design and demonstration selection strongly af-fect performance: proprietary models approach supervised baselines for feature-level tagging and become competitive with specialized de-pendency parsers. In raw-text settings, tok-enization remains challenging, though retrieval-based ICL improves both parsing and tokeniza-tion. Our analysis highlights which aspects of Arabic morphosyntax and syntax LLMs cap-ture reliably and which remain difficult. 
+
+1 Introduction 
+
+Large language models (LLMs) achieve strong per-formance across many natural language processing (NLP) tasks (OpenAI et al., 2024; Gemini Team et al., 2025; Grattafiori et al., 2024; Yang et al., 2025). However, it remains unclear whether they can reliably produce structured linguistic analy-ses such as morphosyntactic features and depen-dency trees. Prior work shows that LLMs can re-cover some linguistic patterns when appropriately prompted, but performance remains uneven when tasks require explicit morphosyntactic constraints or precise structured predictions such as parsing (Blevins et al., 2023; Anh et al., 2024; Miaschi et al., 2024; Tian et al., 2024; Ezquerro et al., 2025). Morphologically rich languages provide a partic-ularly challenging testbed for evaluating the struc-tural competence of LLMs (Anh et al., 2024; Is-mayilzada et al., 2025). Although recent work has increasingly examined the linguistic capabilities of LLMs, morphosyntactic tagging and dependency parsing are often evaluated separately, despite ev-idence that morphological and POS information substantially affect parsing and that joint evalua-tion can reveal weaknesses hidden in isolated or gold-preprocessed settings (Tsarfaty et al., 2012; Zhang et al., 2015; Lu et al., 2019; More et al., 2019; Temesgen et al., 2025; Matsuda et al., 2025). In this paper, we evaluate whether instruction-tuned LLMs can perform morphosyntactic and syn-tactic analysis for Standard Arabic, a language whose rich inflectional morphology, cliticization, and tokenization ambiguities create strong interac-tions between morphology and syntax (Habash and Rambow, 2005; Green and Manning, 2010; Marton et al., 2013). We evaluate instruction-tuned LLMs on two tasks: (i) morphosyntactic tagging with 14 mor-phological features and (ii) labeled dependency parsing , comparing zero-shot prompting with retrieval-based in-context learning (ICL) (Brown et al., 2020; Liu et al., 2022; Min et al., 2022). Results show that prompt design and example re-trieval strongly affect performance: open-weight models struggle in zero-shot but improve with re-trieved demonstrations, while proprietary models approach supervised baselines for tagging and be-come competitive with specialized parsers. Our contributions are as follows: • A unified evaluation of LLMs on Arabic mor-phosyntactic tagging and dependency parsing in gold-tokenized and raw-text settings. • An analysis of how prompt design and retrieval-based ICL affect structured linguistic prediction. • A detailed error analysis identifying which aspects of Arabic tagging and parsing LLMs capture reliably and which remain difficult. 1
+
+> arXiv:2603.16718v1 [cs.CL] 17 Mar 2026
+
+2 Related Work 
+
+2.1 Arabic Tagging and Parsing Arabic Morphosyntactic Tagging Arabic mor-phological modeling has proven useful for various downstream tasks, including machine translation (Sadat and Habash, 2006; El Kholy and Habash, 2010), grammatical error correction (Alhafni et al., 2023), and text rewriting (Alhafni et al., 2022). A wide range of approaches have been proposed for Arabic morphosyntactic tagging (Diab et al., 2004; Habash and Rambow, 2005; Pasha et al., 2014; Ab-delali et al., 2016; Zalmout and Habash, 2017; In-oue et al., 2017; Zalmout et al., 2018; Zalmout and Habash, 2019, 2020; Khalifa et al., 2020). More re-cently, Inoue et al. (2022) introduced BERT-based models that achieve state-of-the-art (SOTA) perfor-mance on MSA and multiple Arabic dialects, and were later integrated into CAMeL Tools (Obeid et al., 2020). Much of this work relies on the Penn Arabic Treebank (PATB), which serves as a central benchmark for Arabic morphological and syntactic annotation (Maamouri et al., 2004). To the best of our knowledge, the use of LLMs for Arabic mor-phosyntactic tagging has not been systematically investigated. In this work, we evaluate LLMs on PATB and compare them against CAMeL Tools as a strong benchmark system. 
+
+Arabic Dependency Parsing Arabic depen-dency parsing has benefited from the development of several treebanks (Smrž et al., 2002; Maamouri et al., 2004; Habash and Roth, 2009; Dukes and Buckwalter, 2010; Taji et al., 2017; Nivre et al., 2020; Al-Ghamdi et al., 2021). More recently, Habash et al. (2022) introduced the CAMeL Tree-bank (CAMeLTB), a multi-genre Arabic depen-dency treebank created according to the Columbia Arabic Treebank (CATiB) formalism (Habash and Roth, 2009). A wide range of parsing approaches have been proposed for Arabic (Green and Man-ning, 2010; Marton et al., 2013; Shahrour et al., 2016; Straka, 2018; Kankanampati et al., 2020; Al-Ghamdi et al., 2023; Elshabrawy et al., 2023). Among these, Elshabrawy et al. (2023) introduced CAMeLParser2.0, a BERT-based parser that cur-rently achieves state-of-the-art performance on CAMeLTB. In this work, we benchmark LLMs on CAMeLTB and compare their performance against CAMeLParser2.0. Recently, Al-Sabahi et al. (2026) explored the use of LLMs for Arabic syntactic analysis. They evaluate LLMs on a carefully curated dataset tar-geting specific grammatical phenomena and frame the task as token-level morphosyntactic annotation. Our work differs in several ways. First, while their task predicts token-level morphosyntactic labels, we use a 14-dimensional morphosyntactic repre-sentation and extend the task to full dependency parsing with labeled relations. Second, their dataset assumes gold morphological tokenization, whereas we explicitly evaluate tokenization decisions. Fi-nally, their dataset targets specific constructions, while our experiments use multi-genre treebank data reflecting naturally occurring Arabic text. We also evaluate a wider range of prompting strate-gies and compare LLMs against a SOTA parsing system. 
+
+2.2 LLMs and Linguistic Knowledge 
+
+Recent work has examined whether LLMs encode linguistic knowledge that can be explicitly elicited through prompting (Blevins et al., 2023; Miaschi et al., 2024). A parallel line of work evaluates LLMs on morphological generalization, showing mixed results, particularly for morphologically rich languages (Weissweiler et al., 2023; Anh et al., 2024; Weller-Di Marco and Fraser, 2024; Waldis et al., 2024; Ismayilzada et al., 2025; Temesgen et al., 2025). Other studies investigate syntactic structure and parsing, finding that while LLMs cap-ture aspects of shallow syntax, full dependency parsing remains challenging (Tian et al., 2024; Ez-querro et al., 2025; Zhang et al., 2025). ICL enables LLMs to perform new tasks from a small set of demonstrations without parameter up-dates (Brown et al., 2020). Prior work shows that its effectiveness depends strongly on the choice and ordering of examples, with retrieval-based se-lection often outperforming random sampling and demonstrations helping models infer both the task and the expected output format (Liu et al., 2022; Min et al., 2022; Rubin et al., 2022). Motivated by this line of work, we evaluate whether instruction-tuned LLMs can produce explicit morphosyntactic analyses and labeled dependency trees for Arabic under both zero-shot and in-context settings, and how different example-selection strategies affect performance. In particular, we study how prompt-ing and example selection affect the ability of LLMs to generate structured linguistic outputs for Arabic morphosyntactic tagging and dependency parsing. 2ˑ؟ˑ  ˑزات ﺎﺟﻹاˑ ˑﻲﻓˑ كˑ +ˑ ˑدﻼﺑˑ ˑﻰﻟإˑ ˑود ﻌﺗˑ ˑ+ˑس  ˑلھˑ          
+
+> PNX NOM PRT NOM NOM PRT VRB PRT PRT
+> IDF MOD OBJ MOD OBJ
+> MOD MOD
+> MOD ?Al ĂjAzAt fy blAd +k tςwd Ălýhl +s vacation ?in your homeland to you-return will [question]
+
+Figure 1: Example dependency parsing output for “ will you return to your homeland during vacation? ”. The model predicts a syntactic head (0 = root) and CATiB dependency relation for each token.  
+
+> Words
+
+? H@PAg . B @ ˙Ø ºXCK. ˙Õ@ XÒ™ JÉ …Î                                                                                                                 
+
+> Transliteration ?Al ˘ AjAzAt fy blAdk ˘Alý st ςwd hl
+> Gloss ?vacation in your-homeland to will-you-return [question] pos punc noun prep noun prep verb part_interrog prc3 na 000000prc2 na 000000prc1 na 000000prc0 na Al_det na 0na fut_part na asp na na na na na ina vox na na na na na ana mod na na na na na ina gen na fna mna fna num na pna pna sna stt na dna cna na na cas na gna gna na na per na na na na na 3na enc0 na 00poss_2ms 000
+
+Table 1: Example morphosyntactic tagging output for “ will you return to your homeland during vacation? ”. The model predicts a 14-feature morphosyntactic analysis for each token. 
+
+3 Tasks 
+
+3.1 Task 1: Morphosyntactic Tagging Task Definition In morphosyntactic tagging, the model receives a whitespace- and punctuation-tokenized Arabic sentence and outputs a complete morphosyntactic analysis for each token. Specif-ically, it predicts values for 14 categorical fea-tures: part-of-speech ( pos ), aspect ( asp ), mood (mod ), voice ( vox ), person ( per ), gender ( gen ), number ( num ), case ( cas ), state ( stt ), proclitics (prc3 , prc2 , prc1 , prc0 ) and the pronominal en-clitic ( enc0 ). See example in Table 1. This feature inventory follows common Arabic morphological disambiguation practice (Pasha et al., 2014; Obeid et al., 2020). 
+
+Prompt Formulation The prompt (Ap-pendix A.1) instructs the model to analyze each token in a pre-tokenized Arabic sentence while preserving tokenization and order. It explicitly lists all features with their allowed values and brief descriptions, and prohibits explanations or additional fields to reduce formatting drift and focus evaluation on feature prediction. 
+
+3.2 Task 2: Dependency Parsing Task Definition In dependency parsing, the model predicts a labeled dependency tree over the tokens in a sentence. For each token wi in a sentence of length n, it outputs a head index 
+
+hi ∈ { 0, . . . , n } (0 = ROOT ) and a dependency re-lation label ri. We adopt the CATiB representation, inspired by traditional Arabic grammar and widely used for Arabic dependency annotation (Habash and Roth, 2009; Habash et al., 2022). CATiB fol-lows the ATB tokenization standard, which sepa-rates all clitics except the definite article (Figure 1). We evaluate parsing under two input conditions: 
+
+gold tokenization and raw text (end-to-end). 
+
+Prompting Formulation The prompt (Ap-pendix A.2) explicitly defines the allowed CATiB dependency labels and provides concise annotation guidelines for sentence structure and attachment decisions, while disallowing explanations or ex-tra fields. In the Gold-tokenization setting, the model must preserve the provided tokenization. In the Raw-text setting, the model must tokenize the input following CATiB conventions before depen-dency parsing the resulting token sequence. 34 Methodology 
+
+We evaluate LLMs on two structured tasks: mor-phosyntactic tagging and dependency parsing 
+
+(§3), comparing zero-shot prompting with ICL and varying example selection strategies. 
+
+In-Context Learning Setup We evaluate ICL by varying both the number of examples (shots) and the strategy used to select them. For each test instance x (from the dev or test splits), we retrieve examples from a fixed candidate pool 
+
+Dtrain = {(xi, y i)} consisting only of training data (§5). Selection relies only on the input side xi
+
+(raw text or token sequence depending on the task), ensuring that no dev or test labels influence re-trieval. Formally, let k denote the number of ex-amples prepended to x. We vary two factors: the 
+
+shot count k ∈ { 0, 1, 3, 5, 10 }, where k = 0 cor-responds to zero-shot prompting, and the selec-tion method m, which determines which k exam-ples from Dtrain are included in the prompt. Each configuration (k, m ) therefore defines a prompt 
+
+P (x; k, m ) for each test instance x.
+
+Selection Methods We explore two example-selection methods based on surface- and semantic-level similarity. Surface similarity retrieves inputs that are close at the character or subword level, which can capture shared orthographic patterns and morphological features in Arabic even when exact word overlap is limited. We implement this using chrF++ (Popovi´ c, 2015, 2017), following Ginn et al. (2024), who showed that substring-based similar-ity better reflects morphological relatedness than word-level overlap. Semantic similarity retrieves inputs that are close in meaning even when surface forms differ. We implement this by embedding each input using CAMeLBERT-MSA (Inoue et al., 2021) and ranking candidates by cosine similarity. After computing similarity scores, we con-sider two retrieval regimes: high-similarity (near-neighbor) and low-similarity (far-neighbor). This allows us to distinguish improvements driven by content similarity from those resulting from general format calibration. In addition, we evaluate random selection ,where k examples are sampled randomly from 
+
+Dtrain . Overall, this yields five example-selection methods: random sampling, and for each similarity measure (surfance and semantic) we evaluate both high- and low-similarity retrieval.               
+
+> Dataset Sentences Words
+> PATB Train 15,000 477,512 PATB Dev 1,986 63,137 PATB Test 1,963 63,172 CAMeLTB Train 9,397 133,459 CAMeLTB Dev 2,022 27,464 CAMeLTB Test 1,918 26,961
+> Table 2: Dataset statistics for the morphosyntactic tag-ging and dependency parsing benchmarks.
+
+5 Experimental Setup 
+
+This section describes the experimental setup used to evaluate LLMs on Arabic morphosyntactic tag-ging and dependency parsing. We present the datasets used in our experiments, the evaluated systems, and the evaluation metrics for each task. 
+
+5.1 Data Morphosyntactic Tagging We evaluate mor-phosyntactic tagging on the PATB (MSA, newswire) (Maamouri et al., 2004) following the morphological tag representations of Inoue et al. (2022), and Train/Dev/Test splits based on Diab et al. (2013). Summary statistics are in Table 2. 
+
+Dependency Parsing We evaluate dependency parsing on CAMeLTB (Habash et al., 2022), which is annotated in the CATiB dependency repre-sentation (Habash and Roth, 2009). We adopt the Train/Dev/Test splits following Habash et al. (2022). Summary statistics are in Table 2. 
+
+5.2 Systems LLMs We benchmark multiple state-of-the-art instruction-tuned LLMs with strong multilingual capabilities, including Arabic. Our evaluation in-cludes two open-weight models, Llama 4 Scout (Llama4 ) and Qwen3-Next-80B-A3B-Thinking (Qwen3 ), as well as two proprietary models, Gem-ini 3 Flash ( Gemini3 ) and GPT-5.2 ( GPT5.2 ). Arabic-centric models (ALLaM, Fanar, Jais) were not included because their available context lengths were less suitable for our long-context ICL setup (Bari et al., 2025; Fanar Team et al., 2025; Sen-gupta et al., 2023). 
+
+Supervised Baselines For morphosyntactic tag-ging, we use CAMeL Tools (Obeid et al., 2020) which was trained on PATB, and for dependency parsing, use the CamelParser2.0 ( CamelParser )which was trained on PATB and CAMeLTB (Elshabrawy et al., 2023). 45.3 ICL Configuration 
+
+We use the Dev sets to select the best ICL con-figuration. First, all candidate LLMs are evalu-ated in the zero-shot setting on the Dev set for each task, alongside the supervised baselines. The strongest open-weight LLM under zero-shot per-formance is chosen as the ICL exploration model .Using this model, we explore the ICL configura-tion space by varying both the shot count k and the example-selection method described in §4. The best-performing configuration ( k*,m*) on the Dev set is then fixed and used to benchmark all LLMs on the test sets. 
+
+5.4 Evaluation Metrics Morphosyntactic Tagging Our primary tagging metric is All Tags , a strict token-level exact match score that counts a token as correct only if all 14 morphosyntactic features are predicted correctly. We use All Tags as the main score because it best reflects end-to-end correctness of the full feature structure. We also report Tag F 1, which captures partial correctness by aggregating matches over individual feature values across the 14-feature in-ventory (macro average). 
+
+Dependency Parsing Our primary parsing met-ric is LAS (Labeled Attachment Score), which measures the percentage of tokens whose predicted head and dependency relation label match the gold parse. We additionally report UAS (Unlabeled At-tachment Score), which evaluates head correctness irrespective of the label, and LS (Label Score), which evaluates relation label correctness irrespec-tive of the head. In the raw-text parsing condition, we also report Tok F 1 (Tokenization F 1), computed from token boundary precision/recall against gold token boundaries following the “parsing from raw text” evaluation paradigm (Zeman et al., 2018). 
+
+6 Results 
+
+We report results for the two tasks introduced in Section 4. For each task, we first present Dev set results used for model selection and ICL configu-ration selection, and then present Test set results under two settings: zero-shot and best-ICL. 
+
+6.1 Morphosyntactic Tagging Baseline Table 3 reports zero-shot dev results. The supervised baseline (CAMeL Tools) is near ceiling and substantially outperforms all LLMs, underscoring the difficulty of predicting complete               
+
+> Model All Tags Tag F 1
+> Llama4 8.9 81.9 Qwen3 14.1 82.8 GPT5.2 39.9 89.7 Gemini3 48.4 92.6 CAMeL Tools 96.2 99.6
+> Table 3: Morphosyntactic tagging results on the PATB Dev set (zero shot).
+
+14-feature bundles token by token. Among LLMs, Gemini3 performs best, followed by GPT5.2. Al-though some open-weight models obtain relatively higher feature-level Tag F 1, their All Tags scores remain much lower, showing how small feature errors compound under exact bundle matching. We therefore select Qwen3, the strongest open-weight model on dev, for ICL analysis. 
+
+ICL Table 4 shows that ICL yields large gains even with very few demonstrations. With random 1-shot prompting, All Tags improves by 30.9 points over zero-shot. Retrieval quality matters at least as much as the number of shots: 1-shot highest chrF++ improves All Tags by 45.4 points, essen-tially matching 5-shot Random. More generally, high-similarity retrieval consistently outperforms low-similarity selection, and this gap persists as 
+
+k increases. The best dev configuration is high-est chrF++ with k=10 , which improves All Tags by 63.9 points over zero-shot. We therefore use 
+
+(k∗, m ∗) = (10 , highest chrF++ ) as the best-ICL 
+
+setting for test evaluation. . 
+
+Test Results Table 5 shows that the selected ICL configuration produces large gains on All Tags for all LLMs. The largest absolute improvements are observed for the open-weight models, with gains of 62.6 points for Qwen3 and 49.7 points for Llama4, while the proprietary models improve by 46.5 and 37.8 points for GPT5.2 and Gemini3, respectively. These gains substantially narrow the gap to the supervised baseline in Tag F 1, but All Tags remains lower than CAMeL Tools, confirming that exact full-bundle prediction is considerably harder for LLMs than feature-level accuracy alone. 
+
+6.2 Dependency Parsing Baseline Table 6 reports zero-shot dev results under gold tokenization. The supervised baseline (CamelParser) remains strongest, while Gemini3 is the best zero-shot LLM and Qwen3 is the strongest open-weight model. The large gap between propri-5Number of Shots 0 1 3 5 10 Selection Method All Tags Tag F 1 All Tags Tag F 1 All Tags Tag F 1 All Tags Tag F 1 All Tags Tag F 1                                                  
+
+> Lowest Cosine Similarity ––16.5 83.5 20.1 84.9 23.3 86.1 29.0 87.8 Lowest chrF++ ––21.4 82.1 23.6 85.5 24.5 86.2 23.9 86.2 Random 14.1 82.8 45.0 90.8 56.7 93.1 59.4 92.7 65.9 95.0 Highest Cosine Similarity ––59.2 93.5 68.4 95.3 72.0 96.0 76.0 96.8 Highest chrF++ ––59.5 92.6 70.6 95.7 74.1 96.4 78.0 97.2
+
+Table 4: Morphosyntactic tagging performance comparison of shot selection methods across different numbers of shots for Qwen3 on the PATB Test set. The k=0 (zero-shot) results correspond to the Random row, since no retrieval is performed in that setting.                          
+
+> Zero-shot Best-ICL Model All Tags Tag F 1All Tags Tag F 1
+> Llama4 7.7 78.9 57.4 90.1 Qwen3 13.9 83.1 76.5 97.0 GPT5.2 39.7 89.9 86.2 98.4 Gemini3 48.8 93.0 86.6 98.5 CAMeL Tools 96.3 99.6 ––
+
+Table 5: Morphosyntactic tagging results on PATB Test. Best-ICL uses the Dev-selected configuration (k=10 ; highest chrF++ retrieval).                   
+
+> Model LS UAS LAS
+> Llama4 62.1 41.8 28.4 Qwen3 62.2 42.5 28.9 GPT5.2 82.1 84.1 73.1 Gemini3 87.0 85.2 78.8 CamelParser 93.6 89.7 87.5
+
+Table 6: Dependency parsing results on CAMeLTB Dev set under gold tokenization (zero-shot).                                                                                                
+
+> # of Shots 013510 Selection Method LS UAS LAS LS UAS LAS LS UAS LAS LS UAS LAS LS UAS LAS
+> Lowest Cosine Similarity –––63.1 43.7 30.5 64.9 45.6 33.3 65.7 46.2 34.6 66.6 47.7 36.4 Lowest chrF++ –––62.6 43.2 29.7 64.9 43.9 32.5 65.4 44.6 33.4 65.5 45.4 34.2 Random 62.2 42.5 28.9 71.8 55.7 46.3 76.1 62.6 54.7 77.4 65.5 58.0 80.0 69.0 62.2 Highest Cosine Similarity –––78.6 66.7 59.2 82.6 73.0 66.7 84.5 75.3 69.9 85.8 77.6 72.5 Highest chrF++ –––79.8 68.8 61.5 84.2 74.5 69.0 85.4 76.5 71.4 86.9 78.5 74.0
+
+Table 7: Dependency parsing performance comparison of shot selection methods across different numbers of shots for Qwen3 on the CAMeLTB Dev set under gold tokenization. The k=0 (zero-shot) results correspond to the 
+
+Random row, since no retrieval is performed in that setting. 
+
+etary and open-weight models in zero-shot high-lights the difficulty of structured Arabic parsing without task-specific supervision. We therefore select Qwen3 for ICL analysis. 
+
+ICL Table 7 shows that ICL substantially im-proves parsing performance, but gains depend strongly on demonstration selection. With random 1-shot prompting, LAS improves by 17.4 points over zero-shot, indicating that even a single ex-ample helps adapt the model to the task. How-ever, retrieval quality is crucial: at k=1 , high-est chrF++ improves LAS by 32.6 points, far ex-ceeding low-similarity retrieval, which yields only marginal gains. This advantage persists as k in-creases, and highest chrF++ remains the strongest method throughout, reaching a total LAS improve-ment of 45.1 points at k=10 . We therefore select 
+
+(k∗, m ∗) = (10 , highest chrF++ ) as the best-ICL 
+
+setting for test evaluation. 
+
+Gold Tokenization Test Results Under gold tok-enization (Table 8), best-ICL yields large gains for all LLMs, with LAS improvements ranging from 9.9 to 46.9 points. The largest gains are observed for the open-weight models, especially Qwen3 (+46.9) and Llama4 (+39.1), while the proprietary models improve more modestly from stronger zero-shot baselines. Notably, Gemini3 under best-ICL slightly surpasses CamelParser on LAS in this set-ting. 
+
+Raw Text Test Results In the raw-text setting (Table 9), tokenization is a major source of zero-shot degradation, especially for open-weight mod-els. Best-ICL substantially improves both tokeniza-tion and parsing, yielding Tok-F 1 gains of 33.7 and 38.3 points and LAS gains of 44.7 and 42.2 6Zero-shot Best-ICL Model Tok F 1 LS UAS LAS Tok F 1 LS UAS LAS                                         
+
+> Llama4 100.0 60.8 43.0 28.3 100.0 82.9 73.7 67.4 Qwen3 100.0 60.6 40.8 26.9 100.0 85.7 79.3 73.8 GPT5.2 100.0 81.8 84.1 72.8 100.0 91.8 88.6 85.0 Gemini3 100.0 86.5 85.1 78.3 100.0 94.0 90.7 88.2
+> CamelParser 100.0 93.1 89.8 87.5 ––––
+
+Table 8: Dependency parsing results on CAMeLTB Test (gold tokenization). Best-ICL uses the Dev-selected configuration ( k=10 ; highest chrF++ retrieval).                                                  
+
+> Zero-shot Best-ICL Model Tok F 1LS UAS LAS Tok F 1LS UAS LAS
+> Llama4 49.5 42.7 37.6 23.8 87.8 78.6 71.9 66.0 Qwen3 51.2 49.1 37.4 24.1 84.9 80.6 74.1 68.8 GPT5.2 93.7 70.5 69.7 60.1 98.2 90.9 87.4 84.1 Gemini3 92.8 78.1 75.0 68.4 96.2 93.8 90.0 87.7
+> CamelParser 98.0 91.5 87.3 84.8 ––––
+
+Table 9: Dependency parsing results on CAMeLTB Test (raw text). We report Tok F 1 in addition to LS/UAS/LAS. Best-ICL uses the Dev-selected configuration ( k=10 ; highest chrF++ retrieval). 
+
+points for Qwen3 and Llama4, respectively. The proprietary models are considerably more robust in zero-shot, but still benefit from ICL, with smaller tokenization gains and LAS improvements of 24.0 points for GPT5.2 and 19.3 for Gemini3. Under best-ICL, Gemini3 surpasses CamelParser on all reported raw-text parsing metrics, while GPT5.2 comes close. Overall, these results show that ICL improves not only dependency prediction but also upstream tokenization decisions. 
+
+7 Analysis and Discussion 
+
+We dig deeper below in discussing the difference in performance and its tradeoffs between our baseline systems (CAMeL Tools and CamelParser) and best performer (Gemini3 Best-ICL). 
+
+7.1 Cost Comparison: Time, Money, and Data 
+
+While Gemini3 achieves competitive performance, it incurs substantially higher costs than Camel tools and CamelParser. It is 1,000 ×–8,000 × slower 1
+
+and costs over $200 in prompting on the test sets alone, whereas Camel tools are free and signifi-cantly faster (Appendix B.2). Moreover, retrieval-based ICL depends on extensive annotated data: the best tagging setup covers 51% of PATB sentences (61% of tokens), and parsing requires 67% (71%) (Appendix B.3). Overall, LLM-based gains come 
+
+> 1All open-weight and supervised experiments were run on a single node with 4 A100 GPUs.
+
+at significant cost in time, money, and reliance on pre-annotated data. 
+
+7.2 Morphosyntactic Tagging 
+
+We first compare per-feature accuracy between CAMeL Tools and Gemini3 (Appendix B.4). Most features show comparable performance, with no-table differences in gender, number and case: gen 
+
+(3.4%), num (3.9%), and cas (3.1%). To better understand these gaps, we analyze rep-resentative examples. For gender and number, most discrepancies arise from mismatches between sur-face form and functional features in Arabic (Alkuh-lani and Habash, 2011). For instance, broken plu-rals such as ÈJ. £ Talaba ¯h ‘students’ appear as fem-inine singular in form, despite being masculine plural. Gemini3 often predicts the correct func-tional interpretation, but is penalized under the form-based annotation scheme. While this reflects a limitation of the evaluation setup, it is consis-tent with prior work (Zalmout et al., 2018; Inoue et al., 2022). For case ( cas ), the main difficulty lies in the u (undefined) category, which appears in the reference for many proper nouns and indeclin-able nouns and adjectives lacking overt case mark-ing, e.g. ¯Qk @ Âuxraý ‘other’. Gemini3 achieves 72.6% accuracy on cas=u , compared to 94.4% for CAMeL Tools. When excluding cas=u , perfor-mance becomes nearly identical (98.6% vs. 98.4%), indicating that most remaining differences are con-7centrated in this category. These observations suggest that differences be-tween CAMeL Tools and Gemini3 are smaller than they initially appear and largely reflect specifics of the reference annotation and task definition. 
+
+7.3 Dependency Parsing Error Patterns We analyze differences between CamelParser and Gemini3 on the full test set. The primary source of Gemini3’s advantage appears to be root identification. CAMeLTB Test sentences contain an average of 1.4 roots per input, as they of-ten include multiple sentences without clear punctu-ation (e.g., in poetry and classical literature). Root prediction accuracy differs substantially: 66.1% for CamelParser vs. 85.5% for Gemini3. When root identification is excluded, CamelParser’s LAS in-creases from 87.5% to 89.3%, surpassing Gemini3, whose LAS rises only marginally from 88.2% to 88.5%. This limitation stems from CamelParser’s use of the SuPar biaffine dependency parser (Zhang, 2021), based on Dozat and Manning (2016), which assumes a single root per sentence. 
+
+Difference by Genre Although Gemini3 achieves higher overall performance, its advantage is not uniform: CamelParser outperforms it on 6 of 13 CAMeLTB genres. Differences are strongly conditioned by data characteristics: Gemini3 per-forms better on Classical Arabic and shorter inputs, while CamelParser remains competitive or superior on several Modern Standard Arabic datasets and mid-length sentences (see Appendix B.5). We note that CamelParser’s training data is mostly based on the PATB (MSA newswire) with training data from he smaller CAMeLTB, which may explain some of its weaknesses. These complementary strengths motivate simple hybrid strategies. A lightweight selection rule based on genre characteristics (length, period, or training size) can match or exceed the best individual system. We also observe that average root counts vary widely across genres (1.0–2.6) and correlate with LAS differences between systems ( r = 0.685 ), suggesting that multi-root structure is a key factor underlying performance variation. 
+
+7.4 Tokenization Error Analysis 
+
+To analyze tokenization behavior, we conducted a manual error analysis on 500 sentences (6,297 tokens), aligning system outputs with gold tok-enization. Unlike earlier evaluations that ignored normalizable differences, this analysis accounts for all discrepancies, explaining Gemini3’s lower tokenization scores. As shown in Appendix B.1 Table 10, the systems exhibit distinct error pro-files. CamelParser uses CAMeL Tools for tokeniza-tion, which is trained on PATB (MSA newswire) and have limited support for Classical Arabic and other CAMeLTB genres. The CAMeL Tools er-rors are dominated by punctuation normalization (55%), e.g., Western vs. Arabic punctuation (“?” vs. ?), which rarely affect token boundaries, along with moderate under-tokenization (11%) and nor-malization differences (15%). In contrast, Gem-ini3’s errors are primarily hallucinations (56%), generating tokens not present in the input (e.g., English words or unrelated tokens such as plus ,
+
+index , standard , village , and Current , as well as occasional non-Arabic characters such as 突破 t ¯upò 
+
+‘breakthrough’). Excluding hallucinations, Gem-ini3 shows relatively few segmentation errors. Both systems also exhibit minor discrepancies due to gold annotation issues and normalization variation. Overall, CamelParser errors are largely superfi-cial, while Gemini3’s lower performance is mainly driven by hallucinated tokens rather than system-atic segmentation errors. This analysis highlights some of the weaknesses of the baseline models as well as the LLM models, all of which open inter-esting pathways for future research. 
+
+8 Conclusions and Future Work 
+
+We evaluated whether instruction-tuned LLMs can produce explicit morphosyntactic and syntactic analyses for Standard Arabic. Across morphosyn-tactic tagging and labeled dependency parsing, re-sults show that prompt design and demonstration retrieval strongly affect performance. Open-weight models struggle in zero-shot settings but improve with retrieval-based ICL, while proprietary mod-els approach supervised baselines for feature-level tagging and become competitive with specialized dependency parsers. However, strict morphosyn-tactic bundle prediction remains challenging, and tokenization errors substantially affect performance in raw-text settings. Our analysis identifies which aspects of Arabic morphology and syntax LLMs capture reliably and where systematic weaknesses persist. Future work should explore improved re-trieval strategies, constrained decoding for struc-tured outputs, and extensions to other Arabic vari-eties and morphologically rich languages. 8Limitations 
+
+Our study has several limitations. First, the eval-uation is restricted to Standard Arabic and does not cover dialectal varieties, limiting the generality of our findings. Second, while we consider both morphosyntactic tagging and dependency parsing, our tasks are derived from specific treebanks and annotation schemes (e.g., CATiB), which may not capture all aspects of Arabic linguistic structure. Third, our results depend on prompting strate-gies and retrieval-based in-context learning (ICL), which introduce variability and may not fully re-flect model capabilities under different settings. Fi-nally, comparisons between open-weight and pro-prietary models are constrained by differences in access, training data, and reproducibility. 
+
+Ethics Statement 
+
+This work evaluates large language models (LLMs) on structured linguistic analysis tasks for Standard Arabic. We use publicly available Arabic treebanks and do not introduce new annotated data involving human subjects. As such, risks related to privacy, consent, or personal data are minimal. However, LLMs may reflect biases present in their training data, including dialectal, regional, or stylistic biases in Arabic. Our evaluation focuses on Standard Arabic and may not generalize to di-alectal varieties, potentially reinforcing disparities in language technology coverage. In addition, re-liance on proprietary models raises concerns about reproducibility and transparency. We emphasize that our findings are diagnostic and should not be interpreted as evidence of robust linguistic competence. Misinterpretation of model outputs in downstream applications—especially in educational or linguistic contexts—may lead to incorrect analyses. We encourage careful use of LLM-generated linguistic annotations and further research on fairness and robustness across Arabic varieties. We used AI writing assistance within the scope of “Assistance purely with the language of the pa-per” described in the ACL Policy on Publication Ethics. 
+
+References 
+
+Ahmed Abdelali, Kareem Darwish, Nadir Durrani, and Hamdy Mubarak. 2016. Farasa: A fast and furious segmenter for Arabic. In Proceedings of the 2016 Conference of the North American Chapter of the Association for Computational Linguistics: Demon-strations , pages 11–16, San Diego, California. Asso-ciation for Computational Linguistics. Sharefah Al-Ghamdi, Hend Al-Khalifa, and Abdulma-lik Al-Salman. 2021. A dependency treebank for classical Arabic poetry. In Proceedings of the Sixth International Conference on Dependency Linguistics (Depling, SyntaxFest 2021) , pages 1–9, Sofia, Bul-garia. Association for Computational Linguistics. Sharefah Al-Ghamdi, Hend Al-Khalifa, and Abdulmalik Al-Salman. 2023. Fine-tuning bert-based pre-trained models for arabic dependency parsing. Applied Sci-ences , 13(7). Kamal Al-Sabahi, Amer Fael Mohammed Balhaf, Mo-hamed Moheb Zagloul Al Shamy, Majjed Al-Qatf, Kang Yang, and Abdulrahman Al-Badwi. 2026. Benchmarking large language models on arabic pars-ing. International Journal of Information Manage-ment Data Insights , 6(1):100404. Bashar Alhafni, Nizar Habash, and Houda Bouamor. 2022. User-centric gender rewriting. In Proceedings of the 2022 Conference of the North American Chap-ter of the Association for Computational Linguis-tics: Human Language Technologies , pages 618–631, Seattle, United States. Association for Computational Linguistics. Bashar Alhafni, Go Inoue, Christian Khairallah, and Nizar Habash. 2023. Advancements in Arabic gram-matical error detection and correction: An empirical investigation. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Process-ing , pages 6430–6448, Singapore. Association for Computational Linguistics. Sarah Alkuhlani and Nizar Habash. 2011. A corpus for modeling morpho-syntactic agreement in Ara-bic: Gender, number and rationality. In Proceedings of the 49th Annual Meeting of the Association for Computational Linguistics: Human Language Tech-nologies , pages 357–362, Portland, Oregon, USA. Association for Computational Linguistics. Dang Anh, Limor Raviv, and Lukas Galke. 2024. Mor-phology matters: Probing the cross-linguistic mor-phological generalization abilities of large language models through a wug test. In Proceedings of the Workshop on Cognitive Modeling and Computational Linguistics , pages 177–188, Bangkok, Thailand. As-sociation for Computational Linguistics. M Saiful Bari, Yazeed Alnumay, Norah A. Alzahrani, Nouf M. Alotaibi, Hisham Abdullah Alyahya, Sultan AlRashed, Faisal Abdulrahman Mirza, Shaykhah Z. Alsubaie, Hassan A. Alahmed, Ghadah Alabduljab-bar, Raghad Alkhathran, Yousef Almushayqih, Ra-neem Alnajim, Salman Alsubaihi, Maryam Al Man-sour, Saad Amin Hassan, Dr. Majed Alrubaian, Ali Alammari, Zaki Alawami, and 7 others. 2025. AL-Lam: Large Language Models for Arabic and En-glish. In The Thirteenth International Conference on Learning Representations .Terra Blevins, Hila Gonen, and Luke Zettlemoyer. 2023. Prompting language models for linguistic structure. 
+
+9In Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 6649–6663, Toronto, Canada. Association for Computational Linguistics. Tom B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, Sandhini Agarwal, Ariel Herbert-Voss, Gretchen Krueger, Tom Henighan, Rewon Child, Aditya Ramesh, Daniel M. Ziegler, Jeffrey Wu, Clemens Winter, and 12 others. 2020. Lan-guage models are few-shot learners. Preprint ,arXiv:2005.14165. Mona Diab, Nizar Habash, Owen Rambow, and Ryan Roth. 2013. Ldc arabic treebanks and associ-ated corpora: Data divisions manual. Preprint ,arXiv:1309.5652. Mona Diab, Kadri Hacioglu, and Daniel Jurafsky. 2004. Automatic tagging of Arabic text: From raw text to base phrase chunks. In Proceedings of HLT-NAACL 2004: Short Papers , pages 149–152, Boston, Mas-sachusetts, USA. Association for Computational Lin-guistics. Timothy Dozat and Christopher D. Manning. 2016. Deep biaffine attention for neural dependency pars-ing. CoRR , abs/1611.01734. Kais Dukes and Tim Buckwalter. 2010. A Depen-dency Treebank of the Quran using Traditional Ara-bic Grammar. In Proceedings of the Conference on Informatics and Systems (INFOS) , Cairo, Egypt. Ahmed El Kholy and Nizar Habash. 2010. Ortho-graphic and morphological processing for English-Arabic statistical machine translation. In Actes de la 17e conférence sur le Traitement Automatique des Langues Naturelles. Articles longs , pages 282–291, Montréal, Canada. ATALA. Ahmed Elshabrawy, Muhammed AbuOdeh, Go Inoue, and Nizar Habash. 2023. CamelParser2.0: A state-of-the-art dependency parser for Arabic. In Proceedings of ArabicNLP 2023 , pages 170–180, Singapore (Hy-brid). Association for Computational Linguistics. Ana Ezquerro, Carlos Gómez-Rodríguez, and David Vilares. 2025. Better benchmarking LLMs for zero-shot dependency parsing. In Proceedings of the Joint 25th Nordic Conference on Computational Linguis-tics and 11th Baltic Conference on Human Language Technologies (NoDaLiDa/Baltic-HLT 2025) , pages 121–135, Tallinn, Estonia. University of Tartu Li-brary. Fanar Team, Ummar Abbas, Mohammad Shahmeer Ah-mad, Firoj Alam, Enes Altinisik, Ehsannedin Asgari, Yazan Boshmaf, Sabri Boughorbel, Sanjay Chawla, Shammur Chowdhury, Fahim Dalvi, Kareem Dar-wish, Nadir Durrani, Mohamed Elfeky, Ahmed El-magarmid, Mohamed Eltabakh, Masoomali Fatehkia, Anastasios Fragkopoulos, Maram Hasanain, and 23 others. 2025. Fanar: An arabic-centric multimodal generative ai platform. Preprint , arXiv:2501.13944. Gemini Team, Rohan Anil, Sebastian Borgeaud, Jean-Baptiste Alayrac, Jiahui Yu, Radu Soricut, Johan Schalkwyk, Andrew M. Dai, Anja Hauth, Katie Millican, David Silver, Melvin Johnson, Ioannis Antonoglou, Julian Schrittwieser, Amelia Glaese, Jilin Chen, Emily Pitler, Timothy Lillicrap, Angeliki Lazaridou, and 1332 others. 2025. Gemini: A fam-ily of highly capable multimodal models. Preprint ,arXiv:2312.11805. Michael Ginn, Mans Hulden, and Alexis Palmer. 2024. Can we teach language models to gloss endangered languages? In Findings of the Association for Com-putational Linguistics: EMNLP 2024 , pages 5861– 5876, Miami, Florida, USA. Association for Compu-tational Linguistics. Aaron Grattafiori, Abhimanyu Dubey, Abhinav Jauhri, Abhinav Pandey, Abhishek Kadian, Ahmad Al-Dahle, Aiesha Letman, Akhil Mathur, Alan Schel-ten, Alex Vaughan, Amy Yang, Angela Fan, Anirudh Goyal, Anthony Hartshorn, Aobo Yang, Archi Mi-tra, Archie Sravankumar, Artem Korenev, Arthur Hinsvark, and 542 others. 2024. The llama 3 herd of models. Preprint , arXiv:2407.21783. Spence Green and Christopher D. Manning. 2010. Bet-ter Arabic parsing: Baselines, evaluations, and anal-ysis. In Proceedings of the 23rd International Con-ference on Computational Linguistics (Coling 2010) ,pages 394–402, Beijing, China. Coling 2010 Orga-nizing Committee. Nizar Habash, Muhammed AbuOdeh, Dima Taji, Reem Faraj, Jamila El Gizuli, and Omar Kallas. 2022. Camel treebank: An open multi-genre Arabic depen-dency treebank. In Proceedings of the Thirteenth Language Resources and Evaluation Conference ,pages 2672–2681, Marseille, France. European Lan-guage Resources Association. Nizar Habash and Owen Rambow. 2005. Arabic tok-enization, part-of-speech tagging and morphological disambiguation in one fell swoop. In Proceedings of the 43rd Annual Meeting of the Association for Computational Linguistics (ACL’05) , pages 573–580, Ann Arbor, Michigan. Association for Computational Linguistics. Nizar Habash and Ryan Roth. 2009. CATiB: The Columbia Arabic treebank. In Proceedings of the ACL-IJCNLP 2009 Conference Short Papers , pages 221–224, Suntec, Singapore. Association for Compu-tational Linguistics. Go Inoue, Bashar Alhafni, Nurpeiis Baimukan, Houda Bouamor, and Nizar Habash. 2021. The interplay of variant, size, and task type in Arabic pre-trained language models. In Proceedings of the Sixth Arabic Natural Language Processing Workshop , pages 92– 104, Kyiv, Ukraine (Virtual). Association for Compu-tational Linguistics. Go Inoue, Salam Khalifa, and Nizar Habash. 2022. Mor-phosyntactic tagging with pre-trained language mod-els for Arabic and its dialects. In Findings of the As-sociation for Computational Linguistics: ACL 2022 ,pages 1708–1719, Dublin, Ireland. Association for Computational Linguistics. Go Inoue, Hiroyuki Shindo, and Yuji Matsumoto. 2017. Joint prediction of morphosyntactic categories for 
+
+10 fine-grained Arabic part-of-speech tagging exploit-ing tag dictionary information. In Proceedings of the 21st Conference on Computational Natural Lan-guage Learning (CoNLL 2017) , pages 421–431, Van-couver, Canada. Association for Computational Lin-guistics. Mete Ismayilzada, Defne Circi, Jonne Sälevä, Hale Sirin, Abdullatif Köksal, Bhuwan Dhingra, Antoine Bosselut, Duygu Ataman, and Lonneke Van Der Plas. 2025. Evaluating morphological compositional gen-eralization in large language models. In Proceedings of the 2025 Conference of the Nations of the Americas Chapter of the Association for Computational Lin-guistics: Human Language Technologies (Volume 1: Long Papers) , pages 1270–1305, Albuquerque, New Mexico. Association for Computational Linguistics. Yash Kankanampati, Joseph Le Roux, Nadi Tomeh, Dima Taji, and Nizar Habash. 2020. Multitask easy-first dependency parsing: Exploiting complemen-tarities of different dependency representations. In 
+
+Proceedings of the 28th International Conference on Computational Linguistics , pages 2497–2508, Barcelona, Spain (Online). International Committee on Computational Linguistics. Salam Khalifa, Nasser Zalmout, and Nizar Habash. 2020. Morphological analysis and disambiguation for Gulf Arabic: The interplay between resources and methods. In Proceedings of the Twelfth Lan-guage Resources and Evaluation Conference , pages 3895–3904, Marseille, France. European Language Resources Association. Jiachang Liu, Dinghan Shen, Yizhe Zhang, Bill Dolan, Lawrence Carin, and Weizhu Chen. 2022. What makes good in-context examples for GPT-3? In 
+
+Proceedings of Deep Learning Inside Out (DeeLIO 2022): The 3rd Workshop on Knowledge Extrac-tion and Integration for Deep Learning Architectures ,pages 100–114, Dublin, Ireland and Online. Associa-tion for Computational Linguistics. Hsuehkuan Lu, Lei Hou, and Juanzi Li. 2019. How important is pos to dependency parsing? joint pos tagging and dependency parsing neural networks. In 
+
+Chinese Computational Linguistics , pages 625–637, Cham. Springer International Publishing. Mohamed Maamouri, Ann Bies, Tim Buckwalter, and Wigdan Mekki. 2004. The penn arabic treebank: Building a large-scale annotated arabic corpus. Yuval Marton, Nizar Habash, and Owen Rambow. 2013. Dependency parsing of Modern Standard Arabic with lexical and inflectional features. Computational Lin-guistics , 39(1):161–194. Hiroshi Matsuda, Chunpeng Ma, and Masayuki Asa-hara. 2025. Step-by-step instructions and a simple tabular output format improve the dependency pars-ing accuracy of LLMs. In Proceedings of the 18th International Conference on Parsing Technologies (IWPT, SyntaxFest 2025) , pages 11–19, Ljubljana, Slovenia. Association for Computational Linguistics. Alessio Miaschi, Felice Dell’Orletta, and Giulia Ven-turi. 2024. Evaluating large language models via linguistic profiling. In Proceedings of the 2024 Con-ference on Empirical Methods in Natural Language Processing , pages 2835–2848, Miami, Florida, USA. Association for Computational Linguistics. Sewon Min, Xinxi Lyu, Ari Holtzman, Mikel Artetxe, Mike Lewis, Hannaneh Hajishirzi, and Luke Zettle-moyer. 2022. Rethinking the role of demonstrations: What makes in-context learning work? In Proceed-ings of the 2022 Conference on Empirical Methods in Natural Language Processing , pages 11048–11064, Abu Dhabi, United Arab Emirates. Association for Computational Linguistics. Amir More, Amit Seker, Victoria Basmova, and Reut Tsarfaty. 2019. Joint transition-based models for morpho-syntactic parsing: Parsing strategies for MRLs and a case study from Modern Hebrew. Trans-actions of the Association for Computational Linguis-tics , 7:33–48. Joakim Nivre, Marie-Catherine de Marneffe, Filip Gin-ter, Jan Hajiˇ c, Christopher D. Manning, Sampo Pyysalo, Sebastian Schuster, Francis Tyers, and Daniel Zeman. 2020. Universal Dependencies v2: An evergrowing multilingual treebank collection. In 
+
+Proceedings of the Twelfth Language Resources and Evaluation Conference , pages 4034–4043, Marseille, France. European Language Resources Association. Ossama Obeid, Nasser Zalmout, Salam Khalifa, Dima Taji, Mai Oudah, Bashar Alhafni, Go Inoue, Fadhl Eryani, Alexander Erdmann, and Nizar Habash. 2020. CAMeL tools: An open source python toolkit for Arabic natural language processing. In Proceedings of the Twelfth Language Resources and Evaluation Conference , pages 7022–7032, Marseille, France. Eu-ropean Language Resources Association. OpenAI, Josh Achiam, Steven Adler, Sandhini Agarwal, Lama Ahmad, Ilge Akkaya, Florencia Leoni Ale-man, Diogo Almeida, Janko Altenschmidt, Sam Alt-man, Shyamal Anadkat, Red Avila, Igor Babuschkin, Suchir Balaji, Valerie Balcom, Paul Baltescu, Haim-ing Bao, Mohammad Bavarian, Jeff Belgum, and 262 others. 2024. Gpt-4 technical report. Preprint ,arXiv:2303.08774. Arfath Pasha, Mohamed Al-Badrashiny, Mona Diab, Ahmed El Kholy, Ramy Eskander, Nizar Habash, Manoj Pooleery, Owen Rambow, and Ryan Roth. 2014. MADAMIRA: A fast, comprehensive tool for morphological analysis and disambiguation of Arabic. In Proceedings of the Ninth International Conference on Language Resources and Evaluation (LREC’14) , pages 1094–1101, Reykjavik, Iceland. European Language Resources Association (ELRA). Maja Popovi´ c. 2015. chrF: character n-gram F-score for automatic MT evaluation. In Proceedings of the Tenth Workshop on Statistical Machine Translation ,pages 392–395, Lisbon, Portugal. Association for Computational Linguistics. Maja Popovi´ c. 2017. chrF++: words helping charac-ter n-grams. In Proceedings of the Second Confer-ence on Machine Translation , pages 612–618, Copen-hagen, Denmark. Association for Computational Lin-guistics. 
+
+11 Ohad Rubin, Jonathan Herzig, and Jonathan Berant. 2022. Learning to retrieve prompts for in-context learning. In Proceedings of the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Tech-nologies , pages 2655–2671, Seattle, United States. Association for Computational Linguistics. Fatiha Sadat and Nizar Habash. 2006. Combination of Arabic preprocessing schemes for statistical machine translation. In Proceedings of the 21st International Conference on Computational Linguistics and 44th Annual Meeting of the Association for Computational Linguistics , pages 1–8, Sydney, Australia. Associa-tion for Computational Linguistics. Neha Sengupta, Sunil Kumar Sahu, Bokang Jia, Satheesh Katipomu, Haonan Li, Fajri Koto, William Marshall, Gurpreet Gosal, Cynthia Liu, Zhim-ing Chen, Osama Mohammed Afzal, Samta Kam-boj, Onkar Pandit, Rahul Pal, Lalit Pradhan, Zain Muhammad Mujahid, Massa Baali, Xudong Han, Sondos Mahmoud Bsharat, and 13 others. 2023. Jais and jais-chat: Arabic-centric foundation and instruction-tuned open generative large language models. Preprint , arXiv:2308.16149. Anas Shahrour, Salam Khalifa, Dima Taji, and Nizar Habash. 2016. CamelParser: A system for Arabic syntactic analysis and morphological disambiguation. In Proceedings of COLING 2016, the 26th Interna-tional Conference on Computational Linguistics: Sys-tem Demonstrations , pages 228–232, Osaka, Japan. The COLING 2016 Organizing Committee. Otakar Smrž, Jan Šnaidauf, and Petr Zemánek. 2002. Prague Dependency Treebank for Arabic: Multi-Level Annotation of Arabic Corpus. In Proceedings of the International Symposium on Processing of Ara-bic , pages 147–155, Manouba, Tunisia. Milan Straka. 2018. UDPipe 2.0 prototype at CoNLL 2018 UD shared task. In Proceedings of the CoNLL 2018 Shared Task: Multilingual Parsing from Raw Text to Universal Dependencies , pages 197–207, Brussels, Belgium. Association for Computational Linguistics. Dima Taji, Nizar Habash, and Daniel Zeman. 2017. Uni-versal Dependencies for Arabic. In Proceedings of the Third Arabic Natural Language Processing Work-shop , pages 166–176, Valencia, Spain. Association for Computational Linguistics. Tsedeniya Kinfe Temesgen, Marion Di Marco, and Alexander Fraser. 2025. Extracting linguistic infor-mation from large language models: Syntactic rela-tions and derivational knowledge. In Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing , pages 27210–27226, Suzhou, China. Association for Computational Lin-guistics. Yuanhe Tian, Fei Xia, and Yan Song. 2024. Large language models are no longer shallow parsers. In 
+
+Proceedings of the 62nd Annual Meeting of the As-sociation for Computational Linguistics (Volume 1: Long Papers) , pages 7131–7142, Bangkok, Thailand. Association for Computational Linguistics. Reut Tsarfaty, Joakim Nivre, and Evelina Andersson. 2012. Joint evaluation of morphological segmenta-tion and syntactic parsing. In Proceedings of the 50th Annual Meeting of the Association for Computational Linguistics (Volume 2: Short Papers) , pages 6–10, Jeju Island, Korea. Association for Computational Linguistics. Andreas Waldis, Yotam Perlitz, Leshem Choshen, Yu-fang Hou, and Iryna Gurevych. 2024. Holmes: A benchmark to assess the linguistic competence of lan-guage models. Transactions of the Association for Computational Linguistics , 12:1616–1647. Leonie Weissweiler, Valentin Hofmann, Anjali Kan-tharuban, Anna Cai, Ritam Dutt, Amey Hengle, Anubha Kabra, Atharva Kulkarni, Abhishek Vi-jayakumar, Haofei Yu, Hinrich Schuetze, Kemal Oflazer, and David Mortensen. 2023. Counting the bugs in ChatGPT’s wugs: A multilingual investiga-tion into the morphological capabilities of a large language model. In Proceedings of the 2023 Con-ference on Empirical Methods in Natural Language Processing , pages 6508–6524, Singapore. Associa-tion for Computational Linguistics. Marion Weller-Di Marco and Alexander Fraser. 2024. Analyzing the understanding of morphologically complex words in large language models. In Pro-ceedings of the 2024 Joint International Conference on Computational Linguistics, Language Resources and Evaluation (LREC-COLING 2024) , pages 1009– 1020, Torino, Italia. ELRA and ICCL. An Yang, Anfeng Li, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo Zheng, Bowen Yu, Chang Gao, Chengen Huang, Chenxu Lv, Chujie Zheng, Day-iheng Liu, Fan Zhou, Fei Huang, Feng Hu, Hao Ge, Haoran Wei, Huan Lin, Jialong Tang, and 41 others. 2025. Qwen3 technical report. Preprint ,arXiv:2505.09388. Nasser Zalmout, Alexander Erdmann, and Nizar Habash. 2018. Noise-robust morphological disambiguation for dialectal Arabic. In Proceedings of the 2018 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long Papers) ,pages 953–964, New Orleans, Louisiana. Association for Computational Linguistics. Nasser Zalmout and Nizar Habash. 2017. Don’t throw those morphological analyzers away just yet: Neural morphological disambiguation for Arabic. In Pro-ceedings of the 2017 Conference on Empirical Meth-ods in Natural Language Processing , pages 704–713, Copenhagen, Denmark. Association for Computa-tional Linguistics. Nasser Zalmout and Nizar Habash. 2019. Adversarial multitask learning for joint multi-feature and multi-dialect morphological modeling. In Proceedings of the 57th Annual Meeting of the Association for Com-putational Linguistics , pages 1775–1786, Florence, Italy. Association for Computational Linguistics. Nasser Zalmout and Nizar Habash. 2020. Joint dia-critization, lemmatization, normalization, and fine-grained morphological tagging. In Proceedings of 
+
+12 the 58th Annual Meeting of the Association for Com-putational Linguistics , pages 8297–8307, Online. As-sociation for Computational Linguistics. Daniel Zeman, Jan Hajiˇ c, Martin Popel, Martin Potthast, Milan Straka, Filip Ginter, Joakim Nivre, and Slav Petrov. 2018. CoNLL 2018 shared task: Multilingual parsing from raw text to Universal Dependencies. In 
+
+Proceedings of the CoNLL 2018 Shared Task: Multi-lingual Parsing from Raw Text to Universal Depen-dencies , pages 1–21, Brussels, Belgium. Association for Computational Linguistics. Yu Zhang. 2021. SuPar GitHub repository - v1.1.4. Yuan Zhang, Chengtao Li, Regina Barzilay, and Ka-reem Darwish. 2015. Randomized greedy inference for joint segmentation, POS tagging and dependency parsing. In Proceedings of the 2015 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Tech-nologies , pages 42–52, Denver, Colorado. Associa-tion for Computational Linguistics. Ziyan Zhang, Yang Hou, Chen Gong, and Zhenghua Li. 2025. Self-correction makes LLMs better parsers. In 
+
+Findings of the Association for Computational Lin-guistics: EMNLP 2025 , pages 6749–6762, Suzhou, China. Association for Computational Linguistics. 
+
+13 A Prompts 
+
+A.1 Morphosyntactic Tagging Prompt You are an expert Arabic morphosyntactic analyzer trained on the Penn 
+
+Arabic Treebank (PATB). 
+
+Your task is to analyze the Arabic sentences and produce a complete 
+
+morphosyntactic analysis for EACH TOKEN. 
+
+----------------------------------------------------------------------
+
+TOKENIZATION 
+
+----------------------------------------------------------------------
+
+- The sentence is already tokenized and tokens are separated by spaces. 
+
+- Do NOT merge or split tokens. 
+
+- Analyze tokens strictly in the given order. 
+
+---------------------------------------------------------------------
+
+OUTPUT REQUIREMENTS 
+
+---------------------------------------------------------------------
+
+- Output MUST be valid JSON. 
+
+- Output MUST contain a single key: "tokens". 
+
+- "tokens" is a list of token objects. 
+
+- Each token object MUST include: 
+
+• "word": the surface form exactly as given 
+
+• "analysis": a full feature structure 
+
+- ALL features listed below MUST appear for every token. 
+
+- Use ONLY the allowed values. 
+
+- Do NOT include explanations, comments, or extra fields in the output. 
+
+----------------------------------------------------------------------
+
+MORPHOLOGICAL & SYNTACTIC FEATURES (WITH ALLOWED VALUES & DESCRIPTIONS) 
+
+----------------------------------------------------------------------
+
+asp - (Aspect) 
+
+- c : Command 
+
+- i : Imperfective 
+
+- p : Perfective 
+
+- na : Not applicable 
+
+cas - (Case) 
+
+- n : Nominative 
+
+- a : Accusative 
+
+- g : Genitive 
+
+- na : Not applicable 
+
+- u : Undefined 
+
+form_gen - (Form gender) 
+
+- f : Feminine 
+
+- m : Masculine 
+
+- na : Not applicable 
+
+form_num - (Form number) 
+
+- s : Singular 
+
+- d : Dual 
+
+- p : Plural 
+
+- na : Not applicable 
+
+- u : Undefined 
+
+mod - (Mood) 
+
+- i : Indicative 
+
+- j : Jussive 
+
+- s : Subjunctive 
+
+- na : Not applicable 
+
+- u : Undefined 
+
+per - (Person) 
+
+- 1 : 1st 
+
+- 2 : 2nd 
+
+- 3 : 3rd 
+
+- na : Not applicable 
+
+stt - (State) 
+
+- c : Construct/Poss/Idafa 
+
+- d : Definite 
+
+- i : Indefinite 
+
+- na : Not applicable 
+
+- u : Undefined 
+
+vox - (Voice) 
+
+- a : Active 
+
+- p : Passive 
+
+- na : Not applicable 
+
+- u : Undefined 
+
+pos - (Part of speech) 
+
+- noun : Noun 
+
+- noun_prop : Proper noun 
+
+- noun_num : Number noun 
+
+- noun_quant : Quantity noun 
+
+- adj : Adjective 
+
+- adj_comp : Comparitive adjective 
+
+- adj_num : Numerical adjective 
+
+- adv : Adverb 
+
+- adv_interrog : Interrogative adverb 
+
+- adv_rel : Relative adverb 
+
+- pron : Pronoun 
+
+- pron_dem : Demonstrative pronoun 
+
+- pron_exclam : Pronoun exclamation 
+
+- pron_interrog : Interrogative pronoun 
+
+- pron_rel : Relative pronoun 
+
+- verb : Verb 
+
+- verb_pseudo : Pseudo verb 
+
+- part : Particle 
+
+- part_dem : Demonstrative particle 
+
+- part_det : Determiner particle 
+
+- part_focus : Focus particle 
+
+- part_fut : Future marker particle 
+
+- part_interrog : Interrogative particle 
+
+- part_neg : Negative particle 
+
+- part_restrict : Restricitve particle 
+
+- part_verb : Verbal particle 
+
+- part_voc : Vocalized particle 
+
+- prep : Preposition 
+
+- abbrev : Abbreviation 
+
+- punc : Punctuation 
+
+- conj : Conjunction 
+
+- conj_sub : Subordinating conjunction 
+
+- interj : Interjection 
+
+- digit : Digital numbers 
+
+- latin : Latin/foreign 
+
+prc0 - (Article proclitic) 
+
+- 0 : No proclitic 
+
+- na : Not applicable 
+
+- Aa_prondem : Demonstrative particle Aa 
+
+- Al_det : Determiner 
+
+- AlmA_neg : Determiner Al + negative particle mA 
+
+- lA_neg : Negative particle lA 
+
+- mA_neg : Negative particle mA 
+
+- ma_neg : Negative particle ma 
+
+- mA_part : Particle mA 
+
+- mA_rel : Relative pronoun mA 
+
+prc1 - (Preposition proclitic) 
+
+- 0 : No proclitic 
+
+- na : Not applicable 
+
+- <i \$_interrog : Interrogative ish 
+
+- bi_part : Particle bi 
+
+- bi_prep : Preposition bi 
+
+- bi_prog : Progressive verb particle bi 
+
+- Ea_prep : Preposition Ea 
+
+- EalaY_prep : Preposition EalaY 
+
+- fiy_prep : Preposition fy 
+
+- hA_dem : Demonstrative hA 
+
+- Ha_fut : Future marker Ha 
+
+- ka_prep : Preposition ka 
+
+- la_emph : Emphatic particle la 
+
+- la_prep : Preposition la 
+
+- la_rc : Response conditional la 
+
+- libi_prep : Preposition li + preposition bi 
+
+- laHa_emphfut : Emphatic la + future marker Ha 
+
+- laHa_rcfut : Response conditional la + future marker Ha 
+
+- li_jus : Jussive li 
+
+- li_sub : Subjunctive li 
+
+- li_prep : Preposition li 
+
+- min_prep : Preposition min 
+
+- sa_fut : Future marker sa 
+
+- ta_prep : Preposition ta 
+
+- wa_part : Particle wa 
+
+- wa_prep : Preposition wa 
+
+- wA_voc : Vocative wA 
+
+- yA_voc : Vocative yA 
+
+prc2 - (Conjunction proclitic) 
+
+- 0 : No proclitic 
+
+- na : Not applicable 
+
+- fa_conj : Conjunction fa 
+
+- fa_conn : Connective particle fa 
+
+- fa_rc : Responsive conditional fa 
+
+- fa_sub : Subordinating conjunction fa 
+
+- wa_conj : conjunction wa 
+
+- wa_part : particle wa 
+
+- wa_sub : Subordinating conjunction wa 
+
+prc3 - (Question proclitic) 
+
+- 0 : No proclitic 
+
+- na : Not applicable 
+
+- >a_ques : Interrogative partical >a 
+
+enc0 - (Pronominal enclitic) 
+
+- 0 : No enclitic 
+
+- na : Not spplicable 
+
+- 1s_dobj : 1st person singular direct object 
+
+- 1s_poss : 1st person singular possessive 
+
+- 1s_pron : 1st person singular pronoun 
+
+- 1p_dobj : 1st person plural direct object 
+
+- 1p_poss : 1st person plural possessive 
+
+- 1p_pron : 1st person plural pronoun 
+
+- 2d_dobj : 2nd person dual direct object 
+
+- 2d_poss : 2nd person dual possessive 
+
+- 2d_pron : 2nd person dual pronoun 
+
+- 2p_dobj : 2nd person plural direct object 
+
+- 2p_poss : 2nd person plural possessive 
+
+- 2p_pron : 2nd person plural pronoun 
+
+- 2fs_dobj : 2nd person feminine singular direct object 
+
+- 2fs_poss : 2nd person feminine singular possessive 
+
+- 2fs_pron : 2nd person feminine singular pronoun 
+
+- 2fp_dobj : 2nd person feminine plural direct object 
+
+- 2fp_poss : 2nd person feminine plural possessive 
+
+- 2fp_pron : 2nd person feminine plural pronoun 
+
+- 2ms_dobj : 2nd person masculine singular direct object 
+
+- 2ms_poss : 2nd person masculine singular possessive 
+
+- 2ms_pron : 2nd person masculine singular pronoun 
+
+- 2mp_dobj : 2nd person masculine plural direct object 
+
+- 2mp_poss : 2nd person masculine plural possessive 
+
+- 2mp_pron : 2nd person masculine plural pronoun 
+
+- 3d_dobj : 3rd person dual direct object 
+
+- 3d_poss : 3rd person dual possessive 
+
+- 3d_pron : 3rd person dual pronoun 
+
+- 3p_dobj : 3rd person plural direct object 
+
+- 3p_poss : 3rd person plural possessive 
+
+- 3p_pron : 3rd person plural pronoun 
+
+- 3fs_dobj : 3rd person feminine singular direct object 
+
+- 3fs_poss : 3rd person feminine singular possessive 
+
+- 3fs_pron : 3rd person feminine singular pronoun 
+
+- 3fp_dobj : 3rd person feminine plural direct object 
+
+- 3fp_poss : 3rd person feminine plural possessive 
+
+- 3fp_pron : 3rd person feminine plural pronoun 
+
+- 3ms_dobj : 3rd person masculine singular direct object 
+
+- 3ms_poss : 3rd person masculine singular possessive 
+
+- 3ms_pron : 3rd person masculine singular pronoun 
+
+- 3mp_dobj : 3rd person masculine plural direct object 
+
+- 3mp_poss : 3rd person masculine plural possessive 
+
+- 3mp_pron : 3rd person masculine plural pronoun 
+
+- Ah_voc : Vocative particle Ah 
+
+- lA_neg : Negative particle lA 
+
+- ma_interrog : Interrogative pronoun ma 
+
+- mA_interrog : Interrogative pronoun mA 
+
+- man_interrog : Interrogative pronoun man 
+
+- ma_rel : Relative pronoun ma 
+
+- mA_rel : Relative pronoun mA 
+
+- man_rel : Relative pronoun man 
+
+- ma_sub : Subordinating conjunction ma 
+
+- mA_sub : Subordinating conjunction mA 
+
+14 A.2 Dependency Parsing Prompts Gold tokenization. The following prompt was used when gold CATiB tokenization was provided to the model. 
+
+You are an expert Arabic dependency annotator trained on the Columbia Arabic Treebank (CATiB) conventions. Your task is to annotate Arabic sentences using the official CATiB methodology. ---------------------------------------------------------------------Input format You are given a single Arabic sentence already tokenized according to CATiB conventions. The provided token sequence must be used exactly as-is for dependency annotation. ---------------------------------------------------------------------Output format Output only a JSON object with a single key "parses". The value of "parses" must be an array of objects, one per token, each containing: - id: integer (1-based token index) - form: identical to the produced token (including "+" markers) - head: integer (1-based index of the syntactic head; 0 = root) - deprel: dependency relation label One root per tree. Each non-root token must have exactly one head and one dependency relation. No explanations, commentary, or additional formatting should be included. ---------------------------------------------------------------------Dependency relations SBJ - Subject (verbal, nominal, or copular sentence) OBJ - Object of verbs, deverbal nouns, prepositions, and conjunctions PRD - Predicate of incomplete verbs or verb-like particles TPC - Topic in a complex nominal sentence with a different internal subject IDF - Idafa (genitive possessor) TMZ - Tamyiz / specification MOD - Modifier (adjectival, adverbial, prepositional, appositional, relative, demonstrative, etc.) --- - Flat / multiword proper-name connector ---------------------------------------------------------------------Sentence and clause structure Verbal sentences - Verb is the clause head. - SBJ marks explicit subjects (pre- or post-verbal). - OBJ marks direct or pronominal objects. - Passive verbs take surface SBJ for the underlying object. - Verbal particles ( YØ, ¨ÒÉ , ’À , ·À ) attach as MOD. Nominal sentences - Predicate heads the sentence. - Topic is SBJ. - If preceded by an incomplete or verb-like particle, the particle heads both SBJ and PRD. Complex sentences - If topic and embedded subject are the same, use SBJ. - Otherwise, use TPC. Prepositional phrases - Preposition heads its OBJ. - Preposition attaches to its governor as MOD. Nominal modification - IDF marks possessors in idafa (only one IDF per head). - MOD marks adjectives, relative clauses, demonstratives, and apposition. - TMZ marks specification. Relative clauses - Attach to head noun using MOD. - Relative pronoun heads the clause when present. Coordination - First conjunct attaches to conjunction as MOD. - Conjunction attaches to second conjunct as OBJ. - Sentence-initial  attaches as MOD to the following clause head. Subordination - Main clause head attaches to subordinator as MOD. - Subordinate clause head attaches to subordinator as OBJ. - ‡ @ / ‡ @ may attach by grammatical role (SBJ, PRD, etc.). Punctuation - Punctuation attaches as MOD to the governing node. - Sentence-final punctuation attaches to the main clause head. 
+
+Raw text. For the raw-text setting, the same prompt shown above was used, with the following block prepended to the beginning of the prompt. 
+
+---------------------------------------------------------------------Input format You are given a single Arabic sentence as RAW TEXT (a normal string), not pre-tokenized. ---------------------------------------------------------------------Tokenization (YOU MUST DO THIS FIRST) Words in CATiB are whitespace- and punctuation-separated strings. For annotation purposes, words must be broken into tokens following CATiB conventions. All diacritics must be removed. Only the following clitics are separated from the word. Proclitics (written as separate tokens ending with "+"): - @+ question particle - + and - ¨+ so / then - »+ for / to / so that / emphatic particle - H. + by / with - º+ as / like Enclitics (written as separate tokens beginning with "+"): - pronominal object or possessive clitics such as + Ë him / his +AÎ her +—Î them / their +A“ª you (dual) +’ª you (plural) +AK us / our +¯ me / my Decliticization may result in malformed surface forms. In such cases, normalize tokens to their naturally uncliticized form. Alef-Lam - H. A J∫ À → »+H. A J∫À@ 
+
+(NOT: »+H. A J∫À )Ta Marbuta - AJ J. J∫” → ÈJ. J∫” +AK 
+
+(NOT: I. J∫” +AK )Alef Maqsura - —ÎAÆ  ÇÇ” → ˘Æ  ÇÇ” +—Î 
+
+(NOT: AÆ  ÇÇ” +—Î )Case-variant Hamza - ËAÓE. / ËAÓE. / ÈK AÓE. → ZAÓE. + Ë
+
+(NOT: AÓE. + Ë / ¯ AÓE. + Ë)Use "+" only to mark split clitics. The produced token list must be used exactly as-is for dependency annotation. 
+
+15 B Analysis 
+
+B.1 Tokenization Error Analysis 
+
+Error Type CAMeL Tools Gemini3 Example 
+
+Count % Count %Input Error 35 9% 23 10% ÈJ.jíÀ@ AlSHb ¯h → ÈjíÀ@ AlSH ¯h
+
+Gold Issues 8 2% 13 6% ¯ Q™  É šEry → ¯+ Q™  É šEr +y 
+
+Under Tokenization 40 11% 8 4% ¯+ ÈJK Y” mdyn ¯h +y → ˙ ÊJK Y” mdynty 
+
+Over Tokenization 26 7% 7 3% ‡@QØ fyrAn → ‡@QK + ¨ f yrAn 
+
+Substitution 3 1% 4 2% ¯+ @YÀ@ wAldA +iy → ¯+ YÀ@ wAld +y 
+
+Normalization 56 15% 35 15% ≠É @ ¯Asf → ≠É @ Âsf 
+
+Punctuation 204 55% 10 4% ? → ?Hallucination 0 0% 128 56% ÈJ.ªQ” +H . (b+_markaba) → ÈJ.ªQ” 突破 +H . b+ 突破 mrkb ¯h
+
+Total 372 228 
+
+Table 10: Distribution of tokenization errors for CAMeL Tools (as used in CamelParser) and Gemini3 on a 500-sentence sample. Arabic examples are shown with Buckwalter-style transliteration. 
+
+B.2 Time & Cost Analysis 
+
+Task Model 0 10 Time (min) Cost ($) Time (min) Cost ($) Morphosyntactic Tagging Llama4 2130.69 0.0 2084.87 0.0 Qwen3 1746.42 0.0 1294.90 0.0 GPT5.2 11.55 60.0 166.06 146.0 Gemini3 1595.76 64.0 1608.69 108.3 CAMeL Tools 1.17 0.0 – –
+
+Dependency Parsing (Gold Tokenization) Llama4 246.51 0.0 274.44 0.0 Qwen3 192.98 0.0 209.56 0.0 GPT5.2 22.53 22.0 23.41 33.0 Gemini3 1612.59 55.0 1070.54 41.0 CamelParser 0.13 0.0 – –
+
+Dependency Parsing (Raw Text) Llama4 250.92 0.0 263.41 0.0 Qwen3 137.83 0.0 406.66 0.0 GPT5.2 32.64 34.0 33.93 41.0 Gemini3 2491.41 85.0 1668.20 61.8 CamelParser 1.66 0.0 – –
+
+Table 11: Cost and runtime comparison across tasks and models on Test sets under 0-shot and 10-shot settings. Supervised pipelines (CAMeL Tools, CamelParser) do not use in-context learning, so only a single runtime is reported. 
+
+16 B.3 Data Per Shot 
+
+Dataset Shots 
+
+1 2 3 4 5 6 7 8 9 10 PATB Dev Sents 1,248 2,103 2,947 3,732 4,474 5,172 5,867 6,625 7,342 7,768 PATB Dev Words 47,932 80,514 113,086 143,733 172,664 200,312 227,903 256,349 282,103 296,309 PATB Test Sents 1,224 2,071 2,902 3,687 4,423 5,116 5,808 6,558 7,257 7,650 PATB Test Words 46,801 78,853 110,776 140,919 169,451 196,693 223,925 252,001 277,566 290,559 CAMeLTB Dev Sents 1,083 1,876 2,598 3,246 3,859 4,440 4,995 5,536 6,060 6,315 CAMeLTB Dev Words 14,982 25,781 35,567 44,450 52,768 60,615 68,052 75,265 82,082 85,292 CAMeLTB Test Sents 1,047 1,821 2,525 3,155 3,750 4,313 4,850 5,371 5,878 6,120 CAMeLTB Test Words 14,402 24,916 34,473 43,134 51,258 58,904 66,141 73,155 79,791 82,930 
+
+Table 12: Number of unique sentences (sents) and total words required as the number of shots increases across datasets. 
+
+B.4 Per Feature Accuracy 
+
+Model Shots All Tags Tag F 1 POS PER GEN NUM ASP MOD VOX STT CAS PRC0 PRC1 PRC2 PRC3 ENC0 
+
+Llama4 0 7.7 78.9 71.2 92.5 77.2 79.8 95.6 92.1 95.1 64.6 49.4 62.2 75.8 80.2 86.3 83.0 Llama4 10 57.4 90.1 82.7 96.2 85.9 88.3 96.4 96.2 96.4 80.7 72.4 87.3 94.1 93.8 96.5 94.0 Qwen3 0 13.9 83.2 81.4 98.2 85.0 84.1 97.6 96.9 97.2 69.4 53.6 68.4 77.5 81.5 88.0 85.3 Qwen3 10 76.5 97.0 95.0 99.4 95.4 96.0 99.4 99.1 99.0 92.9 87.0 97.7 99.3 99.4 99.9 98.7 GPT5.2 0 39.7 89.9 91.1 99.2 89.4 90.0 99.7 94.3 99.5 84.1 81.9 73.3 87.6 89.4 89.7 89.2 GPT5.2 10 86.2 98.4 96.7 99.8 96.5 96.5 99.8 99.6 99.6 97.2 93.2 99.1 99.6 99.7 100.0 99.7 Gemini3 0 48.8 93.0 92.5 99.0 91.6 92.4 99.8 94.3 99.7 91.3 86.0 79.6 93.3 94.5 94.7 93.9 Gemini3 10 86.6 98.5 96.9 99.8 96.4 95.9 99.8 99.7 99.7 97.7 94.6 99.4 99.6 99.7 99.9 99.7 CAMeL Tools – 96.3 99.6 98.8 99.8 99.8 99.8 99.8 99.8 99.8 99.1 97.7 99.8 99.9 99.9 100.0 99.9 
+
+Table 13: Per-feature morphosyntactic tagging accuracy across models and prompting settings. NUM and GEN are specifically the form-based number and form-based gender features (Alkuhlani and Habash, 2011). 
+
+17 B.5 LAS Breakdown by Genre and Setting                                                                                                                                             
+
+> Genre Variant Period Train Size Length CamelParser Gemini3 Oracle Formula
+> Odes CA 6th–12th SShort 77.3 83.3 83.3 83.3 Quran CA 6th–12th MLong 82.7 92.2 92.2 92.2 Hadith CA 6th–12th MMid 92.4 90.6 92.4 92.4 1001 CA 6th–12th MMid 91.9 91.7 91.9 91.9 Hayy CA 6th–12th LLong 91.7 92.5 92.5 92.5 OT MSA 19th–20th SLong 87.4 88.5 88.5 88.5 NT MSA 19th–20th SLong 84.7 89.1 89.1 89.1 Sara MSA 19th–20th XL Long 84.5 83.7 84.5 84.5 ALC MSA 21st SMid 87.5 84.7 87.5 87.5 BTEC MSA 21st MShort 84.9 86.8 86.8 84.9 QALB MSA 21st MMid 86.5 84.7 86.5 86.5 WikiNews MSA 21st MLong 90.1 88.3 90.1 90.1 ZAEBUC MSA 21st MMid 91.8 92.0 92.0 91.8
+> Macro Average
+> All Genres 87.2 88.3 *89.0 *88.9
+> CA 87.2 90.1
+> MSA 87.2 87.2 6th–12th 87.2 90.1
+> 19th–20th 85.5 87.1
+> 21st 88.2 87.3 Train XL 84.5 83.7 Train L 91.7 92.5
+> Train M 88.6 89.5
+> Train S 84.2 86.4
+> Short (<10) 81.1 85.1
+> Mid (10–15) 90.0 88.7 Long (>15) 86.8 89.1
+
+Table 14: Labeled Attachment Score (LAS) results across datasets and aggregate breakdowns. Each row corresponds to a dataset (Genre) annotated with its language variant (CA = Classical Arabic, MSA = Modern Standard Arabic), historical period (centuries), training size (relative size of training data in CAMeLTB), and average sentence length category (Short, Mid, Long). We report LAS for CamelParser , Gemini3 (best prompt/ICL configuration) , an 
+
+oracle setting (best achievable across configurations), and the corresponding F1. The Macro Average section reports the unweighted average across all datasets including aggregate performance by individual factors: language variant, period, training size, and sentence length bins. These aggregates highlight how performance varies across data conditions and isolate the effects of domain, supervision level, and input complexity. Oracle identifies the best possible simple genre-based system selection. And Formula assumes a simple selection technique: if Length=Mid OR Train=XL OR Period=21st, then select CamelParser’s output, else Gemini3’s output. The results marked with * are for analysis purpose only. 
+
+18

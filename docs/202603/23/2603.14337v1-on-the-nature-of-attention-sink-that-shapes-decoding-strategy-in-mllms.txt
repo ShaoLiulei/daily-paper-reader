@@ -1,0 +1,1284 @@
+Title: On the Nature of Attention Sink that Shapes Decoding Strategy in MLLMs
+
+URL Source: https://arxiv.org/pdf/2603.14337v1
+
+Published Time: Tue, 17 Mar 2026 03:35:50 GMT
+
+Number of Pages: 27
+
+Markdown Content:
+# On the Nature of Attention Sink that Shapes Decoding Strategy in MLLMs 
+
+Suho Yoo 1 Youngjoon Jang 1,2 Joon Son Chung 1
+
+> 1
+
+KAIST 2VGG, University of Oxford 
+
+Abstract. Large language models and their multimodal extensions have achieved remarkable success across diverse tasks, yet the internal mecha-nisms that govern their reasoning behaviour remain partially understood. In particular, the attention sink, a token that attracts disproportionate attention mass, has been observed in transformer architectures, but its role is still unclear. Our goal is to understand what attention sinks repre-sent and how they shape model behaviour during inference, rather than considering them as incidental artifacts. Through our analysis, we find that attention sink representations encode structured global informa-tion that influences the decoding process. Building on our findings, we introduce OutRo , a lightweight inference-time strategy that leverages the sink token to enhance contextual representations: (i) non-sink token representations are aligned with the sink representation in the feature space; and (ii) the sink token is allowed to attend beyond the causal constraint, facilitating information exchange with non-sink tokens. This design enhances the reasoning process without requiring additional for-ward passes or access to attention maps. Based on extensive experiments, OutRo consistently improves performance across representative MLLMs on seven video QA benchmarks and demonstrates strong generalisation, while incurring only a 1.1 × decoding overhead. 
+
+1 Introduction 
+
+Large language models (LLMs) [1, 2, 5, 12, 34] and multimodal large language models (MLLMs) [8, 9, 21, 33, 37, 43] have demonstrated transformative perfor-mance across a vast array of tasks, primarily driven by the scaling of transformer architectures [11, 22, 29, 60]. At the core of these models lies the attention mech-anism, which allows the model to dynamically prioritise relevant information within a sequence [49]. However, despite their widespread adoption, the internal mechanisms underlying the formation of attention distributions and their role in shaping internal representations remain underexplored. This leaves a significant gap between empirical success and conceptual understanding. Among the diverse roles of attention heads [6, 15, 38, 50], the attention sink 
+
+phenomenon has recently received increasing attention [54]. It refers to the ten-dency of models to allocate a substantial portion of their attention to tokens that appear semantically uninformative. In LLMs, these tokens are often special or punctuation tokens ( e.g., ‘<BOS> ’, ‘ .’, ‘ \n ’), while in vision-language mod-els (VLMs) they correspond to background regions or weakly relevant visual  
+
+> arXiv:2603.14337v1 [cs.CV] 15 Mar 2026 2S.Yoo et al.
+
+patches [25, 28, 36, 47]. Prior works [18, 20, 39, 40] interpret attention sinks as a form of attention head suppression. Heads that focus predominantly on sink to-kens are assumed to contribute little to the output representation and are there-fore regarded as inactive. This perspective has led to pruning or gating strategies that remove sink-dominated heads to improve efficiency [39,40,42]. However, ex-isting work treats attention sinks as targets for removal or suppression, leaving the representational properties of sink tokens largely underexplored. In this paper, we shift the focus from head suppression to the sink tokens themselves. We conduct a systematic analysis of sink token representations and their role in MLLMs. Existing analyses have primarily focused on image-based VLMs; we further extend the scope to video VLMs and audio–visual LLMs (AV-LLMs), providing a more general understanding of sink tokens in complex multimodal settings. To this end, we formulate three fundamental questions: 
+
+• Q1. Which criteria are appropriate for identifying sink tokens in broader MLLM settings? 
+
+• Q2. Whether attention sinks solely serve as redundant heads? 
+
+• Q3. Whether sink token representations encode global information? For Q1 , we first examine how sink tokens should be identified in MLLMs. Existing work defines sinks using sink dimensions, where tokens with large ac-tivations on these dimensions are classified as sinks, but the criteria used to determine them vary across studies. We therefore compare criteria proposed for image-based VLMs [28] and for LLMs [44] to assess which is better suited to MLLMs. From this comparison, we find that the VLM-based criterion classi-fies a large fraction of tokens as sinks when applied to video MLLMs, including those corresponding to semantically meaningful visual objects. In contrast, the LLM-based criterion identifies only a small number of sink tokens and tends to assign sink behaviour to structurally defined elements, such as the initial token, rather than to tokens carrying semantic information, leading to a more stable and interpretable definition of sinks in multimodal settings. Building on this cri-terion, we address Q2 by analysing the functional role of attention heads that contain sink tokens. Prior work has suggested that pruning heads dominated by sinks can preserve model performance, supporting the interpretation that such heads are largely redundant [18–20, 39, 40]. To validate this assumption more directly, we perform head-by-head ablation experiments, removing sink heads individually and measuring the resulting performance changes. We observe no consistent trend: pruning a sink head may either improve or degrade performance depending on the case. This result indicates that sink heads cannot be explained solely as inactive or redundant components. Motivated by this observation, we turn to Q3 and analyse the representations of sink tokens themselves. We study the properties of their key and value representations and the relationships be-tween them across layers. Our analysis reveals that value representations of sink tokens, despite relatively small norms, exhibit directional alignment. This direc-tional structure enables sink tokens to propagate global information through the network, suggesting that their role extends beyond suppressing attention heads. On the Nature of Attention Sink 3
+
+Based on these analyses, we propose OutRo , a novel inference-time decod-ing method for MLLMs that leverages sink representations to guide token in-teractions during decoding. OutRo leverages this property in two ways. First, we introduce an adaptive geometric transformation that rotates the outputs of attention heads at non-sink positions toward the direction of the sink value representation, encouraging token features to align with the global information encoded by sinks. Second, we strengthen the global signal carried by sink tokens by selectively relaxing the causal mask applied to them, allowing their repre-sentations to interact with other tokens and better aggregate global context. Importantly, OutRo operates at the transformer layer level and does not require explicit access to attention maps. This design avoids the additional memory and computational overhead incurred by prior approaches that rely on atten-tion manipulation [23, 28, 52, 57, 63] or multiple forward passes [10, 27, 30, 48, 51]. We evaluate OutRo across six MLLMs on seven video QA benchmarks, where it consistently improves performance while introducing only modest decoding over-head. These results demonstrate that exploiting sink representations provides a practical and general strategy for improving MLLMs in a training-free manner. 
+
+2 Related Works 
+
+Large activation magnitudes in transformer layers are a phenomenon, and attention sinks can be viewed as one manifestation of this behaviour. In LLMs, attention sinks refer to a phenomenon where a small set of tokens, such as special tokens ( <BOS> ) or weakly informative symbols (‘ .’, ‘ \n ’) attract disproportionate attention mass despite carrying limited semantic content [19, 35, 54, 65], where the initial token often acts as a stable attention sink whose removal can col-lapse model behaviour, whereas other tokens may behave as redundant sinks depending on the context [44, 57]. Recent work further ties sink formation to irregularities in hidden states across layers; massive activation along a few sink hidden dimensions can precede sink emergence [44]. Relatedly, activation outlier studies report that a small number of outlier dimensions can dominate hidden state magnitudes and token norms in deeper layers, as many tokens increas-ingly amplify their representations along these shared dimensions to grow their overall norm [16]. On the vision side, vision transformers (ViTs) show that unin-formative background patches can receive excessive attention and exhibit large activation magnitudes, effectively acting as carriers of global information [15,24]. In VLMs, visual attention sinks have also been observed, where certain visual tokens behave as sinks under criteria proposed to identify visual sink tokens [28]. 
+
+Attention head suppression and utilisation constitute a line of research that investigates attention sinks from the perspective of head-level importance and redundancy [18, 20, 39, 40]. This behaviour is often attributed to the non-negative normalisation imposed by the softmax operation, which forces excess attention mass to be allocated to some tokens [19, 35, 44, 54, 65]. As a result, semantically uninformative tokens tend to absorb this surplus attention and be-come attention sinks. Since the value representations of such sink tokens have 4 S.Yoo et al. 
+
+near-zero norms, assigning high attention weights to them produces head outputs of small magnitude, reducing the contribution of those heads. This perspective has motivated criteria for identifying redundant or inactive heads. Building on this insight, several studies exploit sink-related signals to identify and regulate redundant heads through techniques such as head pruning and lightweight gat-ing, showing that mitigating sink-dominated heads can preserve performance while improving efficiency [39, 40, 42]. Overall, these works treat attention sinks primarily as indicators of redundant heads to be suppressed, while the functional role of sink representations remains underexplored. 
+
+Inference-time methods for MLLMs focus on enhancing multimodal rea-soning and robustness in a training-free manner. One array of work builds upon contrastive decoding paradigms, which improve inference-time predictions by contrasting outputs obtained under different conditions, such as perturbed in-puts, alternative decoding paths, or representations from different model lay-ers [10, 27, 30, 31, 31, 48, 62]. These methods suppress hallucinations and spurious correlations by comparing biased and unbiased predictions. Another range of work treats attention sinks as explicit intervention targets at inference time. By analysing attention maps, these methods identify sink tokens and suppress their influence by redistributing attention mass towards more informative to-kens [25,28,47,57]. However, these strategies incur notable overhead: contrastive decoding requires multiple forward passes, while sink-aware methods rely on at-tention map access or activation manipulation, which are therefore not tailored to optimised attention implementations [13, 14, 41]. Moreover, their extension to video MLLMs remains less explored. Our work addresses this gap via a modality-agnostic, training-free intervention that operates at the level of attention head outputs, without relying on attention maps or repeated inference. 
+
+3 On the Nature of Attention Sink 
+
+In this section, we analyse the behaviour of sink tokens in MLLMs during in-ference. After formalising the multimodal decoding setting, we examine the sink identification criteria, the role of sink heads, and the structure of sink represen-tations. All experiments in this section are conducted on Qwen2.5-Omni [55]. 
+
+Preliminaries of MLLMs. MLLMs process a video input V (which may in-clude an optional audio stream A) and a textual instruction L. Modality en-coders transform these inputs into sequences of embeddings. Specifically, the video input V is projected into a sequence of M video tokens Xv ∈ RM ×D ,where these tokens encapsulate both visual and, if present, auditory features. Combined with L textual tokens Xl ∈ RL×D generated by a language model tokenizer, the unified input sequence is represented as: 
+
+X = [ Xv ; Xl] ∈ RN ×D , N = M + L,  (1) where D denotes the hidden dimension of the transformer. 
+
+Multi-head attention. MLLMs consist of multiple transformer layers, each containing a Multi-head attention (MHA) layer. For each attention head h ∈On the Nature of Attention Sink 5
+
+{1, . . . , H }, the input X is projected into queries Qh, keys Kh, and values Vh
+
+using weight matrices WQ, WK , WV ∈ RD×Dh . To ensure causality in the au-toregressive generation, a causal mask M is applied where Mij = −∞ for j > i .The attention distribution for head h is defined as 
+
+Ah,i, : = Softmax 
+
+ Qh,i K⊤
+
+> h
+
+√Dh
+
++ Mi, :
+
+
+
+, (2) and the output representation for each head is computed as: 
+
+Oh = AhVh, where Oh,i =
+
+> K
+
+X
+
+> j=1
+
+Ah,i,j vh,j . (3) The final representation of the layer is obtained by concatenating all head out-puts and applying a linear projection WO : Of inal = [ O1; O2; . . . ; OH ]WO .
+
+• Q1. Which criteria are appropriate for identifying sink tokens in broader MLLM settings? 
+
+The criterion originates from analyses on LLMs, where sink phenomena were characterized through massive activations [44] in hidden states across layers. Specifically, given the set of token hidden states in a layer X = {x1, . . . , xN }
+
+with xi ∈ R1×D, an activation scalar z = xi[d] for some i ∈ { 1, . . . , N } and 
+
+d ∈ { 1, . . . , D } is regarded as massive if 
+
+ΦLLM (xi) = max  
+
+> d∈{ 1,...,D }
+
+|xi[d]| > max  100 , 1000 × median z∈X(|z|)) . (4) More recently, this notion was extended to visual attention sink by exam-ining sink dimensions inherited from LLMs [28]. Let Dsink denote a fixed set of dimensions known to exhibit sink behaviour in the underlying LLM. For a hidden state xi ∈ R1×D, the sink dimension value was defined as: 
+
+ΦVLM (xi) = max 
+
+> ds∈Dsink
+
+xi[ds]
+
+q 1
+
+> D
+
+PDd=1 xi[d]2
+
+≥ τ = 20 . (5) 
+
+Table 1: Sink/outlier di-mensions. Sink dimensions overlap with outlier feature.    
+
+> Dims Sink 458, 2570, . . .
+> Outlier 458 ,2570 , 3206, 3281, 1427, . . .
+
+Observation. Fig. 1a reveals a striking degener-acy when the visual attention sink criterion ΦVLM 
+
+is applied to MLLMs. As depth increases, the majority of tokens are classified as sinks, eventu-ally including even semantically meaningful ones. This behaviour suggests that ΦVLM fails to pro-vide a discriminative characterisation of sink to-kens in multimodal settings. Rather than isolating a sparse subset of anomalous tokens, the criterion collapses and marks the ma-jority of representations as sinks (See our supp. mat. for more examples). To further investigate this discrepancy, Tab. 1 compares the dimensions iden-tified via the outlier feature criterion [16, 44]—intended to capture dimensions 6 S.Yoo et al. #    
+
+> Sink
+> Tokens
+> 4000
+> ΦVLM
+> N=4220
+> 3497
+> 3500
+> LLM
+> 2855
+> 3000
+> 2500
+> 2000 1459
+> 1500
+> 1221
+> 945
+> 895 950
+> ةمسلا
+> 2140
+> 1411
+> 936
+> 1000
+> 800
+> 500
+> 0
+> 21
+> 49
+> 77
+> 71
+> 502
+> 0
+> 000
+> 111
+> 1
+> 1
+> 11
+> 1
+> 1
+> 1
+> 1
+> 1
+> 1
+> 1
+> 1
+> 1
+> 1
+> 1
+> 1
+> 1
+> 1
+> 1
+> 1
+> 1
+> Layer
+
+(a) Is the visible in the video? helicopter  :S ink token  (b) 
+
+Fig. 1: VLM criterion ΦVLM incorrectly identifies many semantic tokens as sinks. (a) Number of sink tokens across layers under ΦVLM and ΦLLM . ΦVLM 
+
+rapidly over-identifies sink tokens in deeper layers, unlike the sparse behaviour of ΦLLM .
+
+(b) Qualitative visualisation for the queries “Is the helicopter visible in the video?”. Although the queried object tokens receive high attention, indicating that the model appropriately focuses on them, they are nevertheless identified as sinks under ΦVLM .
+
+that tokens repeatedly exploit to amplify their representation norms—with the sink dimensions Dsink used in Eq. (5), defined over the 3584 dimensional hidden space. Concretely, an activation is regarded as an outlier if its magnitude exceeds 6.0 in more than 25% of layers and 6% of tokens, across at least 90 out of 100 evaluation sequences. We find that all dimensions in Dsink are also identified as outlier dimensions, suggesting that sink dimensions largely correspond to norm-amplifying patterns. In contrast, when the function ΦLLM defined in Eq. (4) is applied directly, the number of identified sink tokens remains sparse and stable, typically yielding only one dominant token per layer that plays an important role in maintaining model performance [54, 57]. This indicates that ΦLLM provides a more robust criterion for identifying sink tokens in general MLLMs. Detailed activation statistics and empirical results are provided in the supp. mat. Overall, these findings demonstrate that ΦVLM does not generalise reliably to broader MLLM settings. To obtain a more general identification of sink be-haviour, we therefore adopt ΦLLM for subsequent analyses. 
+
+Answer to Q1 : ΦVLM fails to generalise to MLLMs; instead, ΦLLM offers a reliable and discriminative criterion for identifying sink tokens. 
+
+• Q2. Whether attention sinks solely serve as redundant heads? Accuracy     
+
+> (%)
+> Baseline
+> Sink Score
+> Pruning
+> Random
+> Pruning
+> 80
+> 71.071.0
+> 70
+> 68.5
+> 67.6
+> 67.2
+> 67.4
+> 65.0
+> 60
+> 53.8 52.8 50.8
+> 50
+> 40
+> 30-
+> 20
+> 9.1
+> 10
+> 5.2 0.0
+> 0.0
+> 0
+> 0%
+> 10%
+> 20%
+> 25%
+> 30%
+> 35%
+> 40%
+> Pruning
+> Ratio
+
+Fig. 2: Head pruning on AVH-Bench. Sink scores pruning performs better than random pruning. 
+
+A prevailing interpretation of atten-tion sinks is that they are functionally negligible due to the near-zero norms of their value representations [18,20,39]. Un-der this view, even if a head assigns substantial attention to sink tokens, the resulting head output remains relatively small, and the head is therefore consid-ered effectively suppressed. This perspec-tive has motivated pruning strategies that remove sink-dominated heads under the assumption that they are redundant. On the Nature of Attention Sink 7A
+
+> Task
+> Accuracy
+> Cha
+> 1.0
+> 0.5
+> 0.0
+> -0.5
+> -1.0
+> -1.5
+> Improvement
+> -2.0-
+> Decrease
+> -2.5
+> Mixed
+> 9-
+> -5
+> -4
+> -3
+> -2
+> -1
+> 0
+> AV
+> Task
+> Accuracy
+> Change
+> (%)
+> 1
+> 2
+> 8
+
+(a) 10  
+
+> ex
+> Layer
+> er
+> Inde
+> 20
+> 15
+> 25
+> 30
+> 5
+> 0
+> Improvement
+> Heads
+> (86
+> heads)
+> 10
+> 15
+> 20
+> 25
+> 30
+> 5
+> Decrease
+> Heads
+> (176
+> heads)
+> 이
+> 0.8
+> :09
+> 0.4
+> 0.2
+> 35
+> 35
+> 0.0
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> 12
+> 14
+> 이
+> 2
+> 4
+> 6
+> 8
+> 10
+> 12
+> 14
+> Head
+> Index
+> Head
+> Index
+> Sink
+> Attention
+> Score
+
+(b) 
+
+Fig. 3: High sink attention does not imply head redundancy. (a) Perfor-mance change after removing individual heads, distinguishing improvement and de-crease heads. (b) High sink scores are observed in both improvement and decrease heads, indicating that sink-heavy heads are not always redundant. 
+
+Observation. Prior works [40, 42] have explored pruning strategies based on sink attention scores. Following this line of work, we replicate sink-based pruning and observe performance competitive with random pruning in our experiments, appearing effective under coarse evaluation (Fig. 2). However, when we examine individual heads by ablating them one by one and measuring their performance impact, a different picture emerges. We conduct fine-grained head ablation on AVHBench [45], which consists of audio-driven video hallucination ( A → V ) and video-driven audio hallucination ( V → A) tasks to evaluate visual and auditory reasoning. As shown in Fig. 3, heads whose removal improves performance and those whose removal degrades performance exhibit no clear pattern in their sink allocation, with heavily overlapping score distributions across groups. 
+
+Table 2: Head ablation performance. 
+
+Heads with similar sink scores can yield opposite performance changes. 
+
+Head Sink A → V V → A Overall L15H3 0.7553 +0.88% +0.48% +1.36% L18H12 0.6633 +0.26% +0.87% +1.14% L11H6 0.7003 +0.62% +0.09% +0.70% L24H10 0.7755 -3.43% -0.48% -3.91% L16H14 0.8773 -2.55% -0.13% -2.68% L14H12 0.7497 -1.32% -0.44% -1.76% 
+
+Tab. 2 further confirms that heads with high sink attention appear in both groups with comparable sink magni-tudes yet opposite performance im-pacts. Removing certain heads with high sink leads to marked performance drops, while others yield performance gains. These results demonstrate that high sink attention alone is insufficient to determine head importance. In other words, heads attending strongly to sink tokens produce outputs aligned with the sink value direction, sink value repre-sentations encode functional information beyond mere attention absorption. 
+
+Answer to Q2 : High sink attention does not solely indicate head redun-dancy, suggesting that sink value representations serve additional roles. 
+
+• Q3. Whether sink token representations encode global information? 
+
+While Q2 suggests that the small magnitudes of sink value representations do not imply redundancy, we make this observation explicit by analysing sink token representations in the feature space. We observe that the key representations of sink tokens also exhibit small magnitudes. To test whether near zero-norm rep-8 S.Yoo et al. 10   
+
+> 8
+> V-norm
+> °
+> 6
+> 4
+> 2
+> Sink
+> 0
+> 1000
+> 2000
+> Token
+> Index
+> 3000
+> 4000
+> K-norm
+> 25
+> 20 15
+> 10 5
+> Sink
+> 0
+> 1000
+> 2000
+> 3000
+> 4000
+
+(a) Sink  
+
+> Value
+> 0.3
+> 0.2
+> 0.1
+> 0.0
+> 25
+> 50
+> 75
+> 100
+> Dim
+> Sink
+> Key
+> 1.0
+> 0.8
+> 0.5
+> 0.2
+> 0.0
+> 0
+> 25
+> 50
+> 75
+> 100
+> Dim
+> 1.0
+> 0.8
+> 0.5
+> Random
+> Value
+> 0.2
+> 0.0
+> 0
+> 25
+> 50
+> 75
+> 100
+> 3.0
+> 2.0
+> 1.0
+> Random
+> Key
+> 0.0
+> 25
+> 50
+> 75
+> 100
+
+(b) Q:Vision 
+
+> K:Vision
+> Q:Audio
+> K:Audio
+> Q:Text
+> K:Text
+> K:Sink
+
+(c) Q 
+
+> token
+> Sink
+> K
+> token
+> Cosine
+> Similarity
+> Q token
+> Sink
+> K
+> token
+> Attention
+> Map
+
+(d) 
+
+Fig. 4: Geometric analysis of sink token representations. (a) Sink keys and values exhibit substantially smaller norms than other tokens. (b) Their activations are not uniformly small across dimensions. (c) In t-SNE, sink keys form a coherent cluster near the query distribution. (d) Despite their small norms, the cosine similarity between queries and sink keys remains high, resulting in large attention scores 
+
+resentations can still exhibit meaningful structure, we begin by analysing the key representations of sink tokens, before investigating their value representations. 
+
+Observation. As shown in Fig. 4a, sink key and value representations exhibit smaller norms than other tokens, yet their activations remain structured rather than uniformly suppressed (Fig. 4b). Furthermore, Fig. 4c shows that sink keys are geometrically aligned with query representations, resulting in high cosine similarity and attention scores despite reduced magnitudes (Fig. 4d). These ob-servations suggest that low norm does not imply irrelevance. Attention  
+
+> to  Sink
+> Tokens
+> 0.7-
+> 0.6-Sink
+> Token
+> Attention
+> Score
+> per
+> Layer
+> Baseline
+> Zero-K
+> Top-1
+> Baseline
+> Avg
+> (0.4124)
+> Zero-K
+> Avg
+> (0.1261)
+> 0.5
+> 0.4-
+> 0.3-
+> 0.2-
+> 0.1
+> 0.0
+> 이
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> 35
+> Layer
+
+Fig. 5: Sink token attention score. 
+
+Compared to the baseline, zeroing the top-1 dominant dimension in the sink key representations substantially reduces at-tention to sink tokens across layers. 
+
+To provide further evidence, we ex-amine sink key activations. As shown in Fig. 4b, they are sparse, with only a few dimensions exhibiting dominant mag-nitudes. However, this sparsity does not imply triviality. If these dimensions drive sink behaviour, removing them should disrupt the characteristic atten-tion pattern. To validate this, we zero out the top-magnitude dimensions in sink key representations, which we term Zero-K. After the Zero-K intervention, attention to sink tokens becomes consistently suppressed across layers (Fig. 5). As shown in Fig. 6, zeroing only the top-1 dimension substantially eliminates On the Nature of Attention Sink 9Baseline 
+
+> Zero-K
+> Tор-1
+> Diff
+> 1.0
+> -0.75
+> 0.8
+> 0.50
+> 0.25
+> 0.6
+> 0.00
+> 0.4
+> -0.25
+> --0.50
+> 0.2
+> --0.75
+> 0.0
+
+Fig. 6: Zeroing the top-1 sink key dimension (Zero-K). Attention maps show that this intervention effectively suppresses attention on sink tokens. 
+
+the characteristic attention pattern on sink tokens. The difference map shows a pronounced reduction of attention mass on sink positions. 
+
+Table 3: Zero-K performance. 
+
+Removing dominant sink dimensions degrades performance on Video-Holmes [7] and VideoMME [17]. 
+
+Acc. ↑ Qwen2.5-VL VideoLLaMA3 Holmes MME Holmes MME Baseline 41.26 57.89 41.15 61.78 Top-1 36.64 52.56 40.39 59.78 Top-5 15.62 36.89 40.28 59.56 Top-10 14.75 35.33 38.76 59.56 
+
+Notably, although Zero-K effectively removes the sink attention pattern, it does not lead to performance improvement. As reported in Tab. 3, even removing dom-inant sink dimensions yields no improve-ment and leads to performance degra-dation, suggesting functional significance. These results demonstrate that sink key representations, despite their low magni-tudes, carry meaningful information that shapes the attention mechanism. 
+
+Hypothesis. These findings raise the question of what information is carried by sink value representations. We hypothesise that sink values encode structured global information that heads with high sink attention align with and propagate across layers. To examine this hypothesis, we study sink behaviour from two perspectives. First, we rotate the head outputs at non-sink positions toward the sink value direction. Second, we enhance sink tokens by relaxing causal masking. 
+
+Table 4: Head output rotation. Ro-tating head outputs toward the sink value direction improves performance.              
+
+> AVHBench A→VV→AMatching Baseline 80.11 75.41 59.87 Rotation 80.81 75.72 60.50
+
+We rotate the outputs of non-sink to-kens with high sink attention toward the sink value direction by projecting each head output onto the sink value vector and adding the projected component be-fore rescaling. This amplifies the sink-aligned component consistently improves performance across tasks (Tab. 4). 
+
+Table 5: Information injection. Modal-ity information improves performance on AVHBench [45] and DailyOmni [64].               
+
+> Acc. ↑Qwen2.5-Omni [55] SALMONN2 +[46] AVH Daily AVH Daily Baseline 70.91 55.38 62.07 51.71 Injection 71.08 55.47 62.20 51.96
+
+We further examine the role of sink heads by explicitly injecting in-formation into sink tokens. Specifi-cally, we relax causal masking from layers where sink behaviour becomes prominent onward, allowing contex-tual representations to flow into sink positions. Compared to the final-layer sink token head outputs in Fig. 7a, injec-10 S.Yoo et al. Valuel     
+
+> Baseline
+> 0.6-
+> 0.5
+> 0.4
+> 0.3
+> 0.2
+> 0.1
+> ㅏ
+> 0.0
+> 이
+> 20
+> 40 60
+> 80
+> 100 120
+> Dimension
+> (a) Injection
+> 0.6-
+> 0.5
+> 0.4
+> -
+> 0.3
+> 0.2
+> 0.1
+> 0.0
+> 이
+> 20
+> 40
+> 60
+> 80
+> 100
+> 120
+> Dimension (b) 0.6
+> 0.5
+> 0.4
+> 0.3 0.2
+> 0.1
+> 0.0
+> 0
+> |Diff|
+> (CosSim=0.9904,
+> MaxDiff=0.0859)
+> w
+> Lr
+> M,e
+> s.w
+> cram
+> omrk
+> 20
+> 40
+> 60
+> 80
+> Dimension
+> 100
+> 120 (c)
+
+Fig. 7: Sink token head outputs before and after injection. The outputs remain nearly identical, with only minimal differences observed at the last layer. 
+
+tion in Fig. 7b yields nearly identical representations, with negligible differences as shown in Fig. 7c. This indicates that sink heads already encode global infor-mation prior to injection. This is further supported by Tab. 5, which shows that explicitly enriching sink representations leads to consistent performance gains. Taken together, the rotation and injection experiments provide converging evidence that sink heads play an active role in global information aggregation. In other words, heads with high sink attention align with the sink value direction, suggesting that sink values, despite their small norms, encode structured and meaningful representations. Consequently, sink heads could not be interpreted solely as redundant. Their directional alignment with sink values suggests an additional functional role in structured information integration within the model. 
+
+Answer to Q3 : Sink token representations are low magnitude but geomet-rically structured, with directional alignment governing model behaviour. 
+
+4 Method 
+
+Building upon our analysis, we introduce OutRo —a unified inference-time mod-ulation that combines (i) ReLU–tanh gating that further aligns sink head outputs with the sink value direction and (ii) sink information enhancement via mask relaxation applied once. The method operates without parameter updates and is implemented via lightweight forward interventions on attention head outputs. 
+
+Sink value direction. At each layer ℓ, we identify sink token indices S(ℓ) at inference time using ΦLLM (Eq. (4)). For each head h, we aggregate the value representations at these positions by their mean: 
+
+¯v(ℓ) 
+
+> h, S
+
+= 1
+
+|S (ℓ)|
+
+X
+
+> s∈S (ℓ)
+
+v(ℓ) 
+
+> h,s
+
+. (6) 
+
+ReLU–tanh gated head output rotation. Our finding that aligning head outputs with the sink direction improves performance (Tab. 4) motivates a gated rotation mechanism. For efficiency, we adopt a directional-alignment proxy (see Supp. B) for the sink score. Specifically, we compute, for each head h and non-sink position ns / ∈ S (ℓ), the directional alignment between the head output Oh,ns 
+
+and the sink value direction: 
+
+ch,ns = cos 
+
+
+
+Oh,ns , ¯v(ℓ)
+
+> h, S
+
+
+
+. (7) On the Nature of Attention Sink 11 Sink value    
+
+> Original
+> Rotated
+> Sink value
+> Original
+> Proj
+> Eq. 10
+> Query Value
+> Attention
+> (a) Gated Rotation (b) Sink Enhancement
+> Attention Outputs
+> Cosine( Original outputs ,Sink value )
+> Eq. 8
+> ReLU-Tanh Gating
+> Eq. 9
+> Key
+> Causal Mask Removal
+> : Attention Mask
+> Attention
+> Concat
+> Attention Head
+
+Fig. 8: Overall OutRo pipeline. (a) Gated head output rotation. Non-sink outputs are rotated toward the sink value direction via adaptive gating. (b) Sink enhancement. The causal mask is removed for sink positions, amplifying global information. 
+
+To control the rotation strength, we convert this alignment into a soft gate: 
+
+gh,ns = tanh 
+
+ ReLU( ch,ns )
+
+t
+
+
+
+, where t = 0 .1. (8) We then rotate the head output by adding a gated projection onto sink direction: 
+
+ˆOh,ns = Oh,ns + γg h,ns 
+
+Oh,ns · ¯v(ℓ)
+
+> h, S
+
+∥¯v(ℓ) 
+
+> h, S
+
+∥2 ¯v(ℓ) 
+
+> h, S
+
+, Orotated  
+
+> h,ns
+
+= ∥Oh,ns ∥∥ ˆOh,ns ∥
+
+ˆOh,ns , (9) where γ > 0 controls the rotation strength. This gating selectively and adaptively strengthens heads that are strongly aligned with the sink value direction. 
+
+Sink information enhancement via mask relaxation. Our analysis in Sec. 3 showed that sink tokens already encode global information, and that enriching this via causal mask relaxation yields consistent improvements (Tab. 5). We implement this by relaxing the causal mask at a selected layer ℓenh . At layer ℓenh ,attention for sink positions s ∈ S (ℓenh ) is computed without the causal constraint. Concretely, for sink positions, we remove the causal mask and compute 
+
+Arelaxed  
+
+> h,s, :
+
+= Softmax 
+
+ Qh,s K⊤
+
+> h
+
+√Dh
+
+
+
+, (10) allowing sink queries to attend to the full sequence. The relaxed attention is then used to compute the corresponding head outputs 
+
+Orelaxed  
+
+> h,s
+
+= Arelaxed  
+
+> h,s, :
+
+Vh, (11) which replace the masked outputs at sink positions. OutRo enables the model to better leverage its existing reasoning capacity without modifying attention maps or requiring iterative inference. The method introduces minimal computational overhead even for long video inputs and re-mains modality-agnostic across diverse multimodal configurations. This makes OutRo a practical and scalable inference-time strategy for improving MLLMs. 12 S.Yoo et al. 
+
+Table 6: Performance comparison of OutRo on AV-LLMs. OutRo consistently improves performance across models and benchmarks, demonstrating its generality                                             
+
+> Models Audio-Visual QA Visual-Only QA
+> OmniBench AVUT AVHBench DailyOmni Holmes MME ActivityNet Qwen2.5-Omni 3B 41.33 61.79 70.91 55.38 43.54 58.00 41.82
+> +OutRo 42.03 62.87 71.67 55.56 43.54 58.11 41.86
+> Qwen2.5-Omni 7B 47.37 65.79 71.60 54.14 47.46 62.44 43.59
+> +OutRo 48.25 66.57 73.78 54.64 47.63 62.96 44.01
+> video-SALMONN2 +3B 36.69 56.73 62.07 51.71 42.68 73.67 44.31
+> +OutRo 36.95 57.31 62.33 52.05 42.90 73.89 44.41
+
+5 Experiments 
+
+5.1 Experimental Setup Baselines. We evaluate our approach on representative AV-LLMs, including Qwen2.5-Omni [55] and video-SALMONN2 + [46], as well as representative VLMs, including Qwen2.5-VL [4], Qwen3-VL [3], and VideoLLaMA3 [61]. 
+
+Datasets and metrics. We evaluate OutRo on seven video QA benchmarks covering both audio-visual and visual-only settings. For audio-visual QA, we re-port results on OmniBench [32], AVUT [56], AVHBench [45], and DailyOmni [64]. These benchmarks assess multimodal grounding, including cross-modal con-sistency, hallucination detection, and audio-visual reasoning. For visual-only QA, we evaluate on VideoHolmes [7], VideoMME (medium) [17], and Activ-ityNetQA [58]. These datasets focus on temporal reasoning and event under-standing from video content. We report accuracy on all benchmarks. 
+
+Implementation details. For gated rotation, we search the rotation strength 
+
+γ in the range [0 .5, 4.0] and fix a single value per model. We use γ = 0 .5 for video-SALMONN2 + and Qwen3-VL, γ = 1 .5 for VideoLLaMA3, and γ = 3 .0 for Qwen2.5-Omni and Qwen2.5-VL. The rotation is applied to non-sink positions at all layers where sink tokens are present, except for the final few layers. Sink information enhancement is applied once to sink positions at approximately one-seventh of total depth. Specifically, we apply it at layer 4 for Qwen2.5-Omni 7B and VideoLLaMA3 (28 layers), and at layer 5 for Qwen2.5-Omni 3B ,video-SALMONN2 +, Qwen2.5-VL, and Qwen3-VL (all 36 layers). All experi-ments use a single NVIDIA RTX A6000 GPU. 
+
+5.2 Experimental Results Results on AV-LLMs. Tab. 6 reports results on AV-LLMs. Across Qwen2.5-Omni and video-SALMONN2 +, OutRo consistently improves performance over base models on both audio-visual and visual-only QA benchmarks. For Qwen2.5-Omni 7B , OutRo achieves the largest gain on AVHBench ( +2.18), which explicitly evaluates audio-visual hallucination. Consistent improvements are observed on OmniBench and AVUT. Similarly, Qwen2.5-Omni 3B benefits from gains across On the Nature of Attention Sink 13 
+
+all audio-visual benchmarks. For video-SALMONN2 +, OutRo improves perfor-mance across most settings, including both audio-visual and visual-only bench-marks. Importantly, these consistent gains across video benchmarks demonstrate that OutRo remains effective under complex cross-modal interactions. 
+
+Table 7: Performance of OutRo on VLMs. Effective across diverse modalities.                      
+
+> Models Holmes MME ActivityNet Qwen2.5-VL 3B 41.26 57.89 47.02
+> +OutRo 42.41 58.33 46.87 Qwen3-VL 8B 46.65 67.44 46.65
+> +OutRo 46.76 68.33 46.85
+> VideoLLaMA3 7B 41.15 61.78 49.32
+> +OutRo 42.62 62.56 49.92
+
+Results on VLMs. Tab. 7 also re-ports results on visual-only LLMs. Across Qwen2.5-VL, Qwen3-VL, and VideoLLaMA3, OutRo im-proves performance on visual-only QA benchmarks. For example, Qwen3-VL achieves a gain of +0.89 on VideoMME, and VideoLLaMA3 improves by +1.47 on VideoHolmes. These results demonstrate that OutRo generalises robustly across diverse VLMs, regardless of modality composition, and improves visual reasoning performance. 
+
+5.3 Further Analysis 
+
+Here, we conduct all analysis below with the Qwen2.5-Omni model. 
+
+Table 8: Decoding latency. 
+
+OutRo introduces minimal latency overhead compared to baselines.               
+
+> Decoding Latency ↓
+> (sec/token) Rel. ↓
+> Flash-attn 0.98 1.00 VCD 1.98 2.02
+> OutRo 1.09 1.11
+> Eager 2.00 2.04 VAR 2.71 2.77 AVCD 7.88 8.04
+
+Decoding efficiency. To assess the computa-tional overhead of OutRo, we measure decod-ing latency in seconds per token and compare it with the other decoding methods. The re-sults, reported in Tab. 8, are obtained on 100 examples from AVHBench. OutRo increases latency from 0.98 to 1.09 sec /token, corre-sponding to a 1.11 × slowdown relative to the baseline. In contrast, VCD [31] requires two full forward passes per decoding step to con-trast logits, nearly doubling inference time. VAR [28] incurs additional overhead due to explicit attention map modification, which disables optimised attention implementations. AVCD [27], an extension of VCD tailored for AV-LLMs, is the most expensive, requiring up to four forward passes per step. 
+
+Table 9: Contrastive decoding. 
+
+OutRo is compatible with CD, yielding additional gains across benchmarks.                  
+
+> Acc. ↑VideoLLaMA3 Qwen2.5-Omni Holmes MME Omni Daily Baseline 41.15 61.78 38.79 54.55 CD 42.90 62.00 39.58 55.56
+> +OutRo 43.22 62.22 40.81 55.89
+
+OutRo with contrastive decoding. 
+
+Tab. 9 reports results when combining OutRo with existing contrastive decod-ing (CD) methods. For VLMs, we ap-ply visual contrastive decoding (VCD), while for AV-LLMs we adopt audio-visual contrastive decoding (AVCD). For VideoLLaMA3 7B with VCD and Qwen2.5-Omni 3B 1 with AVCD, Contrastive decoding improves performance, and integrating OutRo yields further gains, showing that OutRo remains effective with advanced decoding strategies.  
+
+> 1Due to GPU memory constraints, we resize video inputs ( 256 ×256 ) for Tab. 9 experiments, which results in slightly lower baseline performance compared to the main results in Sec. 5.2
+
+14 S.Yoo et al. 
+
+Table 10: Sink score vs. cosine similarity. 
+
+Cosine gating improves over the baseline with-out threshold tuning on AVHBench.           
+
+> Baseline 0.6 0.7 0.8 0.9 Cosine
+> Acc. 70.91 72.46 72.82 72.72 71.46 71.33
+
+Gated rotation. We also investi-gate using the sink score directly as a rotation criterion. Although tuned thresholds ( e.g., 0.7) can yield larger improvements over the baseline (Tab. 10), this ap-proach requires access to attention maps or pre-computed sink statistics, intro-ducing overhead and hyper-parameter tuning. In contrast, the proxy based on cosine similarity (Eq. (7)) achieves performance gains while preserving FlashAt-tention 2 compatibility and computational efficiency. Table 11: Gate study. 
+
+Tanh performs best.       
+
+> Gate Acc.
+> Baseline 70.91 Uniform 71.33 Quadratic 70.78 Cubic 70.67 Tanh 71.44
+
+We therefore adopt gated rotation (Eq. (8)). In-stead of uniform rotation, we modulate head outputs with a Tanh gate, enabling adaptive control over the rotation strength. This outperforms plain rotation, indicating that controlled modulation is empirically more effective (Tab. 11). 
+
+Table 12: Enhancement layer ablation. L5 (once) performs best.       
+
+> Layer Acc.
+> Baseline 70.91 L3 70.67 L4 70.94 L5 71.08 L5 (Once) 71.25
+
+Sink enhancement. The timing of sink enhance-ment is critical. If applied too early, sink tokens have not yet aggregated sufficient global information and their queries remain weakly structured, leading to limited or degraded performance (Tab. 12). This aligns with prior findings that transformer layers ex-hibit an early stage of modality structuring before deeper integration, typically spanning the first sev-enth of layers [26, 53, 59]. We also compare applying enhancement once at this depth with applying it at every subsequent layer. A single application performs better, indicating that intervention at the transition depth is sufficient, while repeated enhancement introduces redundancy. 
+
+6 Conclusion 
+
+In this work, we revisited the role of attention sinks in multimodal large language models and showed that they function as structured carriers of global informa-tion instead of merely absorbing redundant attention. Building on this insight, we proposed OutRo , a lightweight inference-time method that rotates non-sink representations toward the sink direction and enhances sink tokens by relaxing causal masking. It requires no additional forward passes or attention manipula-tion, while introducing only a 1.1 × decoding overhead. Extensive experiments demonstrate stable gains across diverse video QA benchmarks. 
+
+Limitations. The rotation strength parameter γ requires manual specification and its optimal value may vary across model architectures. In addition, although OutRo improves performance across tasks, the magnitude of improvement is modest. Developing strategies to reduce the calibration effort for γ and further enhance its effectiveness remains an important direction for future work.  
+
+> 2https://github.com/Dao-AILab/flash-attention
+
+On the Nature of Attention Sink 15 
+
+References 
+
+1. Achiam, J., Adler, S., Agarwal, S., Ahmad, L., Akkaya, I., Aleman, F.L., Almeida, D., Altenschmidt, J., Altman, S., Anadkat, S., et al.: Gpt-4 technical report. arXiv (2023) 2. Bai, J., Bai, S., Chu, Y., Cui, Z., Dang, K., Deng, X., Fan, Y., Ge, W., Han, Y., Huang, F., et al.: Qwen technical report. arXiv (2023) 3. Bai, S., Cai, Y., Chen, R., Chen, K., Chen, X., Cheng, Z., Deng, L., Ding, W., Gao, C., Ge, C., et al.: Qwen3-vl technical report. arXiv (2025) 4. Bai, S., Chen, K., Liu, X., Wang, J., Ge, W., Song, S., Dang, K., Wang, P., Wang, S., Tang, J., Zhong, H., Zhu, Y., Yang, M., Li, Z., Wan, J., Wang, P., Ding, W., Fu, Z., Xu, Y., Ye, J., Zhang, X., Xie, T., Cheng, Z., Zhang, H., Yang, Z., Xu, H., Lin, J.: Qwen2.5-VL technical report. arXiv (2025) 5. Brown, T., Mann, B., Ryder, N., Subbiah, M., Kaplan, J.D., Dhariwal, P., Nee-lakantan, A., Shyam, P., Sastry, G., Askell, A., et al.: Language models are few-shot learners. In: Proc. NeurIPS (2020) 6. Chefer, H., Gur, S., Wolf, L.: Transformer interpretability beyond attention visu-alization. In: Proc. CVPR (2021) 7. Cheng, J., Ge, Y., Wang, T., Ge, Y., Liao, J., Shan, Y.: Video-holmes: Can mllm think like holmes for complex video reasoning? arXiv (2025) 8. Cheng, Z., Leng, S., Zhang, H., Xin, Y., Li, X., Chen, G., Zhu, Y., Zhang, W., Luo, Z., Zhao, D., et al.: Videollama 2: Advancing spatial-temporal modeling and audio understanding in video-llms. arXiv (2024) 9. Chowdhury, S., Nag, S., Dasgupta, S., Chen, J., Elhoseiny, M., Gao, R., Manocha, D.: Meerkat: Audio-visual large language model for grounding in space and time. In: Proc. ECCV (2024) 10. Chuang, Y.S., Xie, Y., Luo, H., Kim, Y., Glass, J., He, P.: DoLa: Decoding by contrasting layers improves factuality in large language models. In: Proc. ICLR (2024) 11. Chung, H.W., Hou, L., Longpre, S., Zoph, B., Tay, Y., Fedus, W., Li, Y., Wang, X., Dehghani, M., Brahma, S., et al.: Scaling instruction-finetuned language models. Journal of Machine Learning Research (2024) 12. Comanici, G., Bieber, E., Schaekermann, M., Pasupat, I., Sachdeva, N., Dhillon, I., Blistein, M., Ram, O., Zhang, D., Rosen, E., et al.: Gemini 2.5: Pushing the frontier with advanced reasoning, multimodality, long context, and next generation agentic capabilities. arXiv (2025) 13. Dao, T.: Flashattention-2: Faster attention with better parallelism and work par-titioning. In: Proc. ICLR (2023) 14. Dao, T., Fu, D.Y., Ermon, S., Rudra, A., Ré, C.: Flashattention: Fast and memory-efficient exact attention with io-awareness. In: Proc. NeurIPS (2022) 15. Darcet, T., Oquab, M., Mairal, J., Bojanowski, P.: Vision transformers need reg-isters. In: Proc. NeurIPS (2024) 16. Dettmers, T., Lewis, M., Belkada, Y., Zettlemoyer, L.: Gpt3. int8 (): 8-bit matrix multiplication for transformers at scale. In: Proc. NeurIPS (2022) 17. Fu, C., Dai, Y., Luo, Y., Li, L., Ren, S., Zhang, R., Wang, Z., Zhou, C., Shen, Y., Zhang, M., et al.: Video-mme: The first-ever comprehensive evaluation benchmark of multi-modal llms in video analysis. In: Proc. CVPR (2025) 18. Fu, Z., Zeng, W., Wang, R., Li, M.: Attention is not always needed: Attention sink forges a native moe in attention layers. OpenReview (2025), https://openreview. net/forum?id=dLeMTxzlh4 16 S.Yoo et al. 19. Gu, X., Pang, T., Du, C., Liu, Q., Zhang, F., Du, C., Wang, Y., Lin, M.: When attention sink emerges in language models: An empirical view. In: Proc. ICLR (2025) 20. Guo, T., Pai, D., Bai, Y., Jiao, J., Jordan, M.I., Mei, S.: Active-dormant atten-tion heads: Mechanistically demystifying extreme-token phenomena in llms. arXiv (2024) 21. Han, J., Zhang, R., Shao, W., Gao, P., Xu, P., Xiao, H., Zhang, K., Liu, C., Wen, S., Guo, Z., Lu, X., Ren, S., Wen, Y., Chen, X., Yue, X., Li, H., Qiao, Y.: Imagebind-llm: Multi-modality instruction tuning. arXiv (2023) 22. Henighan, T., Kaplan, J., Katz, M., Chen, M., Hesse, C., Jackson, J., Jun, H., Brown, T.B., Dhariwal, P., Gray, S., et al.: Scaling laws for autoregressive genera-tive modeling. arXiv (2020) 23. Huo, F., Xu, W., Zhang, Z., Wang, H., Chen, Z., Zhao, P.: Self-introspective de-coding: Alleviating hallucinations for large vision-language models. In: Proc. ICLR (2025) 24. Jiang, N., Dravid, A., Efros, A., Gandelsman, Y.: Vision transformers don’t need trained registers. In: Proc. NeurIPS (2025) 25. Jiao, P., Zhu, B., Chen, J., Ngo, C.W., Jiang, Y.G.: Don’t deceive me: Mitigating gaslighting through attention reallocation in lmms. arXiv (2025) 26. Jung, C., Jang, Y., Choi, J., Chung, J.S.: Fork-merge decoding: Enhancing multi-modal understanding in audio-visual large language models. arXiv (2025) 27. Jung, C., Jang, Y., Chung, J.S.: Avcd: Mitigating hallucinations in audio-visual large language models through contrastive decoding. In: Proc. NeurIPS (2025) 28. Kang, S., Kim, J., Kim, J., Hwang, S.J.: See what you are told: Visual attention sink in large multimodal models. In: Proc. ICLR (2025) 29. Kaplan, J., McCandlish, S., Henighan, T., Brown, T.B., Chess, B., Child, R., Gray, S., Radford, A., Wu, J., Amodei, D.: Scaling laws for neural language models. arXiv (2020) 30. Kim, J., Kim, H., Yeonju, K., Ro, Y.M.: Code: Contrasting self-generated de-scription to combat hallucination in large multi-modal models. In: Proc. NeurIPS (2024) 31. Leng, S., Zhang, H., Chen, G., Li, X., Lu, S., Miao, C., Bing, L.: Mitigating object hallucinations in large vision-language models through visual contrastive decoding. In: Proc. CVPR (2024) 32. Li, Y., Ma, Y., Zhang, G., Yuan, R., Zhu, K., Guo, H., Liang, Y., Liu, J., Wang, Z., Yang, J., et al.: Omnibench: Towards the future of universal omni-language models. arXiv (2024) 33. Lin, B., Ye, Y., Zhu, B., Cui, J., Ning, M., Jin, P., Yuan, L.: Video-llava: Learning united visual representation by alignment before projection. In: Proc. EMNLP (2024) 34. Liu, A., Feng, B., Xue, B., Wang, B., Wu, B., Lu, C., Zhao, C., Deng, C., Zhang, C., Ruan, C., et al.: Deepseek-v3 technical report. arXiv (2024) 35. Queipo-de Llano, E., Arroyo, Á., Barbero, F., Dong, X., Bronstein, M., LeCun, Y., Shwartz-Ziv, R.: Attention sinks and compression valleys in llms are two sides of the same coin. In: Proc. ICLR (2026) 36. Luo, J., Fan, W.C., Wang, L., He, X., Rahman, T., Abolmaesumi, P., Sigal, L.: To sink or not to sink: Visual information pathways in large vision-language models. In: Proc. ICLR (2025) 37. Maaz, M., Rasheed, H., Khan, S., Khan, F.: Video-chatgpt: Towards detailed video understanding via large vision and language models. In: Proc. ACL (2024) On the Nature of Attention Sink 17 38. Olsson, C., Elhage, N., Nanda, N., Joseph, N., DasSarma, N., Henighan, T., Mann, B., Askell, A., Bai, Y., Chen, A., et al.: In-context learning and induction heads. arXiv (2022) 39. Qiu, Z., Wang, Z., Zheng, B., Huang, Z., Wen, K., Yang, S., Men, R., Yu, L., Huang, F., Huang, S., et al.: Gated attention for large language models: Non-linearity, sparsity, and attention-sink-free. In: Proc. NeurIPS (2025) 40. Sandoval-Segura, P., Wang, X., Panda, A., Goldblum, M., Basri, R., Goldstein, T., Jacobs, D.: Identifying and evaluating inactive heads in pretrained llms. In: Proc. ICLR (2026) 41. Shah, J., Bikshandi, G., Zhang, Y., Thakkar, V., Ramani, P., Dao, T.: Flashattention-3: Fast and accurate attention with asynchrony and low-precision. In: Proc. NeurIPS (2024) 42. Sok, J., Yeom, J., Park, S., Park, J., Kim, T.: Garbage attention in large language models: Bos sink heads and sink-aware pruning. arXiv (2026) 43. Sun, G., Yu, W., Tang, C., Chen, X., Tan, T., Li, W., Lu, L., Ma, Z., Wang, Y., Zhang, C.: video-salmonn: Speech-enhanced audio-visual large language models. In: Proc. ICLR (2024) 44. Sun, M., Chen, X., Kolter, J.Z., Liu, Z.: Massive activations in large language models. In: Proc. COLM (2024) 45. Sung-Bin, K., Hyun-Bin, O., Lee, J., Senocak, A., Chung, J.S., Oh, T.H.: Avhbench: A cross-modal hallucination benchmark for audio-visual large language models. In: Proc. ICLR (2025) 46. Tang, C., Li, Y., Yang, Y., Zhuang, J., Sun, G., Li, W., Ma, Z., Zhang, C.: video-SALMONN 2: Caption-enhanced audio-visual large language models. arXiv (2025) 47. Tang, L., Zhuang, X., Yang, B., Hu, Z., Li, H., Ma, L., Ru, J., Zou, Y.: Not all tokens and heads are equally important: Dual-level attention intervention for hallucination mitigation. arXiv (2025) 48. Tong, B., Xia, J., Zhou, K.: Mitigating hallucination in multimodal llms with layer contrastive decoding. In: Proc. NAACL (2025) 49. Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, Ł., Polosukhin, I.: Attention is all you need. In: Proc. NeurIPS (2017) 50. Voita, E., Talbot, D., Moiseev, F., Sennrich, R., Titov, I.: Analyzing multi-head self-attention: Specialized heads do the heavy lifting, the rest can be pruned. In: Proc. ACL (2019) 51. Wang, X., Pan, J., Ding, L., Biemann, C.: Mitigating hallucinations in large vision-language models with instruction contrastive decoding. In: Findings of ACL (2024) 52. Wang, Y., Das, K., Gao, X., Cui, W., Li, P., Zhang, J.: Gradient-guided attention map editing: Towards efficient contextual hallucination mitigation. In: Findings of NAACL (2025) 53. Wei, H., Shi, Y., Inoue, N.: Phase diagram of vision large language models inference: A perspective from interaction across image and instruction. arXiv (2024) 54. Xiao, G., Tian, Y., Chen, B., Han, S., Lewis, M.: Efficient streaming language models with attention sinks. In: Proc. ICLR (2024) 55. Xu, J., Guo, Z., He, J., Hu, H., He, T., Bai, S., Chen, K., Wang, J., Fan, Y., Dang, K., Zhang, B., Wang, X., Chu, Y., Lin, J.: Qwen2.5-omni technical report. arXiv (2025) 56. Yang, Y., Zhuang, J., Sun, G., Tang, C., Li, Y., Li, P., Jiang, Y., Li, W., Ma, Z., Zhang, C.: Audio-centric video understanding benchmark without text shortcut. In: Proc. EMNLP (2025) 18 S.Yoo et al. 57. Yu, Z., Wang, Z., Fu, Y., Shi, H., Shaikh, K., Lin, Y.C.: Unveiling and harnessing hidden attention sinks: Enhancing large language models without training through attention calibration. In: Proc. ICML (2024) 58. Yu, Z., Xu, D., Yu, J., Yu, T., Zhao, Z., Zhuang, Y., Tao, D.: Activitynet-qa: A dataset for understanding complex web videos via question answering. In: Proc. AAAI (2019) 59. Yu, Z., Lee, Y.J.: How multimodal llms solve image tasks: A lens on visual ground-ing, task reasoning, and answer decoding. In: Proc. COLM (2025) 60. Zhai, X., Kolesnikov, A., Houlsby, N., Beyer, L.: Scaling vision transformers. In: Proc. CVPR (2022) 61. Zhang, B., Li, K., Cheng, Z., Hu, Z., Yuan, Y., Chen, G., Leng, S., Jiang, Y., Zhang, H., Li, X., et al.: Videollama 3: Frontier multimodal foundation models for image and video understanding. arXiv (2025) 62. Zhang, H., Chen, H., Chen, M., Zhang, T.: Active layer-contrastive decoding re-duces hallucination in large language model generation. In: Proc. EMNLP (2025) 63. Zhang, X., Quan, Y., Shen, C., Gu, C., Yuan, X., Yan, S., Cao, J., Cheng, H., Wu, K., Ye, J.: Shallow focus, deep fixes: Enhancing shallow layers vision attention sinks to alleviate hallucination in LVLMs. In: Proc. EMNLP (2025) 64. Zhou, Z., Wang, R., Wu, Z.: Daily-omni: Towards audio-visual reasoning with temporal alignment across modalities. arXiv (2025) 65. Zuhri, Z.M., Fuadi, E.H., Aji, A.F.: Softpick: No attention sink, no massive acti-vations with rectified softmax. arXiv (2025) On the Nature of Attention Sink 19 
+
+# On the Nature of Attention Sink that Shapes Decoding Strategy in MLLMs 
+
+– Supplementary Material – Contents 
+
+A Analysis for Sink Identification . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20 A.1 Sink and Outlier Statistics . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20 A.2 Empirical Results . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21 A.3 Additional Qualitative Examples . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21 B Analysis of OutRo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22 B.1 Sink Query Attention to Modality Tokens . . . . . . . . . . . . . . . . . . . . 22 B.2 Directional Proxy for Sink Score . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23 B.3 Sink Enhancements Sources . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23 B.4 Effect of Rotation Strength γ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23 C Algorithm of OutRo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24 D Qualitative Results . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24 20 S.Yoo et al. 
+
+Table A.1: Dimensions identified as outliers or sinks. Under the ΦVLM criterion, sink dimensions ( i.e., 458 and 2570) cause many tokens to be classified as sinks. 
+
+Outlier Sink ΦVLM Sink ΦLLM 
+
+Dim Activation Layer(%) Token(%) Outlier ΦVLM Token(%) Sink ΦLLM Index Sink 458 8768.00 100.0 86.89 ✓ 46.00 59.83 ✓ 19072 2 ✓
+
+2570 6272.00 100.0 89.80 ✓ 45.75 44.00 ✓ 13376 2 ✓
+
+2718 2656.00 92.9 2.68 46.00 59.83 ✓ 6208 2 ✓
+
+2730 2128.00 100.0 2.75 46.00 59.83 ✓ 4960 2 ✓
+
+3206 716.00 100.0 57.34 ✓ 46.00 72.68 ✓ 1640 2 ✓
+
+3281 612.00 100.0 16.74 ✓ 46.00 59.83 ✓ 1448 2 ✓
+
+1427 604.00 100.0 9.95 ✓ 46.00 59.83 ✓ 1400 2 ✓
+
+1803 556.00 100.0 3.15 46.00 72.68 ✓ 1264 2 ✓
+
+1692 556.00 100.0 11.10 ✓ 46.00 59.83 ✓ 1320 2 ✓
+
+3110 544.00 100.0 25.90 ✓ 46.00 59.83 ✓ 1256 2 ✓
+
+2107 544.00 100.0 42.05 ✓ 45.75 44.00 ✓ 1192 2 ✓
+
+1923 512.00 100.0 42.13 ✓ 46.00 59.83 ✓ 1240 2 ✓
+
+32 486.00 100.0 64.11 ✓ 46.00 59.83 ✓ 1168 2 ✓
+
+1451 400.00 96.4 25.95 ✓ 46.00 59.83 ✓ 936 21111 362.00 89.3 8.00 ✓ 45.75 44.00 ✓ 800 23197 350.00 100.0 92.90 ✓ 45.75 44.00 ✓ 764 2392 247.00 96.4 25.92 ✓ 45.75 9.77 ✓ 592 23461 229.00 100.0 10.43 ✓ 45.75 9.77 ✓ 548 2662 212.00 100.0 24.51 ✓ 46.00 59.83 ✓ 484 21790 190.00 100.0 14.45 ✓ 46.00 59.83 ✓ 456 2637 184.00 89.3 6.60 ✓ 45.75 9.77 ✓ 440 21627 173.00 100.0 19.78 ✓ 45.75 44.00 ✓ 382 2608 169.00 100.0 32.64 ✓ 46.00 72.68 ✓ 396 2162 169.00 89.3 6.09 ✓ 1.54 0.12 80 120 1431 160.00 89.3 28.71 ✓ 45.75 44.00 ✓ 350 2143 150.00 100.0 7.67 ✓ 45.75 9.77 ✓ 358 22069 148.00 89.3 6.39 ✓ 45.75 9.77 ✓ 354 22591 142.00 100.0 8.54 ✓ 4.50 0.12 68 15 68 137.00 89.3 6.30 ✓ 46.00 59.83 ✓ 326 2882 135.00 100.0 12.82 ✓ 45.75 9.77 ✓ 322 2
+
+A Analysis for Sink Identification 
+
+This section provides additional analyses of the sink identification criterion dis-cussed in Sec. 3 (Q1), including statistics of sink and outlier tokens, empirical results, and qualitative examples. All analyses are conducted on Qwen2.5-Omni. 
+
+A.1 Sink and Outlier Statistics 
+
+We report the top 30 activation dimensions in Tab. A.1. A clear overlap is observed between the dimensions identified as outliers and those detected as sink dimensions. In particular, prominent sink dimensions such as 458 and 2570 exhibit large activations across a wide range of tokens. Under the ΦVLM criterion, these large activations cause many tokens to be classified as sinks, resulting in a substantial fraction of tokens being labelled as sink tokens, including semantically meaningful visual tokens. This suggests that 
+
+ΦVLM tends to over-identify sinks in multimodal settings. In contrast, the ΦLLM criterion identifies only a single token as the sink and consistently assigns the sink index to a structurally defined token, leading to a more selective and stable identification of the sink token. On the Nature of Attention Sink 21 
+
+Table A.2: Effect of removing sink dimensions under ΦLLM and ΦVLM on AVHBench. Removing the ΦLLM sink token collapses performance, while removing tokens identified by ΦVLM has little effect. 
+
+Method A → V V → A Matching Overall Baseline 82.31 82.58 51.71 71.60 All tokens 0.00 0.00 0.00 0.00 Sink token ( ΦLLM ) 0.00 0.00 0.00 0.00 Random token ( ΦVLM ) 80.02 78.95 52.67 69.87 Sink tokens ( ΦVLM ) 78.96 82.14 52.77 71.06 Is the visible in the video? kid  :S ink token  Is the visible in the video? fly     
+
+> :S ink token
+> What is the of the person? name :S ink token
+> Is the visible in the video? ball :S ink token
+
+Fig. A.1: Additional qualitative examples. Each example visualises attention scores for query tokens ( e.g., kid, fly, ball, name) on AVHBench videos. 
+
+A.2 Empirical Results 
+
+To further validate the sink identification criteria, we conduct a controlled in-tervention by deactivating the sink dimensions Dsink (Tab. A.2). First, when the dimensions Dsink are disabled for all tokens, the model per-formance collapses across all tasks. Similarly, when applying the LLM-based criterion ΦLLM , disabling Dsink only at the token identified as a sink also leads to a severe performance drop, suggesting that the token detected by ΦLLM func-tions as a stabilising anchor in the model’s computation. In contrast, when a token identified by the VLM-based criterion ΦVLM is randomly selected and its 
+
+Dsink dimensions are disabled, the model performance remains close to the base-line. Furthermore, even when Dsink are disabled for all tokens detected by ΦVLM 
+
+except the token identified by ΦLLM , the performance remains largely unchanged. These results suggest that the token identified by ΦLLM plays a more critical role in the model’s inference process than those detected by ΦVLM .
+
+A.3 Additional Qualitative Examples 
+
+We provide further qualitative examples illustrating the misbehaviour of the visual attention sink criterion ΦVLM when applied to MLLMs. In Fig. A.1, we observe the same pattern where a large fraction of tokens are classified as sinks, including tokens corresponding to semantically meaningful visual content. 22 S.Yoo et al. ACC   
+
+> %
+> 71.5
+> 71.0-
+> 70.5-70.0
+> 69.5-
+> 69.0
+> Layer
+> 5
+> Sink
+> Layer
+> 5
+> Random
+> Layer
+> 3
+> Sink
+> Baseline
+> 68.5
+> 90 80
+> 70 60
+> 50
+> 40
+> 30
+> 20
+> 10
+> Keep
+> %
+
+Fig. B.1: Token pruning results using sink queries from different layers. Sink queries from an appropriate layer improve performance even when only a small subset of modality tokens is retained, suggesting they attend to informative modality tokens. 
+
+B Analysis of OutRo 
+
+In this section, we further investigate the design choices of OutRo. Unless oth-erwise specified, all analyses are conducted on Qwen2.5-Omni. 
+
+B.1 Sink Query Attention to Modality Tokens 
+
+We analyse whether sink queries attend to informative modality tokens by per-forming token pruning based on attention scores between the sink query and modality tokens. Experiments are conducted on AVHBench. 
+
+Table B.1: Sink-query token pruning. Pruning based on sink-query attention reduces latency while improving performance.                         
+
+> Keep % Latency ↓
+> (sec/token) Rel. ↓Acc. ↑
+> Baseline 0.996 1.00 70.91 60 0.904 0.91 71.12 50 0.864 0.87 71.25 40 0.824 0.83 71.35 30 0.784 0.79 71.33 20 0.749 0.75 71.38 10 0.714 0.72 70.36
+
+As shown in Fig. B.1, pruning to-kens according to the sink-query attention scores at Layer 5, the layer where OutRo applies sink enhancement, improves perfor-mance. This suggests that the sink query at this layer effectively identifies informa-tive modality tokens, allowing irrelevant tokens to be removed and reducing inter-ference during inference. Detailed quanti-tative results of sink query token pruning are reported in Tab. B.1. In contrast, random pruning leads to a clear performance drop. Moreover, pruning based on sink-query attention at layer 3, where sink tokens first emerge, performs even worse than random pruning. This indicates that the sink query at early layers does not yet capture informative tokens. Together, these results suggest that the sink representation becomes informative at appropriate layers, where global information has been sufficiently aggregated, enabling the sink query to effectively select relevant modality tokens. On the Nature of Attention Sink 23 Sink Score  Cosine Similarity   
+
+> Fig. B.2: Sink score vs. cosine similarity. Attention to sink tokens is strongly correlated with the cosine similarity between head outputs and the sink value direction.
+> Table B.2: Effect of different sink attention sources. Using internal features achieves the best performance, whereas encoder inputs do not improve performance.
+
+Mode A → V V → A Matching Overall Baseline 80.11 75.41 59.86 70.91 Internal (Ours) 80.37 75.81 60.18 71.25 
+
+Encoder 79.93 74.93 60.55 70.91 Encoder w/o text 80.11 75.33 59.59 70.78 
+
+B.2 Directional Proxy for Sink Score 
+
+Fig. B.2 shows a strong positive correlation between attention to sink tokens and the cosine similarity between each head output vector and the sink value direc-tion, with an average Pearson correlation of approximately 0.7. This indicates that directional alignment serves as an effective proxy for sink score, enabling a more efficient formulation used in our method. 
+
+B.3 Sink Enhancements Sources 
+
+We analyse different sources for applying attention between the sink query and modality keys on AVHBench. In addition to the internal features used in OutRo, we also validate encoder inputs by directly applying cross-attention to the visual and audio modalities. As shown in Tab. B.2, using encoder inputs is less effective than using internal features. Removing the text modality and applying cross-attention only to the visual and audio inputs also does not improve performance. 
+
+B.4 Effect of Rotation Strength γ
+
+We analyse the sensitivity of OutRo to the rotation strength parameter γ, which controls the magnitude of modulation applied to attention head outputs. Fig. B.3 reports results across representative MLLMs and benchmarks. We vary γ in the range [0 .5, 4.0] and observe stable performance trends within each model, with moderate variation across architectures. Based on these results, we select the optimal γ for each model in our experiments. 24 S.Yoo et al. Accuracy  
+
+> y
+> (%)
+> 63.0-
+> 62.5
+> 62.0-
+> 61.5-
+> Qwen2.5-Omni
+> |
+> AVUT
+> gamma=3.0
+> 61.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> 3.5
+> 4.0
+> Gamma Accuracy
+> (%)
+> 65
+> 66
+> 68
+> 67
+> Qwen3-VL-8B
+> VideoMME
+> gamma=0.5
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> 3.5
+> 4.0
+> Gamma ccuracy
+> (%)
+> VideoLLaMA3
+> |
+> VideoMME
+> 63.0-
+> gamma=1.5
+> 62.5
+> 62.0-
+> 61.5
+> 61.0
+> 60.5-
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> 3.5
+> 4.0
+> Gamma Accuracу
+> (%
+> 57.75
+> 57.50-
+> 57.25
+> 57.00-
+> 56.75
+> 56.50-
+> 56.25
+> -
+> VideoSalmonn2+
+> AVUT
+> gamma=0.5
+> 56.00
+> 0.5 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> 3.5
+> 4.0
+> Gamma
+
+Fig. B.3: Effect of different γ values. Optimal γ values vary across models: 3.0 for Qwen2.5, 0.5 for Qwen3-VL and video-SALMONN2 +, and 1.5 for VideoLLaMA3. 
+
+C Algorithm of OutRo 
+
+Algorithm 1 summarises the OutRo procedure applied at each decoder layer. Given the hidden states, we first identify sink tokens using the sink criterion 
+
+ΦLLM . We then compute the attention outputs and estimate the sink value di-rection by averaging the value vectors of the detected sink tokens. For non-sink positions, head outputs are modulated through gated rotation according to their directional alignment with the sink value direction, controlled by the rotation strength γ. The updated outputs are rescaled to preserve their original magnitude. For sink positions, we apply mask relaxation at a selected layer, allowing sink queries to attend beyond the causal mask and thereby ag-gregate contextual information. The resulting outputs are then combined across heads and projected to produce the hidden states that are fed into the subsequent FFN layer. 
+
+D Qualitative Results 
+
+We present qualitative examples illustrating the behaviour of OutRo across dif-ferent multimodal models. Examples on video-QA tasks are shown in Fig. D.1, while video captioning results are presented in Fig. D.2. These qualitative ob-servations are consistent with the quantitative improvements, where captioning performance on AVHBench increases from 3.01 to 3.11 .On the Nature of Attention Sink 25 
+
+Algorithm 1 OutRo in a Decoder Layer 
+
+Require: Hidden states X(ℓ), sink criterion ΦLLM , rotation strength γ
+
+Ensure: Updated hidden states X(ℓ)out  
+
+> 1:
+
+Identify sink indices: 
+
+S(ℓ) ← ΦLLM (X(ℓ)) 
+
+> 2:
+
+Compute attention outputs 
+
+O(ℓ) = Attn( Q(ℓ), K(ℓ), V(ℓ)) 
+
+> 3:
+
+Compute sink value direction 
+
+¯v(ℓ) 
+
+> h,s
+
+= 1
+
+|S (ℓ)|
+
+X
+
+> s∈S (ℓ)
+
+v(ℓ)
+
+> h,s
+
+▷ Non-sink positions: gated head rotation  
+
+> 4:
+
+for each ns / ∈ S (ℓ), head h do  
+
+> 5:
+
+Compute directional alignment 
+
+ch,ns = cos( Oh,ns , ¯v(ℓ)
+
+> h,s
+
+) 
+
+> 6:
+
+Compute gate 
+
+gh,ns = tanh 
+
+ ReLU( ch,ns )0.1
+
+ 
+
+> 7:
+
+Rotate head output 
+
+ˆOh,ns = Oh,ns + γg h,ns 
+
+Oh,ns · ¯v(ℓ)
+
+> h,s
+
+∥¯v(ℓ)
+
+> h,s
+
+∥2 ¯v(ℓ) 
+
+> h,s
+> 8:
+
+Rescale magnitude 
+
+Oh,ns ← ∥Oh,ns ∥∥ ˆOh,ns ∥
+
+ˆOh,ns  
+
+> 9:
+
+end for 
+
+▷ Sink positions: mask relaxation  
+
+> 10:
+
+if ℓ = ℓenh then  
+
+> 11:
+
+for each s ∈ S (ℓ), head h do  
+
+> 12:
+
+Relax causal mask for sink queries 
+
+Arelaxed  
+
+> h,s, :
+
+= Softmax 
+
+ Qh,s K⊤
+
+> h
+
+√Dh
+
+ 
+
+> 13:
+
+Replace sink-position outputs 
+
+O(ℓ) 
+
+> h,s
+
+← Arelaxed  
+
+> h,s, :
+
+Vh 
+
+> 14:
+
+end for  
+
+> 15:
+
+end if  
+
+> 16:
+
+Aggregate heads and apply output projection 
+
+X(ℓ)out ← X(ℓ) + WO O(ℓ) 
+
+> 17:
+
+return X(ℓ)out 26 S.Yoo et al. Prompt: Is the woman visible in the video? 
+
+No , the woman is not visible in the video. It’s just a woman’s voice 
+
+talking. So, you can’t see her in the video. 
+
+Yes , the woman is visible in the video. She’s standing in the kitchen, 
+
+wearing a red shirt. She’s talking and gesturing with her hands. 
+
+Base  OutRo 
+
+GT: Yes 
+
+(a) Prompt: Is the man visible in the video? 
+
+No , the man is not visible in the video. It’s just showing a group of 
+
+people sitting around a campfire at night. 
+
+Yes , the man is visible in the video. He’s cooking something in a pan on 
+
+a stove. 
+
+Base  OutRo 
+
+GT: Yes 
+
+(b) Prompt: Is the wooden roof making sound in the audio? 
+
+I’m not sure  if the wooden roof is making sound in the audio.  No , the wooden roof is not making sound in the audio. It’s just the 
+
+sound of a  bell ringing .
+
+GT: No 
+
+Base  OutRo 
+
+Bell Sound 
+
+(c) Prompt: Is the man making sound in the audio? 
+
+No , the man isn't making any sound. It's just the sound of a 
+
+motorcycle.  Yes , the man is making sound in the audio. 
+
+GT: Yes 
+
+Base  OutRo 
+
+Motorcycle Sound 
+
+Human Speech 
+
+(d) 
+
+Fig. D.1: Qualitative results on video-QA on AVHBench. Compared with the baseline, OutRo produces answers that better align with visual and audio-visual evi-dence in the video, leading to more accurate multimodal reasoning. On the Nature of Attention Sink 27 Prompt: Describe what you see and hear in a single sentence. 
+
+I see a man in a hat and vest with a backpack and net on his back, standing in a shallow river surrounded by rocks and trees, and 
+
+I hear the sound of flowing water. 
+
+I see a man in a hat and backpack standing in a shallow river,  holding  a fishing  rod, and I hear the sound of flowing water. 
+
+Base 
+
+OutRo 
+
+A young man whooshes through a rushing stream,  holding  a fish  he caught while fishing. 
+
+GT 
+
+(a) Prompt: Describe what you see and hear in a single sentence. 
+
+Well, it seems like there’s a video game being played, and the player is in a snowy Minecraft world. There’s also a sound effect 
+
+that could be from the game or something else. And the speech subtitle is in French. 
+
+I see a  dark background  with a  fire  at the bottom and the words “A bientôt” and a website address. There’s also a Minecraft 
+
+game scene with snowy terrain and a player’s hand holding a sword. I hear a sound effect and a  heartbeat  sound. 
+
+Base 
+
+OutRo 
+
+In a game, a large  fire  emerging from a  dark background , while a man speaks with a  heartbeat  in the background. 
+
+GT 
+
+Heartbeat Sound 
+
+(b) 
+
+Fig. D.2: Qualitative results for video captioning on AVHBench. OutRo pro-duces captions grounded in both visual and audio-visual cues, whereas the baseline often fails to capture such multimodal details.

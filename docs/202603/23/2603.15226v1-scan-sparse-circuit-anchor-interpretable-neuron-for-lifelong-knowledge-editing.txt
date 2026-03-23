@@ -1,0 +1,1097 @@
+Title: SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing
+
+URL Source: https://arxiv.org/pdf/2603.15226v1
+
+Published Time: Tue, 17 Mar 2026 06:59:52 GMT
+
+Number of Pages: 21
+
+Markdown Content:
+# SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+Yuhuan Liu 1 2 Haitian Zhong 1 3 Xinyuan Xia 4 Qiang Liu 1 Shu Wu 1 Liang Wang 1
+
+## Abstract 
+
+Large Language Models (LLMs) often suffer from catastrophic forgetting and collapse during sequential knowledge editing. This vulnerability stems from the prevailing dense editing paradigm, which treats models as black boxes and relies on coarse-grained parameter interventions that in-evitably disrupt preserved knowledge. To address this, we propose SCAN (a sparse editing frame-work based on Sparse Circuit Anchored N euron) which transforms editing into a mechanism-aware manipulation by constructing a knowledge cir-cuit via Sparse Transcoders. Experiments on Gemma2, Qwen3, and Llama3.1 across Coun-terFact, ZsRE and WikiFactDiff demonstrate that SCAN achieves a superior performance, maintain-ing model integrity on benchmarks like MMLU and GSM8K even after 3,000 sequential edits, whereas other existing methods deteriorate pro-gressively as editing accumulates, eventually re-sulting in model collapse. 
+
+## 1. Introduction 
+
+Large Language Models (LLMs) acquire extensive knowl-edge during pre-training which may become outdated. Given the high costs of re-training, model editing (Zhang et al., 2024a; Wang et al., 2024c;b) has emerged as an effi-cient approach for updating specific factual knowledge with-out altering unrelated knowledge and general competency. For instance, an LLM asserting, “The current U.S. Presi-dent is Joe Biden,” would need correction to, “The current U.S. President is Donald Trump,” in 2025. Existing editing techniques fall into two categories: parameter-modifying which directly alter the LLMs’ weights, and parameter-
+
+> 1
+
+New Laboratory of Pattern Recognition (NLPR), State Key Laboratory of Multimodal Artificial Intelligence Systems (MAIS), Institute of Automation, Chinese Academy of Sciences 2Cuiying Honors College, Lanzhou University 3Zhongguancun Academy 
+
+> 4
+
+Research Institute of Intelligent Complex Systems, Fudan Univer-sity. Correspondence to: Shu Wu <shu.wu@nlpr.ia.ac.cn >.
+
+Preprint. March 17, 2026. 
+
+preserving methods which introduce auxiliary components to steer model’s output. Moreover, to accommodate evolv-ing knowledge, lifelong model editing is proposed, which involves performing sequential edits (Gupta et al., 2024). Despite advances, current editing techniques face systemic limitations that are problematic in the lifelong setting. Chief among these is the issue of coarse editing granularity: meth-ods often intervene over large blocks of parameters 
+
+(Meng et al., 2022a;b). However, the parameters truly es-sential to a specific fact occupy only a tiny fraction of these regions (Jiang et al., 2025). This coarse intervention di-rectly causes the destruction of unrelated knowledge (Jiang et al., 2025) due to the vector-based storage mechanism in MLP (Geva et al., 2021) and polysemantic problems (Geva et al., 2022). In sequential editing, as these non-minimal intervention accumulate, they inevitably erode previously edited knowledge, triggering catastrophic forgetting and model collapse. Furthermore, the lack of transparency in knowledge pathways hinders reliable diagnosis and surgical refinement, making updates unreliable and uncontrollable (Hong & Lipani, 2024; Mazzia et al., 2024). To address these coupled challenges, we draw inspiration from the field of Mechanistic Interpretability (Bereska & Gavves, 2024; Rai et al., 2024), emphasizing sparsity as a promising way to solve them. We argue that sparsity enables finer grained editing through two reasons. Firstly, unlike dense paradigms that intervene in entire weight blocks, spar-sity restricts updates to factual related parameter subsets, protecting unrelated knowledge. Secondly, sparsity offers a path toward neuron monosemanticity (Cunningham et al., 2023; Paulo et al., 2025). Under this paradigm, each feature or neuron represents a single concept rather than multi-ple meanings (Bricken et al., 2023), ensuring that editing a target concept does not propagate changes to unrelated concepts, thereby mitigating the polysemantic issues (Geva et al., 2022) inherent in editing dense LLMs. Based on this principle, this paper proposes a novel parameter-preserving editing framework SCAN. Our ap-proach introduces a Sparse Transcoder (Dunefsky et al., 2024) which projects LLMs hidden states onto sparse fea-tures. We then construct an Attribution Graph by influence score between features and prune it to identify a knowledge 1
+
+> arXiv:2603.15226v1 [cs.AI] 16 Mar 2026 SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing
+
+circuit. This circuit serves as a roadmap to locate the essen-tial and sparse feature nodes for edit instead of the whole transcoder features. By applying targeted steering to these sparse features, we implement the edit and propagate the re-fined changes back into the LLMs. Our main contributions are summarized as follows: 1. We introduce sparsity as a core principle to resolve catastrophic forgetting and model collapse in sequen-tial edit by restricting updates to fact-specific parameter subsets. This paradigm also fosters neuron monose-manticity, ensuring that each feature represents a dis-crete concept to mitigate the polysemantic interference inherent in dense models. 2. We propose SCAN, a novel white-box sparse editing framework driven by Sparse Transcoders and Attribu-tion Graphs. By identifying specific knowledge cir-cuits, SCAN provides a robust and interpretable solu-tion for the model editing field. 3. We conduct a series of experiments to investigate se-quential scalability, precise knowledge localization, and the semantic profiling of functional features across multiple LLM families. Our evaluations demonstrate that these sparse interventions successfully maintain model integrity and general capabilities even under long-term editing stress. 
+
+## 2. Preliminary 
+
+2.1. Lifelong Editing and Steer-based Method 
+
+Model editing updates a model fW using a triple e =(s, r, o → o∗) where s denotes the subject entity, r the relation, o the original factual object, and o∗ the desired target new object. In a lifelong setting, a Model Editor (ME) recursively produces fWt = ME (fWt−1 , x t, y t) to incorpo-rate n sequential updates without forgetting. Steer-based methods achieve this by modifying hidden states h instead of weights (Zhong et al., 2025). They typically utilize a De-cision Mechanism (e.g., Euclidean distance to stored keys 
+
+Ki) to trigger a Perturbation Mechanism: h′ = h + ∆ h if an edit is required, and h′ = h otherwise (Hartvigsen et al., 2023; Yu et al., 2024). 
+
+2.2. Editing Mechanism: MLPs as Key-Value Memory 
+
+The Transformer MLP is conceptualized as a key-value memory (Geva et al., 2021), where the encoder weights 
+
+Wenc act as patterns (keys) and the decoder weights Wdec 
+
+act as stored knowledge (values). Physically, the input 
+
+hpre is compared against Wenc (keys) to produce an acti-vation a = σ(Wenc · hpre ), where each aj represents the response intensity that the input belongs to the j-th knowl-edge slot. The final output v is a weighted retrieval of these values: v = Wdec · a = P aj vj , which modifies the residual stream hpost = hpre + v (Elhage et al., 2021). Traditional parameter-modifying methods (e.g., MEMIT, AlphaEdit) achieve editing by updating the decoder weights 
+
+W ′ 
+
+> dec
+
+= Wdec +∆ Wdec to encode new facts. Mathematically, this transformation is equivalent to injecting an additive per-turbation ∆h = ∆ Wdec · a into the residual stream, provid-ing a unified view for both weight-based and steer-based editing. 
+
+2.3. Sparse Transcoder and Monosemanticity 
+
+The Sparse Transcoder is an auxiliary module that refor-mulates the MLP’s memory into a highly sparse feature activation z (Paulo et al., 2025) (compared with a in MLP). It is trained to reconstruct the MLP output while enforcing sparsity via an ℓ1 penalty: 
+
+LTranscoder = MSE  MLP (hpre ), W tc dec · z + λ∥z∥1,z = ReLU (W tc enc · hpre )
+
+Unlike standard MLPs that suffer from polysemantic neu-rons, the Transcoder promotes monosemanticity (Bricken et al., 2023). 
+
+## 3. Edit with Sparse Circuit Anchored Neuron 
+
+This section details SCAN. We define a single edit as 
+
+e = ( s, r, o → o∗). The method first constructs the knowl-edge circuit responsible for the original output o, based on the activated features in the Sparse Transcoder and attribu-tion score between feature nodes. The essential features are then extracted to locate the knowledge and we edit the corresponding decoder weight vectors that enforce the target output o∗. Finally, the difference between the transcoder’s original output and the edited output ( ∆vtc ) is injected into the LLMs as a “steering vector” at the exact circuit location. 
+
+3.1. Attribution Graph Construction 
+
+The initial phase involves constructing an Attribution Graph for the old knowledge answer o, defined by the editing in-stance e. We execute a forward pass with the prompt to pro-cess it with the LLM. The hidden states ( hpre ) before MLP from each layer and the token positions are then inputted into the corresponding transcoders to record the features with positive activation. A weighted complete graph is then constructed, formally defined as follows: 
+
+Definition 3.1 (Initiation of Attribution Graph) . For an editing instance e, the corresponding Attribution Graph is initiated as a weighted complete graph: 
+
+G = ( V, E, AS )
+
+where V is a set of nodes representing all components po-tentially causal to the original output o and is partitioned 2SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing L20#10092  
+
+> Explanation: US presidents
+> mentions of the president of the
+> united states
+
+Current Paradigm 
+
+Ours  
+
+> Sparse Edit
+> Dense Edit
+> (a)
+> (b)
+
+: Donald Trump   
+
+> Editing Instance:
+> Prompt: “ The US
+> president is”
+> Old: “Joe Biden”
+> New: “Donald
+> Trump”
+
+Attribution Graph 
+
+Steer & Inject 
+
+SCAN: E diting with Sparse Circuit Anchored Neuron     
+
+> Related
+> Unrelated
+> Knowledge Inject
+> Residual
+> Stream
+> Circuit
+> Analysis
+> Knowledge
+> Editing
+> New
+> Causal
+> Flow
+> Pruned
+> Back-
+> propagate
+> Steering
+> Inject
+> MLP
+> Transcoder
+> (c)
+> Related
+> Unrelated
+> Update whole parameters
+> Update essential parameters
+> Polysemantic
+> Monosemantic
+> Protect
+> Unrelated
+> Knowledge
+> Damage
+> Unrelated
+> Knowledge
+> Neuron
+> Feature
+> Concept A
+> Concept B
+> Concept C
+> Concept A
+> Steered
+> Answer
+> Gradient-Based Influence
+> Total Attribution
+> Direct
+> (one-step)
+> Inirect
+> (two-step)
+> First-order term
+
+Figure 1. Comparison of current methods and ours. Current methods (a) modify the entire dense MLP weight matrix. Our approach (b) isolates factual features, editing knowledge-relevant vectors. 
+
+as: V = Vembed ∪ Vfeature ∪ Verror ∪ Vlogit , here Vembed de-notes the token embedding node; Vfeature comprises the fea-ture with positive activation zi; Verror contains nodes cor-responding to the MLP reconstruction error; Vlogit denotes the logit node associated with the original object token o.
+
+E = {(u, v ) | u, v ∈ V, u ̸ = v} connects every pair of nodes, and AS : E → R assigns an attribution score repre-senting the causal influence between nodes. In the initiated graph, all attribution scores are set to 0.The visualization of this period can be seen in Appendix C. 
+
+3.2. Gradient-Based Node Influence Computation 
+
+With the complete Attribution Graph G = K(V ) estab-lished, we quantify the causal influence between the nodes. Suppose u, v ∈ V are two nodes, where u is located at layer 
+
+j and token position m, and v is located at layer i and token position n (i > j, n ≥ m). Let zu and zv denote the corre-sponding activations respectively (for error and embedding nodes, the activations are set to 1). The attribution score 
+
+AS u→v is computed as the difference in the metric M of node v when the path through u is corrupted while other paths are kept. Specifically, the influence of u on v is given by AS u→v = Mv (V ) − Mv (V \ { u}), here Mv (V ) repre-sents the value of the metric M (e.g., absolute activation or activation relative to the mean; in our experiments, we use absolute activation which is ReLU (( f v
+
+enc )⊤ · hi
+
+pre )) at node 
+
+v during the original forward pass. Mv (V \ { u}) represents the value of M at node v when the path through node u is corrupted. Direct computation of the attribution score leads to an im-mense computational cost. To address this, we use the first-order term of the Taylor expansion to approximate it, where removing node u is equivalent to setting its activation 
+
+zu to zero: 
+
+AS u→v ≈ ∂M v
+
+∂z u
+
+· zu
+
+To efficiently compute the gradient ∂M v
+
+∂z u , we utilize the Chain Rule across the Transformer layers, only requiring backpropagation to the output ( hj
+
+post = hj
+
+pre + hj
+
+error +
+
+P
+
+k zkf k
+
+dec ) after the MLP. This results in a simple expres-sion for the gradient: ∂M v
+
+∂z u = ∂M v
+
+∂h j
+
+> post
+
+∂h j
+
+> post
+
+∂z u = ∂M v
+
+∂h j
+
+> post
+
+f u
+
+dec 
+
+We can further provide a mathematical interpretation of this process. In fact, the causal influence computation can be seen as evaluating the similarity between vectors via a dot product. By further expanding ∂M v
+
+∂h j
+
+> post
+
+f u
+
+dec , we get: 
+
+∂M v
+
+∂h j
+
+post 
+
+f u
+
+dec = ∂M v
+
+∂h i
+
+pre 
+
+∂h i
+
+pre 
+
+∂h j
+
+post 
+
+f u
+
+dec 
+
+= ( f v
+
+enc )⊤ ∂h i
+
+pre 
+
+∂h j
+
+post 
+
+f u
+
+dec 
+
+This decomposed form is interpreted as the similarity be-tween feature u and feature v in the pre-MLP space of the layer i. The vector f u
+
+dec , which encodes the value infor-mation stored by feature u at layer j, is first transformed into the pre-MLP space of layer i via the Jacobian matrix 
+
+∂h i
+
+> pre
+
+∂h j
+
+> post
+
+. This Jacobian matrix maps the decoder vector f u
+
+dec 
+
+from vector representation in the layer j post-MLP space 3SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+into its corresponding vector representation in the layer i
+
+pre-MLP space. We formalize this relationship in the follow-ing proposition, which ensures that such a transformation across different spaces is well-defined (the proof is provided in Appendix B): 
+
+Proposition 3.2 (Jacobian as the Optimal Direction-Preserv-ing Linearization) . Let X, Y ⊂ Rn be two spaces and let 
+
+f : X → Y be a mapping such that f (0) = 0 and f is differentiable at every point x0 ∈ X with Jacobian matrix 
+
+Jf (x0) and Jf is continuous and non-singular at 0. Then, we have 
+
+f (x0)
+
+∥f (x0)∥ − Jf (x0)x0
+
+∥Jf (x0)x0∥ −−−−→ 
+
+> x0→0
+
+0
+
+This implies that the direction of any vector transformed by f is closely aligned with the direction induced by the Jacobian transformation. 
+
+The transformed vector is then compared using a dot prod-uct with the key vector (f v
+
+> enc
+
+)⊤. Thus, the attribution score measures the similarity between the transformed value vec-tor from feature of u and the required key vector of v, all within the i layer pre-MLP space. 
+
+3.3. Prune by Total (one-step and multi-step) Attribution 
+
+To derive the sparse causal subgraph G′ from the dense Attribution Graph G, we employ a pruning strategy based on previous attribution scores ( AS u→v ), which measure the direct (one-step) causal effect of node u on node v.
+
+Definition 3.3 (Direct (one-step) Attribution Matrix) . Let 
+
+A ∈ R|V |×| V | denote the adjacency matrix of G, where the element in row v and column u is: 
+
+av,u = AS u→v ,
+
+representing the one-step attribution from node u to node v. Denote the A written in column-block form as 
+
+(a1, a 2, . . . , a |V |), or equivalently in row-block form as 
+
+(b⊤ 
+
+> 1
+
+, b ⊤ 
+
+> 2
+
+, . . . , b ⊤|V |)⊤
+
+Two-step Attribution. Analogous to a full-derivative ex-pansion: 
+
+Theorem 3.4 (Full-derivative expansion) . Consider a func-tion y = y(x1, x 2, . . . , x n), where each xi is itself a func-tion of z, i.e., xi = xi(z). Then the derivative of y with respect to z can be expressed using partial derivatives as 
+
+∂y ∂z =
+
+> n
+
+X
+
+> i=1
+
+∂y ∂x i
+
+∂x i
+
+∂z .
+
+which implies that the change in y with respect to z can be decomposed into contributions from the changes in each intermediate variable xi, we begin with the simplest case of indirect influence: two-step attribution. This measures the effect of a node u on a node v that is mediated by a single intermediate node. We sum the influence over all paths of length two (i.e., through all possible intermediate nodes wi)given by P 
+
+> i
+
+AS u→wi · AS wi→v , which in vector-matrix notation corresponds to: 
+
+(A2)v,u = X
+
+> i
+
+av,w i awi,u = b⊤ 
+
+> v
+
+· au
+
+Thus, the adjacency matrix representing all two-step attribu-tions in the graph is precisely A2.
+
+Three-step and Total Attribution. Following the same principle, three-step attribution is computed recursively. It quantifies the influence transmitted through two intermedi-ate nodes. We can conceptualize this as the sum of products of the two-step attribution from the source node u to an intermediate node ˆwi, and one-step attribution from ˆwi to v.(i.e. P 
+
+> i
+
+(P 
+
+> k
+
+AS u→wk · AS wk → ˆwi ) · AS ˆwi→v ). Similar to situation in two-step, the three-step adjacency matrix is A3.The total adjacency matrix, denoted by B, accumulating the attribution scores from all direct and indirect paths. It is defined as the sum of the adjacency matrix for all path lengths from one-step to infinity. This results in a matrix series: B = A + A2 + A3 + . . . . In fact, we have the fol-lowing proposition to calculate it (The proof will be shown in Appendix B, with implementation details, including con-vergence and feasibility, provided in Appendix C): 
+
+Proposition 3.5 (Closed-form Total Attribution Matrix) .
+
+Let A be the adjacency matrix of one-step attribution scores with ∥A∥ < 1. Then the total Attribution Matrix B, which accumulates contributions from all paths of any length, ad-mits the closed-form solution: 
+
+B = ( I − A)−1 − I
+
+For any target node v, We first sort all nodes u that have a path to v in descending order of Bv,u and normalize these scores. Edge pruning is then performed using a cumulative threshold τ : starting from the highest-ranked node, scores are sequentially accumulated. Once the cumulative sum reaches τ , all remaining edges are discarded for they are less influential. Nodes that do not attribute to any other node after edge pruning is removed. After pruning all edges and nodes, we get G′.
+
+3.4. Sparse Edit and Knowledge Inject 
+
+This final step uses the features identified in G′ that are active on the subject’s last token for direct model editing and testing. During the editing phase, the transcoder decoder vectors f u 
+
+> dec
+
+corresponding to the these features u ∈ G′ are 4SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+selected and edited. The difference between before and after the edit ( P 
+
+> u
+
+zu ·( ˆf u 
+
+> dec
+
+−f u
+
+> dec
+
+)) is calculated and injected into the LLMs. The optimization objective is set to minimize the negative log-probability of the target output, ˆW tc dec =
+
+argmin W tc dec (− log P (o∗|x)) . The edited decoders are then saved during sequential edit. In the testing phase, these identified features serve as the steering triggers. We use the Jaccard Similarity Score J(VA, V B ), where VA denotes the set of edited features associated with the target knowledge recorded by the transcoder during the editing phase, and 
+
+VB denotes the set of selected features extracted from the attribution graph of the test prompt. If the similarity exceeds a predefined threshold, the edited features relevant to the corresponding knowledge are used for injection. The score, calculated as J(VA, V B ) = |VA∩VB ||VA∪VB | quantifies the overlap between the selected feature sets. 
+
+## 4. Experiments 
+
+In this section, we conduct extensive experiments to evaluate the performance of our proposed method and address the following research questions: • RQ1: How does our method perform in sequential editing scenarios? • RQ2: Where does the model encode factual knowledge within its parameters? • RQ3: What is the semantic meaning of the identified features for editing? • RQ4: How does the model maintain its general capa-bilities after editing? 
+
+4.1. Experimental Setup 
+
+We summarize the LLMs, baseline methods, Transcoders, datasets, and evaluation metrics used in our experiments. Further details are provided in Appendix A. 
+
+LLMs & Baseline Methods. We conducted experi-ments using three widely adopted LLMs: Gemma2-2B ,
+
+Qwen3-8B , and Llama3.1-8B-Instruct . For com-parison, we evaluated our method against several editing baselines, including Fine-Tuning (FT) (Zhu et al., 2020), MEMIT (Meng et al., 2022b), RECT (Gu et al., 2024), AlphaEdit (Fang et al., 2025), GRACE (Hartvigsen et al., 2023), and MELO (Yu et al., 2024). 
+
+Transcoder. We adopt publicly available pretrained transcoder checkpoints without additional training. Specifi-cally, we use the Gemma2-2B-transcoders and Qwen3-8B-transcoders (Dunefsky et al., 2024; Hanna et al., 2025), as well as the Llama3.1-8B-Instruct-transcoders (Zhao et al., 2025). These checkpoints are used as-is throughout all ex-periments.   
+
+> (a) (b)
+> Figure 2. Cumulative proportion of selected feature across different token positions. (a) and (b) represent the distribution for Gemma2-2B and Qwen3-8B on CounterFact dataset, respectively.
+
+Datasets. To evaluate the performance of knowledge edit-ing, we employed three standard benchmarks: CounterFact (Meng et al., 2022a), ZsRE (Levy et al., 2017), and Wik-iFactDiff (Ammar Khodja et al., 2024). Furthermore, to assess the general capabilities of the model post-edit, we tested the edited models on six general datasets, including MMLU (Hendrycks et al., 2021). 
+
+Evaluation Metrics. In line with prior research, we assess performance using three key metrics: Rel (Reliability, also known as Edit Success Rate), Gen (Generalization Success Rate), and Loc (Locality Success Rate). 
+
+4.2. How does our method perform in sequential editing scenarios? (RQ1) 
+
+To assess our method, we evaluate across 1,000 sequential edits. The batch size for all batch editing methods is set to 100. As demonstrated in Table 1, our method outperforms all baselines almost in all metrics. Notably, SCAN provides a balanced solution by sustaining near-perfect scores across all three dimensions compared with others. 
+
+4.3. Where does the model encode factual knowledge within its parameters? (RQ2) 
+
+To investigate the internal localization of factual knowledge, we perform an analysis on the first 1,000 cases of the Coun-terFact dataset using Gemma2-2B and Qwen3-8B. Unlike prior work that performs localization only at the layer level (Meng et al., 2022a; Zhang et al., 2024b), our approach enables finer-grained localization, identifying specific sub-components. We analyze the characteristics of key nodes from both the positional and layer-wise dimensions. The example Attribution Graph can be see in Appendix C. 
+
+Positional Localization. As illustrated in Figure 2, the attribution of factual knowledge is highly concentrated at last token contributing approximately half of the total nodes. When combined with the last token of the subject, these two positions cumulatively account for over 75% of the entire Attribution Graph. In contrast, nodes at other positions, such as those within the prompt or earlier parts of the subject, exhibit lower contributions. This indicates that the subject’s 5SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+Table 1. Sequential editing task performance comparison of our method and other methods after 1000 edits. The Avg column is calculated using the Harmonic Mean: Avg = 3 /(Rel −1 + Gen −1 + Loc −1), to illustrate balanced performance across metrics. Bold and underline denote the best and second-best results per column, respectively. 
+
+Method Model CounterFact ZsRE WikiFactDiff Rel ↑ Gen ↑ Loc ↑ Avg ↑ Rel ↑ Gen ↑ Loc ↑ Avg ↑ Rel ↑ Gen ↑ Loc ↑ Avg ↑
+
+FT Gemma2-2B  44.28 11.10 11.77 16.52 66.14 57.20 64.67 62.43 73.07 69.53 41.24 56.97 RECT 7.23 1.63 20.90 3.86 15.32 11.58 18.38 14.56 35.78 31.50 31.64 32.97 AlphaEdit 55.38 18.35 32.63 28.91 73.88 60.22 47.71 59.11 76.92 67.26 55.73 65.88 MEMIT 5.00 2.80 4.40 3.77 10.91 9.16 7.61 9.07 5.09 4.68 6.30 5.32 GRACE 100 0.37 99.80 1.10 98.80 23.56 100 46.55 98.30 51.20 99.07 75.50 MELO 69.92 42.02 45.57 49.97 69.05 56.11 92.28 69.43 78.55 68.82 95.15 79.37 
+
+SCAN (Ours) 100 89.28 91.97 93.53 100 97.87 100 99.28 100 93.29 90.46 94.43 
+
+FT Qwen3-8B  6.15 3.10 5.05 4.39 20.70 20.21 18.46 19.79 26.11 25.12 26.60 25.94 RECT 42.60 27.75 2.80 7.23 30.44 28.84 11.16 18.39 11.97 9.99 0.81 2.18 AlphaEdit 91.90 25.90 74.50 44.71 96.77 77.35 87.45 86.96 70.41 60.93 68.50 66.39 MEMIT 9.30 5.40 0.10 0.29 36.50 32.19 20.37 28.02 1.18 0.74 6.18 1.64 GRACE 100 0.65 99.98 1.94 100 27.40 100 51.60 99.85 46.12 98.84 70.34 MELO 88.00 32.45 64.55 50.94 79.06 66.74 99.46 80.79 72.40 61.00 97.10 75.31 
+
+SCAN (Ours) 100 98.25 92.95 96.97 100 95.36 100 98.43 100 89.29 90.30 92.97 
+
+FT Llama3.1-8B  37.20 12.60 1.95 4.79 56.59 47.04 4.97 11.38 73.07 68.28 19.42 32.23 RECT 10.35 8.10 0.40 1.16 6.18 5.45 2.63 4.18 2.61 1.93 1.48 1.95 AlphaEdit 97.65 39.55 45.85 56.68 94.48 82.41 78.14 84.91 92.87 86.88 64.06 78.07 MEMIT 0.00 0.00 0.60 0.00 1.19 0.82 3.69 1.41 0.04 0.04 0.18 0.06 GRACE 100 1.00 99.80 2.94 99.85 27.35 100 51.44 99.84 59.13 99.41 79.17 MELO 90.05 59.70 48.05 63.67 88.48 70.19 88.61 81.83 84.33 73.63 92.24 83.11 
+
+SCAN (Ours) 100 86.70 95.10 93.58 100 91.07 99.88 96.84 100 87.45 89.05 92.07 
+
+(a) (b) 
+
+Figure 3. Distribution of selected feature across layers. Both mod-els exhibit a characteristic dual-peak pattern, indicating functional localization in shallow and middle-to-deep layers. 
+
+boundary and the final token are the dominant positions influencing the model’s inference. 
+
+Layer-wise Distribution and Functional Specialization. 
+
+From the perspective of depth, the percentage of attribution nodes exhibits a distinct dual-peak pattern across layers, as shown in Figure 3. To further decouple the functions of these peaks, we analyze the distribution of features activated at the subject last token and the last token separately using a heatmap (Figure 4). Our analysis reveals that the two peaks observed in the global distribution correspond to the deeper concentrations in the heatmap: • Shallow Layers: The peak here primarily corresponds to the subject last token , where MLP layers focus on representing and stabilizing the subject’s identity. • Middle-to-Deep Layers: The second peak is domi-nated by the last token position, where MLPs integrate 
+
+(a) 
+
+(b) 
+
+Figure 4. Heatmap of selected feature distribution across layers at special token position. The dark regions indicate that the early-layer peaks in Figure 3 align with the subject tokens, while the later-layer peaks correspond to the last token position on both models. 
+
+the relation information with the subject’s representa-tion to extract the target answer. In summary, these findings suggest a “Subject-to-Answer” pipeline: shallow layers encode the subject’s information, while middle-to-deep layers leverage the relation to finalize the factual retrieval at the terminal token. 6SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+4.4. What is the semantic meaning of the identified features for editing? (RQ3)                                                         
+
+> Table 2. Comparison of feature discriminability across different selection methods using Qwen3-8B and Gemma2-2B on the CF dataset.
+> Method Rel-Gen Rel-Loc
+> J-scr J-acc F1-scr F1-acc J-scr J-acc F1-scr F1-acc Qwen3-8B All 0.258 0.421 0.394 0.423 0.297 0.409 0.445 0.394 Sub 0.594 0.992 0.731 0.994 0.162 0.931 0.272 0.928 No last 0.346 0.689 0.496 0.694 0.151 0.880 0.249 0.877 Both 0.574 0.978 0.714 0.979 0.094 0.955 0.161 0.954 Gemma2-2B All 0.251 0.414 0.383 0.424 0.300 0.404 0.449 0.389 Sub 0.509 0.938 0.659 0.939 0.153 0.921 0.258 0.917 No last 0.312 0.573 0.454 0.583 0.160 0.861 0.265 0.854 Both 0.491 0.926 0.642 0.927 0.118 0.938 0.203 0.937
+
+Not all nodes captured by Attribution Graph are suitable. These nodes often represent a mixture of edit-specific fea-tures (tied to the unique fact) and general-purpose features (common semantic categories). Indiscriminately editing the latter would lead to overfitting. To illustrate this, we ex-amine a reliability prompt “ The mother tongue of Thomas Joannes Stieltjes is ” and a locality prompt “ Arend Lijphart is a native speaker of ” (both targeting the answer Dutch ). Our attribution analysis (see Figure 5) reveals that both prompts activate feature #13366 at layer 19 and feature #410 at layer 24. By projecting their decoder vectors onto the unembed-ding matrix, we extract the top-5 tokens with the highest logits: • Layer 19, #13366: Spanish, English, Arabic, bahasa, and Hindi. • Layer 24, #410: Korean, Japanese, Indonesian, Viet-namese and Russian. These nodes clearly represent the general concept of “lan-guage” rather than the specific fact being edited. Cru-cially, these general features do not activate at any position within the subject of the sentence, nor are they triggered by rephrased prompts such as “ Thomas Joannes Stieltjes was born in ”. This observation suggests that features relevant to the specific factual update are uniquely concentrated within the subject’s boundary. More case study and visualization can be found in Appendix E. Based on these insights, we design three filtering rules to extract specialized features by constraining their activation positions: ( i) Subject-Anchored Features (Sub): activated at the subject last token; ( ii ) Terminal-Exclusionary Features (No last): not activated at the last token; and ( iii ) Both: meeting both criteria. We evaluate the discriminative power of these rules on the first 1,000 cases of CounterFact. As shown in Table 2, we measure the average feature overlap between prompts using Jaccard and F1 scores. We record the average score and define discriminative accuracy based on thresholds (0.25 for Jaccard, 0.4 for F1, roughly half overlap between the sets). Our findings show that features activated at the subject last token (Sub) provide the highest discriminative scores. This confirms that the subject’s ter-minal position is the primary locus for edit-specific factual information. 
+
+4.5. How does the model maintain its general capabilities after editing? (RQ4) 
+
+The experimental results across six diverse bench-marks—including ARC (Clark et al., 2018), Common-senseQA (Talmor et al., 2019), GSM8K (Cobbe et al., 2021), MMLU (Hendrycks et al., 2021), OpenBookQA (Mihaylov et al., 2018), and SciQ (Welbl et al., 2017). The experiments demonstrate that our method exhibits robustness in preserv-ing model’s general capabilities during editing process. As edit number scales up to 3,000, our approach maintains pre-existing ability. In contrast, other methods like RECT and MEMIT suffer from a collapse as the editing number increases, with their accuracy plummeting toward zero after 2,000 edits. Details are shown in Figure 6. 
+
+## 5. Related Work 
+
+Model Editing for Knowledge Update. Current model editing techniques are broadly categorized into parameter-modifying and parameter-preserving methods. Parameter Modifying Methods directly update model weights to en-code new facts. Meta-learning approaches like MEND (Mitchell et al., 2022) use hypernetworks to transform gradi-ents into specific parameter updates, while locate-then-edit methods such as ROME (Meng et al., 2022a) and MEMIT (Meng et al., 2022b) update parameters by solving con-strained optimization problems, aiming to balance success-ful editing with the preservation of unrelated knowledge. AlphaEdit (Fang et al., 2025) employs null-space projection to ensure updates satisfy constraints without interfering with unrelated knowledge. Notably, RECT (Gu et al., 2024) intro-duces sparse edit but lacks a deep attribution-based analysis. In contrast, parameter-preserving Methods update model without altering the original weights. GRACE (Hartvigsen et al., 2023) achieves this by caching discrete codebook values for specific hidden states, while MELO (Yu et al., 2024) stores the lora weight. They both use Euclidean Dis-tance to trigger the desired edit. WISE (Wang et al., 2024a) utilizes pretrained router to compute activation as a trigger and a “side memory” MLP to generate output as perturba-tion. React (Zhong et al., 2025) use two pretrained MLPs to 7SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing Feature #13366 at Layer 19 Feature #410 at Layer 24          
+
+> (a) Reliability (b) Reliability
+> (c) Generality (d) Generality
+> (e) Locality (f) Locality
+> Figure 5. Activation visualization of identified features on the specific prompts. The left column shows Feature #13366 at Layer 19, and the right column shows Feature #410 at Layer 24. Darker colors indicate higher activation values.
+> (a) (b) (c)
+> (d) (e) (f)
+> Figure 6. Comparison of SCAN against other methods across six benchmarks. The results show the ability to preserve the model’s general performance as the number of edit cases grows.
+
+calculate semantic similarity and edit by computing belief shift based on positive and negative representations. 
+
+Mechanistic Interpretability. Our work is grounded in Mechanistic Interpretability. Early research focused on localization and logit analysis. Causal Tracing identifies important components by patching neuron to observe their causal effect (Meng et al., 2022a). Logit Lens monitors the model’s intermediate computations by projecting hidden states onto the vocabulary via unembedding matrix (Geva et al., 2022; Dar et al., 2023). These foundational tech-niques have evolved into more sophisticated Circuit Analy-sis, which seeks to decompose the model’s computation into functional paths (Ameisen et al., 2025). To resolve the poly-semanticity inherent in dense LLMs, Sparse Autoencoders (SAEs) (Cunningham et al., 2023) and their variants, such as Sparse Transcoders (Dunefsky et al., 2024), have been developed to project activations onto a sparse, monoseman-tic feature. Unlike standard SAEs, transcoders mimic the behavior of MLP layers, allowing for a more direct mapping of the knowledge storage mechanism (Paulo et al., 2025). 
+
+## 6. Conclusion 
+
+In this paper, we introduced SCAN, a framework leverag-ing Sparse Transcoders and Attribution Graphs for sparse editing in a lifelong setting. By isolating minimal features, SCAN overcomes the granularity limitations, reducing side effects on unrelated knowledge. Extensive experiments demonstrate that SCAN achieves superior performance. Ul-timately, SCAN contributes an interpretable perspective to the field of model editing. 8SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+## Impact Statement 
+
+This paper presents work whose goal is to advance the field of LLMs by improving the interpretability and controlla-bility of LLMs representations, with a particular focus on lifelong knowledge editing. By enabling more transparent identification of model components and more targeted mod-ifications of model behavior, this work may contribute to safer and more reliable LLMs systems. While techniques for model editing could, in principle, be misused to alter factual information in deployed models, our approach em-phasizes interpretability and precise, controlled edits, which may help reduce unintended or harmful modifications. We do not anticipate significant negative societal consequences arising directly from this research. 
+
+## References 
+
+Ameisen, E., Lindsey, J., Pearce, A., Gurnee, W., Turner, N. L., Chen, B., Citro, C., Abrahams, D., Carter, S., Hos-mer, B., Marcus, J., Sklar, M., Templeton, A., Bricken, T., McDougall, C., Cunningham, H., Henighan, T., Jermyn, A., Jones, A., Persic, A., Qi, Z., Ben Thompson, T., Zim-merman, S., Rivoire, K., Conerly, T., Olah, C., and Bat-son, J. Circuit tracing: Revealing computational graphs in language models. Transformer Circuits Thread , 2025. Ammar Khodja, H., Bechet, F., Brabant, Q., Nasr, A., and Lecorv ´e, G. WikiFactDiff: A large, realistic, and tem-porally adaptable dataset for atomic factual knowledge update in causal language models. In Calzolari, N., Kan, M.-Y., Hoste, V., Lenci, A., Sakti, S., and Xue, N. (eds.), 
+
+Proceedings of the 2024 Joint International Conference on Computational Linguistics, Language Resources and Evaluation (LREC-COLING 2024) , pp. 17614–17624, Torino, Italia, May 2024. ELRA and ICCL. Bereska, L. and Gavves, E. Mechanistic interpretability for ai safety–a review. arXiv preprint arXiv:2404.14082 ,2024. Bricken, T., Templeton, A., Batson, J., Chen, B., Jermyn, A., Conerly, T., Turner, N., Anil, C., Denison, C., Askell, A., Lasenby, R., Wu, Y., Kravec, S., Schiefer, N., Maxwell, T., Joseph, N., Hatfield-Dodds, Z., Tamkin, A., Nguyen, K., McLean, B., Burke, J. E., Hume, T., Carter, S., Henighan, T., and Olah, C. Towards monosemanticity: Decomposing language models with dictionary learning. 
+
+Transformer Circuits Thread , 2023. Clark, P., Cowhey, I., Etzioni, O., Khot, T., Sabharwal, A., Schoenick, C., and Tafjord, O. Think you have solved question answering? try arc, the ai2 reasoning challenge. 
+
+arXiv:1803.05457v1 , 2018. Cobbe, K., Kosaraju, V., Bavarian, M., Chen, M., Jun, H., Kaiser, L., Plappert, M., Tworek, J., Hilton, J., Nakano, R., Hesse, C., and Schulman, J. Training verifiers to solve math word problems. arXiv preprint arXiv:2110.14168 ,2021. Cunningham, H., Ewart, A., Riggs, L., Huben, R., and Sharkey, L. Sparse autoencoders find highly inter-pretable features in language models. arXiv preprint arXiv:2309.08600 , 2023. Dar, G., Geva, M., Gupta, A., and Berant, J. Analyzing trans-formers in embedding space. In Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pp. 16124–16170, 2023. Dunefsky, J., Chlenski, P., and Nanda, N. Transcoders find interpretable llm feature circuits. Advances in Neural Information Processing Systems , 37:24375–24410, 2024. Elhage, N., Nanda, N., Olsson, C., Henighan, T., Joseph, N., Mann, B., Askell, A., Bai, Y., Chen, A., Conerly, T., DasSarma, N., Drain, D., Ganguli, D., Hatfield-Dodds, Z., Hernandez, D., Jones, A., Kernion, J., Lovitt, L., Ndousse, K., Amodei, D., Brown, T., Clark, J., Kaplan, J., McCandlish, S., and Olah, C. A mathematical framework for transformer circuits. Transformer Circuits Thread ,2021. Fang, J., Jiang, H., Wang, K., Ma, Y., Shi, J., Wang, X., He, X., and Chua, T.-S. Alphaedit: Null-space constrained knowledge editing for language models. In Yue, Y., Garg, A., Peng, N., Sha, F., and Yu, R. (eds.), International Conference on Representation Learning , volume 2025, pp. 16366–16396, 2025. Geva, M., Schuster, R., Berant, J., and Levy, O. Transformer feed-forward layers are key-value memories. In Proceed-ings of the 2021 Conference on Empirical Methods in Natural Language Processing , pp. 5484–5495, 2021. Geva, M., Caciularu, A., Wang, K., and Goldberg, Y. Trans-former feed-forward layers build predictions by promot-ing concepts in the vocabulary space. In Proceedings of the 2022 conference on empirical methods in natural language processing , pp. 30–45, 2022. Gu, J.-C., Xu, H.-X., Ma, J.-Y., Lu, P., Ling, Z.-H., Chang, K.-W., and Peng, N. Model editing harms general abilities of large language models: Regularization to the rescue. In Al-Onaizan, Y., Bansal, M., and Chen, Y.-N. (eds.), Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing ,pp. 16801–16819, Miami, Florida, USA, November 2024. Association for Computational Linguistics. doi: 10.18653/v1/2024.emnlp-main.934. 9SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+Gupta, A., Rao, A., and Anumanchipalli, G. Model editing at scale leads to gradual and catastrophic forgetting. In Ku, L.-W., Martins, A., and Srikumar, V. (eds.), Find-ings of the Association for Computational Linguistics: ACL 2024 , pp. 15202–15232, Bangkok, Thailand, August 2024. Association for Computational Linguistics. doi: 10.18653/v1/2024.findings-acl.902. Hanna, M., Piotrowski, M., Lindsey, J., and Ameisen, E. circuit-tracer, 2025. The first two authors contributed equally and are listed alphabetically. Hartvigsen, T., Sankaranarayanan, S., Palangi, H., Kim, Y., and Ghassemi, M. Aging with grace: Lifelong model edit-ing with discrete key-value adaptors. Advances in Neural Information Processing Systems , 36:47934–47959, 2023. Hendrycks, D., Burns, C., Basart, S., Zou, A., Mazeika, M., Song, D., and Steinhardt, J. Measuring massive multitask language understanding. Proceedings of the International Conference on Learning Representations (ICLR) , 2021. Hong, Y. and Lipani, A. Interpretability-based tailored knowledge editing in transformers. In Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing , pp. 3847–3858, 2024. Jiang, H., Fang, J., Zhang, T., Bi, B., Zhang, A., Wang, R., Liang, T., and Wang, X. Neuron-level sequential editing for large language models. In Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pp. 16678–16702, 2025. Levy, O., Seo, M., Choi, E., and Zettlemoyer, L. Zero-shot relation extraction via reading comprehension. In Levy, R. and Specia, L. (eds.), Proceedings of the 21st Con-ference on Computational Natural Language Learning (CoNLL 2017) , pp. 333–342, Vancouver, Canada, August 2017. Association for Computational Linguistics. doi: 10.18653/v1/K17-1034. Mazzia, V., Pedrani, A., Caciolai, A., Rottmann, K., and Bernardi, D. A survey on knowledge editing of neural networks. IEEE Transactions on Neural Networks and Learning Systems , 2024. Meng, K., Bau, D., Andonian, A., and Belinkov, Y. Locating and editing factual associations in gpt. Advances in neural information processing systems , 35:17359–17372, 2022a. Meng, K., Sharma, A. S., Andonian, A., Belinkov, Y., and Bau, D. Mass-editing memory in a transformer. arXiv preprint arXiv:2210.07229 , 2022b. Mihaylov, T., Clark, P., Khot, T., and Sabharwal, A. Can a suit of armor conduct electricity? a new dataset for open book question answering. In Riloff, E., Chiang, D., Hockenmaier, J., and Tsujii, J. (eds.), Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing , pp. 2381–2391, Brussels, Belgium, October-November 2018. Association for Computational Linguistics. doi: 10.18653/v1/D18-1260. Mitchell, E., Lin, C., Bosselut, A., Finn, C., and Manning, C. D. Fast model editing at scale. In International Con-ference on Learning Representations , 2022. Paulo, G., Shabalin, S., and Belrose, N. Transcoders beat sparse autoencoders for interpretability. arXiv preprint arXiv:2501.18823 , 2025. Rai, D., Zhou, Y., Feng, S., Saparov, A., and Yao, Z. A practical review of mechanistic interpretability for transformer-based language models. arXiv preprint arXiv:2407.02646 , 2024. Talmor, A., Herzig, J., Lourie, N., and Berant, J. Common-senseQA: A question answering challenge targeting com-monsense knowledge. In Proceedings of the 2019 Confer-ence of the North American Chapter of the Association for Computational Linguistics: Human Language Technolo-gies, Volume 1 (Long and Short Papers) , pp. 4149–4158, Minneapolis, Minnesota, June 2019. Association for Computational Linguistics. doi: 10.18653/v1/N19-1421. Wang, P., Li, Z., Zhang, N., Xu, Z., Yao, Y., Jiang, Y., Xie, P., Huang, F., and Chen, H. Wise: Rethinking the knowledge memory for lifelong model editing of large language models. Advances in Neural Information Processing Systems , 37:53764–53797, 2024a. Wang, P., Zhang, N., Tian, B., Xi, Z., Yao, Y., Xu, Z., Wang, M., Mao, S., Wang, X., Cheng, S., Liu, K., Ni, Y., Zheng, G., and Chen, H. EasyEdit: An easy-to-use knowledge editing framework for large language mod-els. In Cao, Y., Feng, Y., and Xiong, D. (eds.), Pro-ceedings of the 62nd Annual Meeting of the Associa-tion for Computational Linguistics (Volume 3: System Demonstrations) , pp. 82–93, Bangkok, Thailand, August 2024b. Association for Computational Linguistics. doi: 10.18653/v1/2024.acl-demos.9. Wang, S., Zhu, Y., Liu, H., Zheng, Z., Chen, C., and Li, J. Knowledge editing for large language models: A survey. 
+
+ACM Computing Surveys , 57(3):1–37, 2024c. Welbl, J., Liu, N. F., and Gardner, M. Crowdsourcing multiple choice science questions. In Derczynski, L., Xu, W., Ritter, A., and Baldwin, T. (eds.), Proceedings of the 3rd Workshop on Noisy User-generated Text , pp. 94–106, Copenhagen, Denmark, September 2017. Association for Computational Linguistics. doi: 10.18653/v1/W17-4413. 10 SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+Yu, L., Chen, Q., Zhou, J., and He, L. Melo: Enhancing model editing with neuron-indexed dynamic lora. In 
+
+Proceedings of the AAAI Conference on Artificial Intelli-gence , volume 38, pp. 19449–19457, 2024. Zhang, N., Yao, Y., and Deng, S. Knowledge editing for large language models. In Klinger, R., Okazaki, N., Cal-zolari, N., and Kan, M.-Y. (eds.), Proceedings of the 2024 Joint International Conference on Computational Linguistics, Language Resources and Evaluation (LREC-COLING 2024): Tutorial Summaries , pp. 33–41, Torino, Italia, May 2024a. ELRA and ICCL. Zhang, Z., Li, Y., Kan, Z., Cheng, K., Hu, L., and Wang, D. Locate-then-edit for multi-hop factual recall under knowledge editing. arXiv preprint arXiv:2410.06331 ,2024b. Zhao, Z., Koishekenov, Y., Yang, X., Murray, N., and Can-cedda, N. Verifying chain-of-thought reasoning via its computational graph. arXiv preprint arXiv:2510.09312 ,2025. Zhong, H., Liu, Y., Xu, Z., Liu, G., Liu, Q., Wu, S., Zhao, Z., Wang, L., and Tan, T. REACT: Representation extraction and controllable tuning to overcome overfit-ting in LLM knowledge editing. In Christodoulopou-los, C., Chakraborty, T., Rose, C., and Peng, V. (eds.), 
+
+Proceedings of the 2025 Conference on Empirical Meth-ods in Natural Language Processing , pp. 16994–17011, Suzhou, China, November 2025. Association for Com-putational Linguistics. ISBN 979-8-89176-332-6. doi: 10.18653/v1/2025.emnlp-main.860. Zhu, C., Rawat, A. S., Zaheer, M., Bhojanapalli, S., Li, D., Yu, F., and Kumar, S. Modifying memories in transformer models. arXiv preprint arXiv:2012.00363 , 2020. 11 SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+## A. Detailed experiment setup 
+
+A.1. Datasets 
+
+Here, we provide a detailed introduction to the datasets used in this paper: • CounterFact : CounterFact is a more challenging dataset that contrasts counterfactual with factual statements, initially scoring lower for CounterFact. It constructs out-of-scope data by replacing the subject entity with approximate entities sharing the same predicate. The CounterFact dataset has similar metrics to ZsRE for evaluating efficacy, generalization, and specificity. Additionally, CounterFact includes multiple generation prompts with the same meaning as the original prompt to test the quality of generated text, specifically focusing on fluency and consistency. • ZsRE : ZsRE is a question answering (QA) dataset that uses questions generated through back-translation as equivalent neighbors. Following previous work, natural questions are used as out-of-scope data to evaluate locality. Each sample in ZsRE includes a subject string and answers as the editing targets to assess editing success, along with the rephrased question for generalization evaluation and the locality question for evaluating specificity. • WikiFactDiff : WikiFactDiff is a dataset focused on the task of factual updates, contrasting new, obsolete, and static facts across two different time points. It constructs out-of-scope data by comparing the state of the Wikidata knowledge base on January 4, 2021, and February 27, 2023. The dataset includes various update scenarios such as fact replacements, archiving, and new entity insertions, with facts represented as subject-relation-object triples. WikiFactDiff includes verbalization templates and cloze tests for evaluating update algorithms, specifically focusing on the quality and consistency of updates. 
+
+A.2. Metrics Evaluation Formulation. All datasets in our experiments follow the same evaluation protocol. Given an edit e =(s, r, o, o ∗), we evaluate the editing performance Reliability , Generality , Locality and General ability for general dataset like MMLU. 
+
+Reliability. Reliability measures whether the model correctly applies the intended edit. It evaluates the model’s ability to produce the edited target o∗ when queried with the original subject–relation pair (s, r ):
+
+Mrel = Ee∼D edit I
+
+h
+
+arg max  
+
+> o
+
+Pf ∗ (o | p(s, r )) = o∗i
+
+Generality. Generality evaluates whether the applied edit generalizes to in-scope variants of the edited fact. It measures the model’s ability to output the same edited target o∗ under semantically equivalent prompts associated with the same edit: 
+
+Mgen = Ee∼D edit ,p ∗∼N (e) I
+
+h
+
+arg max  
+
+> o
+
+Pf ∗ (o | p∗(s, r )) = o∗i
+
+where N (e) denotes the set of in-scope prompt variations for edit e.
+
+Locality. Locality measures whether the edit avoids unintended side effects on unrelated knowledge. It evaluates whether the model’s predictions on out-of-scope inputs remain unchanged after editing: 
+
+Mloc = E(x,p )∼D loc I
+
+h
+
+arg max  
+
+> x
+
+Pf ∗ (x | p) = arg max  
+
+> x
+
+Pf (x | p)
+
+i
+
+where f and f ∗ denote the original and edited models, respectively. 
+
+General Ability. General ability evaluates whether the editing process degrades the model’s overall reasoning and knowledge capabilities across diverse domains. 
+
+Mga = E(x,y )∼D ga I
+
+
+
+arg max  
+
+> y
+
+Pf ∗ (y | x) = y
+
+
+
+where f ∗ denotes the edited model. 12 SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+A.3. Baselines 
+
+Six popular model editing methods were selected as baselines including: • FT : FT simply performed gradient descent on the edits to update model parameters. It fine-tuned the last layer in the model with a norm constraint on weight changes to prevent overfitting. • RECT : RECT is a method that regularizes weight updates based on their relative changes to control parameter perturbations, thereby achieving knowledge edits while maximizing the preservation of the model’s general capabilities. • GRACE : GRACE enables localized corrections of streaming errors in deployed models by writing new mappings into the pretrained model’s latent space, creating a discrete, local edit cache, thereby achieving continuous knowledge updates while minimizing the impact on unrelated inputs, all without modifying the model weights. • MELO :MELO is a plug - in model editing method based on neuron -indexed dynamic LoRA, which alters the behavior of language models by dynamically activating certain LoRA blocks according to an internal vector database • MEMIT : MEMIT first localizes the key positions storing factual knowledge in the Transformer MLP modules, and then simultaneously updates a large set of facts across multiple MLP layers, achieving order-independent knowledge edits with minimal impact on other knowledge. • AlphaEdit : AlphaEdit builds on MEMIT by introducing null-space projection, constraining knowledge updates in directions that do not disrupt existing knowledge, thereby achieving more robust, order-independent multi-fact edits. 
+
+A.4. Implementation details 
+
+We report the hyperparameter configurations used for all editing methods and backbone models. For each method, we select the best-performing configuration (recommandation from (Wang et al., 2024b)) and apply it consistently across all experiments. 
+
+AlphaEdit                                                                               
+
+> Parameter Qwen3-8B Llama3.1-8B Gemma2-2B
+> Layers 4–8 4–8 4–8 Fact token subj last subj last subj last
+> wdecay 10 −310 −310 −3
+> Mom. weight 15000 15000 15000 Mom. samples 3000 3000 3000 Clamp factor 0.75 0.75 0.75 Null thresh. 0.02 0.02 0.02
+> L2100 10 500 Steps 25 25 25 LR 10 −310 −310 −3
+> Fine-Tuning (FT) Parameter Qwen3-8B Llama3.1-8B Gemma2-2B
+> Layers 35 31 25 Steps 25 25 25 LR 5×10 −45×10 −45×10 −4
+> MEMIT Parameter Qwen3-8B Llama3.1-8B Gemma2-2B
+> Layers 4–8 4–8 4–8 Fact token subj last subj last subj last
+> wdecay 10 −310 −310 −3
+> Mom. weight 15000 15000 15000 Mom. samples 3000 3000 3000 Clamp factor 444Steps 25 25 25 LR 0.5 0.5 0.5
+
+13 SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing RECT Parameter Qwen3-8B Llama3.1-8B Gemma2-2B 
+
+Layers 4 4 4Sparse rate 0.2 0.2 0.2 Reg. abs abs abs Steps 25 25 25 LR 0.5 0.5 0.5 
+
+GRACE Parameter Qwen3-8B Llama3.1-8B Gemma2-2B 
+
+Layers 23 27 19 
+
+ϵ 1 1 1Steps 100 100 100 LR 1 1 1
+
+MELO Parameter Qwen3-8B Llama3.1-8B Gemma2-2B 
+
+Layers 35,35 30,31 24,25 Steps 50 50 50 LR 10 −4 10 −4 10 −4
+
+LoRA (r, α ) (64,64) (64,64) (64,64) Radius 75 75 75 
+
+SCAN (Ours) Parameter Qwen3-8B Llama3.1-8B Gemma2-2B 
+
+Layers all all all Steps 50 50 50 LR 0.005 0.005 0.005 Thresh. 0.25 0.25 0.25 Features Num. 300 450 200 Node Thresh. 0.8 0.9 0.8 Edge Thresh. 0.98 0.99 0.98 Node Num. 8192 8192 8192 Transcoder Dim. 163840 131072 16384 
+
+## B. Detailed Proof 
+
+B.1. Jacobian as the Optimal Direction-Preserving Linearization 
+
+Lemma B.1 (Stability of normalization) . Let u, v ∈ Rn be nonzero vectors. Then 
+
+u
+
+∥u∥ − v
+
+∥v∥ ≤ 2∥u − v∥∥v∥
+
+Proof. We decompose 
+
+u
+
+∥u∥ − v
+
+∥v∥ = u − v
+
+∥u∥ + v
+
+ 1
+
+∥u∥ − 1
+
+∥v∥
+
+
+
+Taking norms and applying the triangle inequality yields 
+
+u
+
+∥u∥ − v
+
+∥v∥ ≤ ∥u − v∥∥u∥ + ∥v∥ 1
+
+∥u∥ − 1
+
+∥v∥
+
+Using the reverse triangle inequality, |∥ u∥ − ∥ v∥| ≤ ∥ u − v∥ we obtain 
+
+∥v∥ 1
+
+∥u∥ − 1
+
+∥v∥ = |∥ v∥ − ∥ u∥| ∥u∥ ≤ ∥u − v∥∥u∥
+
+14 SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+Hence, 
+
+u
+
+∥u∥ − v
+
+∥v∥ ≤ 2∥u − v∥∥u∥
+
+Proof. Fix x0 ∈ X and assume that f is differentiable at x0 with Jacobian matrix Jf (x0). By differentiability at x0, we have 
+
+f (x0 + h) = f (x0) + Jf (x0)h + rx0 (h), ∥rx0 (h)∥∥h∥ −−−→ 
+
+> h→0
+
+0
+
+Setting h = −x0 yields 
+
+f (0) = f (x0) − Jf (x0)x0 + rx0 (−x0)
+
+Since f (0) = 0 , this can be rewritten as 
+
+f (x0) = Jf (x0)x0 − rx0 (−x0)
+
+Define ˜r(x0) := −rx0 (−x0). Then we have 
+
+f (x0) = Jf (x0)x0 + ˜ r(x0) and ∥˜r(x0)∥∥x0∥ = ∥rx0 (−x0)∥∥x0∥ −−−−→ 
+
+> x0→0
+
+0
+
+Then we consider the difference in normalized directions: 
+
+f (x0)
+
+∥f (x0)∥ − Jf (x0)x0
+
+∥Jf (x0)x0∥ = Jf (x0)x0 + ˜ r(x0)
+
+∥Jf (x0)x0 + ˜ r(x0)∥ − Jf (x0)x0
+
+∥Jf (x0)x0∥
+
+By the lemma B.1, we have 
+
+f (x0)
+
+∥f (x0)∥ − Jf (x0)x0
+
+∥Jf (x0)x0∥ ≤ 2∥˜r(x0)∥∥Jf (x0)x0∥
+
+Since Jf (0) is non-singular, there exists a constant M > 0 such that ∥Jf (0) x0∥ ≥ M ∥x0∥. By the continuity of the Jacobian at the origin, we have Jf (x0) → Jf (0) as x0 → 0. For sufficiently small x0, the reverse triangle inequality implies: 
+
+∥Jf (x0)x0∥ ≥ ∥ Jf (0) x0∥ − ∥ (Jf (x0) − Jf (0)) x0∥ ≥ M
+
+2 ∥x0∥
+
+Setting m = M/ 2, it follows that ∥Jf (x0)x0∥ ≥ m∥x0∥ for x0 near the origin. This implies that the ratio satisfies 
+
+2∥˜r(x0)∥∥Jf (x0)x0∥ ≤ 2∥˜r(x0)∥
+
+m∥x0∥ = 2
+
+m · ∥˜r(x0)∥∥x0∥ −−−−→ 
+
+> x0→0
+
+0
+
+Hence, we obtain 
+
+f (x0)
+
+∥f (x0)∥ − Jf (x0)x0
+
+∥Jf (x0)x0∥ −−−−→ 
+
+> x0→0
+
+0
+
+which proves that the Jacobian matrix Jf (x0) satisfies the desired directional alignment property. 
+
+B.2. Closed-form Total Attribution Matrix 
+
+Lemma B.2 (Convergence of Powers of A). Let A ∈ Rn×n satisfy ∥A∥ < 1. Then 
+
+Ak −−−−→ 
+
+> k→∞
+
+0
+
+where 0 is the n × n zero matrix. Proof. For any positive integer k, we have 
+
+∥Ak ∥ = ∥A · Ak−1∥ ≤ ∥ A∥ · ∥ Ak−1∥ ≤ · · · ≤ ∥ A∥k
+
+Since ∥A∥ < 1. Hence, 
+
+∥Ak ∥ − −−−→ 
+
+> k→∞
+
+0
+
+which implies 
+
+Ak −−−−→ 
+
+> k→∞
+
+0
+
+15 SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+Proof of Invertibility. To prove that I − A is invertible, it suffices to show that 0 is not an eigenvalue of I − A. Equivalently, we only need to show that 1 is not an eigenvalue of A.We argue by contradiction. Suppose that 1 is an eigenvalue of A. Then there exists a nonzero vector x ∈ Rn such that 
+
+Ax = x
+
+Without loss of generality, we may assume ∥x∥ = 1 .By iteration, for any positive integer k we have 
+
+Ak x = x
+
+Taking norms yields 
+
+1 = ∥x∥ = ∥Ak x∥ ≤ ∥ Ak ∥ ∥ x∥ = ∥Ak ∥
+
+On the other hand, if ∥A∥ < 1, then 
+
+∥Ak ∥ ≤ ∥ A∥k −−−−→ 
+
+> k→∞
+
+0
+
+This contradicts the inequality 1 ≤ ∥ Ak ∥.Therefore, 1 cannot be an eigenvalue of A, and hence 0 is not an eigenvalue of I − A. It follows that I − A is invertible. 
+
+Proof. For any positive integer k, a direct computation shows that 
+
+(I + A + A2 + · · · + Ak )( I − A) = I − Ak+1 
+
+Consequently, 
+
+I + A + A2 + · · · + Ak = ( I − A)−1 − Ak+1 (I − A)−1
+
+Since 
+
+Ak+1 −−−−→ 
+
+> k→∞
+
+0
+
+it follows that 
+
+Ak+1 (I − A)−1 −−−−→ 
+
+> k→∞
+
+0
+
+Letting k → ∞ , we conclude that the matrix series 
+
+> ∞
+
+X
+
+> k=0
+
+Ak
+
+converges and satisfies 
+
+> ∞
+
+X
+
+> k=0
+
+Ak = ( I − A)−1
+
+## C. Illustration of attribution graph 
+
+C.1. Illustrate algorithm of SCAN 
+
+The complete procedure for constructing Attribution Graph is summarized in Algorithm 1. Owing to the nilpotent structure of the adjacency matrix A, which arises when the nodes are arranged in order of increasing layer, (i.e., from lower to higher levels, such that 
+
+ai,j = 0 for all i ≥ j) and the fact that the maximum path length in multi-step attributions is finite, we adopt an iterative algorithm to compute total attribution matrix B. Moreover the sparsity of A ensures computational efficiency. 
+
+16 SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+Algorithm 1 Knowledge-Specific Circuit Construction and Pruning 
+
+Input: editing instance e = ( s, r, o → o∗), model M , prompt p, threshold τ , propagation steps N
+
+Forward Pass and Node Collection 
+
+Run a forward pass of M with prompt p
+
+Record embeddings, Sparse Transcoder activations, MLP reconstruction errors, and output logits Construct node set 
+
+V = Vembed ∪ Vfeature ∪ Verror ∪ Vlogit 
+
+Initialize complete Attribution Araph G = K(V )
+
+Direct Attribution Matrix Construction for all node pairs (u, v ) with u preceding v do 
+
+Obtain activation zu
+
+Backpropagate gradient from node v and compute ∂M v
+
+> ∂z u
+
+Set Av,u ← ∂M v 
+
+> ∂z u
+
+· zu
+
+end for Iterative Indirect Attribution Accumulation 
+
+Initialize A1 ← A
+
+for k = 2 to N do 
+
+Ak ← A · Ak−1 + A
+
+end for 
+
+Set B ← AN
+
+Recursive Edge Pruning for all target nodes v ∈ V do 
+
+Collect incoming edges Ev = {u → v}
+
+Sort Ev in descending order of Bv,u 
+
+Normalize scores eBuv 
+
+Initialize cumulative sum c ← 0
+
+for all edges u → v in sorted order do 
+
+c ← c + eBv,u 
+
+if c ≥ τ then 
+
+Prune this edge and all remaining edges in Ev
+
+break end if end for end for Output 
+
+Return the remaining graph G′
+
+C.2. Example of Attribution Graph 
+
+To further elucidate the model’s decision-making process, we provide a high-fidelity Attribution Graph as an example in Figure 7. 
+
+## D. Other experiment 
+
+D.1. Result on Llama3.2-1B 
+
+To evaluate the robustness of editing methods on lightweight architectures, we further report results on the small-scale model Llama3.2-1B as shown in Table 3. 
+
+17 SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing 
+
+Figure 7. Attribution Graph for the target token “Joe” on Gemma2-2B. Nodes represent features across layers. Blue edges denote promoting effects (positive weights), while orange edges denote suppressing effects (negative weights). The color opacity represents the relative magnitude of the attribution weight, with uniform line thickness for visual clarity. 
+
+Table 3. Sequential editing task performance comparison of our method and other methods after 1000 edits. Bold and underline denote the best and second-best results per column, respectively. 
+
+Method Model CounterFact ZsRE WikiFactDiff Rel ↑ Gen ↑ Loc ↑ Avg ↑ Rel ↑ Gen ↑ Loc ↑ Avg ↑ Rel ↑ Gen ↑ Loc ↑ Avg ↑
+
+FT Llama3.2-1B  32.25 11.05 1.90 5.23 55.97 48.16 6.01 14.86 68.17 64.81 16.95 30.98 RECT 2.30 4.10 0 0 1.50 1.33 1.56 1.46 0.44 0.37 0 0AlphaEdit 86.30 42.95 23.70 39.61 80.66 66.36 45.70 61.21 48.06 41.45 24.60 35.15 MEMIT 0 0 0.30 0 0.23 0.20 4.50 0.55 0.15 0.15 0.76 0.24 GRACE 100 0.80 99.80 2.37 99.40 24.20 100 42.02 99.82 48.30 98.84 70.38 MELO 91.60 62.15 50.90 66.01 94.59 69.80 95.02 85.07 86.54 70.31 94.60 82.35 
+
+SCAN (Ours) 99.10 82.60 92.40 90.96 99.80 79.60 99.80 90.32 100 81.33 92.01 90.62 
+
+## E. Case study 
+
+E.1. More Interpretable Features 
+
+We select and visualize the activation patterns of several additional interpretable features. These cases encompass both edit-specific 
+
+features tied to particular entities and general-purpose features capturing broader semantic abstractions. 
+
+18 SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing ID: 20#13390 
+
+Explanation: 
+
+References to the company Amazon and/or Amazon branded products and services. 
+
+> Reliability
+> Generality
+> Locality
+
+ID: 20#10092 
+
+Explanation: 
+
+Mentions of the president of the United States, particularly Obama and Trump, and political terms. 
+
+> Reliability
+> Generality
+> Locality
+
+ID: 21#3435 
+
+Explanation: 
+
+Capital-letter abbreviations for official-sounding organizations or locations and titles for people. 
+
+> Reliability
+> Generality
+> Locality
+
+ID: 19#15383 
+
+Explanation: 
+
+References to athletes, specifically professional chess players, and terms related to sports participation. 
+
+> Reliability
+> Generality
+> Locality
+
+19 SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing ID: 19#10892 
+
+Explanation: 
+
+Mentions of romantic relationships, partners, and well-known couples. 
+
+> Reliability
+> Generality
+> Locality
+
+ID: 22#1328 
+
+Explanation: 
+
+References to manufacturing, corporate production, and specific automotive brands like Nissan. 
+
+> Reliability
+> Generality
+> Locality
+
+ID: 19#15849 
+
+Explanation: 
+
+References to U.S. politics, particularly Barack Obama and governmental structures. 
+
+> Reliability
+> Generality
+> Locality
+
+ID: 20#15360 
+
+Explanation: 
+
+Mentions of countries and governments, often in a political or geographical context. 
+
+> Reliability
+> Generality
+> Locality
+
+20 SCAN: Sparse Circuit Anchor Interpretable Neuron for Lifelong Knowledge Editing ID: 19#1263 
+
+Explanation: 
+
+Political figures or bodies, particularly related to the US government and local offices. 
+
+> Reliability
+> Generality
+> Locality
+
+ID: 19#14002 
+
+Explanation: 
+
+Mentions of religion, historical figures, and religious affiliations. 
+
+> Reliability
+> Generality
+> Locality
+
+21

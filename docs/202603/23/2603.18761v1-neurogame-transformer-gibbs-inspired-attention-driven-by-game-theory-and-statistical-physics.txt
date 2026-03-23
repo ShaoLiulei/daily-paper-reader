@@ -1,0 +1,1426 @@
+Title: NeuroGame Transformer: Gibbs-Inspired Attention Driven by Game Theory and Statistical Physics
+
+URL Source: https://arxiv.org/pdf/2603.18761v1
+
+Published Time: Fri, 20 Mar 2026 01:00:24 GMT
+
+Number of Pages: 12
+
+Markdown Content:
+1
+
+# NeuroGame Transformer: Gibbs-Inspired Attention Driven by Game Theory and Statistical Physics 
+
+Djamel Bouchaffra ∗, Faycal Ykhlef †, Hanane Azzag ‡, Mustapha Lebbah ∗, Bilal Faye ‡∗ Paris-Saclay University, UVSQ, DAVID Lab, 78035, Versailles, France 
+
+† TSAM, ASM, Centre for Development of Advanced Technologies, Algiers, Algeria 
+
+‡ LIPN, UMR CNRS 7030, Sorbonne Paris Nord University, Villetaneuse, France 
+
+{djamel.bouchaffra, mustapha.lebbah }@uvsq.fr, fykhlef@cdta.dz, {bilal.faye, azzag }@lipn.univ-paris13.fr 
+
+✦
+
+Abstract —Standard attention mechanisms in transformers are limited by their pairwise formulation, which hinders the modeling of higher-order dependencies among tokens. We introduce the NeuroGame Trans-former (NGT) to overcome this by reconceptualizing attention through a dual perspective: tokens are treated simultaneously as players in a cooperative game and as interacting spins in a statistical physics system. Token importance is quantified using two complementary game-theoretic concepts—Shapley values for global, permutation-based at-tribution and Banzhaf indices for local, coalition-level influence. These are combined via a learnable gating parameter to form an external magnetic field, while pairwise interaction potentials capture synergis-tic relationships. The system’s energy follows an Ising Hamiltonian, with attention weights emerging as marginal probabilities under the Gibbs distribution, efficiently computed via mean-field equations. To ensure scalability despite the exponential coalition space, we develop importance-weighted Monte Carlo estimators with Gibbs-distributed weights. This approach avoids explicit exponential factors, ensuring numerical stability for long sequences. We provide theoretical conver-gence guarantees and characterize the fairness–sensitivity trade-off governed by the interpolation parameter. Experimental results demon-strate that the NeuroGame Transformer achieves strong performance across SNLI, and MNLI-matched, outperforming some major efficient transformer baselines. On SNLI, it attains a test accuracy of 86.4% (with a peak validation accuracy of 86.6%), surpassing ALBERT-Base and remaining highly competitive with RoBERTa-Base. Code is available at https://github.com/dbouchaffra/NeuroGame-Transformer. 
+
+Index Terms —Transformer; attention mechanism; cooperative game theory; Shapley value; Banzhaf index; Ising model; mean-field approxi-mation; Gibbs distribution; importance-weighted Monte Carlo 
+
+1 INTRODUCTION 
+
+Transformers have revolutionized natural language process-ing through attention mechanisms that compute context-dependent token representations. However, conventional attention relies primarily on pairwise similarity, limiting its ability to capture higher-order semantic dependencies involving multiple tokens. Recent advances explore higher-order attention [1], kernel-based reformulations [2], linear approximations [3], state-space models [4], and dynamic computation [5]—developments critical for long-context do-mains such as genomics [6], high-resolution vision, and video understanding [7]. We propose a fundamentally different perspective bridg-ing cooperative game theory and statistical physics to recon-ceptualize transformer attention [8], [9]. Instead of pairwise similarity, we treat tokens as both strategic players in a coop-erative game and interacting spins in a thermodynamic sys-tem. This dual interpretation enables modeling higher-order semantic structure through token coalitions. Concretely, we introduce a semantic coalition game over token subsets: each coalition C is assigned a scalar value v(C) = −E(C),where E(C) is a physical energy. Coherent coalitions receive lower energy and thus higher activation. Shapley values cap-ture globally fair contributions, while Banzhaf power indices 
+
+identify locally decisive tokens; we combine them into an 
+
+external magnetic field that balances global and local sensi-tivity. Pairwise interaction potentials capture synergistic or antagonistic token relationships, and attention weights are derived from the Gibbs (Boltzmann) distribution over spin configurations, computed via mean-field equations to avoid the intractable sum over 2n states. To compute Shapley values, Banzhaf indices, and in-teraction potentials efficiently, we employ importance-weighted Monte Carlo estimation with Gibbs-distributed im-portance weights . This avoids explicit 2n factors, yields un-biased estimates, and makes the partition function cancel naturally. Building on these principles, we introduce the 
+
+NeuroGame Transformer , which makes the following contri-butions:  
+
+> •
+
+We define a coalitional semantic game with an energy-based characteristic function, enabling higher-order se-mantic modeling grounded in statistical physics.  
+
+> •
+
+We develop scalable Monte Carlo estimators for Shap-ley values, Banzhaf indices, and interaction potentials using Gibbs-distributed importance weights, achieving 
+
+linear complexity O(K · n) instead of exponential O(2 n),where K is the number of sampled coalitions.  
+
+> •
+
+We derive a NeuroGame attention mechanism com-bining Shapley and Banzhaf values via a learnable context-dependent parameter, with pairwise potentials 
+
+> arXiv:2603.18761v1 [cs.AI] 19 Mar 2026 2
+
+capturing token interactions.  
+
+> •
+
+We compute attention weights via mean-field equa-tions, providing a principled mechanism uniting coalition-based reasoning and energy-based modeling.  
+
+> •
+
+We demonstrate empirically that the NeuroGame Transformer outperforms standard and efficient trans-former baselines on natural language inference bench-marks, yielding interpretable coalition-aware attention patterns. The NeuroGame Transformer departs fundamentally from conventional attention by evaluating each token’s marginal contribution across all coalitions using game-theoretic prin-ciples and deriving attention weights from the Gibbs distri-bution of a statistical physics system. This coalition-aware perspective, made tractable through Gibbs-based Monte Carlo estimation and mean-field approximation, enables richer semantic modeling and explicit interpretability. 
+
+2 RELATED WORK 
+
+2.1 Standard and Efficient Attention 
+
+The transformer architecture [10] relies on pairwise dot-product attention. Efficient variants (e.g., sparse [11], lin-earized [2], [3]) improve scalability but preserve the pair-wise similarity paradigm. 
+
+2.2 Game-Theoretic Methods in Machine Learning 
+
+Shapley values [12] and Banzhaf indices [13] are widely used for post-hoc feature attribution [14], [15] and data val-uation [16]. Their integration as a core attention mechanism remains unexplored. 
+
+2.3 Statistical Physics and Energy-Based Models 
+
+The softmax operation can be viewed as a Boltzmann distri-bution over energies [17], [18], with temperature controlling sharpness [19]. Energy-based perspectives have informed variational formulations [20] and softmax alternatives [21]. 
+
+2.4 Our Positioning 
+
+The NeuroGame Transformer uniquely synthesizes three traditionally separate directions. Unlike efficient transform-ers that approximate pairwise similarity, we model higher-order semantic interactions through token coalitions. Unlike game-theoretic methods that apply Shapley and Banzhaf values post-hoc, we integrate them directly into attention computation. Unlike energy-based models that define ar-bitrary energy functions, we ground ours in cooperative game theory via the Ising Hamiltonian. Our approach is constructive rather than descriptive: we build attention from first principles using game-theoretic valuation and statistical physics, yielding an expressive, inherently interpretable, and theoretically grounded mechanism. 
+
+3 NEURO GAME TRANSFORMER : FUSION OF 
+
+GAME THEORY AND STATISTICAL PHYSICS 
+
+3.1 Notation and Preliminaries 
+
+Consider a sequence of n tokens T = {t1, t 2, . . . , t n}, where each token ti is associated with a contextual embedding 
+
+xi ∈ Rd. We denote the power set of all possible token coalitions by 2T , which contains 2n elements. 
+
+Definition 1 (Token Coalition) . When tokens are viewed as players in a cooperative game, a coalition is defined as any subset 
+
+C ⊆ T .
+
+The set of all possible coalitions is given by the power set 2T . Each coalition represents a group of tokens whose joint presence contributes collectively to the model’s rep-resentation or prediction. This contribution is quantified by a characteristic function: v : 2T → R, where v(C)
+
+measures the semantic, predictive, or energetic contribution of the token subset C. For a token ti ∈ T and a coalition 
+
+C ⊆ T \ { ti}, the marginal contribution of ti to C is: 
+
+∆iv(C) = v(C ∪ { ti}) − v(C). (1) 
+
+3.2 The Coalitional Semantic Game 
+
+We define a semantic characteristic function v : 2 T → R that assigns to each coalition C ⊆ T a scalar value representing its semantic importance within the context. This function satisfies: 1) Normalization: v(∅) = 0 
+
+2) Monotonicity: For any C ⊆ T ⊆ T , v(C) ≤ v(T )
+
+3) Boundedness: There exists M > 0 such that |v(C)| ≤ M
+
+for all C ⊆ T 
+
+3.3 Energy-Based Semantic Characteristic Function] 
+
+Let T = {t1, . . . , t n} denote the set of tokens in a sequence. At a given transformer layer, each token ti is represented by a position-aware embedding xi = ei + pi ∈ Rd, where 
+
+ei denotes the token embedding and pi the positional encoding. 
+
+Definition 2 (Energy-Based Semantic Characteristic Func-tion) . For any coalition C ⊆ T , we define its semantic activa-tion potential as: 
+
+v(C) = f X
+
+> ti∈C
+
+Wv xi 2
+
+!
+
+, (2) 
+
+where Wv ∈ Rd×d is a learned projection matrix and f is a mild nonlinearity (e.g., ReLU or tanh ). 
+
+We interpret v(C) as a coalition-level activation or in-teraction strength. In accordance with statistical physics, the corresponding coalition energy is defined as follows: 
+
+E(C) = −v(C), which assigns lower energy to more co-herent or strongly interacting coalitions. This energy formu-lation naturally induces a Gibbs (Boltzmann) distribution 
+
+Dγ over token coalitions: 
+
+Dγ (C) ∝ exp 
+
+
+
+− E(C)/γ 
+
+
+
+= exp 
+
+
+
+v(C)/γ 
+
+
+
+, (3) where γ > 0 is a temperature parameter controlling the concentration of probability mass over coalitions. 
+
+3.4 Global and Local Tokens Contribution 
+
+we define in this section two semantic measures: The global contribution conveyed by Shapley value, and the local seman-tic gain variation conveyed by Banzhaf power index. 3
+
+3.4.1 Shapley Value: Global Semantic Contribution 
+
+The Shapley value measures the average marginal semantic contribution of a token over all possible permutations of to-ken arrivals, ensuring fairness, symmetry, and permutation invariance. Let Π( T ) denote the set of all n! permutations of the token set T . For token ti, let Pi(π) be the set of tokens that appear before ti in permutation π ∈ Π( T ). The Shapley value of ti is then defined as: 
+
+ϕi(v) = 1
+
+n!
+
+X 
+
+> π∈Π( T)
+
+h
+
+v Pi(π) ∪ { ti} − v Pi(π)i
+
+. (4) 
+
+Remark 1. Since equation 4 involves an expectation over the factorial-sized permutation space Π( T ), exact evaluation of the Shapley value is computationally infeasible, motivating the use of importance-weighted Monte Carlo estimation. In the case Pnj=1 ϕj (v)̸ = 0 , the normalized Shapley value is expressed as: ϕnorm  
+
+> i
+
+(v) = ϕi(v)Pnj=1 ϕj (v) .
+
+3.4.2 Banzhaf Power Index: Local Semantic Gain Variation 
+
+The Banzhaf power index evaluates the sensitivity of semantic gain to the presence or absence of a token across coalitions, treating all coalitions as equally likely. Unlike the Shapley value, it does not consider permutations of token order and emphasizes local variations in contribution. The raw Banzhaf index of token ti is defined as: 
+
+βi(v) = 12n−1
+
+X
+
+> C⊆T \{ ti}
+
+h
+
+v(C ∪ { ti}) − v(C)
+
+i
+
+. (5) 
+
+Remark 2. Likewise, as equation 5 involves a summation over all 2n−1 coalitions, exact computation of the Banzhaf power index is computationally intractable, motivating the use of importance-weighted Monte Carlo estimation. In the case Pnj=1 βj (v)̸ = 0, the normalized form is expressed as: βnorm  
+
+> i
+
+(v) = βi(v)Pnj=1 βj (v) .
+
+3.5 Token-Level Importance Score 
+
+We define, in the context of the NeuroGame transformer, a token-level importance score derived from coalitional game-theoretic measures, and subsequently map this importance to an external field of a Gibbs energy function. 
+
+Definition 3 (Token Importance as External Field) . The importance of token ti, denoted by Ji, is defined as a context-aware convex combination of the normalized Shapley value and the normalized Banzhaf power index: 
+
+Ji = λi ϕnorm  
+
+> i
+
+(v) + (1 − λi) βnorm  
+
+> i
+
+(v), (6) 
+
+where: 
+
+λi = σ(wT xi + b). (7) 
+
+The parameter λi depends on the token representation xi ∈ Rd,the weight vector w, the bias b ∈ R and the sigmoidal function σ
+
+that maps the score to (0 , 1) .
+
+The model learns when marginal contribution (Shapley) matters (λi ≈ 1: Shapley-dominant) and when independent swing power (Banzhaf) matters (λi ≈ 0: Banzhaf-dominant) or a balanced regime (λi ≈ 0.5) . The quantity Ji measures the contribution and relevance of token ti within the coop-erative game defined by v(C), with larger values indicating higher importance. 
+
+3.6 Token Pairwise Interaction 
+
+Likewise, we define a pairwise interaction between tokens representing the synergistic or antagonistic effect between two tokens when they are part of the same coalition. For any two distinct tokens ti, t j ∈ T , their interaction potential 
+
+measures the synergistic or antagonistic effect when they appear together in a coalition, beyond what their individual contributions would predict. For a given context coalition 
+
+C ⊆ T \ { ti, t j } that contains neither token, the conditional interaction is: 
+
+∆ij (C) = v(C ∪ { ti, t j }) − v(C ∪ { ti}) − v(C ∪ { tj }) + v(C).
+
+(8) 
+
+Definition 4 (Token Pairwise Interaction) . The overall interac-tion potential Jij is then defined as the expected value of ∆ij (C)
+
+over all possible contexts (subsets of C), weighted appropriately: 
+
+Jij = X 
+
+> C⊆T \{ ti,t j}
+
+w(C) ∆ ij (C), (9) 
+
+where w(C) is a uniform weighting scheme. 
+
+3.7 Ising Model-based Token System Total Energy 
+
+We now provide the total energy (or Hamiltonian) of a configuration system (an entire input sequence of tokens). However, before expressing of the total energy configura-tion system, we make the following clarification: 
+
+Definition 5 (Coalition) . A coalition, denoted by C ⊆ T , is any subset of tokens from the token set T = {t1, t 2, . . . , t n}. The characteristic function v(C) assigns a value to each coalition. 
+
+Definition 6 (Spin Configuration) . A spin configuration sys-tem which is denoted by S = ( s1, s 2, . . . , s n) ∈ {− 1, +1 }n, is a complete assignment of spin states to every token in the sequence 
+
+C, where si represents the activation state of token ti.
+
+Definition 7 (Token Energy) . The total energy of the token system S is defined as: 
+
+H(S) = −
+
+> n
+
+X
+
+> i=1
+
+Jisi −
+
+> n−1
+
+X
+
+> i=1
+> n
+
+X
+
+> j=i+1
+
+Jij sisj . (10) The variables si ∈ {− 1, +1 } represents the “activation state” or “spin” of token ti. These activation states are estimated using the mean-field equation described in sec-tion 3.10. 
+
+Definition 8 (Interpretation of Total Energy) . The Hamilto-nian H(S) encapsulates the complete energetic state of the token configuration system S: 
+
+> •
+
+First term ( − P 
+
+> i
+
+Jisi): represents the external field con-tribution. Tokens with high importance Ji (positive external field) are energetically favored to be in the si = +1 (active) state, as this lowers the total energy. Conversely, tokens with low importance Ji are favored to be inactive ( si = −1).  
+
+> •
+
+Second term (− Pn−1
+
+> i=1
+
+Pnj=i+1 Jij sisj ): represents the pairwise interaction contribution. 
+
+– If Jij > 0 (synergistic interaction), the energy is min-imized when si and sj have the same sign ( +1 , +1 or 
+
+−1, −1), encouraging cooperative activation or deac-tivation .4
+
+– If Jij < 0 (antagonistic interaction), the energy is min-imized when si and sj have opposite signs, encouraging 
+
+competitive behavior where one token activates while the other suppresses. 
+
+– If Jij = 0 , tokens i and j are independent. The system naturally seeks low-energy configurations, which correspond to coherent token activations that maximize overall semantic coherence. 
+
+3.8 Attention Weights 
+
+We now provide a definition of attention weights assigned to each token within a token system configuration: 
+
+Definition 9 (Coalitional Attention Weight) . The attention weight αi of token ti is defined as the marginal probability that token ti is in the active state ( si = +1 ) under the Gibbs distribution over all possible token system configurations S:
+
+αi = P (si = +1) = X
+
+> S:si=+1
+
+P (S), (11) 
+
+where P (S) is the Gibbs distribution: 
+
+P (S) = exp ( −H(S)/γ )
+
+X
+
+> S′
+
+exp ( −H(S′)/γ ) . (12) The attention weights satisfy the following properties:  
+
+> •
+
+Boundedness: Each attention weight is a probability and thus lies in the unit interval: 
+
+0 ≤ αi ≤ 1, ∀i ∈ { 1, . . . , n }. (13)  
+
+> •
+
+Relation between αi and ⟨si⟩: Let p = P (si = +1) .Then, the expected value of si is: 
+
+⟨si⟩ = (+1) p + ( −1)(1 − p) = 2 p − 1
+
+⇒ p = 1 + ⟨si⟩
+
+2 .
+
+Since αi = p, we have αi = 1 + ⟨si⟩
+
+2 . 
+
+> •
+
+Sum as Expected Active Tokens: The sum of attention weights equals the expected number of active tokens in the system: 
+
+> n
+
+X
+
+> i=1
+
+αi = E
+
+
+
+> n
+
+X
+
+> j=1
+
+⊮sj =+1 
+
+ = E[k(S)] , (14) where k(S) = Pnj=1 ⊮sj =+1 denotes the number of active tokens in configuration S. Note that this sum is 
+
+not necessarily equal to 1 , unlike in standard attention mechanisms. 
+
+Remark 3. Unlike conventional attention mechanisms where P 
+
+> i
+
+αi = 1 by construction, our framework imposes no such constraint. The quantity P 
+
+> i
+
+αi emerges naturally as the expected number of active tokens, reflecting the semantic complexity of the input sequence. Sequences requiring more active tokens to represent their meaning will have larger total attention. 
+
+3.9 NeuroGame Transformer: Physical Interpretation 
+
+The NeuroGame Transformer establishes a direct analogy with statistical physics, summarized by the following corre-spondences:  
+
+> •
+
+Tokens: represent spins in a magnetic system.  
+
+> •
+
+Token Importance Ji: represents the external magnetic field.  
+
+> •
+
+Interaction potential: Jij exchange coupling between spins.  
+
+> •
+
+Temperature: γ is the system temperature.  
+
+> •
+
+Attention weights: αi represents a local magnetization.  
+
+> •
+
+Temperature Effects: When ( γ → 0), the distribution con-centrates on the lowest-energy configuration, resulting in a deterministic attention where αi ∈ { 0, 1} indicates whether token i is active in the ground state. When (γ → ∞ ), all configurations become equally probable, producing uniform attention with αi = 1 /2 for all tokens 
+
+i. In the intermediate scenario, the system balances energy minimization with thermal exploration, result-ing in probabilistic attention that smoothly interpolates between these extremes. 
+
+3.10 Mean-Field Approximation 
+
+The exact computation of the spin expectations ⟨si⟩ requires solving the full statistical physics system defined by the Hamiltonian in Equation 10. Theoretically, these expecta-tions are given by: 
+
+⟨si⟩ = 1
+
+Z
+
+X
+
+> S
+
+si exp ( −H(S)/γ ) , Z = X
+
+> S
+
+exp ( −H(S)) /γ ) ,
+
+(15) where the sums run over all 2n possible spin configurations 
+
+s ∈ {− 1, +1 }n. This exact computation is combinatorially intractable for any realistic sequence length, as it requires summing over an exponentially growing number of config-urations. 
+
+3.10.1 Mean-Field Self-Consistency Equations 
+
+To overcome this intractability, we employ the mean-field approximation , a standard technique from statistical physics that replaces fluctuating interactions with their average values. The following theorem provides a tractable solution 
+
+to the determination of the n spin values associated to the n
+
+tokens: 
+
+Theorem 1 (Mean-Field Self-Consistency) . For a token system 
+
+S = ( s1, s 2, ..., s n) governed by the Hamiltonian H(S) with temperature parameter γ > 0, the expected spins ⟨si⟩ = E[si]
+
+under the Boltzmann distribution P (S) ∝ exp( −H(S)/γ )
+
+satisfy the following self-consistent system of equations: 
+
+⟨si⟩ = tanh 
+
+ 1
+
+γ
+
+Ji + X 
+
+> j̸=i
+
+Jij ⟨sj ⟩
+
+ , i = 1 , . . . , n. 
+
+(16) 
+
+Proof. The proof proceeds in five steps. 
+
+Step 1: Exact expression for ⟨si⟩. By definition, the expected value of si under the Boltzmann distribution is: 
+
+⟨si⟩ = 1
+
+Z
+
+X
+
+> S
+
+si exp 
+
+
+
+− H(S)
+
+γ
+
+
+
+, (17) 5
+
+where Z = P 
+
+> S
+
+exp( −H(S)/γ ) is the partition function, and the sum runs over all 2n configurations 
+
+S = ( s1, . . . , s n) ∈ {− 1, +1 }n.
+
+Step 2: Mean-field approximation. The mean-field approx-imation replaces the fluctuating spins sj (j̸ = i) in the interaction term with their average values ⟨sj ⟩. This yields an effective Hamiltonian for token i:
+
+Heff  
+
+> i
+
+(si) = −
+
+Ji + X 
+
+> j̸=i
+
+Jij ⟨sj ⟩
+
+ si. (18) The term P  
+
+> j̸=i
+
+Jij ⟨sj ⟩ represents the mean field created by all other tokens acting on token i.
+
+Step 3: Effective field. Define the effective field acting on token i as: 
+
+heff  
+
+> i
+
+= Ji + X 
+
+> j̸=i
+
+Jij ⟨sj ⟩. (19) Under the mean-field approximation, token i behaves as an independent spin in this effective field, with Hamiltonian 
+
+Heff  
+
+> i
+
+(si) = −heff  
+
+> i
+
+si.
+
+Step 4: Single-spin distribution. For a single spin in an external field h, the Boltzmann distribution is: 
+
+P (si) = eheff  
+
+> isi/γ
+
+eheff   
+
+> i/γ
+
++ e−heff   
+
+> i/γ
+
+. (20) 
+
+Step 5: Computing the expectation. The expected value of 
+
+si under this distribution is: 
+
+⟨si⟩ = (+1) · P (si = +1) + ( −1) · P (si = −1) (21) 
+
+= eheff   
+
+> i/γ
+
+− e−heff  
+
+> i/γ
+
+eheff   
+
+> i/γ
+
++ e−heff   
+
+> i/γ
+
+(22) 
+
+= tanh heff 
+
+> i
+
+γ
+
+!
+
+. (23) Substituting the definition of heff  
+
+> i
+
+yields: 
+
+⟨si⟩ = tanh 
+
+ 1
+
+γ
+
+Ji + X 
+
+> j̸=i
+
+Jij ⟨sj ⟩
+
+ . (24) This equation must hold simultaneously for all i =1, . . . , n , forming a system of n coupled nonlinear equations. The solution gives the self-consistent mean-field approxima-tion of the true n expected spins. 
+
+Remark 4. Equation (16) is a fixed-point system. It can be solved iteratively by starting with an initial guess {⟨ si⟩(0) }
+
+and updating: 
+
+⟨si⟩(t+1) = tanh 
+
+ 1
+
+γ
+
+Ji + X 
+
+> j̸=i
+
+Jij ⟨sj ⟩(t)
+
+ , (25) until convergence. This iterative scheme typically converges within 10-20 fixed-point iterations for practical applications. This equation has a clear physical interpretation: the expected spin of token i is determined by the effective field heff  
+
+> i
+
+= Ji + P  
+
+> j̸=i
+
+Jij ⟨sj ⟩, which combines its own importance Ji with the mean influence of all other tokens. 
+
+3.10.2 Computational Tractability 
+
+The mean-field formulation reduces an exponential problem to a polynomial one. Table 1 shows the complexity compar-ison between an exact match and mean-field iterative tech-nique. Equation 16 is solved via fixed-point iteration , which converges rapidly (typically within T = 10 -20 iterations) and scales quadratically with sequence length n, making it feasible even for transformers with thousands of tokens. 
+
+3.11 Single and Multi-Heads Attention Output 
+
+We present in this section the attention output that invokes the attention weight αi for one single head as well as for multiple heads: 
+
+3.11.1 Single-Head Attention Output 
+
+For a given input sequence of token representations {xi}ni=1 ,the attention output is computed as the weighted sum of value vectors: z = Pni=1 αi vi, where vi = Wv xi is the value projection of token ti, and αi = P (si = +1) are the attention weights derived from the marginal probabilities of the Gibbs distribution over token configurations. This formulation produces a contextualized representation z that aggregates information from all tokens in proportion to their game-theoretic importance, as captured by the exter-nal field Ji and interaction potentials Jij . Unlike standard transformer attention, the weights αi are not heuristic scores but rather emerge from the statistical physics of the token system, grounded in coalitional game theory. 
+
+3.11.2 Multi-Head Attention Output 
+
+Following the transformer architecture, we extend the Neu-roGame Attention to multiple heads operating in parallel. For each head h = 1, . . . , H , we maintain independent parameters:  
+
+> •
+
+External fields J(h) 
+
+> i
+
+derived from head-specific Shapley and Banzhaf values with learnable mixing coefficients 
+
+λ(h) 
+
+> i
+
+= σ(wTh xi + bh) 
+
+> •
+
+Interaction potentials J(h) 
+
+> ij
+
+capturing head-specific pair-wise token relationships  
+
+> •
+
+Temperature parameter γh controlling the sharpness of the head’s Gibbs distribution  
+
+> •
+
+Value projection matrix W(h) 
+
+> v
+
+projecting tokens into the head’s value space Each head independently solves its mean-field equations to obtain head-specific expected spins ⟨si⟩(h) and attention weights α(h) 
+
+> i
+
+= (1 + ⟨si⟩(h))/2. The output of head h is then: 
+
+z(h) =
+
+> n
+
+X
+
+> i=1
+
+α(h) 
+
+> i
+
+W(h) 
+
+> v
+
+xi, z(h) ∈ Rdv . (26) The final multi-head output zcat is obtained by concate-nating all head outputs and projecting back to the model dimension: 
+
+zcat = Concat 
+
+
+
+z(1) , z(2) , . . . , z(H)
+
+WO , (27) where WO ∈ RHd v ×dmodel is the output projection matrix. This formulation enables each head to capture different interaction patterns and importance regimes, with the in-terpretability of α(h) 
+
+> i
+
+preserved at the head level. 6                   
+
+> Method Complexity Feasibility for n= 512
+> Exact summation O(2 n)impossible ( 2512 ≈10 154 operations) Mean-field iteration O(n2·T)tractable ( ∼10 6operations with T= 20 iterations)
+
+TABLE 1: Complexity comparison between exact and mean-field approaches. 
+
+3.12 Feedforward Network Classification 
+
+The concatenated multi-head output zcat is passed through a feedforward neural network with m layers. Let h(0) = zcat .For layer ℓ = 1 , . . . , m :
+
+h(ℓ) = Activation 
+
+
+
+W(ℓ)h(ℓ−1) + b(ℓ)
+
+, (28) where W(ℓ) and b(ℓ) are learnable parameters. Common choices for activation are ReLU or GELU. The final layer 
+
+h(m) is mapped to logits for the three classes: 
+
+o = W(m+1) h(m) + b(m+1) ∈ R3. (29) The predicted class ω∗ is obtained (via softmax), as: 
+
+ω∗ 
+
+> i
+
+= argmax ωi P (ωi | input ) = armax ωi
+
+"
+
+exp( oωi )
+
+Pcj=1 exp( oωj )
+
+#
+
+,
+
+(30) where c is the number of classes. 
+
+4 TWO -S TAGE APPROXIMATION FRAMEWORK 
+
+Our NeuroGame Transformer employs two distinct approx-imation techniques to overcome combinatorial intractability at different levels of the framework. Understanding the dis-tinction between these techniques is crucial for appreciating the computational feasibility of the model. 
+
+4.1 The Two Levels of Combinatorial Explosion 
+
+The framework faces two separate combinatorial challenges: 1) Token-level (Game Theory): Computing the game-theoretic quantities requires summing over all possible coalitions C ⊆ T \ { ti} for external fields Ji, and 
+
+C ⊆ T \ { ti, t j } for interaction potentials Jij , of which there are 2n−1 and 2n−2 coalitions respectively. 2) Spin-level (Statistical Physics): Computing expected spins ⟨si⟩ requires summing over all possible spin configurations s ∈ {− 1, +1 }n, of which there are 2n.Each challenge demands a different approximation strat-egy, as they operate on different mathematical objects and serve different purposes. 
+
+4.2 Approximation Methods 
+
+We address the combinatorial complexity of game-theoretic computations via importance-weighted Monte Carlo sam-pling, and later handle the statistical physics component with mean-field equations. This section focuses on the sam-pling methods used to estimate the Shapley value, Banzhaf index, and pairwise interaction potentials that parameterize the Hamiltonian. 
+
+4.2.1 Importance-Weighted Monte Carlo Estimation 
+
+Exact computation of Shapley value ϕi and Banzhaf index βi
+
+requires summing over all permutations or subsets, which is intractable for large n. To enable efficient estimation, we define a target distribution over coalitions that emphasizes semantically valuable subsets. Let the characteristic function 
+
+v(C) measure the semantic value of coalition C. The target distribution is Gibbsian: 
+
+Ptarget (C) ∝ exp 
+
+ v(C)
+
+γ
+
+
+
+, (31) where γ is a temperature parameter. We sample coalitions from a uniform proposal distribution p(C) (e.g., p(C) =1/2n−1 for subsets). The importance weight for a sampled coalition Ck is v(Ck)/p (Ck). After normalization over K
+
+samples, we obtain the following: 
+
+¯w(Ck) = exp( v(Ck)/γ ) /p (Ck)
+
+PKℓ=1 exp( v(Cℓ)/γ ) /p (Cℓ) , (32) where the intractable partition function cancels. These nor-malized weights are used to form unbiased estimates of the game-theoretic quantities. We now derive the estimators of Shapley value, Banzhaf power index and the pairwise interaction:  
+
+> •
+
+Shapley value: We estimate ϕi via permutation-based sampling. For each sample k, draw a random permuta-tion of the tokens in T \ { ti} and let P(k) 
+
+> i
+
+be the set of tokens preceding ti. The estimator is: 
+
+ˆϕi =
+
+> K
+
+X
+
+> k=1
+
+¯w(P(k) 
+
+> i
+
+)v(P(k) 
+
+> i
+
+∪ { ti}) − v(P(k) 
+
+> i
+
+), (33) where ¯w(P(k) 
+
+> i
+
+) is computed using the uniform proposal probability of that set under permutation sampling. For a set Pki (π) (the tokens that precede ti in the permutation π) of size |P (k) 
+
+> i
+
+(π)|): 
+
+p(P(k) 
+
+> i
+
+(π)) = |P (k) 
+
+> i
+
+(π)|! × (n − 1 − |P (k) 
+
+> i
+
+(π)|)! (n − 1)! , (34) where n is the total number of tokens.  
+
+> •
+
+Banzhaf index: We sample coalitions Ck ⊆ T \ { ti}
+
+by including each token independently with probability 
+
+1/2. The estimator is written as: 
+
+ˆβi =
+
+> K
+
+X
+
+> k=1
+
+¯w(Ck)v(Ck ∪ { ti}) − v(Ck), (35) with p(Ck) = 1 /2n−1.7 
+
+> •
+
+Pairwise interaction: For each token pair (ti, t j ), we sample coalitions Ck ⊆ T \ { ti, t j } uniformly (each token included with probability 1/2) and estimate 
+
+ˆJij =
+
+> K
+
+X
+
+> k=1
+
+¯w(Ck)∆ ij (Ck), (36) with ¯w(Ck) computed as above using p(Ck) = 1 /2n−2.These importance-weighted Monte Carlo estimates handle the combinatorial explosion in coalition space, are unbiased, and remain numerically stable for large n
+
+due to the cancellation of the partition function in the normalized weights. 
+
+4.2.2 Mean Field Equations and Attention Weights 
+
+The mean-field equations solve for the expected spins ⟨si⟩
+
+via an iterative process of a system of n coupled nonlinear equa-tions :
+
+⟨si⟩ = tanh 
+
+ 1
+
+γ
+
+Ji + X 
+
+> j̸=i
+
+ˆJij ⟨sj ⟩
+
+ , i = 1 , . . . , n, 
+
+(37) avoiding the intractable sum over 2n spin configurations. This fixed-point iteration typically converges within 10–20 steps. The attention weights are computed as the marginal probabilities of each token being active: αi = 1+ ⟨si⟩ 
+
+> 2
+
+. These weights are then used in the standard attention output formula z = P 
+
+> i
+
+αivi, where vi are value projections of the tokens. 
+
+4.3 Asymptotic Behavior and Complexity 
+
+With a sufficiently large number of Monte Carlo samples K,the estimators bϕi (Shapley value), bβi (Banzhaf index), and 
+
+bJij (interaction potential) are consistent estimators of their respective true values under importance-weighted sampling with Gibbs-distributed weights. Under mild regularity as-sumptions on the characteristic function v(·) and the pro-posal distribution, these estimators converge almost surely to their true values as K → ∞ . The use of normalized weights ensures that the intractable partition function of the Gibbs distribution cancels naturally, while avoiding explicit 2n factors that would cause numerical instability for large n. Gibbs-distributed importance sampling con-centrates samples on high-value coalitions that contribute most to marginal gains, improving estimator efficiency. The self-normalized nature of the weights yields asymptotically unbiased estimates with variance that decreases at the stan-dard Monte Carlo rate of O(1 /√K). More importantly, the computational complexity per token scales as O(K),
+
+independent of the total number of possible coalitions (2n−1
+
+for Shapley and Banzhaf, 2n−2 for interaction potentials). This represents an exponential reduction compared to exact enumeration and renders Monte Carlo estimation feasible for practical transformer attention layers, even for long se-quences where n is large (e.g., n = 512 or more). The trade-off between computational cost and estimation accuracy is controlled by K, with typical values ranging from K = 100 
+
+to K = 1000 providing sufficient accuracy in practice. Fol-lowing the game theory phase, the mean-field equations for the spin system are solved via a fixed-point iterative process requires O(n2 · iter ) operations, where T is the number of iterations (typically 10 -20 ). This two-stage pipeline—Monte Carlo estimation followed by mean-field fixed-point itera-tion—achieves overall complexity O(K · n + n2 · T , which is polynomial in n and linear in K, in contrast to the exponential O(2 n) cost of exact computation for either stage alone. 
+
+5 EXAMPLE OF POTENTIALS AND SPIN STATES 
+
+ESTIMATION 
+
+We illustrate the complete estimation pipeline with a min-imal example involving three tokens: t1, t2, and t3, repre-senting the words “not”, “good”, and “movie” in the phrase “not good movie”. 
+
+5.1 Game-Theoretic Quantities via Monte Carlo 
+
+Assume a characteristic function v(C) that returns higher values for semantically coherent coalitions. For this exam-ple, we define: 
+
+v({t1}) = 0 .2, v({t2}) = 0 .5, v({t3}) = 0 .4,v({t1, t 2}) = 1 .2, v({t1, t 3}) = 0 .8, v({t2, t 3}) = 1 .0,v({t1, t 2, t 3}) = 1 .8, v(∅) = 0 .
+
+Using K = 3 Monte Carlo samples with Gibbs-distributed importance weights at temperature γ = 1 .0, we sample coalitions and compute normalized weights. Suppose we sample: 
+
+C1 = {t2}, v(C1) = 0 .5, exp( v(C1)/γ ) = e0.5 = 1 .65 ,C2 = {t1, t 3}, v(C2) = 0 .8, exp( v(C2)/γ ) = e0.8 = 2 .23 ,C3 = {t2, t 3}, v(C3) = 1 .0, exp( v(C3)/γ ) = e1.0 = 2 .72 .
+
+The normalizing constant is: Z = 1 .65 + 2 .23 + 2 .72 = 6 .60 ,yielding weights: 
+
+¯w(C1) = 1 .65 /6.60 = 0 .25 , ¯w(C2) = 2 .23 /6.60 = 0 .34 ,
+
+¯w(C3) = 2 .72 /6.60 = 0 .41 .
+
+5.1.1 Shapley Value and Banzhaf Estimation  
+
+> •
+
+Shapley Value: For token t2, we consider permutations of the remaining tokens {t1, t 3}. From the sampled coalitions, we compute marginal contributions: For 
+
+C1 = {t2} : ∆ 2(C1) = v({t2}) − v(∅) = 0 .5, For 
+
+C2 = {t1, t 3} : ∆ 2(C2) = v({t1, t 2, t 3}) − v({t1, t 3})= 1 .8 − 0.8 = 1 .0, For C3 = {t2, t 3} : ∆ 2(C3) = 
+
+v({t2, t 3}) − v({t3}) = 1 .0 − 0.4 = 0 .6.The Shapley estimate is the weighted sum: 
+
+ˆϕ2 = 0 .25 × 0.5 + 0 .34 × 1.0 + 0 .41 × 0.6 = 0 .125 + 0.34 + 0 .246 = 0 .711 . 
+
+> •
+
+Banzhaf Index Estimation (Bernoulli Sampling): For the same token t2, using the same coalitions and weights, the Banzhaf estimate is identical in form but with different theoretical interpretation: ˆβ2 = 0 .711 as well (the difference lies in the target distribution, not the weighted sum). 8
+
+5.1.2 External Magnetic Fields and Pairwise Interaction  
+
+> •
+
+External Magnetic Fields: With λ2 = 0 .6 (learned from token t2’s context), the external field for token t2 is: 
+
+J2 = λ2 ˆϕnorm 2 + (1 − λ2) ˆβnorm 2 = 0 .6 × 0.711 + 0 .4 ×
+
+0.711 = 0 .711 . Similarly, suppose we obtain J1 = 0 .423 ,
+
+J3 = 0 .512 , and interaction potentials ˆJ12 = 0 .466 ,
+
+ˆJ13 = 0 .312 , ˆJ23 = 0 .278 . 
+
+> •
+
+Pairwise Interaction: For the pair (t1, t 2), we compute marginal interactions ∆12 (C1) = v({t1, t 2})−v({t1})−
+
+v({t2}) + v(∅) = 1 .2 − 0.2 − 0.5 + 0 = 0 .5,
+
+∆12 (C2) = v({t1, t 2, t 3}) − v({t1, t 3}) − v({t2, t 3}) + 
+
+v({t3}) = 1 .8 − 0.8 − 1.0 + 0 .4 = 0 .4,
+
+∆12 (C3) = v({t1, t 2}) − v({t1}) − v({t2}) + v(∅) = 1.2 − 0.2 − 0.5 + 0 = 0 .5. The estimated interaction potential is ˆJ12 = 0 .25 × 0.5 + 0 .34 × 0.4 + 0 .41 × 0.5 = 0.125 + 0 .136 + 0 .205 = 0 .466 .
+
+5.2 Mean-Field Spin Estimation 
+
+With temperature γ = 1 .0, we solve the mean-field equa-tions via fixed-point iteration starting from ⟨si⟩(0) = 0 :
+
+⟨s1⟩(1) = tanh( J1 + J12 ⟨s2⟩(0) + J13 ⟨s3⟩(0) ) = 0 .400 ,
+
+⟨s2⟩(1) = tanh( J2 + J12 ⟨s1⟩(0) + J23 ⟨s3⟩(0) ) = 0 .611 ,
+
+⟨s3⟩(1) = tanh( J3 + J13 ⟨s1⟩(0) + J23 ⟨s2⟩(0) ) = 0 .471 .Iteration 2 uses the updated values: 
+
+⟨s1⟩(2) = tanh(0 .423 + 0 .466 × 0.611 + 0 .312 × 0.471) = 0 .693 , ⟨s2⟩(2) = tanh(0 .711 + 0 .466 × 0.400 + 0 .278 ×
+
+0.471) = 0 .773 , ⟨s3⟩(2) = tanh(0 .512 + 0 .312 × 0.400 + 0.278 × 0.611) = 0 .668 .After T = 5 iterations, the values converge to: 
+
+⟨s1⟩ = 0 .721 , ⟨s2⟩ = 0 .798 , ⟨s3⟩ = 0 .703 .Finally, using the attention weights equation: αi = (1 + 
+
+⟨si⟩)/2, we obtain: α1 = 1+0 .721 2 = 0 .861 ,α2 = 1+0 .798 2 = 0 .899 , and α3 = 1+0 .703 2 = 0 .852 .These weights reflect the semantic importance of each token in the phrase, with “good” ( t2) receiving highest at-tention, followed by “not” ( t1) and “movie” ( t3), consistent with the phrase’s sentiment structure where the negation-modifier relationship is captured through the interaction potentials. 
+
+6 COMPARISON OF NGT AND VANILLA 
+
+Table 2 summarizes the key architectural and conceptual differences between the standard Transformer and the Neu-roGame Transformer. We now provide a brief interpretation of each distinguishing feature.  
+
+> •
+
+Core Mechanism: Standard attention measures similar-ity between token pairs via dot-products. NGT mea-sures contribution via game-theoretic values: Shapley (ϕi) captures fair global contribution, while Banzhaf (βi) identifies decisive local influence. This shifts at-tention from “how related are these tokens?” to “how much does this token contribute to the whole?”  
+
+> •
+
+Sampling Method: Standard attention processes all to-kens deterministically. NGT uses importance-weighted Monte Carlo with Gibbs-distributed weights ¯wk =
+
+ev(Ck )/γ / P 
+
+> ℓ
+
+ev(Cℓ)/γ , making exponential coalition spaces tractable while focusing on semantically dense coalitions.  
+
+> •
+
+Gating System: The learnable parameter λi =
+
+σ(wT xi + b) dynamically balances Shapley (global fair-ness) and Banzhaf (local decisiveness) based on token context—a key architectural innovation.  
+
+> •
+
+Token Interactions: Standard attention captures only pairwise similarities. NGT introduces explicit interac-tion potentials Jij , estimated via Monte Carlo, cap-turing whether token pairs are synergistic ( Jij > 0), antagonistic ( Jij < 0), or independent ( Jij ≈ 0).  
+
+> •
+
+Physical Foundation: Standard attention is purely al-gorithmic. NGT is grounded in an Ising Hamiltonian 
+
+H(S) = − Pni=1 Jisi − Pn−1
+
+> i=1
+
+Pnj=i+1 Jij sisj , where each token is a spin si ∈ {− 1, +1 }, bringing statistical physics principles to attention.  
+
+> •
+
+Attention Derivation: Standard attention uses softmax of similarity scores. NGT first solves mean-field equa-tions ⟨si⟩ = tanh( 1 
+
+> γ
+
+(Ji + P  
+
+> j̸=i
+
+Jij ⟨sj ⟩)) for expected spins, then derives attention as αi = (1 + ⟨si⟩)/2—the probability a token is active in thermodynamic equilib-rium.  
+
+> •
+
+Interpretability: Standard attention weights are heuris-tic post-hoc explanations. NGT weights are axiomatic, derived from game-theoretic solution concepts that sat-isfy formal fairness axioms—they represent a prov-able“fair share” of semantic contribution.  
+
+> •
+
+NLI Logic Handling: Standard attention relies on pattern matching, struggling with negations. NGT’s Banzhaf component explicitly identifies ”swing voters” (words that flip logical relationships), while Jij cap-tures how such words interact, enabling robust han-dling of contradiction and negation.  
+
+> •
+
+Complexity: Standard attention is O(n2). NGT is O(K ·
+
+n + n2 · T ) with K Monte Carlo samples (100-1000) and T mean-field iterations (10-20)—feasible for long sequences while avoiding exponential costs. Finally, Algorithm 1 depicts the NeuroGame Transformer (NGT) attention: 
+
+7 EXPERIMENTS 
+
+7.1 Problem Definition and Datasets 
+
+The problem we are addressing consists in testing the ability of NeuroGame Transformer’s to determine logical relation-ships ( entailment , contradiction , neutrality ) between sentences, requiring deep semantic understanding and contradiction detection. Therefore, NeuroGame Transformer receives as input a pair of sentences: a premise and a hypothesis. It should predict the best logical relationship between these two inputs. In other words, NeuroGame Transformer is solving a classification problem given a predefined num-ber of classes such as: entailment , neutral and contradiction .We evaluate the performance of NeuroGame Transformer on the Natural Language Inference (NLI) problem. This assessment is undertaken on the SNLI [22], and MNLI-matched [23] datasets, for testing robustness to spurious patterns. Table 3 depicts a description of each of the three different datasets: We present examples from each dataset made available to address the Natural Language Inference problem . Table 4 il-lustrates examples from SNLI, and MNLI-matched datasets: 9
+
+TABLE 2: Comparison of Standard Transformer and NeuroGame Transformer (NGT) Features 
+
+Feature Standard Transformer (Vanilla) NeuroGame Transformer (NGT) Core Mechanism Scaled Dot-Product Attention: Measures similarity/correlation between Q and 
+
+K.Game-Theoretic Importance: External fields Ji combine Shapley (ϕi) and Banzhaf ( βi). 
+
+Sampling Method Deterministic (processes all tokens at once). Importance-Weighted Monte Carlo: Uniform proposal with Gibbs-distributed weights ¯wk .
+
+Gating System None (uses fixed attention heads). λi Gating: λi = σ(wT xi + b) balances Shapley and Banzhaf contributions. 
+
+Token Interactions None beyond pairwise dot-products. Pairwise potentials Jij capture syner-gistic/antagonistic relationships. 
+
+Physical Foundation None (purely algorithmic). Ising Hamiltonian H(S) =
+
+− Pni=1 Jisi − Pn−1
+
+> i=1
+
+Pnj=i+1 Jij sisj .
+
+Attention Derivation Softmax of similarity scores. αi = 1+ ⟨si⟩ 
+
+> 2
+
+from mean-field spin ex-pectations ⟨si⟩.
+
+Interpretability Heuristic: Shows ”what” was attended. Axiomatic: Weights represent provably fair semantic contribution. 
+
+NLI Logic Handling Pattern matching; struggles with nega-tions. Interaction-based: Catches ”swing vot-ers” via Banzhaf and Jij .
+
+Complexity O(n2) matrix multiplication. O(K · n + n2 · T ) with K Monte Carlo samples, T mean-field iterations. 
+
+TABLE 3: Comparison of SNLI, and MNLI-matched 
+
+Aspect SNLI MNLI-matched Purpose Large-scale NLI training [22] Multi-genre NLI [23] 
+
+Size 570k pairs 433k pairs 
+
+Labels Entailment, contradiction, neutral 
+
+Source Image captions 10 diverse genres 
+
+Evaluation In-distribution Matched/mismatched 
+
+Challenge General understanding Cross-genre 
+
+TABLE 4: Concrete examples across datasets 
+
+Dataset Premise Hypothesis Label 
+
+SNLI “A man is being interviewed by a reporter.” “A reporter is interviewing aman.” entailment SNLI “The doctor was paid by the actor.” “The doctor paid the actor.” contradiction MNLI-matched “The new rights are supposedly why we’re here.” (from letters genre) “We are here because of new rights.” entailment MNLI-matched “The cat hid under the bed dur-ing the storm.” (from fiction genre) “The cat was outside in the rain.” contradiction 
+
+The three datasets serve complementary roles. SNLI pro-vides large-scale training examples from image captions, offering a foundation for learning natural linguistic phe-nomena [22]. MNLI extends this with premises from ten diverse genres—including fiction, speech, and government reports—testing cross-genre generalization [23]. Both re-quire genuine inference, e.g., understanding that “A man is being interviewed” entails “A reporter is interviewing a man”. Together, these datasets provide a comprehensive framework: SNLI assesses basic NLI capability, and MNLI-matched tests domain generalization. 
+
+7.2 Baseline Models 
+
+We evaluate our NeuroGame Transformer (NGT) against several strong baselines on the SNLI and MNLI-matched benchmarks as described in [24]. The selected models rep-resent key architectural developments in natural language inference, ranging from dedicated sequence-based encoders to large pretrained transformers. Table 5 reports their test accuracies as cited in the literature.  
+
+> •
+
+DAM (Decomposable Attention Model) [25] is a simple yet effective model that averages word embeddings and passes the result through one or more feedforward layers. Despite its simplicity, it provides a competitive baseline for sentence representation tasks.  
+
+> •
+
+ESIM (Enhanced Sequential Inference Model) [26] is a dedicated NLI architecture that uses bidirectional LSTMs with local inference modeling and inference composition. It achieved state-of-the-art performance at the time of its release.  
+
+> •
+
+BERT-Base [27] (Bidirectional Encode Representation from Transformers) pretrained on large corpora using 10 
+
+masked language modeling and next sentence predic-tion. Its deep architecture (12 layers, 768 hidden size) has become a standard baseline for natural language understanding tasks. We report the fine-tuned perfor-mance on SNLI and MNLI.  
+
+> •
+
+BERT-Large [27] scales the architecture to 24 layers and 1024 hidden units, providing higher capacity at the cost of increased computation. Its performance on both datasets demonstrates the benefit of larger pretrained models.  
+
+> •
+
+RoBERTa-Base [28] (Robustly Optimized BERT Ap-proach) improves upon BERT with more dynamic masking, larger mini-batches, and removal of the next sentence prediction objective, leading to stronger rep-resentations across a range of benchmarks. We include both base and large variants.  
+
+> •
+
+RoBERTa-Large [28] further increases model size and training data, achieving state-of-the-art results on many NLP tasks. Its performance on MNLI is particularly strong.  
+
+> •
+
+ALBERT-Base [29] (A Lite BERT) reduces memory footprint through factorized embedding parameteriza-tion and cross-layer parameter sharing, while main-taining performance through a self-supervised loss for sentence-order prediction. The base version offers a good trade-off between efficiency and accuracy.  
+
+> •
+
+ALBERT-Large [29] scales the architecture similarly to BERT-large but with parameter sharing, achieving competitive results with fewer parameters. All baseline results are taken from the comprehensive evaluation reported in [24]. For fair comparison, we use the same preprocessing pipeline and evaluation protocol across all models. NGT is compared against these baselines under identical conditions. 
+
+7.3 NGT Implementation Details 
+
+We now detail the NeuroGame Transformer implementation used for our experiments.  
+
+> •
+
+Model Architecture: NGT employs a BERT-base en-coder to produce contextualized token embeddings. On top of these, we incorporate two intertwined sets of components: game-theoretic estimators and a statistical physics layer.  
+
+> •
+
+Game-theoretic components: Shapley values and Banzhaf indices are estimated via importance-weighted Monte Carlo sampling with a Gibbs target and uniform proposal. We use Kmc = 15 coalitions during training and Kmc = 25 during evaluation. These estimates define the local fields Ji and pairwise interactions Jij 
+
+that characterize the coalitional game through the char-acteristic function v. 
+
+> •
+
+Statistical physics components: A spin projection layer maps the set of token embeddings to the set of Ising spins si ∈ [−1, 1] . The mean-field fixed-point equa-tions are solved with temperature γ = 0 .25 , damping factor 0.7, Tmf = 25 iterations, and tolerance 10 −4.The resulting equilibrium spins ⟨si⟩ are passed to the classifier, while the game-theoretic quantities provide interpretable attributions. TABLE 5: Test accuracy (%) on SNLI and MNLI datasets. All accuracy values are taken from [24]. Parameter counts are standard values from the respective model papers.                                
+
+> Model SNLI MNLI-Matched Parameters (approx.)
+> DAM 83.30 68.41 382K ESIM 87.00 76.63 4.3M BERT-Base 88.86 80.99 110M BERT-Large 90.33 84.83 340M RoBERTa-Base 86.95 85.98 125M RoBERTa-Large 91.83 90.20 355M ALBERT-Base 86.49 79.89 11M ALBERT-Large 90.85 86.76 17M
+> NGT (Our Model) 86.60 79.00 110M
+> •
+
+Training Details: We train for five epochs on SNLI, and MNLI-matched, using a learning rate of 3 × 10 −5,gradient accumulation over 2 steps (effective batch size 32), and weight decay 0.02 . The AdamW optimizer [30] is used with linear warmup over 10% of steps, followed by a MultiStepLR scheduler reducing the learning rate by a factor of 0.1 after epochs 3 and 4. Gradient clipping (norm 1.0) is applied.  
+
+> •
+
+Regularization: We apply dropout ( p = 0 .15 ), label smoothing ( 0.1), mixup ( αmix = 0 .2), and exponential moving average (EMA) with decay 0.999 . All sequences are truncated/padded to 128 tokens using the BERT tokenizer. 
+
+7.4 Main Results and Interpretation 
+
+We evaluate the NeuroGame Transformer (NGT) on the SNLI and MNLI-matched benchmarks, comparing its per-formance against several established deep learning mod-els. Table 5 summarizes the test accuracies along with the approximate number of parameters for each model. On the SNLI dataset, NGT achieves a test accuracy of 
+
+86.60% with approximately 110 million parameters—adding only 754,000 parameters (only 0.7% overhead) to the standard BERT-Base architecture. This result is competitive with strong baselines such as BERT-Base (88.86%, 110M), ALBERT-Base (86.49%, 11M), and ESIM (87.00%, 4.3M). Notably, NGT outperforms earlier sequence-based models like DAM (83.30%, 382K) and matches the performance of more complex architectures while using a fraction of the parameters of larger models (e.g., BERT-Large uses 340M, RoBERTa-Large uses 355M). This demonstrates that integrating game-theoretic attributions with a mean-field Ising model yields high representational efficiency with minimal computational overhead. On the more challeng-ing MNLI-matched dataset, NGT reaches 79.00% accuracy, which is close to ALBERT-Base (79.89%, 11M) and within 2 percentage points of BERT-Base (80.99%, 110M). Given that MNLI covers ten diverse text genres, this result high-lights the robustness of NGT’s game-theoretic components across varied linguistic domains. The gap between NGT and larger models like RoBERTa-Base (85.98%, 125M) and RoBERTa-Large (90.20%, 355M) is expected, as those models benefit from more extensive pretraining and larger architec-tures. However, NGT achieves these results with only 0.7% additional parameters beyond BERT-Base, demonstrating that its enhancements are parameter-efficient. 11 
+
+Remarkably, NGT achieves these results with only a BERT-Base backbone (i.e., only at initialization), demon-strating that its game-theoretic enhancements—Shapley val-ues, Banzhaf indices, pairwise interaction potentials, and mean-field spin equilibria—boost representational power without requiring larger architectures or additional pre-training. The pairwise interaction matrix Jij is particularly revealing: unlike standard attention mechanisms that only capture pairwise similarity, Jij explicitly models whether token pairs cooperate (positive values) or compete (negative values). For example, in the phrase “not good movie,” the interaction between “not” and “good” is strongly negative, reflecting the antagonistic relationship that flips sentiment. In contrast, a phrase like “very good movie” would show positive interactions between “very” and “good,” indicating synergy. Standard attention mechanisms aggregate these relationships into a single scalar weight, losing the nuanced distinction between cooperation and competition. Similarly, the Banzhaf index helps identify “swing voters”—tokens that critically influence logical relationships, such as nega-tion words—which standard attention often downweights. The Shapley values provide token-level attributions that are both globally consistent and locally faithful, enabling fine-grained analysis of model decisions. As with most NLI models, the “Neutral” class remains challenging, but NGT’s enhanced capacity improves its validation accuracy sub-stantially. The hyperparameter configuration (128 spins, 25 mean-field iterations, Kmc = 15 /25 ) balances capacity and stability, with regularization techniques (label smoothing, mixup, EMA) aiding generalization. Together, these components position NGT as a com-pelling interpretable alternative to standard transformers. It delivers competitive accuracy with minimal overhead (only 0.7% additional parameters), while providing transparency into its decision-making process—a critical step toward ad-vancing trustworthy AI. The explicit modeling of pairwise interactions and the ability to distinguish cooperative from competitive token relationships are features that no other model in the comparison can offer, making NGT uniquely suited for tasks requiring deep linguistic understanding. Furthermore, the improved performance on the chal-lenging “Neutral” class stems from three game-theoretic components in NGT. First, the Banzhaf index identifies “swing voters” and decreases the influence of spurious words that might otherwise lead to misclassification. Sec-ond, the pairwise interaction matrix Jij captures the absence of strong token relationships in Neutral examples, encod-ing them as near-zero values—a signal standard attention cannot provide. Third, Shapley values ensure fair credit distribution across tokens, preventing over-attribution to salient but non-decisive words. Together, these mechanisms enable NGT to recognize not only when a logical relation-ship exists, but critically, when it does not. 
+
+8 CONCLUSION AND FUTURE WORK 
+
+We introduced the NeuroGame Transformer (NGT), a novel attention mechanism that reformulates token interactions as 
+
+a coalitional game grounded in statistical physics . By combining Shapley values (global fairness) with Banzhaf power indices (local sensitivity), NGT provides a principled framework for semantic attribution. The mean-field Ising model, pa-rameterized by local fields Ji and pairwise interactions Jij ,yields equilibrium spin states ⟨si⟩ that serve as interpretable token representations. Importance-weighted Monte Carlo sampling with a Gibbs target and uniform proposal ensures tractable estimation of these game-theoretic quantities even for long sequences. Experimental results demonstrate the effectiveness of our approach. In fact, they validate that our game-theoretic formulation successfully addresses the “right for the wrong reasons” pitfall common in standard attention mechanisms. Beyond performance gains, NGT offers enhanced inter-pretability through its game-theoretic importance scores. The local fields Ji provide token-level attributions grounded in cooperative game theory, while the interaction matrix 
+
+Jij reveals synergistic relationships between tokens that standard attention weights cannot capture. The NeuroGame Transformer represents a foundational paradigm shift rather than a final architecture; its formalism opens numerous avenues for further refinement, including more efficient Monte Carlo estimators, adaptive temperature scheduling, and integration with larger pretrained models. Future research directions include: (i) Multi-modal exten-sions : Applying NeuroGame attention to vision-language transformers and cross-modal reasoning [31]. (ii) Bayesian exploration : Developing fully Bayesian sequence models with probabilistic dependencies to improve predictive per-formance [32]. 
+
+REFERENCES                                     
+
+> [1] H. AlersValentin, S. Fong, and J. VegaRiveros, “Modeling syntactic knowledge with neuro-symbolic computation,” in Proceedings of the 15th International Conference on Agents and Artificial Intelligence (ICAART) , vol. 3. SCITEPRESS, 2023, pp. 608–616. [2] K. Choromanski et al. , “Rethinking attention with performers,” in International Conference on Learning Representations (ICLR) , 2021. [Online]. Available: https://arxiv.org/abs/2009.14794 [3] A. Katharopoulos, A. Vyas, N. Pappas, and F. Fleuret, “Trans-formers are rnns: Fast autoregressive transformers with linear attention,” in International Conference on Machine Learning , vol. 119. PMLR, 2020, pp. 5156–5165. [4] A. Gu and T. Dao, “Mamba: Linear-time sequence modeling with selective state spaces,” arXiv preprint arXiv:2312.00752 , 2023. [5] M. Dehghani et al. , “Scaling vision transformers to 22 billion pa-rameters,” in International Conference on Machine Learning .PMLR, 2023, pp. 7480–7512. [6] L. Shu, J. Tang, X. Guan, and D. Zhang, “A comprehensive survey of genome language models in bioinformatics,” Briefings in Bioinformatics , vol. 27, no. 1, p. pp. bbaf724, 01 2026. [7] B. Feng, Z. Lai, S. Li, Z. Wang, S. Wang, P. Huang, and M. Cao, “Breaking down video llm benchmarks: Knowledge, spatial per-ception, or true temporal understanding?” in Evaluating the Evolv-ing LLM Lifecycle Workshop, NeurIPS 2025 , 2025, neurIPS 2025. [8] D. Bouchaffra, F. Ykhlef, B. Faye, M. Lebbah, and H. Azzag, “Redesigning deep neural networks: Bridging game theory and statistical physics,” Neural Networks , vol. 191, p. 107807, 2025. [9] ——, “Game theory meets statistical physics: A novel deep neural networks design,” IEEE Transactions on Cybernetics , Jan 2026. [10] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, L. Kaiser, and I. Polosukhin, “Attention is all you need,” in Proceedings of the 31st Conference on Neural Information Processing Systems .Curran Associates, Inc., 2017, pp. 6000–6010. [11] F. Draye, A. Lei, H.-R. Pan, I. Posner, and B. Sch ¨ olkopf, “Sparse attention post-training for mechanistic interpretability,”
+> arXiv preprint arXiv:2512.05865 , 2025. [Online]. Available: https: //doi.org/10.48550/arXiv.2512.05865 [12] L. S. Shapley, “A value for n-person games,” in Contributions to the Theory of Games , vol. 2, no. 28. Princeton University Press, 1953, pp. 307–317. 12
+
+[13] J. F. Banzhaf III, “Weighted voting doesn’t work: A mathematical analysis,” vol. 19, 1965, p. 317. [14] S. M. Lundberg and S. Lee, “A unified approach to interpreting model predictions,” in Advances in Neural Information Processing Systems , vol. 30. Curran Associates, Inc., 2017, pp. 4768–4777. [15] M. Sundararajan, A. Taly, and Q. Yan, “Axiomatic attribution for deep networks,” in International Conference on Machine Learning .PMLR, 2017, pp. 3319–3328. [16] A. Ghorbani and J. Zou, “Data shapley: Equitable valuation of data for machine learning,” in International Conference on Machine Learning . PMLR, 2019, pp. 2242–2251. [17] P. Veliˇ ckovi´ c, G. Cucurull, A. Casanova, A. Romero, P. Lio, and Y. Bengio, “Graph attention networks,” arXiv preprint arXiv:1710.10903 , 2018. [18] Y. Du, J. Meier, J. Ma, R. Fergus, and A. Rives, “Energy-based models for atomic-resolution protein conformations,” in 
+
+International Conference on Learning Representations (ICLR) , 2020. [Online]. Available: https://doi.org/10.48550/arXiv.2004.13167 [19] C. Guo, G. Pleiss, Y. Sun, and K. Q. Weinberger, “On calibration of modern neural networks,” in International Conference on Machine Learning . PMLR, 2017, pp. 1321–1330. [20] W. Liu, X. Wang, J. Owens, and Y. Li, “Energy-based out-of-distribution detection,” in Advances in Neural Information Processing Systems , vol. 34, 2021, pp. 21 464–21 475. [21] S. Luo, S. Li, T. Cai, D. He, D. Peng, S. Zheng, G. Ke, L. Wang, and T.-Y. Liu, “Stable, fast and accurate: Kernelized attention with relative positional encoding,” in Advances in Neural Information Processing Systems (NeurIPS) , 2021. [Online]. Available: https://doi.org/10.48550/arXiv.2106.12566 [22] S. R. Bowman, G. Angeli, C. Potts, and C. D. Manning, “A large annotated corpus for learning natural language inference,” in 
+
+Proceedings of the 2015 Conference on Empirical Methods in Natural Language Processing , Lisbon, Portugal, 2015, pp. 632–642. [23] A. Williams, N. Nangia, and S. Bowman, “A broad-coverage challenge corpus for sentence understanding through inference,” in Proceedings of the 2018 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long Papers) , New Orleans, Louisiana, 2018, pp. 1112–1122. [24] P. Eleftheriadis, I. Perikos, and I. Hatzilygeroudis, “Evaluating deep learning techniques for natural language inference,” Applied Sciences , vol. 13, no. 2, p. 785, 2023. [25] A. P. Parikh, O. T¨ ackstr ¨ om, D. Das, and J. Uszkoreit, “A decomposable attention model for natural language inference,” in Proceedings of the 2016 Conference on Empirical Methods in Natural Language Processing (EMNLP) . Association for Computational Linguistics, 2016, pp. 2249–2255. [Online]. Available: https://doi.org/10.48550/arXiv.1606.01933 [26] Q. Chen, X. Zhu, Z.-H. Ling, S. Wei, H. Jiang, and D. Inkpen, “Enhanced LSTM for natural language inference,” in Proceedings of the 55th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , R. Barzilay and M.-Y. Kan, Eds. Vancouver, Canada: Association for Computational Linguistics, jul 2017, pp. 1657–1668. [27] J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova, “Bert: Pre-training of deep bidirectional transformers for language under-standing,” arXiv preprint arXiv:1810.04805 , 2019. [28] Y. Liu, M. Ott, N. Goyal, J. Du, M. Joshi, D. Chen, O. Levy, M. Lewis, L. Zettlemoyer, and V. Stoyanov, “Roberta: A ro-bustly optimized bert pretraining approach,” arXiv preprint arXiv:1907.11692 , 2019. [29] Z. Lan, M. Chen, S. Goodman, K. Gimpel, P. Sharma, and R. Sori-cut, “Albert: A lite bert for self-supervised learning of language representations,” arXiv preprint arXiv:1909.11942 , 2020. [30] I. Loshchilov and F. Hutter, “Decoupled weight decay regular-ization,” in 7th International Conference on Learning Representations, ICLR 2019, New Orleans, LA, USA, May 6-9, 2019 . OpenReview.net, 2019. [31] F. Lygerakis, O. ¨Ozdenizci, and E. R ¨ uckert, “Vitapes: Visuotac-tile position encodings for cross-modal alignment in multimodal transformers,” arXiv preprint , vol. arXiv:2505.20032, 2025. [32] D. Bouchaffra, E. Koontz, V. Kripasundar, and R. K. Srihari, “Incorporating diverse information sources in handwriting recog-nition postprocessing,” International Journal of Imaging Systems and Technology , vol. 7, no. 4, pp. 320–329, 1996. 
+
+Algorithm 1 NeuroGame Transformer Attention 
+
+Require: X ∈ Rd×n: token embeddings 1: Wv ∈ Rd×d: value projection 2: w ∈ Rd, b ∈ R: gating parameters 3: γ > 0: temperature, K: MC samples, T : MF iterations, ϵ: tolerance 
+
+Ensure: z ∈ Rd: output, α ∈ Rn: weights, Jfield ∈ Rn, Jinter ∈ Rn×n
+
+4: V ← Wv X // Projected values 
+
+5: // Token-specific gating 
+
+6: for i = 1 to n do 
+
+7: λi ← σ(wT X[: , i ] + b)
+
+8: end for 
+
+9: // Initialize estimators 
+
+10: Φ ← 0n, β ← 0n, Jinter ← 0n×n
+
+11: // Shapley values (permutation sampling) 
+
+12: for i = 1 to n do 
+
+13: W, M ← ∅ 
+
+14: for k = 1 to K do 
+
+15: Random permutation π of {1, . . . , n } \ { i};16: r ∼ Uniform {0, . . . , n − 1}
+
+17: P ← first r tokens in π, s ← |P| , p ← s!( n−1−s)! (n−1)! ;18: vp ← ∥ P 
+
+> j∈P
+
+V[: , j ]∥2, ∆ ← ∥ P 
+
+> j∈P∪{ i}
+
+V[: , j ]∥2 − vp
+
+19: wraw ← exp( vp/γ )/p ; append to W, ∆ to M
+
+20: end for 
+
+21: Normalize W to { ¯wk }; Φ[i] ← PKk=1 ¯wk Mk
+
+22: end for 
+
+23: // Banzhaf indices (Bernoulli sampling) 
+
+24: for i = 1 to n do 
+
+25: W, M ← ∅ 
+
+26: for k = 1 to K do 
+
+27: C ⊆ { 1, . . . , n } \ { i} via Bernoulli (1 /2) ; p ← 1/2n−1
+
+28: vc ← ∥ P 
+
+> j∈C
+
+V[: , j ]∥2, ∆ ← ∥ P 
+
+> j∈C∪{ i}
+
+V[: , j ]∥2 − vc
+
+29: wraw ← exp( vc/γ )/p ; append to W, ∆ to M
+
+30: end for 
+
+31: Normalize W; β[i] ← PKk=1 ¯wk Mk
+
+32: end for 
+
+33: // Pairwise interactions 
+
+34: for i = 1 to n do 
+
+35: for j = i + 1 to n do 
+
+36: W, D ← ∅ 
+
+37: for k = 1 to K do 
+
+38: C ⊆ { 1, . . . , n } \ { i, j } via Bernoulli (1 /2) ; p ← 1/2n−2
+
+39: vc ← ∥ P 
+
+> m∈C
+
+V[: , m ]∥2, vi ← ∥ P 
+
+> m∈C∪{ i}
+
+V[: , m ]∥2
+
+40: vj ← ∥ P 
+
+> m∈C∪{ j}
+
+V[: , m ]∥2,41: vij ← ∥ P 
+
+> m∈C∪{ i,j }
+
+V[: , m ]∥2
+
+42: ∆ ← vij − vi − vj + vc
+
+43: wraw ← exp( vc/γ )/p ; append to W, ∆ to D
+
+44: end for 
+
+45: Normalize W, Jinter [i, j ] ← PKk=1 ¯wk Dk ,46: Jinter [j, i ] ← Jinter [i, j ]
+
+47: end for 
+
+48: end for 
+
+49: // Normalize and combine 
+
+50: Φnorm ← Φ/∥Φ∥1, βnorm ← β/∥β∥1
+
+51: for i = 1 to n do 
+
+52: Ji ← λiΦnorm  
+
+> i
+
++ (1 − λi)βnorm 
+
+> i
+
+53: end for 
+
+54: Jfield ← [J1, . . . , J n]
+
+55: // Mean-field iteration 
+
+56: s ← 0n
+
+57: for t = 1 to T do 
+
+58: sold ← s
+
+59: for i = 1 to n do 
+
+60: heff  
+
+> i
+
+← Ji + P  
+
+> j̸=i
+
+Jinter [i, j ]sold [j], s[i] ← tanh( heff  
+
+> i
+
+/γ )
+
+61: end for 
+
+62: if max i |s[i] − sold [i]| < ϵ then 
+
+63: break 
+
+64: end if 
+
+65: end for 
+
+66: // Output 
+
+67: for i = 1 to n do 
+
+68: αi ← (1 + s[i]) /2
+
+69: end for 
+
+70: α ← [α1, . . . , α n], z ← Pni=1 αiV[: , i ]
+
+71: return z, α, Jfield , Jinter

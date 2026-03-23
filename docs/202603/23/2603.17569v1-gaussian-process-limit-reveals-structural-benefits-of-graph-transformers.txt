@@ -1,0 +1,6026 @@
+Title: Gaussian Process Limit Reveals Structural Benefits of Graph Transformers
+
+URL Source: https://arxiv.org/pdf/2603.17569v1
+
+Published Time: Thu, 19 Mar 2026 01:06:08 GMT
+
+Number of Pages: 38
+
+Markdown Content:
+# GAUSSIAN PROCESS LIMIT REVEALS STRUCTURAL BENEFITS OF 
+
+# GRAPH TRANSFORMERS 
+
+Nil Ayday ∗
+
+School of Computation, Information and Technology Technical University of Munich 
+
+nil.ayday@tum.de 
+
+Lingchu Yang ∗
+
+Graduate School of Information Science and Technology The University of Tokyo 
+
+yang-lingchu@g.ecc.u-tokyo.ac.jp 
+
+Debarghya Ghoshdastidar 
+
+School of Computation, Information and Technology Technical University of Munich March 19, 2026 
+
+## ABSTRACT 
+
+Graph transformers are the state-of-the-art for learning from graph-structured data and are empirically known to avoid several pitfalls of message-passing architectures. However, there is limited theoretical analysis on why these models perform well in practice. In this work, we prove that attention-based architectures have structural benefits over graph convolutional networks in the context of node-level prediction tasks. Specifically, we study the neural network gaussian process limits of graph transformers (GAT, Graphormer, Specformer) with infinite width and infinite heads, and derive the node-level and edge-level kernels across the layers. Our results characterise how the node features and the graph structure propagate through the graph attention layers. As a specific example, we prove that graph transformers structurally preserve community information and maintain discriminative node representations even in deep layers, thereby preventing oversmoothing. We provide empirical evidence on synthetic and real-world graphs that validate our theoretical insights, such as integrating informative priors and positional encoding can improve performance of deep graph transformers. 
+
+## 1 Introduction 
+
+Graph Neural Networks (GNNs) are currently the de facto models for learning from graph-structured data. They solve complex prediction tasks on graphs by iteratively aggregating feature information across edges. Recent empirical and theoretical work has established that classical message-passing GNN architectures have several limitations, including difficulties in simultaneously handling homophilic and heterophilic graphs [NT and Maehara, 2019, Ayday et al., 2025], oversmoothing by deep GNNs [Li et al., 2018, Keriven, 2022, Wu et al., 2023b], oversquashing [Alon and Yahav, 2021], etc. These challenges have motivated the development of attention-based GNNs, such as Graph Attention Network (GAT) [Velickovic et al., 2018], Graphormer [Yang et al., 2021], and Specformer [Bo et al., 2023], which are the current state of the art models in practice. Despite the empirical success of graph transformers, there is little theoretical understanding of the benefits of the attention mechanism in graph learning. The rich literature on the expressivity of GNNs shows that transformers are more expressive than standard message-passing GNNs, but less expressive than more general message-passing architectures, like spectrally invariant GNNs [Zhang et al., 2024]. However, this line of work does not explain: Why do graph transformers perform better with more layers and not suffer from oversmoothing, similar to message-passing GNNs? Notably, oversmoothing —the phenomenon of node representations becoming indistinguishable in deeper layers—remains a topic of debate in recent theoretical works. Wu et al. [2023a] use a dynamical system-based equivalence of GATs to argue that they cannot prevent oversmoothing, while a Markov chain perspective of GATs 
+
+> ∗
+
+Equal contribution 
+
+> arXiv:2603.17569v1 [stat.ML] 18 Mar 2026
+
+A PREPRINT - M ARCH 19, 2026 suggests their ability to mitigate oversmoothing Zhao et al. [2023]. Unlike GAT, which is limited to local neighborhoods, global attention-based models, like Graphormer and Specformer, allow nodes to attend to all others, making them more complex to analyze, with no theoretical work currently available. This lack of a unified theoretical lens for graph transformers leaves a fundamental question open: Can graph transformers overcome the structural bottlenecks of message-passing, or do they merely delay the onset of oversmoothing? 
+
+We postulate that the above questions can be answered by studying the structural characteristics of graph transformers, specifically, how node representations evolve across layers . To this end, we utilize the framework of Neural Network Gaussian Processes (NNGPs), which establishes that randomly initialized neural networks converge in distribution to Gaussian processes in the infinite-width limit [Lee et al., 2018b]. The NNGP limit allows one to simplify GNNs, but still retain the architectural properties related to information aggregation and attention mechanism. In particular, recent works derive NNGP and related neural tangent limits of Graph Convolutional Networks [Niu et al., 2023, Sabanayagam et al., 2023], which has also been used to characterize oversmoothing in these models. However, NNGP limits of graph transformers are not known. −2 −1 0 1 2            
+
+> GNN Output
+> −30
+> −25
+> −20
+> −15
+> −10
+> −50
+> log Density
+> GAT: 1 Head 1000 Width −1.0−0.50.00.51.0
+> GNN Output
+> −12
+> −10
+> −8
+> −6
+> −4
+> −20
+> log Density
+> GAT: 100 Heads 1000 Width −4−2024
+> GNN Output
+> −30
+> −25
+> −20
+> −15
+> −10
+> −50
+> log Density
+> Graphormer: 1 Head 1000 Width −2−1012
+> GNN Output
+> −12
+> −10
+> −8
+> −6
+> −4
+> −20
+> log Density
+> Graphormer: 100 Heads 1000 Width
+
+Figure 1: Histogram of the output of GAT and Graphormer for different number of heads. The output distribution con-verges to a Gaussian (red line) fitted with mean and variance of the empirical distribution when both width and number of heads are large. Plots for Specformer is in Appendix F. 
+
+Contributions and significance. The main technical con-tribution of this work is a derivation of the NNGP kernels for graph transformers, which we use to analytically show when these architectures can mitigate oversmoothing. We briefly discuss the significance of the contributions. 
+
+Derivation of NNGP kernel for graph transformers. We derive the NNGP limit of the three most relevant graph transformer architectures (GAT, Graphormer, and Spec-former) and provide analytical forms of the kernel evolu-tion across layers for GAT-GP (Theorem 6), Graphormer-GP (Theorem 9), and Specformer-GP (Theorem 11). In contrast to previous work on GCN, where NNGP-equivalence holds in the infinite-width limit [Niu et al., 2023], transformer architectures behave as NNGPs only when both the width and the number of heads are large (see Figure 1). Furthermore, unlike the NNGP limit of standard transformers [Hron et al., 2020], we show that graph transformers induce graph-specific kernels at multiple levels—node-level kernels reflect the node feature interactions, whereas structural kernels capture connectivity patterns, which correspond to edge-level ker-nels over graph neighborhoods in spatial models (GAT, Graphormer) and spectral kernels in spectral models (Specformer). These kernels interact non-trivially for various architectures (see Tables 1–2). 
+
+Theoretical analysis of oversmoothing. To study whether graph transformers mitigate oversmoothing, we simplify the NNGP kernels under the population version of (contextual) stochastic block model (CSBM), that is, graphs with well-defined community structure. Our theoretical results, summarized in Table 3, confirm that while GCN is structurally destined for oversmoothing, all attention-based GNNs can retain community information across layers under specific conditions. In particular, GAT-GP avoids rank collapse under well-separated communities, whereas Specformer-GP and Graphormer-GP counteract representational decay through spectral amplification or informative structural priors. The analysis provides a crucial insight: if the NNGP limit of graph transformers does not oversmooth, then their neural architecture could potentially be trained to avoid oversmoothing noted in prior work [Wu et al., 2023a]. 
+
+Empirical validation of the impact of depth. We validate our theoretical insights through numerical studies on synthetic and real-world benchmarks. As a practical consequence of our theory, we identify Laplacian-based positional encodings as a structural prior that prevents oversmoothing in Graphormer-GP. Moreover, with a sufficiently informative structural prior, performance can even improve as depth increases, which is unexpected in GCNs. 
+
+## 2 Preliminaries 
+
+Notation. ⊙ denotes the Hadamard product, ∥ concatenation, and | · | 2 
+
+> F
+
+the squared Frobenius norm, and tr( ·) the trace of a matrix. ϕ(·) is the row-wise softmax and σ(·) an arbitrary activation function. 2A PREPRINT - M ARCH 19, 2026 
+
+Graph Data. Let G = ( V, E) be an undirected graph with n nodes, where V denotes the set of nodes and E the set of edges. Let A ∈ Rn×n denote the adjacency matrix of the graph. The neighborhood of a node a ∈ V is defined as 
+
+Na := { i ∈ V | (a, i ) ∈ E } . The din -dimensional features for all N nodes are collected in rows of the n × din matrix 
+
+X, with the a-th row denoted by x⊤ 
+
+> a
+
+.
+
+Graph Neural Networks (GNNs). GNNs are a class of deep learning models designed to learn node representations from graph-structured data by aggregating information from local neighborhoods. S(ℓ,h )GNN ∈ Rn×n denotes the graph convolution operator of head h in layer ℓ, whose form depends on the specific GNN architecture. For message-passing GNNs such as GCN, dℓ,H = 1 and the graph convolution is fixed, determined solely by the graph topology, given by SGCN = D−1/2AD −1/2. In comparison, graph transformers employ a data-dependent convolution in which neighborhood weights are learned via an attention mechanism. Given input features f 0(X) := X, pre-activation of the 
+
+ℓ-th layer is 
+
+gℓ(X) := 
+
+ dℓ,H  
+
+> h=1
+
+S(ℓ,h )GNN f ℓ−1(X) W ℓ,h 
+
+W ℓ,H , (1) where ∥ denotes concatenation of the attention heads and W ℓ,h ∈ Rdℓ−1×dℓ and W ℓ,H ∈ Rdℓ−1dℓ,H ×dℓ are learnable weight matrices. The layer output is obtained by applying a nonlinearity. ReLU activation is a common choice and is considered in this work: f ℓ(X) = ReLU  gℓ(X).
+
+Gaussian Process Limit of GNN Node Representations. We analyse the node representations learned by GNNs through the lens of Neural Network Gaussian Processes (NNGPs). In the infinite-width and head limit, the model’s pre-activations {gℓa(X)}a∈V converge in distribution to a centered Gaussian process gℓ(X) ∼ GP (0 , Σ(ℓ)). For ReLU activations ( f ℓ(X) = ReLU  gℓ(X)), the post-activation kernel K(ℓ) admits a closed-form recursive update [Bietti and Mairal, 2019]: 
+
+K(ℓ) 
+
+> ab
+
+= 12π
+
+q
+
+Σ(ℓ) 
+
+> aa
+
+Σ(ℓ)
+
+> bb
+
+
+
+sin θ(ℓ) 
+
+> ab
+
++  π − θ(ℓ)
+
+> ab
+
+ cos θ(ℓ)
+
+> ab
+
+
+
+,θ(ℓ) 
+
+> ab
+
+= arccos 
+
+ Σ(ℓ)
+
+> ab
+
+q
+
+Σ(ℓ) 
+
+> aa
+
+Σ(ℓ)
+
+> bb
+
+ . (2) Starting from the initial kernel K(0)  
+
+> ab
+
+:= xa·xb 
+
+> din
+
+, the sequence of kernels {Σ(ℓ)}ℓ≥0 and {K(ℓ)}ℓ≥0 are defined recursively. Unlike standard NNGPs, in which the kernel is solely based on node features, the GNNs incorporate the graph structure and obtain predictions on unlabeled nodes by conditioning on observed node labels. In this work, we characterise the NNGP induced by graph transformers by deriving the corresponding covariance updates, thereby placing models such as GAT, Graphormer, and Specformer within a unified Gaussian process framework. In the following, we introduce graph transformers investigated in this paper: GAT, Graphormer, and Specformer. In contrast to these models, which operate on homogeneous graphs, the Graph Transformer Network (GTN) is designed for heterogeneous graphs and is presented in Appendix D, including its model formulation, GP-equivalent theorem, and proof. The design choices underlying GAT, Graphormer, and Specformer are detailed in Appendix A. 
+
+Graph Attention Network (GAT). A multi-head GAT consists of dℓ,H attention heads in layer ℓ. For each head h and layer ℓ, attention scores are computed on edges (a, i ) ∈ E :
+
+E(ℓh ) 
+
+> ai
+
+(X) =  ⃗v ℓh ⊤W ℓ,h f ℓ−1 
+
+> a
+
+(X) ∥ W ℓ,h f ℓ−1 
+
+> i
+
+(X) (3) where ⃗v ℓh ∈ R2dℓ×1 is the attention vector. The normalized attention coefficients are obtained via 
+
+ S(ℓ,h )GAT (X) 
+
+> ai
+
+= exp  σ(E(ℓh ) 
+
+> ai
+
+(X)) P 
+
+> k∈N a
+
+exp  σ(E(ℓh ) 
+
+> ak
+
+(X))  , (4) and  S(ℓ,h )GAT (X) 
+
+> ai
+
+= 0 for (a, i ) /∈ E .
+
+Graphormer. A Graphormer is a multi-head attention-based architecture with dℓ,H heads in layer ℓ. Each layer augments node representations with graph positional encodings: ˜f ℓ−1 
+
+> i
+
+(X) := [ f ℓ−1 
+
+> i
+
+(X), P ℓi ] for i ∈ V , where P ℓi
+
+encodes structural information such as Laplacian eigenvectors, degree features, or random-walk-based statistics. For each head h and layer ℓ, attention scores are computed on all node pairs (i, j ) ∈ V × V as 
+
+E(ℓh ) 
+
+> ij
+
+(X) = 
+
+  ˜f ℓ−1 
+
+> i
+
+(X)W Q,ℓh    ˜f ℓ−1 
+
+> j
+
+(X)W K,ℓh ⊤
+
+√dℓ
+
++ bρ(i,j ), (5) 
+
+3A PREPRINT - M ARCH 19, 2026 where W Q,ℓh , W K,ℓh ∈ Rdℓ−1×dℓ are learnable projection matrices, and the scaled dot-product term measures content-based compatibility between node i and node j. The additive bias bρ(i,j ) is a learnable scalar that depends only on the structural relation ρ(·, ·) : V × V → R (e.g., shortest-path distance bucket, edge type, or other graph-structural categories). The graph convolution operator is obtained by applying the row-wise softmax, to the logits, i.e., S(ℓ,h )Graphormer (X) = 
+
+ϕ E(ℓh )(X) for head h.
+
+Specformer. Specformer operates on the spectrum of the normalized graph Laplacian: L := In − D−1/2AD −1/2 =
+
+U ΛU ⊤ with Λ = diag( λ1, . . . , λ n). Each eigenvalue λi is encoded by a sinusoidal map ρ(λi) ∈ Rd with ρ(λ, 2t) = sin 
+
+
+
+ϵλ/ 10000 2t/d 
+
+
+
+, ρ (λ, 2t + 1) = cos 
+
+
+
+ϵλ/ 10000 2t/d 
+
+
+
+and the initial spectral tokens are formed as H0 =
+
+h
+
+(λ1∥ρ(λ1)) ⊤, . . . , (λn∥ρ(λn)) ⊤
+
+i⊤
+
+∈ Rn×(d+1) .
+
+Consider a multi-head Specformer consisting of an eigenvalue encoding module with dt,H heads and a graph convolution 
+
+module with dℓ,H heads. For each graph convolution head h ∈ { 1, . . . , d ℓ,H }, the eigenvalue encoding module applies a dt,H -head attention at each eigenvalue encoding layer t, producing head-specific attention scores on token pairs 
+
+(i, j ) ∈ V × V :
+
+E(t,k,h ) 
+
+> ij
+
+=
+
+ Ht−1,k,h i W Q,tkh   Ht−1,k,h j W K,tkh ⊤
+
+√dt
+
+. (6) Here, k ∈ 1, . . . , d t,H indexes the attention head within token layer t, and W Q,tkh , W K,tkh ∈ Rdt−1×dt are the corresponding projection matrices. The normalized attention coefficients are given by S(t,k,h )Spec = ϕ E(t,k,h ). The token-layer update for the h-th graph convolution head is 
+
+Ht,h =
+
+ dt,H  
+
+> k=1
+
+S(t,k,h )Spec Ht−1,k,h W V,tkh 
+
+W th,H , (7) where W V,tkh ∈ Rdt−1×dt is the value projection for the k-th eigenvalue encoding head and W t,H ∈ Rdt,H dt×dt is the token-layer output projection. After T eigenvalue layers, the aggregated eigenvalue encoding output associated with the 
+
+h-th graph convolution head is denoted by ¯H(h) = HT,h .The graph convolution module then constructs a multi-head spectral filtering operator. For each graph convolution head h ∈ { 1, . . . , d ℓ,H }, a spectral filter is generated by ¯λ(h) = σ  ¯H(h)W (h)
+
+> λ
+
+ ∈ Rn, where W (h) 
+
+> λ
+
+∈ RdT ×1 is a learnable parameter vector associated with the h-th graph convolution head. This induces the graph convolution operator 
+
+S(ℓ,h )Specformer = U diag  ¯λ(h) U ⊤ ∈ Rn×n.
+
+## 3 Gaussian process Limits of Graph Transformers 
+
+In this section, we analyse the GP limits of Graph Transformers architectures introduced in Section 2. We begin by introducing the kernels that govern the Gaussian process limit and explain their roles, then present their explicit formulas in Table 1, and finally interpret their implications for the corresponding architectures in Section 3.1. Our analysis is carried out within the Neural Network Gaussian Process (NNGP) framework. Specifically, we characterise the behavior of GAT, Graphormer, and Specformer in the infinite-width and infinite-head limit , denoted as dℓ, d ℓ,H → ∞ , and under the independent Gaussian priors listed in Table 4. In this regime, the models admit kernel recursions that govern their layerwise propagation. In particular, we focus on the pre-activations gℓ with kernel Σ(ℓ), and the post-activation kernel K(ℓ) is obtained via the standard ReLU NNGP transformation (Equation 2). The complete theorems are provided in Appendix B. 
+
+Spatial Models: GAT-GP and Graphormer-GP To provide a unified analysis of GAT and Graphormer, we define four kernels that govern the GP limit. These kernels model the propagation of information: we define the structural input (post-activation), model the attention mechanism (edge-level), aggregate these into a graph operator (convolution), and finally produce the node representations (node-level). Together, they form a recursion that characterizes the evolution of graph signals through deep layers. • Post-Activation Kernel of the Previous Layer: The propagation is initialized using the kernel from the previous iteration. For GAT, this is the post-activation kernel K(ℓ−1) . For Graphormer, this is the augmented kernel ˜K(ℓ) = αK (ℓ−1) + (1 − α)R(ℓ) for α ∈ [0 , 1] , which incorporates structural positional encoding R(ℓ).4A PREPRINT - M ARCH 19, 2026 Table 1: Summary of the GP kernels for graph transformers. The weight priors are in Table 4 in Appendix B. The table presents both the edge/structural kernels ( K(ℓ),E ab for spatial models or Kλ,ab for Specformer) and the node-level kernels (Σ(ℓ) 
+
+> ab
+
+) that describe the propagation of covariance across layers. For GAT-GP and Graphormer-GP, the edge-level kernels capture correlations between attention scores, while the node-level kernels aggregate these correlations. The learned spectral kernel Kλ of Specformer-GP modulates the mapping of node representations in the Laplacian eigenbasis. 
+
+Model Edge/Structural Kernel ( K(ℓ),E ab or Kλ,ab ) Node Kernel Σ(ℓ)
+
+> ab
+
+GAT-GP (Theorem 6) σ2
+
+> w
+
+σ2
+
+> v
+
+ K(ℓ−1)  
+
+> ab
+
++ K(ℓ−1) 
+
+> ij
+
+ σ2 
+
+> H
+
+σ2
+
+> w
+
+P
+
+> i∈Na
+
+P 
+
+> j∈Nb
+
+K(ℓ−1)  
+
+> ij
+
+C(ℓ)
+
+> ai,bj
+
+Graphormer-GP (Theorem 9) 
+
+
+
+σ2
+
+> Q
+
+σ2 
+
+> K
+
+˜K(ℓ−1)  
+
+> ab
+
+˜K(ℓ−1)  
+
+> ij
+
++ σ2 
+
+> b
+
+1ϕ(a,i )= ϕ(b,j )
+
+
+
+σ2 
+
+> H
+
+σ2
+
+> w
+
+P 
+
+> i,j ∈V
+
+˜K(ℓ−1)  
+
+> ij
+
+C(ℓ)
+
+> ai,bj
+
+Specformer-GP (Theorem 11) Kλ,ab = E[¯λa ¯λb] (Spectral) σ2 
+
+> H
+
+σ2
+
+> w
+
+U (Kλ ⊙ (U ⊤K(ℓ−1) U )) U ⊤
+
+• Edge-Level Logit Kernel ( K(ℓ),E ): The attention logits E(ℓ) converge to a centered Gaussian process 
+
+E(ℓ) ∼ GP (0 , K (ℓ),E ). This kernel describes the covariance between attention scores for different edges. • Convolution Kernel ( C(ℓ)): This kernel captures the covariance of the graph convolution operator across independent heads and is defined as C(ℓ) 
+
+> ai,bj
+
+:= E
+
+h S(ℓ, 1) (X)
+
+> ai
+
+ S(ℓ, 1) (X)
+
+> bj
+
+i
+
+. Its explicit form is determined by the Edge-Level Logit Kernel K(ℓ),E .• Node-Level Kernel ( Σ(ℓ)): The final covariance between node representations a and b after neighborhood aggregation, where Σ(ℓ) 
+
+> ab
+
+:= E[gℓa1(X)gℓb1(X)] .
+
+Spectral Model: Specformer-GP Unlike spatial models, Specformer operates on the spectrum of L. Alongside the layerwise limits, when dt, d t,H → ∞ , the model converges to a Gaussian process characterized by a set of kernels: • Spectral Token Kernel: The representations of the t-th token layer, H(t), converge in distribution to a Gaussian process H(t) ∼ GP (0 , K (t) 
+
+> H
+
+), which captures the evolution of spectral information through the eigenvalue encoding. • Learned Spectral Kernel ( Kλ): After T token layers, the learned spectral filter coefficients ¯λ, induces a kernel defined as Kλ,ab := E[¯λa ¯λb].• Node-Level Kernel ( Σ(ℓ)) This kernel propagates feature covariance by mapping previous-layer representa-tions into the Laplacian eigenbasis for elementwise modulation by the induced spectral kernel ( Kλ) before projecting them back to the node domain. The specific kernels for each architecture are summarized in Table 1. The independent Gaussian weight priors considered are summarized in Table 4 at the beginning of Appendix B. Formal theorems establishing the existence of the Gaussian process limits are provided in Appendix B, and detailed proofs of these theorems can be found in Appendix C. 
+
+Explicit Kernel Expressions. Table 1 summarizes a general kernel recursion, which can be specialized by considering specific choices of the attention and activation nonlinearities to obtain a closed-form expressions. Table 2 presents the closed-form kernels obtained under linear attention (formally in Corollaries 8, and 10). For completeness, and to facilitate the comparison with attention-based architectures in the Section 4, we also include the corresponding GCN-GP kernel from [Niu et al., 2023], which does not incorporate attention mechanisms. These kernels provide a tractable way to study the GP limit under simplified attention and activation choices, while still capturing the interaction between node features and graph structure. More general kernels can be obtained by considering RELU as output activation and applying Equation 2. In Appendix B Corollary 7, we also present GAT with RELU attention. 
+
+3.1 Remarks on GP kernels 
+
+The kernels in Table 1 reveal how node features and graph structure interact in the GP limit. In the following, we discuss the interpretation of these kernels in the graph domain and their implications for node representation propagation. 5A PREPRINT - M ARCH 19, 2026 Table 2: Closed-form expressions for the node-level Gaussian process (GP) kernels under linear attention and linear activation. These kernels provide an explicit characterization of kernel propagation for each architecture. For comparison, the GCN-GP kernel from [Niu et al., 2023] is included, which does not involve attention. 
+
+Model Node Kernel ( K(ℓ))
+
+GCN-GP [Niu et al., 2023] K(ℓ) = σ2
+
+> w
+
+AK ℓ−1AT
+
+GAT-GP (Corollary 8) K(ℓ) = σ2 
+
+> H
+
+σ4
+
+> w
+
+σ2
+
+> v
+
+
+
+K(ℓ−1) ⊙ (AK (ℓ−1) A⊤) + A(K(ℓ−1) ⊙ K(ℓ−1) )A⊤
+
+
+
+Graphormer-GP (Corollary 10) K(ℓ) 
+
+> ab
+
+= σ2 
+
+> H
+
+σ2
+
+> w
+
+"
+
+σ2
+
+> Q
+
+σ2 
+
+> K
+
+˜K(ℓ)
+
+> ab
+
+P 
+
+> i,j ∈V
+
+˜K(ℓ−1)  
+
+> ij
+
+˜K(ℓ−1)  
+
+> ij
+
++ σ2
+
+> b
+
+P 
+
+> i,j ∈V
+
+˜K(ℓ−1)  
+
+> ij
+
+1ρ(a,i )= ρ(b,j )
+
+#
+
+Specformer-GP (Theorem 11) K(ℓ) = σ2 
+
+> H
+
+σ2
+
+> w
+
+U (Kλ ⊙ (U ⊤K(ℓ−1) U )) U ⊤
+
+GAT-GP. The edge-level kernel K(ℓ),E of GAT-GP characterizes the covariance between attention logits on two edges (a, i ) and (b, j ), determined by the similarity of their source nodes a and b and their target nodes i and j. Edges whose endpoints are simultaneously similar in representation space exhibit stronger correlation. The node-level kernel 
+
+Σ(ℓ) then aggregates these edge contributions across all neighbor pairs (i, j ) with i ∈ N a and j ∈ N b, combining the previous-layer feature similarity with the alignment induced by attention. This yields a kernel recursion describing how both features and graph structure govern node representation propagation across layers. 
+
+Graphormer-GP Graphormer incorporates graph information through positional embeddings. The matrix R can be interpreted as the covariance matrix of the corresponding positional embeddings which can be computed as an inner product, i.e., R(ℓ) 
+
+> ab
+
+= ⟨P (ℓ) 
+
+> a
+
+, P (ℓ) 
+
+> b
+
+⟩. Alternatively, instead of introducing explicit positional embeddings, the graph structure itself can be directly leveraged to construct a node-level graph-structure covariance matrix. The node-level kernel Σ(ℓ) of Graphormer-GP indicates that attention correlations are strengthened for node pairs sharing the same structural relation, ensuring that graph information is explicitly leveraged in guiding attention. The edge-level kernel 
+
+K(ℓ),E then propagates the attention correlations to the next layer through an aggregation over all node pairs. Unlike GAT which is restricted to local neighborhoods, Graphormer induces similarity connections between every pair of nodes in the graph. 
+
+Specformer. The convolution in Specformer is composed of spectral tokens and node features . The spectral tokens are first processed through T layers of encoding, and passed through a decoder to construct a data-dependent spectral filtering that governs the propagation of node features. As detailed in Theorem 11 in Appendix B, (I) the spectral-token representations Ht, which are updated through attention, and (II) the node-feature pre-activations g(X) converge in distribution to a Gaussian process. The learned spectral kernel Kλ induces a kernel over the learned spectral filter coefficients. The node level kernel Σl then defines the recursion of the node-feature kernel: the previous-layer node covariance is mapped into the Laplacian eigenbasis, modulated elementwise according to the induced spectral kernel, and projected back to the node domain. Spatial models aggregate information over local node neighborhoods, whereas Specformer operates in the graph spectral domain. 
+
+## 4 Analysis of GNN-GPs under Contextual Stochastic Block Model (CSBM) 
+
+The GP formulation of graph transformers allows us to compare structural benefits and limitations of different architectures. Having introduced kernel recursion of graph transformers, we now focus on a key phenomenon in deep graph models: Oversmoothing . In the kernel perspective, this corresponds to convergence of the node-level covariance toward a constant matrix. To understand whether graph transformers can structurally maintain discriminative signals across layers, it is useful to study their GP kernels on a controlled setting with known community structure. 6A PREPRINT - M ARCH 19, 2026 In this section, we analyse how the resulting kernels behave when the underlying graph is governed by a CSBM .We consider population version of 2-CSBM with n nodes partitioned into two equally sized communities, C1 and 
+
+C2. In this setting, the probability of an edge existing between two nodes is p if they belong to the same community and q if they belong to different communities. The expected adjacency matrix takes the following block structure: 
+
+A =
+
+p11 ⊤ q11 ⊤
+
+q11 ⊤ p11 ⊤
+
+
+
+, where 11 ⊤ denotes the all-ones matrix of size n 
+
+> 2
+
+× n
+
+> 2
+> 2
+
+. A kernel that captures the community structure should mirror this block structure, i.e. K(ℓ) =
+
+xℓ11 ⊤ yℓ11 ⊤
+
+yℓ11 ⊤ xℓ11 ⊤
+
+
+
+, where xℓ represents the kernel value for intra-community node pairs and yℓ for inter-community pairs at layer ℓ, initialized by the feature covariance values 
+
+x0 and y0 at the input layer ( ℓ = 0 ). While we analyse the population version, our experiments use random CSBM realizations, which exhibit similar behavior. We summarise the evolution of the kernels (formulas for xℓ and yℓ) and their asymptotic behaviour in Table 3, highlighting how each model propagates structural information under the CSBM. The full corollaries and proofs for the closed-form expressions of the kernels are provided in Appendix E. Table 3: Evolution of the GP kernel K(ℓ) =
+
+ xℓ11 ⊤ yℓ11 ⊤ 
+
+> yℓ11 ⊤xℓ11 ⊤
+
+
+
+under CSBM and conditions for oversmoothing. To preserve community structure, the kernel must maintain a gap between the intra-community ( xℓ) and inter-community (yℓ) values; this discriminative signal is captured by the second term in each expression.The second column indicates whether oversmoothing occurs as ℓ → ∞ , i.e., whether the kernel loses its ability to distinguish the two communities. For graph transformers oversmoothing can be avoided, maintaining the discriminative signal across layers. 
+
+Model Intra/Inter-Community Formulas ( xℓ, y ℓ) Oversmoothing ( ℓ → ∞ )
+
+GCN-GP 12 ( n 
+
+> 2
+
+)2ℓ (x0 + y0)( p + q)2ℓ ± (x0 − y0)( p − q)2ℓ
+
+(Corollary 36) 
+
+Yes 
+
+(Corollary 1) 
+
+GAT-GP 12  
+
+> G2ℓ
+> (n
+> 2)2(p+q)2
+
+h
+
+1 ±
+
+ x0−y0
+
+> x0+y0
+
+
+
+F ℓ
+
+i
+
+(Corollary 37) 
+
+No, if communities are separated ( F ≥ 1)
+
+(Corollary 2) 
+
+Graphormer-GP ˜xℓ = αℓx0 + (1 − αℓ)p, ˜yℓ = αℓy0 + (1 − αℓ)q
+
+(Corollary 38) 
+
+No, if the prior ( R) captures communities 
+
+(Remark 3) 
+
+Specformer-GP 12
+
+(x0 + y0)¯λ2ℓ 
+
+> 1
+
+± (x0 − y0)¯λ2ℓ
+
+> 2
+
+
+
+(Corollary 39) 
+
+No, if |¯λ2| ≥ | ¯λ1|
+
+(Remark 5) 
+
+Oversmoothing can be formalized by examining the normalized kernel K(ℓ)1  
+
+> ntr (K(ℓ))
+
+. Since the normalisation term corresponds to xℓ, the discriminability of the model is captured by the ratio yℓ/x ℓ: if lim ℓ→∞ yℓ/x ℓ = 1 , the kernel converges to a rank-one matrix of ones, meaning the representations of the two communities become indistinguishable. 
+
+GCN. The collapse into a rank-one kernel is clearly visible in the Gaussian Process limit of standard GCN. 
+
+Corollary 1 (Rank collapse in GCN-GP indicates oversmoothing) . For the GCN kernel presented in Corollary 36 (and in Table 3). The normalized kernel converges to the all-ones matrix: 
+
+lim 
+
+> ℓ→∞
+
+K(ℓ)1 
+
+> n
+
+tr (K(ℓ)) =
+
+11 ⊤ 11 ⊤
+
+11 ⊤ 11 ⊤
+
+
+
+.
+
+Consequently, rank 
+
+
+
+lim ℓ→∞ K(ℓ)1 
+
+> ntr (K(ℓ))
+
+
+
+= 1 , indicating that GCNs suffer from complete oversmoothing. 
+
+The detailed derivations for the closed-form expressions of the GCN kernel and the spectral analysis leading to rank collapse are provided in Appendix E.1. 
+
+GAT. Unlike the GCN kernel, which collapses to a rank-one matrix, we next show that GAT-GP avoids oversmoothing. Notably, while the GCN kernel follows a simple linear recurrence, the GAT kernel involves a coupled, non-linear two-variable system. The derivation of the GAT kernel under SBM (Corollary 37) and its limit (Corollary 2) are provided in Appendix E.2. The GAT kernel is governed by the global growth factor G = ( x0 + y0)( p + q)2( n 
+
+> 2
+
+)2
+
+> 2
+
+Throughout this section, SBM refers to the two-community stochastic block model introduced above. 
+
+7A PREPRINT - M ARCH 19, 2026 and the structural preservation factor F = 2 p2−pq +q2 
+
+> (p+q)2
+
+. Here, G controls the overall magnitude of the kernel, while 
+
+F determines whether the community structure is preserved across layers. In particular, when the communities are sufficiently well-separated, F ensures that the kernel maintains its ability to distinguish between them even in the infinite-depth limit. This property is formalised in the following corollary: 
+
+Corollary 2 (GAT-GP avoids rank collapse indicating the preservation of discriminative community struc-ture) . For the GAT kernel defined in Corollary 37, the normalized kernel converges to: lim ℓ→∞ K(ℓ)1  
+
+> ntr (K(ℓ))
+
+=
+
+ 11 ⊤ γ11 ⊤
+
+γ11 ⊤ 11 ⊤
+
+
+
+, where γ = lim ℓ→∞      
+
+> 1−
+> x0−y0
+> x0+y0
+> 
+> Fℓ
+> 1+
+> x0−y0
+> x0+y0
+> 
+> Fℓ
+
+. Consequently, if F ≥ 1, which occurs when pq is bounded away from 1, the kernel maintains a rank of 2 and preserves community separation as ℓ → ∞ , avoiding oversmoothing. 
+
+Graphormer. Consider the Graphormer kernel from Corollary 10 in Appendix B without the bias term, and assume that the positional encodings capture all structural information of the graph. In the SBM setting, this implies that the spatial relation matrix coincides with the adjacency matrix, i.e., R = A. Under SBM, the block entries ˜xℓ and ˜yℓ of 
+
+˜K(ℓ) are determined by the recurrence given in Table 3. The normalized kernel from Table 2 without the bias term can be written as K(ℓ) = ˜K(ℓ) · Zℓ−1, with Zℓ−1 = tr (A⊤( ˜K(ℓ−1) ⊙ ˜K(ℓ−1) )) . Since our analysis focuses on whether the kernel preserves the block structure induced by the SBM, the trace term does not play a role. Consequently, it suffices to study the evolution of ˜K(ℓ).
+
+Remark 3 (Graphormer Convergence) . As the number of layers ℓ → ∞ , the unnormalized Graphormer kernel ˜K(ℓ)
+
+converges to the spatial relation matrix R. In the SBM setting where R = A, the kernel effectively recovers the ground truth, improving its ability to distinguish communities with increasing depth. This benefit, however, relies entirely on the quality of the positional encodings; in a real-world dataset if R is uninformative, the kernel may collapse toward a non-discriminative prior, resulting in oversmoothing. 
+
+Specformer. The evolution of the Specformer kernel under SBM is presented in Table 3. Unlike the GCN and Graphormer kernels, the Specformer uses a learnable spectral filter, which is characterised by the parameters ¯λ1 and ¯λ2
+
+that determine the cross-covariance Kλ (Equation 33). These eigenvalues control how different spectral components are amplified across layers, and therefore determine whether the kernel preserves the block structure induced by the SBM. Depending on the choice of ¯λ1 and ¯λ2, Specformer can either collapse to the GCN behaviour or maintain community separation, as detailed in the following remarks. 
+
+Remark 4 (Specformer Collapses to GCN) . The Specformer-GP kernel collapses to the GCN-GP kernel if the learned spectral weights correspond to the eigenvalues of the adjacency matrix, i.e., ¯λ1 = n 
+
+> 2
+
+(p + q) and ¯λ2 = n 
+
+> 2
+
+(p − q). In this case, the Specformer kernel exhibits the same oversmoothing behaviour (Corollary 1). 
+
+Remark 5. Specformer can preserve community structure, even in the limit ℓ → ∞ , when the learned spectral filter satisfies |¯λ2| ≥ | ¯λ1|, as this amplifies the spectral direction that carries the community information. 
+
+## Summary of Oversmoothing Behavior 
+
+While GCN-GP is structurally destined for rank collapse and oversmoothing, attention-based models provide mechanisms to preserve structural information. GAT-GP avoids oversmoothing under a data-dependent condi-tion: communities need to be sufficiently separated, which is a standard expectation for graph learning tasks. Graphormer-GP relies on a prior that encodes meaningful structural information to prevent oversmoothing. In contrast, Specformer-GP offers a learnable solution, where avoiding oversmoothing is determined by the spectral weights optimized during training rather than by the data or prior. Together, these findings highlight how architectural design influence oversmoothing. 
+
+## 5 Discussions and Experiments 
+
+While graph transformers are notoriously difficult to analyse due to complex attention mechanisms and training dynamics, our Gaussian Process (GP) framework provides a mathematically rigorous closed-form equivalent. We provide the first kernel equivalent for graph transformers, thereby offering a tool for studying their structural properties. A structural phenomenon we investigate is oversmoothing . In Section 4, we formalise this behaviour by analysing GP kernels under CSBM, revealing a fundamental distinction: while GCN-GP is destined to oversmooth (Corollary 1), attention-based architectures can preserve discriminative community representations as depth increases. Consistent with this theory, evaluating GP kernels on synthetic and benchmark datasets (homophilic Pubmed [Sen et al., 2008] and heterophilic Chameleon [Rozemberczki et al., 2019]) shows that GCN-GP performance deteriorates with depth ,8A PREPRINT - M ARCH 19, 2026 whereas GAT-GP remains resilient to oversmoothing (Figure 3, left; Corollary 2). Details of the experiments are provided in Appendix F, and the code to reproduce the experiments is available at https://figshare.com/s/ 4ad5245d4d6c405f46f0 .2 5 10 20 50 100 200 500        
+
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Chameleon
+> 2510 20 50 100 200 500
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> SBM (random features)
+
+Number of Layers Test Accuracy   
+
+> Laplacian Eigenvectors Spectral Reconstruction Centrality Encoding
+
+Figure 2: Oversmoothing behaviour and the impact of positional encodings. Test accuracy of Graphormer-GP on Chameleon (left) and SBM with random features (right) as a function of the number of layers. While accuracy in graph models typically suffers from perfor-mance degradation with an increasing number of layers, 
+
+Graphormer-GP exhibits increasing accuracy with depth when utilizing informative positional encodings, such as Laplacian Eigenvectors (blue) and Spectral Re-construction (orange). This empirical trend aligns with the theoretical results in Corollary 3. 2 5 10 20 50 100 200 500                                                      
+
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> Pubmed Test Accuracy
+> 2510 20 50 100 200 500
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 2510 20 50 100 200 500
+> 0.2
+> 0.4
+> 0.6
+> Chameleon Test Accuracy
+> 2510 20 50 100 200 500
+> 0.2
+> 0.4
+> 0.6
+> 2510 20 50 100 200 500
+> 0.6
+> 0.8
+> 1.0
+> SBM (random features) Test Accuracy
+> 2510 20 50 100 200 500
+> 0.6
+> 0.8
+> 1.0
+> 2510 20 50 100 200 500
+> 0.6
+> 0.8
+> 1.0
+> CSBM (aligned features) Test Accuracy
+> 2510 20 50 100 200 500
+> 0.6
+> 0.8
+> 1.0
+> Original Model with Laplacian Eigenvectors
+> Number of Layers GCN-GP GAT-GP Specformer-GP Graphormer-GP
+
+Figure 3: Oversmoothing behaviour across various GNN-GP architectures. Test accuracy is shown as a function of depth for the original models (left) and mod-els augmented with Laplacian Eigenvectors (right). In the original configurations, GCN-GP (blue) consistently suffers from a performance drop-off as the number of layers increases . In contrast, GAT-GP (orange) demonstrates resilience to depth , maintaining stable performance as argued in Corollary 2. The behavior of Specformer-GP and Graphormer-GP depends on the dataset. Notably, upon incorporating Laplacian Eigenvec-tors (right), the tendency to oversmooth is significantly mitigated across all architectures. 
+
+Graphormer-GP is sensitive to structural prior. Re-mark 3, argues that when the structural prior is informative, Graphormer benefits from depth, as the kernel converges toward the spatial relation matrix (e.g., the ground-truth adjacency in SBM). However, when an informative struc-tural prior is not explicitly known for a real-world dataset, Graphormer may still suffer from oversmoothing as the ker-nel collapses toward a non-discriminative prior . Since Graphormer can incorporate different structural priors, we ran additional experiments on SBM with random features and Chameleon. We evaluate three positional encodings (without bias) at large depth (Figure 5): Laplacian Eigen-vectors , Spectral Reconstruction (low-rank Laplacian ap-proximation), and Centrality Encoding (from Yang et al. [2021]). Across both datasets, Laplacian-based encodings outperform centrality encoding and resist oversmoothing. Motivated by these results, we incorporate Laplacian Eigen-vectors into the other GP architectures (Figure 3, right) and find that they can mitigate the onset of oversmoothing. 
+
+Broader Perspective The GP equivalence for graph transformers established in this work provides a foundation for a broader theoretical analysis. Analysing the model in the infinite-width regime, independent of training dynamics, yields corresponding kernel equivalents that enable the study of structural properties. Among the central questions in such analyses is expressivity, as the model’s representational power can be characterised by the expressivity of the corresponding kernel. While our current analysis demonstrates community separation at large depth in the CSBM setting, it can be extended to study other critical structural phenomena, including oversquashing (the bottleneck of information propagation) and the model’s sensitivity to heterophily under more complex random graph models. GP equivalence has already successfully enabled the study of generalisation [Seeger, 2003] and inductive biases [Li et al., 2021] in deep learning. This work provides the first unified theoretical lens based on GP for graph transformers, laying the foundation for a deeper understanding of graph attention mechanisms. 9A PREPRINT - M ARCH 19, 2026 
+
+References 
+
+Uri Alon and Eran Yahav. On the bottleneck of graph neural networks and its practical implications. In 9th International Conference on Learning Representations, 2021 , 2021. Nil Ayday, Mahalakshmi Sabanayagam, and Debarghya Ghoshdastidar. Why does your graph neural network fail on some graphs? insights from exact generalisation error. CoRR , abs/2509.10337, 2025. Alberto Bietti and Julien Mairal. On the inductive bias of neural tangent kernels. In Advances in Neural Information Processing Systems , 2019. Patrick Billingsley. Probability and Measure . Wiley, 2 edition, 1986. J. R. Blum, J. Kiefer, and M. Rosenblatt. Distribution free tests of independence based on the sample distribution function. Annals of Mathematical Statistics , 29:485–498, 1958. Deyu Bo, Chuan Shi, Lele Wang, and Renjie Liao. Specformer: Spectral graph neural networks meet transformers. In 
+
+The Eleventh International Conference on Learning Representations, ICLR , 2023. Adrià Garriga-Alonso, Carl Edward Rasmussen, and Laurence Aitchison. Deep convolutional networks as shallow gaussian processes. In International Conference on Learning Representations (ICLR) , 2019. Jiri Hron, Yasaman Bahri, Jascha Sohl-Dickstein, and Roman Novak. Infinite attention: NNGP and NTK for deep attention networks. In Proceedings of the 37th International Conference on Machine Learning (ICML) , Proceedings of Machine Learning Research (PMLR), 2020. Nicolas Keriven. Not too little, not too much: a theoretical analysis of graph (over)smoothing. In Sanmi Koyejo, S. Mohamed, A. Agarwal, Danielle Belgrave, K. Cho, and A. Oh, editors, Advances in Neural Information Processing Systems 35: Annual Conference on Neural Information Processing Systems 2022, NeurIPS 2022, New Orleans, LA, USA, November 28 - December 9, 2022 , 2022. Jaehoon Lee, Yasaman Bahri, Roman Novak, Samuel S. Schoenholz, Jascha Sohl-Dickstein, and Jeffrey Pennington. Deep neural networks as gaussian processes. In International Conference on Learning Representations (ICLR) ,2018a. Jaehoon Lee, Jascha Sohl-dickstein, Jeffrey Pennington, Roman Novak, Sam Schoenholz, and Yasaman Bahri. Deep neural networks as gaussian processes. In International Conference on Learning Representations , 2018b. Michael Y. Li, Erin Grant, and Thomas L. Griffiths. Meta-learning inductive biases of learning systems with gaussian processes. In Fifth Workshop on Meta-Learning at the Conference on Neural Information Processing Systems , 2021. Qimai Li, Zhichao Han, and Xiao-Ming Wu. Deeper insights into graph convolutional networks for semi-supervised learning. In Proceedings of the Thirty-Second AAAI Conference on Artificial Intelligence, (AAAI-18) , 2018. Alexander G. de G. Matthews, Jiri Hron, Mark Rowland, Richard E. Turner, and Zoubin Ghahramani. Gaussian process behaviour in wide deep neural networks. In International Conference on Learning Representations (ICLR) , 2018. Zehao Niu, Mihai Anitescu, and Jie Chen. Graph neural network-inspired kernels for gaussian processes in semi-supervised learning. In The Eleventh International Conference on Learning Representations, ICLR , 2023. Roman Novak, Lechao Xiao, Yasaman Bahri, Jaehoon Lee, Greg Yang, Jeffrey Pennington, and Jascha Sohl-Dickstein. Bayesian deep convolutional networks with many channels are gaussian processes. In International Conference on Learning Representations (ICLR) , 2019. Hoang NT and Takanori Maehara. Revisiting graph neural networks: All we have is low-pass filters. CoRR , 2019. Benedek Rozemberczki, Ryan Davies, Rik Sarkar, and Charles Sutton. GEMSEC: Graph embedding with self clustering. In Proceedings of the IEEE/ACM International Conference on Advances in Social Networks Analysis and Mining (ASONAM) , pages 65–72, 2019. Mahalakshmi Sabanayagam, Pascal Mattia Esser, and Debarghya Ghoshdastidar. Analysis of convolutions, non-linearity and depth in graph neural networks using neural tangent kernel. Trans. Mach. Learn. Res. , 2023, 2023. Matthias W. Seeger. Pac-bayesian generalisation error bounds for gaussian process classification. J. Mach. Learn. Res. ,pages 233–269, 2003. Prithviraj Sen, Galileo Namata, Mustafa Bilgic, Lise Getoor, Brian Galligher, and Tina Eliassi-Rad. Collective classification in network data. AI Magazine , 29(3):93–106, 2008. Petar Velickovic, Guillem Cucurull, Arantxa Casanova, Adriana Romero, Pietro Liò, and Yoshua Bengio. Graph attention networks. In 6th International Conference on Learning Representations , 2018. Xiao Wang, Houye Ji, Chuan Shi, Bai Wang, Peng Cui, Philip S. Yu, and Yanfang Ye. Heterogeneous graph attention network. arXiv preprint arXiv:1903.07293 , 2019. 10 A PREPRINT - M ARCH 19, 2026 Xinyi Wu, Amir Ajorlou, Zihui Wu, and Ali Jadbabaie. Demystifying oversmoothing in attention-based graph neural networks. In Advances in Neural Information Processing Systems 36: Annual Conference on Neural Information Processing Systems 2023 , 2023a. Xinyi Wu, Zhengdao Chen, William Wei Wang, and Ali Jadbabaie. A non-asymptotic analysis of oversmoothing in graph neural networks. In The Eleventh International Conference on Learning Representations , 2023b. Greg Yang. Scaling limits of wide neural networks with weight sharing: Gaussian process behavior, gradient indepen-dence, and neural tangent kernel. arXiv preprint, 2019. Junhan Yang, Zheng Liu, Shitao Xiao, Chaozhuo Li, Defu Lian, Sanjay Agrawal, Amit Singh, Guangzhong Sun, and Xing Xie. Graphformers: Gnn-nested transformers for representation learning on textual graph. In Advances in Neural Information Processing Systems 34: Annual Conference on Neural Information Processing Systems , 2021. Bohang Zhang, Lingxiao Zhao, and Haggai Maron. On the expressive power of spectral invariant graph neural networks. In Ruslan Salakhutdinov, Zico Kolter, Katherine A. Heller, Adrian Weller, Nuria Oliver, Jonathan Scarlett, and Felix Berkenkamp, editors, Forty-first International Conference on Machine Learning, ICML 2024, Vienna, Austria, July 21-27, 2024 , volume 235 of Proceedings of Machine Learning Research , pages 60496–60526. PMLR / OpenReview.net, 2024. Weichen Zhao, Chenguang Wang, Congying Han, and Tiande Guo. Exploring over-smoothing in graph attention networks from the markov chain perspective. In Proceedings of the International Conference on Frontiers of Artificial Intelligence and Machine Learning, FAIML , 2023. 11 A PREPRINT - M ARCH 19, 2026 
+
+## A Design Choices 
+
+A.1 GNN with Multi-Head Aggregation 
+
+A common finite-head formulation aggregates H = dℓ,H head outputs by concatenation: 
+
+f ℓ(X) = dℓ,H 
+
+> h=1
+
+σ
+
+
+
+S(ℓ,h )GNN f ℓ−1(X) Wℓ,h 
+
+, (8) where ∥ denotes concatenation. This formulation is not suitable for taking the limit dℓ,H → ∞ , since concatenation leads to an ever-growing output dimension and prevents a CLT-based infinite-head analysis. To obtain a well-defined infinite-head limit in a fixed feature dimension, we modify the aggregation mechanism by introducing a shared projection that aggregates all head-wise outputs into the next-layer representation: 
+
+f ℓ(X) = σ
+
+ dℓ,H  
+
+> h=1
+
+S(ℓ,h )GNN f ℓ−1(X) Wℓ,h 
+
+Wℓ,H 
+
+
+
+, (9) where Wℓ,h are head-specific weight matrices and Wℓ,H is a shared projection mapping the concatenated head outputs to the fixed-dimensional feature space of layer ℓ.This modification plays a crucial role in the infinite-head analysis: it replaces dimension growth by a fixed-dimensional linear aggregation of head-wise random features, which enables a CLT-type argument despite the n × n stochasticity of 
+
+S(ℓ,h )GNN (X) and the induced dependence across coordinates. As a result, the infinite-head GNN in (9) admits a principled Gaussian-process limit while retaining the expressive stochastic message-passing structure encoded by S(ℓ,h )GNN .
+
+A.2 Graphormer 
+
+In the original Graphormer architecture, structural information is injected through a centrality encoding , where each node representation is augmented by learnable embeddings indexed by its in-degree and out-degree. Using our notation, the input node representation can be written as 
+
+f (0)  
+
+> i
+
+(X) = xi + zdeg − (vi) + zdeg + (vi), (10) where xi denotes the raw node feature and zdeg − , z deg + ∈ Rd are learnable degree-based embeddings. For undirected graphs, the two degree terms are unified into a single degree encoding. While such a design effectively injects node importance signals into the attention mechanism and has demonstrated strong empirical performance on graph-level tasks, it represents a specific instance of structural augmentation based solely on degree statistics. This degree-centric formulation becomes restrictive when considering node-level prediction tasks or when aiming to incorporate richer and more general notions of graph structure. To generalize this mechanism, we reinterpret centrality encoding as a special case of feature-level graph encoding insertion. Instead of restricting the structural signal to degree-based embeddings, we introduce a general graph encoding term P ℓi at layer ℓ, and define the augmented node representation as 
+
+˜f ℓi (X) := f ℓi (X), P ℓi
+
+, i ∈ V, (11) where f ℓi (X) denotes the node representation produced by the backbone network at layer ℓ, and P ℓi ∈ Rdp encodes structural or positional information associated with node vi. More importantly, (11) allows P ℓi to represent arbitrary graph encodings, including but not limited to Laplacian positional encodings, random walk-based encodings, or other task-specific structural descriptors. By explicitly separating semantic features f ℓi (X) from structural encodings P ℓi , the proposed formulation provides a flexible and general mechanism for injecting graph structure into the model. This is particularly advantageous for node-level tasks, where the prediction target depends on fine-grained local and mesoscopic structural patterns rather than global graph summaries. Furthermore, the concatenation-based design preserves the modularity of the architecture and facilitates theoretical analysis, as different choices of P ℓi can be studied independently of the backbone representation. In summary, we treat centrality encoding as a special case of a more general graph encoding framework. The unified representation (11) enables the incorporation of diverse structural signals in a principled manner, while maintaining compatibility with Transformer-based architectures and node-level prediction settings. 12 A PREPRINT - M ARCH 19, 2026 
+
+A.3 Specformer Spectral Graph Construction in Specformer. In the original Specformer model, the graph structure is learned in the spectral domain through a set of spectral tokens. Let Ht ∈ Rn×dℓ,H 
+
+denote the spectral tokens at layer t in eigenvalue encoding, where each column corresponds to the output of one attention head. At layer t, each attention head h = 1 , . . . , d ℓ,H produces a separate spectral representation via 
+
+Zh = Attention  HtW Q,th , H tW K,th , H tW V,th , (12) where W Q,th , W K,th , and W V,th are learnable projection matrices. The head-specific representation Zh is then mapped to a vector of filtered eigenvalues, 
+
+λh = σ(ZhWλ) ∈ RN , (13) where σ(·) denotes an activation function. Each eigenvalue vector λh defines a spectral graph operator 
+
+Sh = U diag( λh) U ⊤, (14) with U denoting the eigenvector matrix of the graph Laplacian. As a result, the dℓ,H attention heads produce dℓ,H distinct spectral graph operators {Sh}dt,H  
+
+> h=1
+
+. These operators are subsequently used as intermediate bases to construct feature-wise graph structures. Specifically, the operators are concatenated along the channel dimension and mapped to the node feature dimension d through a feed-forward network (FFN), 
+
+ˆS = FFN  [ IN ∥ S1 ∥ · · · ∥ Sdt,H ] ∈ RN ×N ×d. (15) The output ˆS thus consists of d graph operators, where each slice ˆS:,:,i corresponds to a distinct adjacency (or Laplacian) matrix associated with the i-th node feature dimension. Based on these feature-wise graph operators, graph convolution is performed independently for each feature channel. Let f (X)(ℓ−1) ∈ RN ×d denote the node representations at layer ℓ − 1. For the i-th feature dimension, the propagation is given by 
+
+ˆf (X)(ℓ−1) :,i = ˆS:,:,i f (X)(ℓ−1) :,i , (16) and the node representations are updated as 
+
+f (X)(ℓ) = σ
+
+ ˆf (X)(ℓ−1) W (ℓ−1) 
+
+. (17) While this construction is expressive, it introduces a fundamental statistical issue. Since the d graph operators { ˆS:,:,i }di=1 
+
+are jointly generated through a shared FFN, they are statistically dependent. Consequently, the feature dimensions of 
+
+ˆf (ℓ)(X) are no longer independent, violating the independence assumptions required by the Central Limit Theorem (CLT). As a result, the original Specformer formulation does not satisfy the conditions necessary for CLT-based infinite-width analysis. 
+
+Multi-head Aggregated Spectral Construction. To address this issue, for each head of graph convolution layer heads dℓ,H , we modify the spectral construction by employing multi-head attention to generate a single set of spectral coefficients, rather than one per feature dimension. Specifically, at each layer t, the outputs of the dt,H spectral heads are aggregated prior to spectral filtering. The spectral tokens are updated as 
+
+Ht+1 =
+
+ dt,H  
+
+> h=1
+
+S(t,h )Spec 
+
+ Ht HtW V,th 
+
+W H,t , (18) where W H,t is a learnable projection matrix. After T eigenvalue encoding layers, we obtain the final spectral tokens ¯H = HT . Based on ¯H, a single set of spectral coefficients is generated as ¯λ = σ  ¯HW λ
+
+ ∈ Rn, (19) which defines the final graph convolution operator 
+
+SSpecformer = U diag( ¯λ) U ⊤ ∈ Rn×n. (20) By constructing a shared spectral operator across feature dimensions, this formulation preserves feature-wise indepen-dence and restores the conditions required for CLT-based infinite-width analysis. 13 A PREPRINT - M ARCH 19, 2026 Table 4: Summary of the Gaussian weight priors used for each graph transformer in the GP analysis. These priors define the variance of the initial weights for all linear transformations and attention parameters. 
+
+Model Weight Priors (Variance) 
+
+GAT W ℓ,H ij ∼ N 
+
+
+
+0, σ2 
+
+> H
+> dℓ,H dℓ−1
+
+
+
+, W ℓ,h ij ∼ N 
+
+
+
+0, σ2
+
+> w
+> dℓ−1
+
+
+
+,⃗ v ℓh k ∼ N 
+
+
+
+0, σ2
+
+> v
+> dℓ−1
+
+
+
+Graphormer W Q,ℓh ij ∼ N 
+
+
+
+0, σ2
+
+> Q
+> dℓ−1
+
+
+
+, W K,ℓh ij ∼ N 
+
+
+
+0, σ2
+
+> K
+> dℓ−1
+
+
+
+, W ℓ,H ij ∼ N 
+
+
+
+0, σ2 
+
+> H
+> dℓ,H dℓ−1
+
+
+
+, W V,ℓh ij ∼ N 
+
+
+
+0, σ2
+
+> w
+> dℓ−1
+
+
+
+, b ρ(i, j ) ∼ N (0 , σ 2 
+
+> b
+
+)
+
+Specformer W Q,tkh ij ∼ N (0 , σ 2
+
+> Q
+
+/d t−1), W K,tkh ij ∼ N (0 , σ 2 
+
+> K
+
+/d t−1), W V,tkh ij ∼ N (0 , σ 2 
+
+> V
+
+/d t−1), W th,H ij ∼ N 
+
+
+
+0, σ2 
+
+> O
+> dt,H dt−1
+
+
+
+,
+
+## B Formal Theorems on Gaussian Process Limits of Graph Transformers 
+
+In this Appendix, we present the formal theorems and kernel recursions establishing the Gaussian process limits for graph transformers, derived under the independent Gaussian weight priors summarized in Table 4. 
+
+Graph Attention Network (GAT) In GAT, attention is computed locally over graph neighborhoods, and in the infinite-width and infinite-head limit, both the attention logits and node pre-activations converge to Gaussian processes. The resulting kernel recursion reveals how features and neighborhood structure jointly shape representation propagation. 
+
+Theorem 6. (Infinite-width and infinite-head limit of a GAT layer) Assume that the parameters of the ℓ-th GAT layer satisfy W ℓ,H ij ∼ N 
+
+
+
+0, σ2 
+
+> H
+> dℓ,H dℓ−1
+
+
+
+, W ℓ,h ij ∼ N 
+
+
+
+0, σ2
+
+> w
+> dℓ−1
+
+
+
+,⃗ v ℓh k ∼ N 
+
+
+
+0, σ2
+
+> v
+> dℓ−1
+
+
+
+, independently for all i, j, k and heads h,then, as dℓ, d ℓ,H → ∞ , the following holds: 
+
+(I) Eℓ(X) = E(ℓh )(X) : h ∈ N converges in distribution to Eℓ(X) ∼ GP (0 , K (ℓ),E ) with 
+
+K(ℓh ),E ai,bj = EE(ℓh ) 
+
+> ai
+
+(X) E(ℓh ′) 
+
+> bj
+
+(X)
+
+= δh=h′ σ2 
+
+> w
+
+σ2
+
+> v
+
+ K(ℓ−1)  
+
+> ab
+
++ K(ℓ−1) 
+
+> ij
+
+,
+
+(21) 
+
+(II) gℓ(X) converges in distribution to gℓ(X) ∼ GP (0 , Σ(ℓ)) with 
+
+C(ℓ) 
+
+> ai,bj
+
+:= E
+
+h S(ℓ, 1) GAT (X)
+
+> ai
+
+ S(ℓ, 1) GAT (X)
+
+> bj
+
+i
+
+= E
+
+h
+
+ϕ σ(E(ℓ1)  
+
+> ai
+
+(X))  ϕ σ(E(ℓ1)  
+
+> bj
+
+(X)) i
+
+,
+
+(22) 
+
+Σ(ℓ) 
+
+> ab
+
+:= Egℓa1(X) gℓb1(X)
+
+= σ2 
+
+> H
+
+σ2
+
+> w
+
+X
+
+> i∈Na
+
+X
+
+> j∈Nb
+
+K(ℓ−1)  
+
+> ij
+
+C(ℓ) 
+
+> ai,bj
+
+, (23) 
+
+where a, b ∈ V and (a, i ), (b, j ) ∈ E.
+
+Theorem 6 shows that, for each attention head, the collection of attention logits over edges converges in distribution to a centered Gaussian process, with different heads becoming independent in the limit. Equation (21) characterizes the covariance between attention logits on two edges (a, i ) and (b, j ), which is driven by the similarity between the two source nodes a, b together with the similarity between the two target nodes i, j , so edges whose endpoints are simultaneously close in representation space exhibit stronger correlation. Using Equation (21) , the theorem then derives the Gaussian process limit of the pre-activations. Equation (23) describes how node-level dependence propagates to the next layer, where the covariance between the pre-activations of nodes a and b at layer ℓ is obtained by aggregating contributions from all neighbor pairs (i, j ) with i ∈ N a and j ∈ N b, combining similarity among neighboring node representations from the previous layer with the alignment induced by attention on the associated edges. Together, these results yield a kernel recursion that describes how feature and graph govern representation propagation across layers. Theorem 6 establishes a general kernel recursion, and to obtain a closed-form recursion, we next consider specific choices of the attention and activation nonlinearities. 
+
+Corollary 7. (Closed-form GAT kernel recursion) Under the assumptions of Theorem 6, for ϕ(x) = x and ReLU activation σ(·), the node-level covariance kernel at layer ℓ admits the closed-form expression 
+
+Σ(ℓ) 
+
+> ab
+
+= σ2 
+
+> H
+
+σ4 
+
+> w
+
+σ2
+
+> v
+
+2π
+
+X
+
+> i∈Na
+
+X
+
+> j∈Nb
+
+K(ℓ−1) 
+
+> ij
+
+×
+
+q K(ℓ−1)  
+
+> aa
+
++ K(ℓ−1) 
+
+> ii
+
+  K(ℓ−1)  
+
+> bb
+
++ K(ℓ−1) 
+
+> jj
+
+
+
+×
+
+
+
+sin θ(ℓ−1)  
+
+> ai,bj
+
++  π − θ(ℓ−1) 
+
+> ai,bj
+
+ cos θ(ℓ−1) 
+
+> ai,bj
+
+
+
+.
+
+(24) 
+
+14 A PREPRINT - M ARCH 19, 2026 
+
+θ(ℓ−1)  
+
+> ai,bj
+
+= arccos 
+
+ K(ℓ−1)  
+
+> ab
+
++ K(ℓ−1) 
+
+> ij
+
+q K(ℓ−1)  
+
+> aa
+
++ K(ℓ−1) 
+
+> ii
+
+  K(ℓ−1)  
+
+> bb
+
++ K(ℓ−1) 
+
+> jj
+
+ . (25) 
+
+Kernel in Corollary 7 induces a quadratic computational cost over neighborhood pairs. To further simplify the recursion, we consider a linear activation. 
+
+Corollary 8 (Linear GAT kernel) . Under the assumptions of Corollary 7, and for σ(x) = x, the node-level kernel admits the following simplified closed-form recursion: 
+
+Σ(ℓ) = σ2 
+
+> H
+
+σ4 
+
+> w
+
+σ2
+
+> v
+
+
+
+K(ℓ−1) ⊙  AK (ℓ−1) A⊤
+
++ A K(ℓ−1) ⊙ K(ℓ−1) A⊤
+
+.
+
+Graphormer As introduced in Section 2, Graphormer incorporates graph information through a positional encoding mechanism. In the infinite-width limit, the output converges in distribution to a Gaussian process whose kernel satisfies 
+
+˜K(ℓ−1) 7 −→ α K (ℓ−1) + (1 − α) R(ℓ) , α ∈ (0 , 1) . (26) Where the matrix R can be interpreted as the covariance matrix of the corresponding positional encoding which can be computed as an inner product of positional embeddings, i.e., R(ℓ) 
+
+> ab
+
+= ⟨P (ℓ) 
+
+> a
+
+, P (ℓ) 
+
+> b
+
+⟩. Alternatively, instead of introducing explicit positional embeddings, the graph structure itself can be directly leveraged to construct a node-level graph-structure covariance matrix. Theorem 9 characterizes the Gaussian process limit of a Graphormer layer by establishing joint limits for both the attention logits and the node pre-activations. Although the proof strategy is analogous to GAT, the incorporation of positional encodings and how the attention scores are computed modifies the kernel. Centrality Encoding (CE) differs from other positional encoding that it constructs a learnable embedding based on node degrees. Specifically, a CE parameter matrix has size PCE ∈ R(max_degree +1) ×d, and each entry is initialized as 
+
+(PCE )ij ∼ N 
+
+
+
+0, σ2CE 
+
+> d
+
+
+
+. Since we only consider undirected graphs in this paper, nodes with the same degree share the same embedding vector, i.e., Pv = PCE [deg( v)] ∈ Rd. Under this construction, the embedding correlation satisfies 
+
+EP ⊤ 
+
+> a
+
+Pb
+
+ =
+
+σ2CE , deg( a) = deg( b),
+
+0, deg( a)̸ = deg( b).
+
+Therefore, we obtain 
+
+Rab =
+
+σ2CE , deg( a) = deg( b),
+
+0, deg( a)̸ = deg( b).
+
+Theorem 9. (Infinite-width and infinite-head limit of a Graphormer layer) Assume the parameters of the ℓ-th Graphormer layer satisfy W Q,ℓh ij ∼ N 
+
+
+
+0, σ2
+
+> Q
+> dℓ−1
+
+
+
+, W K,ℓh ij ∼ N 
+
+
+
+0, σ2
+
+> K
+> dℓ−1
+
+
+
+, W ℓ,H ij ∼ N 
+
+
+
+0, σ2 
+
+> H
+> dℓ,H dℓ−1
+
+
+
+, W V,ℓh ij ∼N
+
+
+
+0, σ2
+
+> w
+> dℓ−1
+
+
+
+, b ϕ(i, j ) ∼ N (0 , σ 2 
+
+> b
+
+), independently for all i, j , heads h, and structural indices ϕ(i, j ), then, as 
+
+dℓ, d ℓ,H → ∞ , the following holds: 
+
+(I) Eℓ(X) = E(ℓh )(X) : h ∈ N converges in distribution to Eℓ−1(X) ∼ GP (0 , K (ℓ),E ) with 
+
+K(ℓh ),E ai,bj = EE(ℓh ) 
+
+> ai
+
+(X) E(ℓh ′) 
+
+> bj
+
+(X)
+
+= δh=h′
+
+
+
+σ2
+
+> Q
+
+σ2 
+
+> K
+
+˜K(ℓ−1)  
+
+> ab
+
+˜K(ℓ−1)  
+
+> ij
+
++ σ2 
+
+> b
+
+1ϕ(a,i )= ϕ(b,j )
+
+
+
+. (27) 
+
+(II) gℓ(X) converges in distribution to gℓ(X) ∼ GP (0 , Σ(ℓ)) with 
+
+C(ℓ) 
+
+> ai,bj
+
+:= E
+
+h S(ℓ, 1) Graphormer (X)
+
+> ai
+
+ S(ℓ, 1) Graphormer (X)
+
+> bj
+
+i
+
+= E
+
+h
+
+ϕ E(ℓ1)  
+
+> ai
+
+(X) ϕ E(ℓ1)  
+
+> bj
+
+(X)i
+
+,
+
+(28) 
+
+Σ(ℓ) 
+
+> ab
+
+:= Egℓa1(X) gℓb1(X) = σ2 
+
+> H
+
+σ2
+
+> w
+
+X
+
+> i∈V
+
+X
+
+> j∈V
+
+˜K(ℓ−1)  
+
+> ij
+
+C(ℓ) 
+
+> ai,bj
+
+, (29) 
+
+where a, b, i, j ∈ V .
+
+15 A PREPRINT - M ARCH 19, 2026 Equation (26) shows that the effective similarity between nodes depends on both the similarity of node features and the similarity of graph structural features encoded by the positional information. Equation (27) further indicates that attention correlations are strengthened for node pairs sharing the same structural relation, ensuring that graph information is explicitly leveraged in guiding attention. Equation (29) then propagates the attention correlations to the next layer through an aggregation over all node pairs, reflecting that, unlike GAT which is restricted to local neighborhoods, Graphormer induces similarity connections between every pair of nodes in the graph. The following corollary specializes Theorem 9 to linear attention. 
+
+Corollary 10 (Closed-form Graphormer kernel under linear attention) . Under the assumptions of Theorem 9, and for 
+
+ϕ(x) = x, Consequently, the node-level covariance kernel at layer ℓ admits the closed-form expression 
+
+Σ(ℓ) 
+
+> ab
+
+= σ2 
+
+> H
+
+σ2
+
+> w
+
+"
+
+σ2
+
+> Q
+
+σ2 
+
+> K
+
+˜K(ℓ−1) 
+
+> ab
+
+X
+
+> i,j ∈V
+
+˜K(ℓ−1)  
+
+> ij
+
+˜K(ℓ−1)  
+
+> ij
+
++
+
+σ2
+
+> b
+
+X
+
+> i,j ∈V
+
+˜K(ℓ−1)  
+
+> ij
+
+1ϕ(a,i )= ϕ(b,j )
+
+#
+
+, where a, b, i, j ∈ V. 
+
+Specformer. As detailed in Section 2, the convolution in Specformer is composed of spectral tokens and node features .The spectral tokens are first processed through T layers of encoding, and are subsequently passed through a decoder to construct a data-dependent spectral filtering that governs the propagation of node features. The following theorem characterizes the behavior of Specformer in the infinite-width and infinite-head limit. In this regime, (I) the spectral-token representations Ht, which are updated through attention, and (II) the node-feature pre-activations g(X) converge in distribution to a Gaussian process. 
+
+Theorem 11. (Infinite-width and infinite-head limit of Specformer) If the parameters of the t-st token layer satisfy W Q,tkh ij ∼ N (0 , σ 2
+
+> Q
+
+/d t−1), W K,tkh ij ∼ N (0 , σ 2 
+
+> K
+
+/d t−1), W V,tkh ij ∼ N (0 , σ 2 
+
+> V
+
+/d t−1) and W th,H ij ∼N
+
+
+
+0, σ2 
+
+> O
+> dt,H dt−1
+
+
+
+, independently for all indices, token heads k, and spectral heads h, then, as dt, d t,H → ∞ , the following holds. (I) Ht converges in distribution to Ht ∼ GP (0 , K (t) 
+
+> H
+
+) with 
+
+K(t,k,h ),E ik,jl = E
+
+h
+
+E(t,k,h ) 
+
+> ij
+
+(H) E(t,k ′,h ′) 
+
+> kl
+
+(H′)
+
+i
+
+= δk=k′ δh=h′ σ2
+
+> Q
+
+σ2 
+
+> K
+
+K(t−1)  
+
+> H,ik
+
+K(t−1)  
+
+> H,jl
+
+,
+
+(30) 
+
+C(t,h ) 
+
+> ik,jl
+
+(H, H ′) := δh=h′ E
+
+h S(t, 1,h )Spec (H)
+
+> ik
+
+ S(t, 1,h ′)Spec (H′)
+
+> jl
+
+i
+
+= δh=h′ E
+
+h
+
+ϕ E(t, 1,h ) 
+
+> ik
+
+(H) ϕ E(t, 1,hi ) 
+
+> jl
+
+(H′)i
+
+,
+
+(31) 
+
+K(t,h ) 
+
+> H,ij
+
+:= E(Ht,h )i(Ht,h ′
+
+)j
+
+
+
+= δh=h′
+
+ σ2 
+
+> O
+
+σ2
+
+> V
+
+X
+
+> k,l ∈V
+
+K(t−1)  
+
+> H,kl
+
+C(t,h ) 
+
+> ik,jl
+
+(H, H ′), (32) 
+
+where i, k, j, l ∈ V and K(0 ,h ) 
+
+> H,ab
+
+:= H0  
+
+> a·H0
+> b
+> d
+
+with d as the spectral-token embedding dimension. (II) If the parameters of the ℓ-st graph convolution layer satisfy Wℓ,ij ∼ N (0 , σ 2
+
+> w
+
+/d ℓ−1), W ℓ,H ij ∼ N 
+
+
+
+0, σ2 
+
+> H
+> dℓ,H dℓ−1
+
+
+
+and the eigenvalue decoder layers satisfy W (ℓ,h ) 
+
+> λ,ij
+
+∼ N (0 , σ 2
+
+> λ
+
+/d T ) independently for all indices and spectral heads h,then, as dℓ, d T , d ℓ,H → ∞ , gℓ(X) converges in distribution to GP (0 , Σ(ℓ)) with 
+
+Kλ,ab := δh=h′ E¯λ(h) 
+
+> a
+
+(H) ¯λ(h′) 
+
+> b
+
+(H′)
+
+= δh=h′ E
+
+h
+
+σ ( ¯H(h)W (ℓ,h ) 
+
+> λ
+
+)a
+
+ σ ( ¯H(h′)W (ℓ,h ) 
+
+> λ
+
+)b
+
+i
+
+, (33) 
+
+Σ(ℓ) 
+
+> ab
+
+= σ2 
+
+> H
+
+σ2 
+
+> w
+
+U
+
+
+
+Kλ ⊙  U ⊤K(ℓ−1) U 
+
+U ⊤, (34) 
+
+where a, b ∈ V .
+
+Equations (30) – (32) describe how the covariance induced by the previous token layer is recursively transformed through a standard transformer. At the terminal token layer, Equation (33) transfers the resulting token-level covariance to the spectral domain by inducing a kernel over the learned spectral filter coefficients. Equation (34) then defines the 16 A PREPRINT - M ARCH 19, 2026 recursion of the node-feature kernel: the previous-layer node covariance is mapped into the Laplacian eigenbasis, modulated elementwise according to the induced spectral kernel, and projected back to the node domain. Together, these equations specify a coupled kernel recursion in which attention governs spectral reweighting, and graph convolution propagates the resulting covariance across layers. 
+
+## C Proofs of Theorems 6, 9, 11, 34 
+
+Proof technique. Our analysis follows the standard induction-on-layers framework for establishing Gaussian process (GP) limits of randomly initialized deep neural architectures (Matthews et al. [2018], Lee et al. [2018a], Novak et al. [2019], Garriga-Alonso et al. [2019], Yang [2019], Hron et al. [2020]). When the layer-(ℓ − 1) representations converge in distribution to a Gaussian process, we show that the layer-ℓ representations also converge to a Gaussian process under suitable initialization and moment conditions. A key methodological step of this work is to develop a unified convergence framework for graph transformers in the infinite-head regime. At a high level, our strategy is to establish a single infinite-head convergence theorem that yields a Gaussian-process limit for the model outputs, while making explicit the analytic conditions required for interchanging limits and expectations. Concretely, Appendix C.1 proves a general infinite-head convergence result for multi-head attention aggregation layers, covering all four architectures studied in this paper within one theorem. Importantly, this output-level convergence in the infinite-head limit is not obtained in isolation: the proof requires distributional convergence of the corresponding graph convolution operators, together with uniform integrability, which ensures convergence of expectations and justifies interchanging limits and E[·]. Therefore, we separately establish the convergence of the graph convolution operators for each model Appendix C.2, C.3, C.4, and D. These operator-level results, together with uniform integrability (Lemma 27), yield convergence of expectations via Theorem 28. Combining these ingredients completes a single coherent route to the final, uniform convergence statements for all models under infinitely many heads. Technically, the core convergence arguments proceed by reducing finite-dimensional distributional claims to one-dimensional linear projections via the Cramér–Wold device (Lemma 26), followed by a central limit theorem for exchangeable triangular arrays (Lemma 12) applied at the multi-head aggregation level. Slutsky’s lemma (Lemma 29) and the continuous mapping theorem are then used to combine the convergent random components. Finally, passage of limits through expectations is justified by uniform integrability (Lemma 27) together with the convergence-of-expectations theorem (Theorem 28), which is enabled precisely by the integrability properties established through the graph convolution operator convergence in Appendix C.2–D. 
+
+C.1 Convergence of gℓ(X)
+
+Since all this four models require the number of attention heads to grow to infinity in order to admit a well-defined Gaussian Process (GP) limit, we adopt a unified and general analytical framework to establish their GP convergence. We analyze the multi-head aggregation at a fixed layer index ℓ, mapping the GP input f ℓ−1 to the GP output f ℓ. For each head h ∈ { 1, . . . , d ℓ,H }, node a ∈ V and input X ∈ X 0, define the single-head pre-activation output at layer ℓ by 
+
+gℓh (X) := S(ℓ,h )GNN f ℓ−1(X) Wℓ,h , (35) The multi-head output at layer ℓ is given by 
+
+gℓ(X) = gℓ1(X), . . . , g ℓd ℓ,H 
+
+(X) W ℓ,H , (36) where W ℓ,H is the output projection matrix, whose columns we write as 
+
+W ℓ,H =  wℓ,H  
+
+> 1
+
+, . . . , w ℓ,H dℓ,H 
+
+,
+
+with wℓ,H h corresponding to head h. The variance of W ℓ,H is chosen such that the overall scaling corresponds to a properly rescaled weighted sum over the dℓ,H attention heads. 
+
+Lemma 12 (Adaptation of Theorem 2 from Blum et al., 1958) . For each m ∈ N, let {Xm,i : i = 1 , 2, . . . } be an infinitely exchangeable sequence with E[Xn, 1] = 0 and E[X2
+
+> m, 1
+
+] = σ2
+
+> n
+
+, such that lim m→∞ σ2 
+
+> m
+
+= σ2 for some σ2 ≥ 0.Let 
+
+Sn = 1
+
+√dmdmX
+
+> i=1
+
+Xm,i , (37) 17 A PREPRINT - M ARCH 19, 2026 
+
+for some sequence (dm)m≥1 ⊂ N such that lim m→∞ dm = ∞. Assume: 
+
+(a) E[Xm, 1Xm, 2] = 0 ,
+
+(b) lim  
+
+> n→∞
+
+E[X2
+
+> m, 1
+
+X2
+
+> m, 2
+
+] = σ4,
+
+(c) E|Xm, 1|3 = o(pdm).
+
+Then Snd
+
+−→ Z, where Z = 0 if σ2 = 0 , and Z ∼ N (0 , σ 2) otherwise. 
+
+Lemma 13 (Node-level GP limit) . Let the assumptions of Theorem 6 , Theorem 9, Theorem 11 and Theorem 34 hold. The collection of layer-ℓ pre-activation outputs 
+
+gℓ(X) := gℓa(X) : X ∈ X 0, a ∈ V
+
+converges in distribution to a centred Gaussian process whose finite-dimensional marginals are Gaussian with covariance given by the node-level kernel K(ℓ).Proof. Following the Cramér–Wold device [Billingsley, 1986, p. 383], it suffices to establish convergence of one-dimensional projections of finite-dimensional marginals of gℓ(X).Fix a finite index set L ⊂ X 0 × V and test vectors {αX,a ∈ RN : ( X, a ) ∈ L} . Consider the linear statistic 
+
+T (ℓ) := X
+
+> (X,a )∈L
+
+(αX,a )⊤gℓa(X). (38) Using the concatenation form (36) and writing g(ℓ+1) ha (X) for the a-th row of the h-th head, we obtain 
+
+T (ℓ) = X
+
+> (X,a )∈L
+
+(αX,a )⊤dℓ,H 
+
+X
+
+> h=1
+
+gℓh a (X) wℓ,H h
+
+
+
+=
+
+> dℓ,H
+
+X
+
+> h=1
+
+X
+
+> (X,a )∈L
+
+(αX,a )⊤gℓh a (X) wℓ,H h
+
+| {z } 
+
+> =: ζh
+
+.
+
+Define the rescaled head-level variables 
+
+ψh := √dℓ,H ζh, h = 1 , . . . , d ℓ,H ,
+
+so that 
+
+T (ℓ) = 1
+
+√dℓ,H dℓ,H 
+
+X
+
+> h=1
+
+ψh. (39) For each head width dℓ,H , this defines a triangular array 
+
+{ψdℓ,H ,h }dℓ,H  
+
+> h=1
+
+,
+
+where, suppressing the explicit dependence on dℓ,H for notational simplicity, each ψh admits the representation 
+
+ψh = √dℓ,H X
+
+> (X,a )∈L
+
+(αX,a )⊤gℓh a (X) wℓ,H h . (40) Thus T (ℓ) is of the form (37) in Lemma 12, with Xn,i identified with ψh and dn with dℓ,H . To invoke Lemma 12, it suffices to verify conditions (a)–(c) for the array {ψh}dℓ,H  
+
+> h=1
+
+, which is achieved by the following lemmas: • Exchangeability of {ψh} in the head index h is established in Lemma 14. • Zero mean and vanishing cross-covariance, E[ψ1] = 0 and E[ψ1ψ2] = 0 , follow from Lemma 15. • Convergence of the variance, E[ψ21 ] → τ 2, is proved in Lemma 16. • Convergence of the mixed fourth moment E[ψ21 ψ22 ] → τ 4 and the growth condition E|ψ1|3 = o(√dℓ,H ) are established in Lemma 17. 18 A PREPRINT - M ARCH 19, 2026 Therefore, by Lemma 12, T (ℓ) converges in distribution to a centred Gaussian random variable with variance τ 2. Since 
+
+L and the test vectors {αX,a } are arbitrary, the finite-dimensional distributions of gℓ(X) converge to those of a Gaussian process with covariance given by the node-level kernel K(ℓ). □
+
+Lemma 14 (Head-wise exchangeability) . Under the assumptions of Theorem 6, the random variables {ψh}dℓ,H  
+
+> h=1
+
+are exchangeable over the head index h.Proof. In all four of our models, for distinct heads h, the parameters 
+
+{Wℓ,h , w ℓ,H h }
+
+(including those appearing in S(ℓ,h )GNN ) are i.i.d. across h and independent of all previous-layer variables. Conditioning on the previous-layer representation f ℓ−1(·) (i.e., fixing {f ℓ−1(x) : x ∈ X } ), (40) implies that (ψ1, . . . , ψ dℓ,H ) are i.i.d. in h, and hence their conditional joint distribution is invariant under any permutation of the head indices. Therefore, by de Finetti’s theorem, {ψh}h∈N is infinitely exchangeable. 
+
+Lemma 15 (Head-wise zero mean and vanishing cross-covariance) . E[ψ1] = E[ψ1ψ2] = 0 .
+
+Proof. From (40), 
+
+ψ1 = X
+
+> (X,a )∈L
+
+√dℓ,H (αX,a )⊤
+
+S(ℓ, 1) GNN f ℓ(X)
+
+
+
+> a
+
+wℓ,H  
+
+> 1
+
+.
+
+Condition on the σ-algebra generated by {f ℓ(X) : X ∈ X 0} and {S(ℓ,h )GNN : h ∈ N}. Under this conditioning, wℓ,H  
+
+> 1
+
+is independent of all conditioned variables and is centred Gaussian. Therefore, 
+
+E
+
+h
+
+ψ1 {f ℓ(X)}X∈X 0 , {S(ℓ,h )GNN }h∈N
+
+i
+
+= X
+
+> (X,a )∈L
+
+√dℓ,H (αX,a )⊤
+
+S(ℓ, 1) GNN f ℓ(X)
+
+
+
+> a
+
+E[wℓ,H  
+
+> 1
+
+] = 0 ,
+
+and hence E[ψ1] = 0 .For E[ψ1ψ2], expand the product using (40): 
+
+ψ1ψ2 = dℓ,H X
+
+> (X,a )∈L
+
+X
+
+> (X′,b )∈L
+
+(αX,a )⊤
+
+S(ℓ, 1) GNN f ℓ(X)
+
+
+
+> a
+
+(αX′,b )⊤
+
+S(ℓ, 2) GNN f ℓ(X′)
+
+
+
+> b
+
+wℓ,H  
+
+> 1
+
+wℓ,H  
+
+> 2
+
+.
+
+Conditioning on {f ℓ(X)}X∈X 0 and {S(ℓ,h )GNN }h∈N, the random variables wℓ,H  
+
+> 1
+
+and wℓ,H  
+
+> 2
+
+are independent, centred Gaussian and independent of the remaining factors in each summand. Thus 
+
+E[wℓ,H  
+
+> 1
+
+wℓ,H  
+
+> 2
+
+] = E[wℓ,H  
+
+> 1
+
+]E[wℓ,H  
+
+> 2
+
+] = 0 ,
+
+which implies 
+
+E
+
+h
+
+ψ1ψ2 {f ℓ(X)}X∈X 0 , {S(ℓ,h )GNN }h∈N
+
+i
+
+= 0 , and hence E[ψ1ψ2] = 0 .
+
+Lemma 16 (Head-wise variance convergence) . There exists τ 2 ≥ 0 such that lim dℓ,H →∞ E[ψ21 ] = τ 2.
+
+Proof. Observe that E[ψ21 ] can be written as 
+
+E[ψ21 ] = dℓ,H X
+
+> (X,a ),(X′,b )∈L
+
+(αX,a )⊤E
+
+h
+
+gℓ1(X) wℓ,H  
+
+> 1
+
+wℓ,H   
+
+> 1⊤
+
+gℓ1(X′)⊤i
+
+αX′,b 
+
+σ2
+
+> H
+
+dℓ
+
+X
+
+> (X,a ),(X′,b )∈L
+
+(αX,a )⊤E
+
+h
+
+gℓ1(X) gℓ1(X′)⊤i
+
+αX′,b ,
+
+where we used E[wℓ,H  
+
+> 1
+
+wℓ,H  
+
+> 1⊤
+
+] = σ2 
+
+> H
+> dℓdℓ,H
+
+.19 A PREPRINT - M ARCH 19, 2026 
+
+σ2
+
+> H
+
+dℓ
+
+E
+
+h
+
+gℓ1(X) gℓ1(X)⊤i
+
+= σ2
+
+> H
+
+dℓ
+
+E
+
+h S(ℓ, 1) GNN f ℓ−1(X)Wℓ, 1
+
+   S(ℓ, 1) GNN f ℓ−1(X)Wℓ, 1
+
+⊤i
+
+= σ2 
+
+> H
+
+E
+
+h
+
+S(ℓ, 1) GNN 
+
+f ℓ−1(X)f ℓ−1(X)⊤
+
+dℓ−1
+
+(S(ℓ, 1) GNN )⊤i
+
+We may thus apply Lemma 28, which requires convergence in distribution of the integrands to the relevant limit and uniform integrability of the integrand family. Convergence in distribution follows by combining the model-specific convergence argument in Lemma 18, Lemma 24, Lemma 25, Lemma 35 with Lemma 29 and Hron et al. [2020, Lemma 33] combined continuous mapping theorem. Uniform integrability is obtained by Hölder’s inequality together with Hron et al. [2020, Lemma 32] and the corresponding moment propagation result for S(ℓ,h )GNN , namely Lemma 30, Lemma 31,Lemma 32, Lemma 33 . Hence the integrand family is uniformly integrable by Lemma 27, concluding the proof. 
+
+Lemma 17. For any h, h ′ ∈ N, E[ψ2
+
+> h
+
+ψ2 
+
+> h′
+
+] converges to the mean of the weak limit of {ψ2
+
+> h
+
+ψ2 
+
+> h′
+
+}dℓ,H →∞ .Proof. It is enough to prove convergence of expectations of the form 
+
+E
+
+h
+
+gℓh a (X) gℓh b (X′)⊤ gℓh ′ 
+
+> c
+
+(Y ) gℓh ′ 
+
+> d
+
+(Y ′)⊤i
+
+,
+
+where a, b, c, d range over feature indices and (X, X ′, Y, Y ′) ∈ L .Using the definition of gℓh , we may rewrite the above as 
+
+E
+
+h
+
+gℓh a (X) gℓh b (X′)⊤ gℓh ′ 
+
+> c
+
+(Y ) gℓh ′ 
+
+> d
+
+(Y ′)⊤i
+
+= σ4 
+
+> w
+
+E
+
+h S(ℓ,h )GNN 
+
+
+
+> a
+
+f ℓ−1(X) f ℓ−1(X′)⊤
+
+dℓ−1
+
+ S(ℓ,h )GNN 
+
+
+
+> b
+
+ S(ℓ,h ′)GNN 
+
+
+
+> c
+
+f ℓ−1(Y ) f ℓ−1(Y ′)⊤
+
+dℓ−1
+
+ S(ℓ,h ′)GNN 
+
+
+
+> d
+
+i
+
+.
+
+By Hron et al. [2020, Lemma 33], 
+
+ f ℓ−1(X) f ℓ−1(X′)⊤
+
+dℓ−1 , f ℓ−1(Y ) f ℓ−1(Y ′)⊤
+
+dℓ−1
+
+ P
+
+−→  K(ℓ−1) (X, X ′), K (ℓ−1) (Y, Y ′).
+
+Since S(ℓ,h )GNN and S(ℓ,h ′)GNN converge in distribution (and are independent of the weight matrices producing f ℓ−1). Then the entire integrand converges in distribution by Lemma 29. Finally, Billingsley [1986, Theorem 3.5] together with Hölder’s inequality and Hron et al. [2020, Lemma 32] implies uniform integrability of the integrand family and hence convergence of the expectation, concluding the proof. 
+
+C.2 Convergence of S(ℓ,h )GAT 
+
+In Lemma 13, we showed that, under the GP induction hypothesis on the node features, it is sufficient to assume that S(ℓ,h )GNN converges in distribution in order for the layer-(ℓ) pre-activation outputs gℓ(X) to converge in distribution to a Gaussian process. In the standard GAT parameterisation, S(ℓ,h )GNN is a measurable function of the attention logits 
+
+E(ℓh ), and hence convergence of E(ℓh ) to a centred Gaussian process implies convergence of S(ℓ,h )GNN by the continuous mapping theorem. Consequently, to establish Gaussian process convergence of the GAT outputs, it suffices to prove that the attention logits converge in distribution to a centred Gaussian process. We now recall the version of the Blum–Kiefer–Rosenblatt central limit theorem that we will use, following Matthews et al. [2018, lemma 10], and apply it to establish convergence of the attention logits. Fix a layer index ℓ. For each head 
+
+h and graph edge (a, i ) ∈ E , recall the attention logit 
+
+E(ℓh ) 
+
+> ai
+
+(X) := ⃗v ⊤
+
+> ℓh
+
+W ℓ,h f ℓa(X), W ℓ,h f ℓi (X),
+
+with the scaling and independence assumptions on Wℓ,h and ⃗a ℓh given in Theorem 6. 20 A PREPRINT - M ARCH 19, 2026 Because the graph structure in GAT only affects the model through subsequent linear aggregation of the attention outputs, and linear transformations preserve Gaussianity, it suffices to establish convergence of the attention logits themselves. More precisely, for the fixed layer ℓ, we show that the collection of logits 
+
+E(ℓ) := E(ℓh ) 
+
+> ai
+
+(X) : X ∈ X 0, (a, i ) ∈ E , h ∈ N
+
+has finite-dimensional marginals converging, as dℓ → ∞ , to those of a centred process with covariance given by the edge-level kernel K(ℓ),E defined in Equation (21) of Theorem 6. 
+
+Lemma 18 (Logit-level GP limit of GAT) . Let the assumptions of Theorem 6 hold. Then, for the fixed layer ℓ, the process 
+
+E(ℓ) := E(ℓh ) 
+
+> ai
+
+(X) : X ∈ X 0, (a, i ) ∈ E , h ∈ N
+
+converges in distribution (as dℓ → ∞ ) to a centred process whose finite-dimensional marginals are Gaussian with covariance given by the edge kernel K(ℓ),E of (21) in Theorem 6. Proof. Using Hron et al. [2020, Lemma 27] and the Cramér–Wold device [Billingsley, 1986], we may restrict attention to one-dimensional projections of finite-dimensional marginals of E(ℓ). Let C ⊂ X 0 × E × N be finite, and choose test matrices {βX,ai,h } of the same shape as E(ℓh ) 
+
+> ai
+
+(X). We consider linear statistics of the form 
+
+T Eℓ
+
+:= X
+
+> (X, (a,i ),h )∈C
+
+βX,ai,h , E (ℓh ) 
+
+> ai
+
+(X) F
+
+= X
+
+> (X, (a,i ),h )∈C
+
+*
+
+βX,ai,h , 1
+
+√dℓdℓX
+
+> j=1
+
+h⃗v (L) 
+
+> ℓh,j
+
+Wℓ,h, ·j f ℓ−1 
+
+> a
+
+(X) · 1⊤ + 1 ·⃗v (R) 
+
+> ℓh,j
+
+Wℓ,h, ·j f ℓ−1 
+
+> i
+
+(X)
+
+i+
+
+> F
+
+= 1
+
+√dℓdℓX
+
+> j=1
+
+X
+
+> (X, (a,i ),h )∈C
+
+βX,ai,h ,⃗ v (L) 
+
+> ℓh,j
+
+Wℓ,h, ·j f ℓ−1 
+
+> a
+
+(X) · 1⊤ + 1 ·⃗v (R) 
+
+> ℓh,j
+
+Wℓ,h, ·j f ℓ−1 
+
+> i
+
+(X) F
+
+| {z } 
+
+> =: φj
+
+.
+
+Here ⟨· , ·⟩ F denotes the Frobenius inner product (equivalently, the Euclidean inner product on vectorised matrices). We decompose the vector v into two subvectors v(L) and v(R), which have equal length and identical distribution. Thus T Eℓ
+
+is of the form (37) with Xn,i identified with φj and dn with dℓ. To invoke Lemma 12 it suffices to verify conditions (a)–(c) for {φj }dℓ
+
+> j=1
+
+, which we do in Lemmas 19–23 below: • Exchangeability in j is established in Lemma 19. • Zero mean and vanishing cross-covariance follow from Lemma 20. • Convergence of the variance is established in Lemma 21. • Convergence of E[φ21φ22] is proved in Lemma 22. • The o(√dℓ) growth of the third absolute moment is implied by Lemma 23. Hence T Eℓ
+
+converges in distribution to a centred Gaussian random variable with variance determined by the limit of 
+
+E[φ21], which is exactly the covariance specified by the edge-level kernel K(ℓh ),E . Since C and the test coefficients are arbitrary, the claim follows by Cramér–Wold. □
+
+Lemma 19 (Exchangeability over feature index) . Under the assumptions of Theorem 6, the random variables {φj }dℓ
+
+> j=1
+
+are exchangeable over the index j.
+
+Lemma 20 (Zero mean and vanishing cross-covariance) . Under the assumptions of Theorem 6, we have 
+
+E[φ1] = 0 , E[φ1φ2] = 0 .
+
+Proof. Recall that, for a finite index set C ⊂ X 0 × E × N,
+
+φj = X
+
+> (X, (a,i ),h )∈C
+
+βX,ai,h ,⃗ v (L)
+
+> ℓh, 1
+
+Wℓ,h, ·1f ℓ−1 
+
+> a
+
+(X) · 1⊤ + 1 ·⃗v (R)
+
+> ℓh, 1
+
+Wℓ,h, ·1f ℓ−1 
+
+> i
+
+(X) F , j = 1 , 2,
+
+where ⟨· , ·⟩ F is the Frobenius inner product. 21 A PREPRINT - M ARCH 19, 2026 
+
+Mean. For any fixed (X, (a, i ), h ) ∈ C ,
+
+E
+
+h
+
+βX,ai,h ,⃗ v (L)
+
+> ℓh, 1
+
+Wℓ,h, ·1f ℓa(X) · 1⊤ + 1 ·⃗v (R)
+
+> ℓh, 1
+
+Wℓ,h, ·1f ℓi (X) F
+
+i
+
+= βX,ai,h , 0 F = 0 ,
+
+since Wℓ,h, ·1,⃗v (L) 
+
+> ℓh, 1
+
+and ⃗v (R) 
+
+> ℓh, 1
+
+are independent, centred, and have finite moments, and the entries of f ℓ(X) are almost surely finite. Summing over (X, (a, i ), h ) ∈ C gives E[φ1] = 0 .
+
+Cross-covariance. Define, for j = 1 , 2,
+
+Rhj (X; a, i ) := ⃗v (L) 
+
+> ℓh,j
+
+Wℓ,h, ·j f ℓ−1 
+
+> a
+
+(X) · 1⊤ + 1 ·⃗v (R) 
+
+> ℓh,j
+
+Wℓ,h, ·j f ℓ−1 
+
+> i
+
+(X).
+
+Then 
+
+φj = X
+
+> (X, (a,i ),h )∈C
+
+⟨βX,ai,h , R hj (X; a, i )⟩F , j = 1 , 2,
+
+and hence 
+
+E[φ1φ2] = X
+
+> (X, (a,i ),h )
+
+X
+
+> (X′,(a′,i ′),h ′)
+
+(βX,ai,h )⊤E
+
+h
+
+Rh 
+
+> 1
+
+(X; a, i ) Rh′ 
+
+> 2
+
+(X′; a′, i ′)⊤i
+
+βX′,a ′i′,h ′
+
+.
+
+We now expand the inner expectation. By definition, 
+
+Rh 
+
+> 1
+
+(X; a, i ) = ⃗v (L)
+
+> ℓh, 1
+
+Wℓ,h, ·1f ℓ−1 
+
+> a
+
+(X) · 1⊤ + 1 ·⃗v (R)
+
+> ℓh, 1
+
+Wℓ,h, ·1f ℓ−1 
+
+> i
+
+(X),Rh′ 
+
+> 2
+
+(X′; a′, i ′) = ⃗v (L)
+
+> ℓh ′,2
+
+Wℓ,h ′,·2f ℓ−1 
+
+> a′
+
+(X′) · 1⊤ + 1 ·⃗v (R)
+
+> ℓh ′,2
+
+Wℓ,h ′,·2f ℓ−1 
+
+> i′
+
+(X′).
+
+Thus 
+
+E
+
+h
+
+Rh 
+
+> 1
+
+(X; a, i ) Rh′ 
+
+> 2
+
+(X′; a′, i ′)⊤i
+
+= E
+
+h⃗v (L)
+
+> ℓh, 1
+
+Wℓ,h, ·1f ℓ−1 
+
+> a
+
+(X)f ℓ−1 
+
+> a′
+
+(X′)⊤(Wℓ,h ′,·2)⊤⃗ (v(R)
+
+> ℓh ′,2
+
+)⊤
+
++⃗v (L)
+
+> ℓh, 1
+
+Wℓ,h, ·1f ℓ−1 
+
+> a
+
+(X)f ℓ−1 
+
+> i′
+
+(X′)⊤(Wℓ,h ′,·2)⊤(⃗v (R)
+
+> ℓh ′,2
+
+)⊤
+
++⃗v (R)
+
+> ℓh, 1
+
+Wℓ,h, ·1f ℓ−1 
+
+> i
+
+(X)f ℓ−1 
+
+> a′
+
+(X′)⊤(Wℓ,h ′,·2)⊤(⃗v (L)
+
+> ℓh ′,2
+
+)⊤
+
++⃗v (R)
+
+> ℓh, 1
+
+Wℓ,h, ·1f ℓ−1 
+
+> i
+
+(X)f ℓ−1 
+
+> i′
+
+(X′)⊤(Wℓ,h ′,·2)⊤(⃗v (R)
+
+> ℓh ′,2
+
+)⊤i
+
+.
+
+In each of the four terms above, the random matrices Wℓ,h, ·1 and Wℓ,h ′,·2 appear with total degree one. Since the columns {Wℓ,h, ·j }j are independent and centred, and are also independent of f ℓ(X) and f ℓ(X′), we obtain 
+
+E
+
+h
+
+Rh 
+
+> 1
+
+(X; a, i ) Rh′ 
+
+> 2
+
+(X′; a′, i ′)⊤i
+
+= 0 
+
+entrywise, for all (X, (a, i ), h ) and (X′, (a′, i ′), h ′). Therefore every term in the double sum for E[φ1φ2] vanishes, and hence 
+
+E[φ1φ2] = 0 .
+
+This completes the proof. 
+
+Lemma 21 (Convergence of the variance) . Under the assumptions of Theorem 6, there exists σ2 
+
+> ∗
+
+≥ 0 such that 
+
+lim  
+
+> dℓ→∞
+
+E[φ21] = σ2 
+
+> ∗
+
+.
+
+Proof. From the definition of φ1 in Lemma 20, we can write 
+
+E[φ21] = X
+
+> (X, (a,i ),h )
+
+X
+
+> (X′,(a′,i ′),h ′)
+
+(βX,ai,h )⊤E
+
+h
+
+Rh 
+
+> 1
+
+(X; a, i ) Rh′ 
+
+> 1
+
+(X′; a′, i ′)⊤i
+
+βX′,a ′i′,h ′
+
+,
+
+where 
+
+Rh 
+
+> 1
+
+(X; a, i ) := ⃗v (L)1 Wℓ,h, ·1f ℓ−1 
+
+> a
+
+(X) · 1⊤ + 1 ·⃗v (R)1 Wℓ,h, ·1f ℓ−1 
+
+> i
+
+(X).
+
+22 A PREPRINT - M ARCH 19, 2026 The inner expectation can be expanded as 
+
+E
+
+h
+
+Rh 
+
+> 1
+
+(X; a, i ) Rh′ 
+
+> 1
+
+(X′; a′, i ′)⊤i
+
+= E
+
+h ⃗v (L)1 Wℓ,h, ·1f ℓa(X) · 1⊤ + 1 ·⃗v (R)1 Wℓ,h, ·1f ℓi (X)  ⃗v (L)1 Wℓ,h ′,·1f ℓa′ (X′) · 1⊤ + 1 ·⃗v (R)1 Wℓ,h ′,·1f ℓi′ (X′)⊤i
+
+= E
+
+h⃗v (L)1 Wℓ,h, ·1f ℓ−1 
+
+> a
+
+(X)f ℓ−1 
+
+> a′
+
+(X′)⊤(Wℓ,h ′,·1)⊤(⃗v (L)1 )⊤
+
++⃗v (L)1 Wℓ,h, ·1f ℓ−1 
+
+> a
+
+(X)f ℓ−1 
+
+> i′
+
+(X′)⊤(Wℓ,h ′,·1)⊤(⃗v (R)1 )⊤
+
++⃗v (R)1 Wℓ,h, ·1f ℓ−1 
+
+> i
+
+(X)f ℓ−1 
+
+> a′
+
+(X′)⊤(Wℓ,h ′,·1)⊤(⃗v (L)1 )⊤
+
++⃗v (R)1 Wℓ,h, ·1f ℓ−1 
+
+> i
+
+(X)f ℓ−1 
+
+> i′
+
+(X′)⊤(Wℓ,h ′,·1)⊤(⃗v (R)1 )⊤i
+
+.
+
+Hence 
+
+E[φ21] = X
+
+> (X, (a,i ),h )
+
+X
+
+> (X′,(a′,i ′),h ′)
+
+(βX,ai,h )⊤n
+
+E
+
+h
+
+v(L)1 Wℓ,h, ·1f ℓ−1 
+
+> a
+
+(X)f ℓ−1 
+
+> a′
+
+(X′)⊤(Wℓ,h ′,·1)⊤(v(L)1 )⊤i
+
++ E
+
+h
+
+v(L)1 Wℓ,h, ·1f ℓ−1 
+
+> a
+
+(X)f ℓ−1 
+
+> i′
+
+(X′)⊤(Wℓ,h ′,·1)⊤(v(R)1 )⊤i
+
++ E
+
+h
+
+v(R)1 Wℓ,h, ·1f ℓ−1 
+
+> i
+
+(X)f ℓ−1 
+
+> a′
+
+(X′)⊤(Wℓ,h ′,·1)⊤(v(L)1 )⊤i
+
++ E
+
+h
+
+v(R)1 Wℓ,h, ·1f ℓ−1 
+
+> i
+
+(X)f ℓ−1 
+
+> i′
+
+(X′)⊤(Wℓ,h ′,·1)⊤(v(R)1 )⊤io 
+
+βX′,a ′i′,h ′
+
+.
+
+Using independence, zero mean and the variance scaling of Wℓ,h, ·1 and Wℓ,h ′,·1 from Equation (5) of Theorem 1, each of the four expectations above can be rewritten as a constant multiple of 
+
+E
+
+ f ℓ−1 
+
+> u
+
+(X)f ℓ−1 
+
+> v
+
+(X′)⊤
+
+dℓ−1
+
+
+
+with (u, v ) ∈ { a, i } × { a′, i ′}. By the inductive GP hypothesis for layer ℓ, these expectations converge entrywise to the corresponding entries of K(ℓ−1) (X, X ′)[Hron et al., 2020, Lemma 33]. Therefore E[φ21] converges to a finite limit, which we denote by σ2 
+
+> ∗
+
+.
+
+Lemma 22 (Convergence of the mixed fourth moment) . Under the assumptions of Theorem 6, 
+
+lim  
+
+> dℓ→∞
+
+E[φ21φ22] = σ4 
+
+> ∗
+
+.
+
+Proof. Define 
+
+Rhj (X; a, i ) := ⃗v (L) 
+
+> j
+
+Wℓ,h, ·j f ℓ−1 
+
+> a
+
+(X) · 1⊤ + 1 ·⃗v (R) 
+
+> j
+
+Wℓ,h, ·j f ℓ−1 
+
+> i
+
+(X), j = 1 , 2.
+
+Then 
+
+φj = X
+
+> (X, (a,i ),h )∈C
+
+⟨βX,ai,h , R hj (X; a, i )⟩F , j = 1 , 2.
+
+Hence 
+
+E[φ21φ22] = X
+
+> (X, (a,i ),h )
+
+X
+
+> (X′,(a′,i ′),h ′)
+
+(βX,ai,h )⊤E
+
+h
+
+Rh 
+
+> 1
+
+(X; a, i )Rh 
+
+> 1
+
+(X; a, i )⊤i
+
+βX,ai,h 
+
+· (βX′,a ′i′,h ′
+
+)⊤E
+
+h
+
+Rh′ 
+
+> 2
+
+(X′; a′, i ′)Rh′ 
+
+> 2
+
+(X′; a′, i ′)⊤i
+
+βX′,a ′i′,h ′
+
+.
+
+We have, for example, 
+
+E
+
+h
+
+Rh 
+
+> 1
+
+(X; a, i )Rh 
+
+> 1
+
+(X; a, i )⊤i
+
+= E
+
+n ⃗v (L)1 Wℓ,h, ·1f ℓ−1 
+
+> a
+
+(X) · 1⊤ + 1 ·⃗v (R)1 Wℓ,h, ·1f ℓ−1 
+
+> i
+
+(X)
+
+×  ⃗v (L)1 Wℓ,h, ·1f ℓ−1 
+
+> a
+
+(X) · 1⊤ + 1 ·⃗v (R)1 Wℓ,h, ·1f ℓ−1 
+
+> i
+
+(X)⊤o
+
+,
+
+23 A PREPRINT - M ARCH 19, 2026 and similarly for Rh′ 
+
+> 2
+
+(X′; a′, i ′) with parameters (⃗a 2,⃗ b 2). Thus a generic term in the expansion of E[φ21φ22] takes the form 
+
+E
+
+n v(L)1 Wℓ,h, ·1f ℓ−1 
+
+> a
+
+(X) 1⊤ + 1 v(R)1 Wℓ,h, ·1f ℓ−1 
+
+> i
+
+(X)  v(L)1 Wℓ,h, ·1f ℓ−1 
+
+> a
+
+(X) 1⊤ + 1 v(R)1 Wℓ,h, ·1f ℓ−1 
+
+> i
+
+(X)⊤
+
+×  v(L)2 Wℓ,h ′,·2f ℓ−1 
+
+> a′
+
+(X′) 1⊤ + 1 v(R)2 Wℓ,h ′,·2f ℓ−1 
+
+> i′
+
+(X′)  v(L)2 Wℓ,h ′,·2f ℓ−1 
+
+> a′
+
+(X′) 1⊤ + 1 v(R)2 Wℓ,h ′,·2f ℓ−1 
+
+> i′
+
+(X′)⊤o
+
+.
+
+Expanding this product yields a finite sum of terms of the form 
+
+E
+
+h⃗u ⊤ 
+
+> 1
+
+Wℓ,h, ·1f ℓ−1 
+
+> u
+
+(X)f ℓ−1 
+
+> z
+
+(X)⊤(Wℓ,h, ·1)⊤⃗u 2 ·⃗z ⊤ 
+
+> 1
+
+Wℓ,h ′,·2f ℓ−1 
+
+> u′
+
+(X′)f ℓ−1 
+
+> z′
+
+(X′)⊤(Wℓ,h ′,·2)⊤⃗z 2
+
+i
+
+,
+
+where ⃗u 1,⃗ u 2,⃗ z 1,⃗ z 2 are fixed coefficient vectors formed from ⃗v (L) 
+
+> j
+
+,⃗ v (R) 
+
+> j
+
+, and (u, z ) ∈ { a, i }2, (u′, z ′) ∈ { a′, i ′}2.Using independence and the variance scaling of Wℓ,h, ·1, W ℓ,h ′,·2, each such term is proportional to 
+
+E
+
+h f ℓ−1 
+
+> u
+
+(X)f ℓ−1 
+
+> z
+
+(X)⊤
+
+dℓ−1
+
+f ℓ−1 
+
+> u′
+
+(X′)f ℓ−1 
+
+> z′
+
+(X′)⊤
+
+dℓ−1
+
+i
+
+.
+
+Thus E[φ21φ22] can be written as a weighted sum of expectations of the form 
+
+E
+
+h f ℓ−1 
+
+> u
+
+(X)f ℓ−1 
+
+> v
+
+(X)⊤
+
+dℓ−1
+
+f ℓ−1 
+
+> u′
+
+(X′)f ℓ−1 
+
+> v′
+
+(X′)⊤
+
+dℓ−1
+
+i
+
+,
+
+with (u, v, u ′, v ′) ranging over a finite index set. By the inductive GP hypothesis for layer ℓ and Lemma 21, each factor 
+
+f ℓ−1 
+
+> u
+
+(X)f ℓ−1 
+
+> z
+
+(X)⊤
+
+dℓ−1
+
+converges in probability to the corresponding kernel entry K(ℓ−1)  
+
+> uz
+
+(X, X ), and similarly for (X′, u ′, z ′). By the continuous mapping theorem the products converge in probability to sums of products of kernel limits such as 
+
+K(ℓ−1)  
+
+> uz
+
+(X, X ) K(ℓ−1)  
+
+> u′z′
+
+(X′, X ′).
+
+Using the eighth-moment bound on f ℓ (as in Lemma 23) and Hölder’s inequality, the collection of these products is uniformly integrable. Hence the expectations converge to the corresponding products of limits, and we obtain 
+
+lim  
+
+> dℓ→∞
+
+E[φ21φ22] = σ4 
+
+> ∗
+
+,
+
+with σ2 
+
+> ∗
+
+as in Lemma 21. 
+
+Lemma 23 (Third absolute moment) . Under the assumptions of Theorem 6, 
+
+E φ1 
+
+> 3
+
+= o p dℓ
+
+.
+
+Proof. By Hölder’s inequality, it suffices to show that 
+
+lim sup 
+
+> dℓ→∞
+
+E φ1 
+
+> 4
+
+< ∞.
+
+Using the same notation Rh 
+
+> 1
+
+(X) as above, we can write 
+
+E φ1 
+
+> 4
+
+= X
+
+> (X, (a,i ),h ),(X′,(a′,i ′),h ′)
+
+(βX,ai,h )⊤E
+
+h
+
+Rh 
+
+> 1
+
+(X)Rh 
+
+> 1
+
+(X)⊤Rh′ 
+
+> 1
+
+(X′)Rh′ 
+
+> 1
+
+(X′)⊤i
+
+βX′,a ′i′
+
+.
+
+Each expectation is a finite sum of terms bounded by 
+
+max  
+
+> c∈V
+
+max  
+
+> Z∈{ X,X ′}
+
+E f ℓc1(Z) 8,
+
+which is uniformly bounded in dℓ by the same eighth-moment assumption used in Hron et al. [2020, Lemma 32]. Thus 
+
+E|φ1|4 is uniformly bounded, which implies E|φ1|3 = o(√dℓ) and completes the proof. □
+
+24 A PREPRINT - M ARCH 19, 2026 
+
+C.3 Convergence of S(ℓ,h )Graphormer 
+
+Since the infinite-width limit for networks with positional encodings is treated in Hron et al. [2020, Appendix C], and since Lemma 13 reduces the infinite-head argument to convergence in distribution of S(ℓ,h )GNN , it remains to establish this convergence for Graphormer with structural bias. In Graphormer, S(ℓ,h )GNN is obtained from the attention logits E(ℓh )
+
+by adding the structural bias and then applying a softmax functin. Therefore S(ℓ,h )GNN is a measurable function of the bias-augmented logits, and convergence in distribution of the logits implies convergence of S(ℓ,h )GNN by the continuous mapping theorem. Hence it suffices to prove that the attention logits still converge when the structural bias is included. 
+
+Lemma 24 (Logit-level GP limit of Graphormer) . Let the assumptions of Theorem 9 hold. Then, for the fixed layer ℓ,the process 
+
+E(ℓ) := E(ℓh ) 
+
+> ai
+
+(X) : X ∈ X 0, (a, i ) ∈ (V × V ), h ∈ N
+
+converges in distribution (as dℓ → ∞ ) to a centred process whose finite-dimensional marginals are Gaussian with covariance given by the edge kernel K(ℓ),E of (21) in Theorem 9. Proof. By definition of the Graphormer attention logits (Equation (5)), we have 
+
+E(ℓh ) 
+
+> ij
+
+(X) = ( ˜f ℓi (X)W Q,ℓh )( ˜f ℓj (X)W K,ℓh )⊤
+
+√dℓ
+
++ bρ(i,j ).
+
+Define G(ℓh ) 
+
+> ij
+
+(X) = 
+
+ f ℓi (X)W Q,ℓh 
+
+  f ℓj (X)W K,ℓh 
+
+⊤
+
+> √dℓ
+
+. The covariance EE(ℓh ) 
+
+> ai
+
+(X)E(ℓh ′) 
+
+> bj
+
+(X) can be rewritten as: 
+
+EE(ℓh ) 
+
+> ai
+
+(X)E(ℓh ′) 
+
+> bj
+
+(X) = E(Gℓh ai (X) + bρ(a,i ))( Gℓh ′ 
+
+> bj
+
+(X) + bρ(b,j ))
+
+= EGℓh ai (X)Gℓh ′ 
+
+> bj
+
+(X) + bρ(a,i )Gℓh ′ 
+
+> bj
+
+(X) + bρ(b,j )Gℓh ai (X) + bρ(a,i )bρ(b,j )
+
+
+
+= EGℓh ai (X)Gℓh ′ 
+
+> bj
+
+(X) + Ebρ(a,i )bρ(b,j )
+
+
+
+Since the convergence of G(ℓh )(X) have already been proved in Hron et al. [2020, Lemma 12], and bϕ(vi,v j ) are independent for different value of ϕ(i, j ), thus 
+
+EE(ℓh ) 
+
+> ai
+
+(X) E(ℓh ′) 
+
+> bj
+
+(X) = δh=h′
+
+
+
+σ2
+
+> Q
+
+σ2 
+
+> K
+
+˜K(ℓ−1)  
+
+> ab
+
+˜K(ℓ−1)  
+
+> ij
+
++ σ2 
+
+> b
+
+1ϕ(a,i )= ϕ(b,j )
+
+
+
+.
+
+C.4 Convergence of Sh
+
+> Specformer
+
+In Lemma 13, we showed that, under the GP induction hypothesis on the node features, it is sufficient to establish that 
+
+S(ℓ,h )GNN converges in distribution in order for the layer-ℓ pre-activation outputs gℓ(X) to converge in distribution to a Gaussian process. In Specformer, the message-passing operator is defined by Equation (2) , so S(ℓ,h )GNN ≡ Sh
+
+> Specformer
+
+.Consequently, to establish Gaussian process convergence of the Specformer outputs, it suffices to prove that Sh
+
+> Specformer
+
+converges in distribution. 
+
+Lemma 25. Let the assumptions of Theorem 11 hold. Then, for the fixed layer ℓ, the process 
+
+SSpecformer := Sh 
+
+> Specformer
+
+: h ∈ N
+
+converges in distribution. Proof. Recall from (2) that the Specformer convolution operator in layer ℓ and head h is defined as 
+
+S(ℓ,h )Specformer = U diag  ¯λ(h) U ⊤, ¯λ(h) = σ ˜λ(h), ˜λ(h) := ¯H(h)Wλ,h , ¯H(h) := HT, (h).
+
+Since the eigenvalue encoding block is a standard Transformer, Hron et al. [2020, Appendix B.1] establishes that Ht+1 
+
+converges in distribution to a centred Gaussian process 
+
+Ht+1 ∼ GP  0, K (t+1) 
+
+> H
+
+
+
+as dt, d t,H → ∞ , with the kernel recursion given in Equation (32) . In particular, ¯H(h) = HT, (h) converges in distribution to a centred Gaussian process with covariance K(T ) 
+
+> H
+
+. With the standard 1/d T variance scaling and 25 A PREPRINT - M ARCH 19, 2026 independence of Wλ,h , each coordinate of ˜λ(h) = ¯H(h)Wλ,h is a sum of dT independent centred terms, so by the CLT 
+
+˜λ(h) converges in distribution to a centred Gaussian process with covariance 
+
+Cλ,ab := E
+
+h
+
+(˜λ(h))a (˜λ(h)′)b
+
+i
+
+= σ2 
+
+> λ
+
+K(T )
+
+> H,ab
+
+.
+
+Consequently, ¯λ(h) = σ(˜λ(h)) also converges in distribution. Since U is fixed and the map λ 7 → U diag( λ) U ⊤ is continuous, the continuous mapping theorem implies that S(ℓ,h )Specformer converges in distribution as dT → ∞ .Finally, writing K(ℓ−1) (X, X ′) := E[f ℓ−1(X)f ℓ−1(X′)⊤] and letting ( ¯H, ¯H′) denote the pair of limiting Gaussian-process draws associated with (X, X ′), we obtain 
+
+K(ℓ)(X, X ′) := Egℓ(X) gℓ(X′)⊤ = σ2 
+
+> O
+
+σ2 
+
+> w
+
+E
+
+h
+
+S1Specformer ( ¯H) K(ℓ−1) (X, X ′) S1Specformer ( ¯H′)⊤i
+
+= σ2 
+
+> O
+
+σ2 
+
+> w
+
+E
+
+h
+
+U diag( ¯λ1( ¯H)) ( U ⊤K(ℓ−1) (X, X ′)U ) diag( ¯λ1( ¯H′)) U ⊤i
+
+= σ2 
+
+> O
+
+σ2 
+
+> w
+
+U
+
+
+
+Kλ ⊙  U ⊤K(ℓ−1) (X, X ′)U 
+
+U ⊤,
+
+where Kλ,ab := E[¯λa( ¯H)¯λb( ¯H′)] . Therefore the Specformer outputs gℓ(X) converge in distribution to a centred Gaussian process with covariance kernel K(ℓ).
+
+C.5 Auxiliary results Lemma 26 ( [Billingsley, 1986, Theorem 29.4]) . Let X, (Xn)n≥1 be random variables taking values in (RN , BN ),where BN denotes the Borel σ-algebra. Then Xnd
+
+−→ X if and only if for every finite index set J ⊂ N and the corresponding projection ΓJ : RN → RJ , we have 
+
+ΓJ (Xn) d
+
+−→ ΓJ (X) as n → ∞ .
+
+Lemma 27 ( [Billingsley, 1986, p. 31]) . A sequence of real-valued random variables (Xn)n≥1 is uniformly integrable if 
+
+sup 
+
+> n≥1
+
+E|Xn|1+ ε < ∞
+
+for some ε > 0.
+
+Theorem 28 ([Billingsley, 1986, Theorem 3.5]) . If (Xn)n≥1 is uniformly integrable and Xnd
+
+−→ X, then X is integrable and 
+
+E[Xn] → E[X].
+
+Lemma 29 (Slutsky’s lemma) . Let X, (Xn)n≥1 and (Yn)n≥1 be real-valued random variables defined on the same probability space. If Xnd
+
+−→ X and YnP
+
+−→ c for some constant c ∈ R, then 
+
+XnYnd
+
+−→ cX, Xn + Ynd
+
+−→ X + c. 
+
+Lemma 30 (Moment bound for GAT operators) . Under the assumptions of Theorem 6, suppose that ϕ : R → R is entrywise polynomially bounded, i.e., Then for any t ≥ 1,
+
+sup 
+
+> a∈V
+
+sup 
+
+> i∈N a
+
+sup 
+
+> dℓ∈N
+
+E S(ℓ,h )GAT ,ai (X) t < ∞. (41) 
+
+Proof. For each layer width dℓ ∈ N, recall that the unnormalized GAT attention score is given by 
+
+E(ℓh,d ℓ) 
+
+> ai
+
+(X) = ( ⃗v ℓh )⊤h
+
+W ℓ,h f ℓ−1 
+
+> a
+
+(X) ∥ W ℓ,h f ℓ−1 
+
+> i
+
+(X)
+
+i
+
+,
+
+where W ℓ,h and ⃗v ℓh are independently fan-in scaled Gaussian and independent of f ℓ−1(x).Conditioned on 
+
+u(dℓ) 
+
+> ai
+
+(X) := 
+
+h
+
+W ℓ,h f ℓ−1 
+
+> a
+
+(X) ∥ W ℓ,h f ℓ−1 
+
+> i
+
+(X)
+
+i
+
+,
+
+the random variable E(ℓh,d ℓ) 
+
+> ai
+
+(X) is centered Gaussian with variance proportional to ∥u(dℓ) 
+
+> ai
+
+(X)∥2. Hence for any t ≥ 1,
+
+E |E(ℓh,d ℓ) 
+
+> ai
+
+(X)|t | u(dℓ) 
+
+> ai
+
+(X) ≲ ∥u(dℓ) 
+
+> ai
+
+(X)∥t.
+
+26 A PREPRINT - M ARCH 19, 2026 Taking expectations and using the assumptions of Theorem 6, which ensure that all moments of fan-in scaled linear transformations of f ℓ−1(x) are uniformly bounded in dℓ, we obtain 
+
+sup 
+
+> a∈V
+
+sup 
+
+> i∈N a
+
+sup 
+
+> dℓ∈N
+
+E E(ℓh,d ℓ) 
+
+> ai
+
+(X) t < ∞.
+
+Finally, since ϕ is entrywise polynomially bounded, this uniform moment bound implies that 
+
+sup 
+
+> a∈V
+
+sup 
+
+> i∈N a
+
+sup 
+
+> dℓ∈N
+
+E S(ℓ,h )GAT ,ai (X) t < ∞,
+
+which completes the proof. 
+
+Lemma 31 (Moment propagation for Graphormer operators) . Under the assumptions of Theorem 9, suppose that 
+
+ϕ : R → R is entrywise polynomially bounded. Then for any t ≥ 1,
+
+sup 
+
+> i,j ∈V
+
+sup 
+
+> dℓ∈N
+
+E S(ℓ,h )Graphormer ,ij (X) t < ∞. (42) 
+
+Proof. For each layer width dℓ ∈ N, the unnormalized Graphormer attention score is given by 
+
+E(ℓh,d ℓ) 
+
+> ij
+
+(X) = 
+
+  ˜f ℓi (X)W Q,ℓh    ˜f ℓj (X)W K,ℓh ⊤
+
+√dℓ
+
++ bρ(i,j ),
+
+where W Q,ℓh and W K,ℓh are independently fan-in scaled Gaussian and independent of ˜f ℓ(X), and the bias term satisfies sup i,j |bρ(i,j )| ≤ B < ∞.Write 
+
+E(ℓh,d ℓ) 
+
+> ij
+
+(X) = T (dℓ) 
+
+> ij
+
+(X) + bρ(i,j ), T (dℓ) 
+
+> ij
+
+(X) := d−1/2
+
+> ℓ
+
+D ˜f ℓi (X)W Q,ℓh , ˜f ℓj (X)W K,ℓh E
+
+.
+
+Using the inequality |a + b|t ≤ 2t−1(|a|t + |b|t) and the boundedness of bρ(i,j ), it suffices to control the moments of 
+
+T (dℓ) 
+
+> ij
+
+(X) uniformly in dℓ.By Cauchy–Schwarz and Hölder’s inequality, 
+
+E T (dℓ) 
+
+> ij
+
+(X) t ≤ d−t/ 2
+
+> ℓ
+
+
+
+E∥ ˜f ℓi (X)W Q,ℓh ∥2t1/2
+
+E∥ ˜f ℓj (X)W K,ℓh ∥2t1/2
+
+.
+
+Under the assumptions of Theorem 6, fan-in scaling and the moment bounds on the upstream features imply that all moments of the linear transforms ˜f ℓi (X)W Q,ℓh and ˜f ℓj (X)W K,ℓh are uniformly bounded in dℓ. Consequently, 
+
+sup 
+
+> i,j ∈V
+
+sup 
+
+> dℓ∈N
+
+E E(ℓh,d ℓ) 
+
+> ij
+
+(X) t < ∞.
+
+Finally, since ϕ is entrywise polynomially bounded, this uniform moment bound implies that 
+
+sup 
+
+> i,j ∈V
+
+sup 
+
+> dℓ∈N
+
+E S(ℓ,h )Graphormer ,ij (X) t < ∞,
+
+which completes the proof. 
+
+Lemma 32 (Moment propagation for Specformer spectral filters) . Under the assumptions of Theorem 11. Then for any 
+
+t ≥ 1 and any random vector u ∈ R|V |,
+
+sup 
+
+> dt,d t,H
+
+E SSpecformer u t 
+
+> 2
+
+< ∞, whenever sup 
+
+> dt,d t,H
+
+E∥u∥t 
+
+> 2
+
+< ∞. (43) 
+
+In particular, for any fixed coordinate a ∈ V ,
+
+sup 
+
+> dt,d t,H
+
+E (S(h)Specformer u)a 
+
+> t
+
+< ∞.
+
+27 A PREPRINT - M ARCH 19, 2026 
+
+Proof. By Lemma 32 of Hron et al. [2020], the upstream hidden representation ¯H produced by the Infinite Attention mechanism admits uniform moment bounds of all orders; in particular, for any t ≥ 1,
+
+sup 
+
+> dt,d t,H
+
+E∥ ¯H∥t 
+
+> ∞
+
+< ∞.
+
+Applying a fan-in scaled linear transformation preserves uniform moment bounds, and since σ is entrywise polynomially bounded, it follows that the spectral coefficients admit uniform moment bounds, namely 
+
+sup 
+
+> dt,d t,H
+
+E∥¯λ(h)∥t 
+
+> ∞
+
+< ∞.
+
+Now write 
+
+S(h)Specformer = U diag  ¯λ(h) U ⊤.
+
+Because U is orthogonal, we have 
+
+∥S(h)Specformer ∥2→2 = ∥ diag( ¯λ(h))∥2→2 = ∥¯λ(h)∥∞.
+
+Therefore, for any random vector u,
+
+∥S(h)Specformer u∥2 ≤ ∥ ¯λ(h)∥∞ ∥u∥2.
+
+Raising both sides to the power t and taking expectations yields 
+
+E S(h)Specformer u t 
+
+> 2
+
+≤
+
+
+
+E∥¯λ(h)∥2t
+
+> ∞
+
+1/2
+
+E∥u∥2t
+
+> 2
+
+1/2
+
+,
+
+by Cauchy–Schwarz. The claimed bound follows from the established uniform moment bounds. 
+
+Lemma 33 (Moment propagation for GTN operators) . Under the assumptions of Theorem 34, fix a head h and a meta-path length K. Then for any t ≥ 1 and any random vector u,
+
+sup 
+
+> n
+
+sup 
+
+> a∈V
+
+E (S(K,h )(X)u)a 
+
+> t
+
+≤ sup 
+
+> n
+
+sup 
+
+> i∈V
+
+E|ui|t.
+
+Proof. By construction, each relation adjacency matrix is row-normalized and entrywise nonnegative. Convex combi-nations with simplex weights preserve these properties, and products of row-stochastic, entrywise nonnegative matrices remain row-stochastic and entrywise nonnegative. Hence each row of S(K,h )(x) is a probability vector. For any a ∈ V ,
+
+(S(K,h )(x)u)a = X
+
+> i∈V
+
+S(K,h ) 
+
+> ai
+
+(x) ui.
+
+Since the function z 7 → | z|t is convex for t ≥ 1, Jensen’s inequality yields 
+
+(S(K,h )(X)u)a 
+
+> t
+
+≤ X
+
+> i∈V
+
+S(K,h ) 
+
+> ai
+
+(X) |ui|t.
+
+Taking expectations and using P 
+
+> i
+
+S(K,h ) 
+
+> ai
+
+(X) = 1 gives 
+
+E (S(K,h )(X)u)a 
+
+> t
+
+≤ sup 
+
+> i∈V
+
+E|ui|t.
+
+Taking the supremum over a ∈ V and n completes the proof. 
+
+## D Graph Transformers on Heterogeneous Graphs 
+
+In this Appendix, the GP setting is extended to heterogeneous graphs with multiple edge types. 
+
+Heterogeneous Graphs Let G = ( V, E, T ) be an undirected graph with N nodes, where V denotes the set of nodes, 
+
+E the set of edges, and T the set of edge types (relations). Heterogeneous graphs contain multiple edge types, i.e., 
+
+|T | > 1. For each edge type t ∈ T , let At ∈ RN ×N denote the corresponding adjacency matrix.The node feature matrix X ∈ RN ×din remains unchanged. 28 A PREPRINT - M ARCH 19, 2026 
+
+Graph Transformers Network (GTN) GTN operates on heterogeneous graphs by recursively constructing meta-path adjacency matrices through soft selections over edge types. For each GTN head h ∈ { 1, . . . , d ℓ,H }, define 
+
+˜Ai := D−1 
+
+> i
+
+Ai for i ∈ T , where Di denotes the diagonal degree matrix associated with Ai. The recursion is initialized as A(1 ,h ) = PT 
+
+> i=1
+
+β(1 ,h ) 
+
+> i
+
+˜Ai. For a fixed meta-path length K,
+
+S(K,h ) 
+
+> GTN
+
+= A(K,h ) = A(K−1,h )
+
+> T
+
+X
+
+> i=1
+
+β(K,h ) 
+
+> i
+
+Ai
+
+!
+
+, (44) where β(k,h ) for k = 1 , . . . , K are learnable parameters that weight the relation-specific adjacency matrices for the 
+
+h-th head. The design choices underlying the reformulated GTN formulation are detailed in the Appendix D. 
+
+Design Choices for GTN Reparameterizing GTN Coefficients for Tractable Kernel Construction In the original Graph Transformer Network (GTN) formulation, the coefficients {β(k)}Kk=0 are obtained by applying a softmax function to a trainable parameter vector {W (k) 
+
+> ϕ
+
+}Kk=0 , i.e., 
+
+β(k) = ϕ
+
+
+
+W (k)
+
+> ϕ
+
+
+
+, k = 0 , . . . , K, 
+
+where ϕ(·) denotes the softmax operator. Under random initialization of Wϕ, the softmax transformation induces complex dependencies among the coefficients β(k), making their joint distribution difficult to characterize. In particular, the resulting β(k) are no longer independent, and moments such as E[βiβj ] do not admit a tractable closed-form expression. To facilitate a principled Gaussian kernel construction, for each head of graph convolution layer heads dℓ,H , therefore depart from the original parameterization and directly initialize the coefficients {β(k)}. This choice enables explicit control over their statistical properties and allows the corresponding kernel expectations to be computed in a tractable manner. 
+
+Decoupled Degree Normalization for Well-Defined Graph Kernels Meanwhile,in original paper the GTN adjacency matrix at layer K is given by the recursive construction 
+
+A(K) =  D(K−1) −1A(K−1) 
+
+> T
+
+X
+
+> i=1
+
+β(K) 
+
+> i
+
+Ai
+
+!
+
+, (45) where the associated degree matrix is defined as 
+
+D(K) 
+
+> uu
+
+=
+
+> n
+
+X
+
+> v=1
+
+A(K) 
+
+> uv
+
+, D(K) =
+
+> n
+
+X
+
+> u=1
+
+D(K) 
+
+> uu
+
+eue⊤ 
+
+> u
+
+. (46) By definition, both A(K) and D(K) are random matrices depending on the same collection of random variables 
+
+{β(k) 
+
+> i
+
+}k≤K, i ≤T .Substituting (45) into (46), the diagonal entry D(K) 
+
+> uu
+
+can be written explicitly as 
+
+D(K) 
+
+> uu
+
+=
+
+> n
+
+X
+
+> v=1
+
+" D(K−1) −1A(K−1) 
+
+> T
+
+X
+
+> i=1
+
+β(K) 
+
+> i
+
+Ai
+
+!# 
+
+> uv
+
+. (47) Consequently, the degree-normalized adjacency satisfies 
+
+ D(K)−1A(K) =
+
+> n
+
+X
+
+> u=1
+
+1
+
+D(K)
+
+> uu
+
+eue⊤ 
+
+> u
+
+A(K). (48) Assume that the coefficients are independently initialized as β(k) 
+
+> i
+
+∼ N (0 , σ 2
+
+> k
+
+), for all i = 1 , . . . , T , k = 1 , . . . , K. 
+
+Under this initialization, both A(K) 
+
+> uv
+
+and D(K) 
+
+> uu
+
+are nonlinear functions of the same Gaussian random variables. In particular, D(K) 
+
+> uu
+
+is a centered random variable with a continuous distribution supported on R, and hence satisfies 
+
+P
+
+
+
+|D(K) 
+
+> uu
+
+| < ε 
+
+
+
+> 0 for all ε > 0. (49) 29 A PREPRINT - M ARCH 19, 2026 As a result, the random matrix  D(K)−1A(K) involves ratios of strongly coupled random variables, where the numerator and denominator depend on the same Gaussian coefficients. This nonlinear coupling prevents any decoupling under expectation, and the matrix-valued expectation E
+
+h D(K)−1A(K)
+
+i
+
+does not admit a finite or closed-form expression. In particular, the presence of D(K) 
+
+> uu
+
+in the denominator precludes the existence of well-defined second-order moments required for a Gaussian process or kernel interpretation. To avoid this issue, we modify the GTN construction by normalizing each base adjacency matrix independently. Specifically, define ˜Ai := D−1 
+
+> i
+
+Ai, i ∈ T ,
+
+where Di denotes the diagonal degree matrix associated with Ai, i.e., (Di)uu = P 
+
+> v
+
+(Ai)uv . For each head of graph convolution layer heads dℓ,H , recursion is initialized as A(1) = PT 
+
+> i=1
+
+β(1)  
+
+> i
+
+˜Ai, and, for a fixed meta-path length K ≥ 2,proceeds according to 
+
+S(K)GTN = A(K) = A(K−1) 
+
+> T
+
+X
+
+> i=1
+
+β(K) 
+
+> i
+
+˜Ai
+
+!
+
+.
+
+By performing degree normalization at the level of individual base adjacency matrices, rather than on the recursively constructed adjacency A(K), the resulting graph structure avoids nonlinear coupling between normalization terms and random combination coefficients. 
+
+GTN-GP Theorem 34 (Infinite-width and infinite-head limit of a GTN layer) . If for the ℓ-st GTN layer with meta-path length 
+
+K, the parameters satisfy β(k) 
+
+> i
+
+∼ N (0 , σ 2
+
+> k
+
+), W ℓij ∼ N 
+
+
+
+0, σ2
+
+> w
+> dℓ−1
+
+
+
+, W ℓ,H ij ∼ N 
+
+
+
+0, σ2 
+
+> H
+> dℓ,H dℓ−1
+
+
+
+, independently for all 
+
+i, j and k ∈ [K], and define ˜Ai := D−1 
+
+> i
+
+Ai for i ∈ T , then, as dℓ → ∞ , gℓ+1 (X) converges in distribution to 
+
+gℓ(X) ∼ GP (0 , Σ(ℓ)) with 
+
+Σ(ℓ) 
+
+> ab
+
+= E
+
+h
+
+gℓ, 1 
+
+> a
+
+(X) gℓ, 1 
+
+> b
+
+(X)
+
+i
+
+= σ2 
+
+> H
+
+σ2
+
+> wK
+
+Y
+
+> k=1
+
+σ2
+
+> k
+> T
+
+X
+
+> i1=1
+
+· · · 
+
+> T
+
+X 
+
+> iK=1
+
+  ˜Ai1 · · · ˜AiK
+
+ K(ℓ−1)   ˜A⊤ 
+
+> iK
+
+· · · ˜A⊤
+
+> i1
+
+!
+
+> ab
+
+,
+
+(50) 
+
+where a, b ∈ V .
+
+Equation (50) shows that, in the infinite-width and infinite-head limit, the dependence between node pre-activations at layer ℓ is obtained by aggregating over all possible length-K meta-path compositions. The GTN layer enumerates all sequences of relation types (i1, . . . , i K ) ∈ T K and combines the corresponding normalized adjacency products 
+
+˜Ai1 · · · ˜AiK to construct the resulting graph structure, so the update can be viewed as forming a composite graph that accounts for every possible meta-path of length K and accumulating their contributions. 
+
+Proof. In Lemma 13, we showed that, under the GP induction hypothesis on the node features, it is sufficient to establish that S(ℓ,h )GNN converges in distribution in order for the layer-ℓ pre-activation outputs gℓ(X) to converge in distribution to a Gaussian process. In GTN, the message-passing operator in head h is S(ℓ,h )GNN ≡ S(K,h )GTN . Consequently, to establish Gaussian process convergence of the GTN outputs, it suffices to prove that S(K,h )GTN converges in distribution. 
+
+Convergence of S(K,h )GTN 
+
+Lemma 35. Let the assumptions of Theorem 34 hold. Then, for the fixed layer ℓ, the process 
+
+SK 
+
+> GTN
+
+:= S(K,h )GTN : h ∈ N
+
+converges in distribution. Proof. Recall from Equation (44) that the GTN propagation operator with meta-path length K in layer ℓ and head h is generated by the random coefficients {β(k,h )}Kk=1 and can be written as 
+
+S(K,h )GTN =
+
+ TX 
+
+> iK=1
+
+β(K,h )
+
+> iK
+
+˜AiK
+
+
+
+· · · 
+
+ TX
+
+> i1=1
+
+β(1 ,h )
+
+> i1
+
+˜Ai1
+
+
+
+, ˜Ai := D−1 
+
+> i
+
+Ai.
+
+30 A PREPRINT - M ARCH 19, 2026 Table 5: Node classification accuracy on heterogeneous graphs. Dataset GCN GAT HAN GTN GTN-GP DBLP 87.30 93.71 92.83 94.18 94.33 
+
+ACM 91.60 92.33 90.96 92.68 92.19 IMDB 56.89 58.14 56.77 60.92 60.50 Assume that for each k ∈ { 1, . . . , K } the vectors β(k,h ) = ( β(k,h )1 , . . . , β (k,h ) 
+
+> T
+
+) are i.i.d. across h, independent across k, and satisfy E[β(k,h ) 
+
+> i
+
+] = 0 and E[β(k,h ) 
+
+> i
+
+β(k,h ) 
+
+> j
+
+] = σ2
+
+> k
+
+δij . Since the matrices { ˜Ai}T 
+
+> i=1
+
+are fixed, the map 
+
+{β(k,h )}Kk=1 7 → S(K,h )GTN is a polynomial function, hence measurable and continuous. Therefore S(K,h )GTN has a well-defined distribution which does not depend on the width dℓ, and in particular it is tight and thus converges in distribution along any sequence dℓ → ∞ .Finally, writing K(ℓ−1) (X, X ′) := E[f ℓ−1(X)f ℓ−1(X′)⊤] and letting S(K,h )GTN be an independent draw of the GTN operator, we obtain the kernel recursion 
+
+K(ℓ)(X, X ′) := Egℓ(X) gℓ(X′)⊤ = σ2 
+
+> H
+
+σ2 
+
+> w
+
+E
+
+h
+
+S(K, 1) GTN K(ℓ−1) (X, X ′) S(K, 1) ⊤
+
+> GTN
+
+i
+
+= σ2 
+
+> H
+
+σ2
+
+> w
+> K
+
+Y
+
+> k=1
+
+σ2
+
+> k
+> T
+
+X
+
+> i1=1
+
+· · · 
+
+> T
+
+X 
+
+> iK=1
+
+˜Ai1 · · · ˜AiK K(ℓ−1) (X, X ′) ˜A⊤ 
+
+> iK
+
+· · · ˜A⊤
+
+> i1
+
+!
+
+,
+
+where we used E[β(k,h ) 
+
+> i
+
+β(k,h ) 
+
+> j
+
+] = σ2
+
+> k
+
+δij and independence across k. Therefore the GTN outputs gℓ(X) converge in distribution to a centred Gaussian process with covariance kernel K(ℓ).
+
+D.1 GTN-GP experiments on heterogeneous graphs 
+
+To evaluate the practical utility of the derived GTN-GP , we compare its performance against several state-of-the-art baselines, including GCN, GAT, HAN, and the standard finite-width GTN. We conduct experiments on three standard heterogeneous graph benchmarks [Wang et al., 2019]: DBLP , ACM , and IMDB .The results, summarized in Table 5, demonstrate that the infinite-width limit approach is highly competitive. 
+
+## E Supplementary Material of Section 4 
+
+E.1 GCN-GP Kernel under SBM Corollary 36 (GCN kernel under SBM) . Consider the GCN kernel in Niu et al. [2023], given by K(ℓ) = A⊤K(ℓ−1) A
+
+then, for all ℓ ≥ 1, K(ℓ) under SBM admits the following closed-form expression: 
+
+xℓ = 12
+
+ n
+
+2
+
+2ℓ (x0 + y0)(( p + q)) 2ℓ + ( x0 − y0)( p − q)2ℓ , (51) 
+
+yℓ = 12
+
+ n
+
+2
+
+2ℓ (x0 + y0)( p + q)2ℓ − (x0 − y0)( p − q)2ℓ . (52) Define J = 11 ⊤ ∈ R n   
+
+> 2×n
+> 2
+
+. The matrices A and K(0) share the same eigenbasis {v1, v 2} where v1 = 1√n 1n and 
+
+v2 = 1√n [1⊤
+
+> n/ 2
+
+, −1⊤
+
+> n/ 2
+
+]⊤. The spectral decompositions are: 
+
+A = λA, 1v1v⊤ 
+
+> 1
+
++ λA, 2v2v⊤ 
+
+> 2
+
+, λA, 1 = ( p + q) n
+
+2 , λ A, 2 = ( p − q) n
+
+2
+
+K(0) = λK, 1v1v⊤ 
+
+> 1
+
++ λK, 2v2v⊤ 
+
+> 2
+
+, λK, 1 = ( x0 + y0) n
+
+2 , λ K, 2 = ( x0 − y0) n
+
+2
+
+31 A PREPRINT - M ARCH 19, 2026 
+
+Proof of Corollary 36 Under the GCN update rule K(ℓ) = AK (ℓ−1) A, we have K(ℓ) = AℓK(0) Aℓ. Utilizing the orthogonality v⊤ 
+
+> i
+
+vj = δij :
+
+K(ℓ) = λ2ℓA, 1λK, 1v1v⊤ 
+
+> 1
+
++ λ2ℓA, 2λK, 2v2v⊤
+
+> 2
+
+= λ2ℓA, 1λK, 1
+
+n
+
+J JJ J
+
+
+
++ λ2ℓA, 2λK, 2
+
+n
+
+ J −J
+
+−J J
+
+
+
+Substituting λA,i and λK,i and simplifying the leading coefficient 1 
+
+> n
+
+· n 
+
+> 2
+
+= 12 yields the scalar entries: 
+
+xℓ = 12
+
+
+
+(x0 + y0)
+
+
+
+(p + q) n
+
+2
+
+2ℓ
+
++ ( x0 − y0)
+
+
+
+(p − q) n
+
+2
+
+2ℓ
+
+yℓ = 12
+
+
+
+(x0 + y0)
+
+
+
+(p + q) n
+
+2
+
+2ℓ
+
+− (x0 − y0)
+
+
+
+(p − q) n
+
+2
+
+2ℓ
+
+Proof of Corollary 1 From the expressions for xℓ and yℓ in Table 3, we observe that the diagonal entries of the kernel matrix are all equal to xℓ. Thus, the normalization term is 1 
+
+> n
+
+tr (K(ℓ)) = 1 
+
+> n
+
+(nx ℓ) = xℓ. The normalized kernel is then: 
+
+K(ℓ)1 
+
+> n
+
+tr (K(ℓ)) = 1
+
+xℓ
+
+xℓ11 ⊤ yℓ11 ⊤
+
+yℓ11 ⊤ xℓ11 ⊤
+
+
+
+=
+
+ 11 ⊤ yℓ 
+
+> xℓ
+
+11 ⊤ 
+
+> yℓ
+> xℓ
+
+11 ⊤ 11 ⊤
+
+
+
+.
+
+Using the closed-form expressions for GCN-GP, the ratio of inter- to intra-community similarity is: 
+
+yℓ
+
+xℓ
+
+= (x0 + y0)( p + q)2ℓ − (x0 − y0)( p − q)2ℓ
+
+(x0 + y0)( p + q)2ℓ + ( x0 − y0)( p − q)2ℓ =1 −
+
+ x0−y0
+
+> x0+y0
+
+  p−qp+q
+
+2ℓ
+
+1 + 
+
+ x0−y0
+
+> x0+y0
+
+  p−qp+q
+
+2ℓ .
+
+Since |p − q| < |p + q|, the term 
+
+ p−qp+q
+
+2ℓ
+
+→ 0 as ℓ → ∞ . Therefore, lim ℓ→∞ yℓ 
+
+> xℓ
+
+= 1 , and the normalized kernel converges to the rank-one all-ones matrix. 
+
+E.2 GAT-GP Kernel under SBM Corollary 37 (GAT kernel under SBM) . Consider the GAT kernel in Corollary 8, then, for all ℓ ≥ 1, K(ℓ) under SBM admits the following closed-form expression: 
+
+xℓ = 12
+
+"
+
+G2ℓ
+
+  n
+
+> 2
+
+2 (p + q)2
+
+# 
+
+1 + 
+
+ x0 − y0
+
+x0 + y0
+
+
+
+F ℓ
+
+
+
+,yℓ = 12
+
+"
+
+G2ℓ
+
+  n
+
+> 2
+
+2 (p + q)2
+
+# 
+
+1 −
+
+ x0 − y0
+
+x0 + y0
+
+
+
+F ℓ
+
+
+
+,
+
+where the global growth factor G and the structural preservation factor F are defined as: 
+
+G = ( x0 + y0)( p + q)2  n
+
+2
+
+2
+
+and F = 2 p2 − pq + q2
+
+(p + q)2 .
+
+Proof of Corollary 37 The evolution of the Gaussian Process (GP) kernel for a Graph Attention Network (GAT) at layer l + 1 is given by: 
+
+K(l+1) = K(l) ⊙ (AK (l)A) + A(K(l) ⊙ K(l))A, (53) where A is the adjacency matrix and K(l) the kernel at layer l.We consider a Stochastic Block Model with two communities of size n/ 2. The expected adjacency matrix A and the kernel K(l) exhibit the following block structures: 
+
+A =
+
+p11 ⊤ q11 ⊤
+
+q11 ⊤ p11 ⊤
+
+
+
+, K(l) =
+
+xl11 ⊤ yl11 ⊤
+
+yl11 ⊤ xl11 ⊤
+
+
+
+. (54) where 11 ⊤ is the all-ones matrix of size n 
+
+> 2
+
+× n 
+
+> 2
+
+.32 A PREPRINT - M ARCH 19, 2026 
+
+E.2.1 Recurrence Relation 
+
+By substituting the block structures of A and K(l) into the evolution equation and noting that (11 ⊤)2 = n 
+
+> 2
+
+11 ⊤ (yielding a factor of ( n 
+
+> 2
+
+)2 for the triple products), we derive the following recurrence relations for the scalar components xl+1 
+
+and yl+1 :
+
+xl+1 =
+
+ n
+
+2
+
+2 2( p2 + q2)x2 
+
+> l
+
++ 2 pq (ylxl + y2 
+
+> l
+
+) (55) 
+
+yl+1 =
+
+ n
+
+2
+
+2 2( p2 + q2)y2 
+
+> l
+
++ 2 pq (ylxl + x2 
+
+> l
+
+) (56) We introduce a change of variables: 
+
+Sl+1 = xl+1 + yl+1 (57) 
+
+∆l+1 = xl+1 − yl+1 (58) Substituting the recurrence relations for xl+1 and yl+1 , the evolution of the discrepancy ∆l+1 is given by: 
+
+∆l+1 =
+
+ n
+
+2
+
+2 [2( p2 + q2)x2 
+
+> l
+
++ 2 pq (ylxl + y2 
+
+> l
+
+)] − [2( p2 + q2)y2 
+
+> l
+
++ 2 pq (ylxl + x2 
+
+> l
+
+)] 
+
+=
+
+ n
+
+2
+
+2 2( p2 + q2)( x2 
+
+> l
+
+− y2 
+
+> l
+
+) − 2pq (x2 
+
+> l
+
+− y2 
+
+> l
+
+)
+
+= 2 
+
+ n
+
+2
+
+2
+
+(p2 − pq + q2)( xl − yl)( xl + yl)= 2 
+
+ n
+
+2
+
+2
+
+(p2 − pq + q2)∆ lSl (59) Similarly, we derive the evolution of the total kernel sum Sl+1 :
+
+Sl+1 =
+
+ n
+
+2
+
+2 [2( p2 + q2)x2 
+
+> l
+
++ 2 pq (ylxl + y2 
+
+> l
+
+)] + [2( p2 + q2)y2 
+
+> l
+
++ 2 pq (ylxl + x2 
+
+> l
+
+)] 
+
+=
+
+ n
+
+2
+
+2 2( p2 + q2)( x2 
+
+> l
+
++ y2 
+
+> l
+
+) + 2 pq (xl + yl)2
+
+=
+
+ n
+
+2
+
+2 (p2 + q2)(( xl − yl)2 + ( xl + yl)2) + 2 pq (xl + yl)2
+
+=
+
+ n
+
+2
+
+2
+
+(p2 + q2)∆ 2 
+
+> l
+
++
+
+ n
+
+2
+
+2
+
+(p + q)2S2 
+
+> l
+
+(60) In order to simplify the problem to a single variable recurrence relation, we express ∆l as a product of previous terms. By iteratively applying the recurrence ∆j+1 = 2( n 
+
+> 2
+
+)2(p2 − pq + q2)∆ j Sj starting from j = 0 , we obtain: 
+
+∆l = ∆ 0
+
+> l−1
+
+Y
+
+> j=0
+
+
+
+2
+
+ n
+
+2
+
+2
+
+(p2 − pq + q2)Sj
+
+
+
+= ∆ 0[2 
+
+ n
+
+2
+
+2
+
+(p2 − pq + q2)] ll−1Y
+
+> j=0
+
+Sj (61) Substituting the square of this expression into the equation for Sl+1 , we have: 
+
+Sl+1 =
+
+ n
+
+2
+
+2
+
+(p2 + q2)
+
+∆0[2 
+
+ n
+
+2
+
+2
+
+(p2 − pq + q2)] ll−1Y
+
+> j=0
+
+Sj
+
+
+
+> 2
+
++
+
+ n
+
+2
+
+2
+
+(p + q)2S2
+
+> l
+
+=
+
+ n
+
+2
+
+2
+
+(p2 + q2)[2 
+
+ n
+
+2
+
+2
+
+(p2 − pq + q2)] 2l∆20
+
+> l−1
+
+Y
+
+> j=0
+
+S2 
+
+> j
+
++
+
+ n
+
+2
+
+2
+
+(p + q)2S2 
+
+> l
+
+(62) Using the initial condition ∆0 = x0 − y0, we arrive at the final one-variable recurrence relation: 33 A PREPRINT - M ARCH 19, 2026 
+
+Sl+1 =
+
+ n
+
+2
+
+2
+
+(p2 + q2)[2 
+
+ n
+
+2
+
+2
+
+(p2 − pq + q2)] 2l(x0 − y0)2
+
+> l−1
+
+Y
+
+> j=0
+
+S2 
+
+> j
+
++
+
+ n
+
+2
+
+2
+
+(p + q)2S2 
+
+> l
+
+(63) This equation demonstrates that the total kernel sum at layer l + 1 depends on the entire history of the sums from previous layers {S0, . . . , S l}, weighted by the SBM parameters and the initial discrepancy. 
+
+E.2.2 Analytical Solution of the Recurrence Relation 
+
+Consider the sequence Sl:
+
+Sl = α
+
+> l−2
+
+Y
+
+> j=0
+
+S2 
+
+> j
+
++ βS 2
+
+> l−1
+
+, (64) where α =   n
+
+> 2
+
+2 (p2 + q2)
+
+h
+
+2   n
+
+> 2
+
+2 (p2 − pq + q2)
+
+i2( l−1) 
+
+(x0 − y0)2 and β =   n
+
+> 2
+
+2 (p + q)2.To eliminate the product term, we examine Sl−1. By shifting the index l → l − 1:
+
+Sl−1 = α
+
+> l−3
+
+Y
+
+> j=0
+
+S2 
+
+> j
+
++ βS 2 
+
+> l−2
+
+(65) Rearranging to isolate the product: 
+
+α
+
+> l−3
+
+Y
+
+> j=0
+
+S2 
+
+> j
+
+= Sl−1 − βS 2 
+
+> l−2
+
+(66) Returning to Sl and peeling off the last term: 
+
+Sl =
+
+α
+
+> l−3
+
+Y
+
+> j=0
+
+S2
+
+> j
+
+ S2 
+
+> l−2
+
++ βS 2 
+
+> l−1
+
+(67) Substituting Equation 66: 
+
+Sl = ( Sl−1 − βS 2
+
+> l−2
+
+)S2 
+
+> l−2
+
++ βS 2 
+
+> l−1
+
+(68) Distributing the S2 
+
+> l−2
+
+term: 
+
+Sl = Sl−1S2 
+
+> l−2
+
+− βS 4 
+
+> l−2
+
++ βS 2 
+
+> l−1
+
+(69) Using the ansatz Sl = kγ 2l
+
+, we derive the characteristic polynomial for k:
+
+βk 4 − k3 − βk 2 + k = 0 (70) The non-trivial solutions are 1 and 1/β . Given S0 and S1, the specific choice of k ensures consistency with the initial data. For the remainder of the paper we will consider k = 1 /β = [( n 
+
+> 2
+
+)2(p + q)2]−1. Using S0 = x0 + y0:
+
+Sl = k
+
+ x0 + y0
+
+k
+
+2l
+
+= 1
+
+  n
+
+> 2
+
+2 (p + q)2
+
+ n
+
+2
+
+2
+
+(p + q)2(x0 + y0)
+
+2l
+
+(71) The difference is: 
+
+∆l = [2 
+
+ n
+
+2
+
+2
+
+(p2 − pq + q2)] l(x0 − y0)
+
+> l−1
+
+Y
+
+> j=0
+
+Sj (72) The product simplifies to Ql−1 
+
+> j=0
+
+Sj = k−2l+l+1 (x0 + y0)2l−1. Thus: 
+
+∆l = [2 
+
+ n
+
+2
+
+2
+
+(p2 − pq + q2)] l(x0 − y0)k−2l+l+1 (x0 + y0)2l−1 (73) 34 A PREPRINT - M ARCH 19, 2026 
+
+E.3 Final Expressions for xl and yl
+
+Solving xl = Sl+∆ l 
+
+> 2
+
+and yl = Sl−∆l 
+
+> 2
+
+by defining: 
+
+G = ( x0 + y0)( p + q)2  n
+
+2
+
+2
+
+and F = 2 p2 − pq + q2
+
+(p + q)2 (74) we obtain: 
+
+xl = 12
+
+"
+
+G2l
+
+  n
+
+> 2
+
+2 (p + q)2
+
+# 
+
+1 + 
+
+ x0 − y0
+
+x0 + y0
+
+
+
+F l
+
+
+
+(75) 
+
+yl = 12
+
+"
+
+G2l
+
+  n
+
+> 2
+
+2 (p + q)2
+
+# 
+
+1 −
+
+ x0 − y0
+
+x0 + y0
+
+
+
+F l
+
+
+
+(76) 
+
+E.3.1 Proof of Corollary 2 
+
+Proof. Using the expressions for xℓ and yℓ from Corollary 37, the ratio of inter- to intra-community similarity is: 
+
+yℓ
+
+xℓ
+
+=1 −
+
+ x0−y0
+
+> x0+y0
+
+
+
+F ℓ
+
+1 + 
+
+ x0−y0
+
+> x0+y0
+
+
+
+F ℓ
+
+.
+
+The normalized kernel, defined by dividing by the average trace 1 
+
+> n
+
+tr (K(ℓ)) = xℓ, is given by: 
+
+K(ℓ)1 
+
+> n
+
+tr (K(ℓ)) =
+
+
+
+11 ⊤
+
+ 1−    
+
+> x0−y0
+> x0+y0
+> 
+> Fℓ
+> 1+
+> x0−y0
+> x0+y0
+> 
+> Fℓ
+
+
+
+11 ⊤
+
+ 1−    
+
+> x0−y0
+> x0+y0
+> 
+> Fℓ
+> 1+
+> x0−y0
+> x0+y0
+> 
+> Fℓ
+
+
+
+11 ⊤ 11 ⊤
+
+ .
+
+As ℓ → ∞ , if F < 1, the second term of yℓ vanishes, leading to rank collapse (oversmoothing). However, if F ≥ 1, the second term does not vanish. Setting F = 2 p2−pq +q2 
+
+> (p+q)2
+
+≥ 1 yields: 
+
+2( p2 − pq + q2) ≥ p2 + 2 pq + q2
+
+p2 − 4pq + q2 ≥ 0
+
+This condition is satisfied when the ratio p/q is sufficiently large (or small), specifically p/q ≥ 2 + √3 or p/q ≤ 2 − √3.Under this condition, the limit matrix retains rank 2, preserving the community structure. 
+
+E.4 Graphormer-GP Kernel under SBM Corollary 38 (Graphormer Kernel under SBM) . Consider the Graphormer kernel from Corollary 10 without the bias term, and assume that the positional encodings capture all structural information of the graph. In the SBM setting, this implies that the spatial relation matrix coincides with the adjacency matrix, i.e., R = A. Under SBM, the block entries 
+
+˜xℓ and ˜yℓ of ˜K(ℓ) are determined by the recurrence: 
+
+˜xℓ = αℓx0 + (1 − αℓ)p, 
+
+˜yℓ = αℓy0 + (1 − αℓ)q, 
+
+where the normalized kernel is K(ℓ) = ˜K(ℓ) · Zℓ−1, with Zℓ−1 = Tr (A⊤( ˜K(ℓ−1) ⊙ ˜K(ℓ−1) )) .
+
+Since our analysis focuses on whether the kernel preserves the block structure induced by the SBM, the trace term does not play a role. Consequently, it suffices to study the evolution of ˜K(ℓ).
+
+Proof. By the recursive definition of the Graphormer kernel, the unnormalized kernel ˜K(ℓ) is a weighted sum of the previous layer’s normalized kernel K(ℓ−1) and the spatial relation matrix R = A. Under the SBM assumption, both K(ℓ−1) and A are block-constant. Solving these first-order recurrences with initial conditions x0, y 0 yields the closed-form expressions: 
+
+˜K(ℓ) =
+
+αℓx0 + (1 − αℓ)p αℓy0 + (1 − αℓ)qαℓy0 + (1 − αℓ)q αℓx0 + (1 − αℓ)p
+
+
+
+35 A PREPRINT - M ARCH 19, 2026 The normalized kernel K(ℓ) 
+
+> ab
+
+is obtained by multiplying the previous unnormalized entries by the sum over the entries of the spatial relation matrix (here A): 
+
+K(ℓ) 
+
+> ab
+
+= ˜K(ℓ−1) 
+
+> ab
+
+X
+
+> i,j ∈V
+
+Aij ˜Kij (ℓ−1) ˜Kij (ℓ−1) = ˜K(ℓ−1)  
+
+> ab
+
+· Tr 
+
+
+
+A⊤( ˜K(ℓ−1) ⊙ ˜K(ℓ−1) )
+
+
+
+Hence the normalized kernel is defined as K(ℓ) = ˜K(ℓ) · Zℓ−1 with Zℓ−1 = Tr (A⊤( ˜K(ℓ−1) ⊙ ˜K(ℓ−1) )) .
+
+E.5 SPECFORMER-GP KERNEL UNDER SBM Corollary 39 (SpecFormer Kernel under SBM) . Consider the Specformer kernel from Theorem 11, defined as For 
+
+ℓ ≥ 1, the block entries of K(ℓ) admit the following closed-form expressions: 
+
+xℓ = 12
+
+(x0 + y0)¯λ2ℓ 
+
+> 1
+
++ ( x0 − y0)¯λ2ℓ
+
+> 2
+
+ ,yℓ = 12
+
+(x0 + y0)¯λ2ℓ 
+
+> 1
+
+− (x0 − y0)¯λ2ℓ
+
+> 2
+
+ ,
+
+where ¯λ1 and ¯λ2 ¯λ2 denote the learned eigenvalues of the Specformer’s spectral filter; these parameters determine the cross-covariance Kλ.Proof. As detailed in Theorem 11, the Specformer kernel at layer ℓ is obtained via K(ℓ) = U (Kλ ⊙ (U ⊤K(ℓ−1) U )) U ⊤.We define M (ℓ) := U ⊤K(ℓ)U . Given the recurrence relation, we have: 
+
+M (ℓ) = Kλ ⊙ M (ℓ−1) = ( Kλ ⊙ Kλ ⊙ · · · ⊙ Kλ) ⊙ M (0) = ( Kλ)⊙ℓ ⊙ M (0) ,
+
+where (Kλ)ab = ¯λa ¯λb. Thus, the ℓ-th Hadamard power is (( Kλ)⊙ℓ)ab = ¯λℓa ¯λℓb. For an SBM with two equal communities, U = [ v1 v2] with v1 = 1√n 1n and v2 = 1√n [1⊤
+
+> n/ 2
+
+, −1⊤
+
+> n/ 2
+
+]⊤.The initial spectral kernel M (0) = U ⊤K(0) U is a diagonal matrix containing the eigenvalues of the block-constant kernel K(0) :
+
+M (0) =
+
+ n 
+
+> 2
+
+(x0 + y0) 00 n 
+
+> 2
+
+(x0 − y0)
+
+
+
+.
+
+The non-zero diagonal entries of M (ℓ) evolve as: 
+
+M (ℓ)11 = ( ¯λ1 ¯λ1)ℓ n
+
+2 (x0 + y0) = ¯λ2ℓ
+
+> 1
+
+n
+
+2 (x0 + y0),M (ℓ)22 = ( ¯λ2 ¯λ2)ℓ n
+
+2 (x0 − y0) = ¯λ2ℓ
+
+> 2
+
+n
+
+2 (x0 − y0).
+
+Reconstructing the kernel in the spatial domain via K(ℓ) = M (ℓ)11 v1v⊤ 
+
+> 1
+
++M (ℓ)22 v2v⊤ 
+
+> 2
+
+, we use the outer product definitions: 
+
+v1v⊤ 
+
+> 1
+
+= 1
+
+n
+
+J JJ J
+
+
+
+, v2v⊤ 
+
+> 2
+
+= 1
+
+n
+
+ J −J
+
+−J J
+
+
+
+,
+
+where J = 11 ⊤ of size n 
+
+> 2
+
+× n 
+
+> 2
+
+. Substituting these yields: 
+
+K(ℓ) = ¯λ2ℓ 
+
+> 1
+
+(x0 + y0)2
+
+J JJ J
+
+
+
++ ¯λ2ℓ 
+
+> 2
+
+(x0 − y0)2
+
+ J −J
+
+−J J
+
+
+
+.
+
+Identifying the diagonal block scalar xℓ and the off-diagonal block scalar yℓ gives the desired result. 
+
+Proof of Remark 5 Using the expressions for xℓ and yℓ from Corollary 39, the ratio of inter- to intra-community similarity is: 
+
+yℓ
+
+xℓ
+
+= (x0 + y0)¯λ2ℓ 
+
+> 1
+
+− (x0 − y0)¯λ2ℓ
+
+> 2
+
+(x0 + y0)¯λ2ℓ 
+
+> 1
+
++ ( x0 − y0)¯λ2ℓ
+
+> 2
+
+=
+
+ x0+y0
+
+> x0−y0
+
+  ¯λ1
+
+> ¯λ2
+
+2ℓ
+
+− 1
+
+ x0+y0
+
+> x0−y0
+
+  ¯λ1
+
+> ¯λ2
+
+2ℓ
+
++ 1 
+
+.
+
+If |¯λ2| ≥ | ¯λ1|, the term (¯λ1/¯λ2)2ℓ either vanishes or stays constant as ℓ → ∞ . Consequently, the ratio yℓ/x ℓ does not converge to 1, and the kernel maintains its rank-2 structure. This allows Specformer to avoid oversmoothing by amplifying or preserving the second spectral direction v2, which corresponds to the community partition. 36 A PREPRINT - M ARCH 19, 2026 
+
+## F Supplementary Material for Experiments 
+
+The code used to reproduce all experiments is available at https://figshare.com/s/4ad5245d4d6c405f46f0 . In this section we provide additional information regarding datasets and experiment detauls. In Section F.3 we present additional experiments. 
+
+F.1 Datasets 
+
+We conduct experiments on both real-world benchmarks and synthetic datasets to evaluate model performance under varying conditions. 
+
+Benchmark Datasets We utilize two widely recognized benchmarks: PubMed [Sen et al., 2008], a homopholic citation network, and Chameleon [Rozemberczki et al., 2019], a heterophilic Wikipedia page-page network. 
+
+Synthetic Data To analyze the interplay between graph topology and feature information, we employ two synthetic generative models, considering two-class versions for both: • SBM (Random Features): The graph is generated according to the Stochastic Block Model (SBM) rule, where the probability of an edge existing between nodes in the same community is p and between differ-ent communities is q. Node features are drawn from an independent Gaussian distribution, making them uninformative of the community structure. • CSBM (Aligned Features): In the Contextual Stochastic Block Model (CSBM), node features are generated as a mixture of Gaussians such that the feature distributions are aligned with the graph’s community labels. This represents a more realistic scenario common in literature where the graph structure and node attributes provide complementary information regarding the underlying classes. All datasets are accessed via the PyTorch Geometric (PyG) data loaders. We follow the standard PyG splits for each dataset. In particular, for datasets that come with multiple predefined splits (notably the heterophilous benchmarks), we run the full training–validation–test procedure on every split and report the mean of the test accuracy across splits. Table 6: Dataset statistics for node-level classification tasks. Dataset Level Splits Nodes Edges Classes Features Homophily Pubmed Node 1 19,717 44,338 3 500 0.80 Chameleon Node 10 2,277 31,421 10 2,325 0.23 Table 7: Datasets for node classification on heterogeneous graphs. Dataset Nodes Edges Edge type Features Training Validation Test DBLP 18405 67946 4 334 800 400 2857 ACM 8994 25922 4 1902 600 300 2125 IMDB 12772 37288 4 1256 300 300 2339 
+
+F.2 Experimental Environment, Training Details, and Hyperparameters 
+
+We compare several graph GP kernels derived from the infinite-width limits of representative architectures, including GCN-GP, GAT-GP, Graphormer-GP, and Specformer-GP. For each kernel, we perform node classification using a GP-style multi-output regression setup: class labels are encoded as one-hot targets, and predictions are obtained by selecting the class with the largest output score. Replacing the softmax with the identity map requires an explicit normalisation step; consistent with Hron et al. [2020], we incorporate a per-node LayerNorm. Concretely, at the end of each layer we apply the following LayerNorm kernel: 
+
+Kab 
+
+h
+
+Kaa Kbb 
+
+i−1/2
+
+. All GP models in our experiments include a LayerNorm module at the end of every layer. 37 A PREPRINT - M ARCH 19, 2026 For each split, model selection is conducted on the validation set (e.g., via a grid search over the ridge regularization coefficient) and the resulting configuration is evaluated on the test set. For datasets with multiple splits, we aggregate results by reporting the mean across splits. 
+
+F.3 Additional Experiments Distribution Experiments Figure 4 complements Figure 1 in the introduction by further illustrating the distribution of eigenvalue encoding of Specformer. −4 −2 0 2 4
+
+> GNN Output
+> −30
+> −25
+> −20
+> −15
+> −10
+> −50
+> log Density
+
+Specformer: 1 Head 1000 Width −2 0 2
+
+> GNN Output
+> −12
+> −10
+> −8
+> −6
+> −4
+> −20
+> log Density
+
+Specformer: 100 Heads 1000 Width 
+
+Figure 4: Histogram of the eigenvalue encoding of Specformer for different number of heads. The output distribution converges to a Gaussian (red line) fitted with mean and variance of the empirical distribution when both width and number of heads are large. 
+
+Oversmoothing Experiments Figure 5 further illustrates the effect of positional encodings on oversmoothing. In both datasets, Laplacian-based positional encodings consistently achieve high test accuracy across depth. In the CSBM setting, where node features are already informative, these encodings have perfect accuracy. 2 5 10 20 50 100 200 500        
+
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Pubmed
+> 2510 20 50 100 200 500
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> CSBM (aligned features)
+
+Number of Layers Test Accuracy   
+
+> Laplacian Eigenvectors Spectral Reconstruction Centrality Encoding
+
+Figure 5: Oversmoothing behaviour and the impact of positional encodings. Test accuracy of Graphormer-GP on Pubmed (left) and CSBM (right) as a function of the number of layers. 38

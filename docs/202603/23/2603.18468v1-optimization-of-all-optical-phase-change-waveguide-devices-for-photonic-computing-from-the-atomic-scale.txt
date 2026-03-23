@@ -1,0 +1,430 @@
+Title: 2603.18468v1.pdf
+
+URL Source: https://arxiv.org/pdf/2603.18468v1
+
+Published Time: Fri, 20 Mar 2026 00:38:06 GMT
+
+Number of Pages: 26
+
+Markdown Content:
+1
+
+## Optimization of all-optical phase-change waveguide devices for photonic computing from the atomic scale 
+
+Hanyi Zhang 1, Wanting Ma 1, Wen Zhou 1, *, Xueqi Xing 1, Junying Zhang 1, Tiankuo Huang 1,Ding Xu 1, Xiaozhe Wang 1, *, Riccardo Mazzarello 2, En Ma 1, Jiang-Jing Wang 1, *, Wei Zhang 1, *
+
+> 1
+
+Center for Alloy Innovation and Design (CAID), State Key Laboratory for Mechanical Behavior of Materials, Xi’an Jiaotong University, Xi’an, China. 
+
+> 2
+
+Department of Physics, Sapienza University of Rome, Rome 00185, Italy 
+
+Emails:  wen.zhou@xjtu.edu.cn , wangxiaozhe@xjtu.edu.cn , j.wang@xjtu.edu.cn ,
+
+wzhang0@mail.xjtu.edu.cn 
+
+Abstract 
+
+Photonic neuromorphic computing using chalcogenide phase-change materials (PCMs) is under active development. A key requirement is to enable as many optically programmable levels per cell as possible while maintaining relatively low optical loss. In this work, we report a combined theoretical and experimental study at the atomistic scale of a typical growth-driven PCM, Sb 2Te, which reveals the unconventional optical properties of its metastable crystalline state for device design. Based on these findings, we come up with a “the shorter the better” strategy for Sb 2Te-based all-optical waveguide devices, which yields asimultaneous improvement of both the programming window and the optical loss. In total, over 7-bit optical programming precision is achieved using a single waveguide cell, which is the record setting for all-optical phase-change memory devices. Our work is a typical example of the “from atom to device” scheme, which demonstrates the predictive power of in-depth atomistic understanding in guiding the design of phase-change photonic devices for improved performances. 
+
+Keywords 
+
+photonic computing, phase-change materials, thin films, optical properties, from atom to device 2
+
+1. Introduction 
+
+Chalcogenide phase-change materials (PCMs) are one of the leading candidates for the development of non-volatile memory and neuromorphic computing devices to cope with the increasing demand for rapid data storage and processing [1-10]. PCMs were initially released to the market as rewritable optical disks and became popular as electronic devices afterwards [11]. Currently, both standalone and embedded phase-change memories are commercially available in the market [12-14]. Furthermore, thanks to the rapid development of silicon photonics, the integration of PCMs with silicon waveguides opens up the possibility of on-chip photonic phase-change applications [15-21]. PCMs exploit the large contrast in electrical resistance or optical reflectance/transmittance between their amorphous state (logic state = 0) and crystalline state (logical state = 1) to encode digital information. The fast and reversible phase transition at elevated temperatures and yet good thermal stability of the two states at room temperature guarantees both high operation speed and long-term data storage. Moreover, the contrast window of PCMs is also wide enough to accommodate many more intermediate states for analog computing. It is feasible to emulate the synaptic learning rule or neuronal dynamics that mimic biological systems using a single electronic or photonic memory cell, gaining an exceedingly high efficiency of floor area [22-26]. 
+
+Two families of chalcogenide alloys have been used in commercial products, namely, the Ge–Sb–Te alloys along the GeTe–Sb 2Te 3 pseudo-binary alloys, e.g., Ge 2Sb 2Te 5 and GeSb 2Te 4 (both are frequently abbreviated as GST), and doped Sb–Te alloys, e.g. Ag/In doped Sb 2Te (AIST). Upon rapid crystallization using nanoseconds pulses or long-term thermal annealing at ~150 oC over several minutes, amorphous GST alloys form a cubic rocksalt-like phase [27], where one sublattice is occupied by Te atoms and the other by Ge, Sb and atomic vacancies arranged in a random fashion [28]. GST alloys are known as nucleation-driven PCMs [29-31]. In contrast, (doped) Sb–Te alloys, the nucleation incubation time is of the order of microseconds, and crystallization proceeds mostly via the interface growth at the amorphous–crystal boundaries [32-34]. As the device dimensions are reduced to only tens or hundreds of nanometers, these growth-dominated PCMs with high growth rate can also be exploited for practical use. 
+
+The rocksalt-like phase of GST is known to be metastable, and further thermal annealing of this phase drives ordering of vacancies and transformation into a trigonal phase with alternately stacked Ge/Sb and Te layers, separated by van der Waals-like gaps [35-38]. The vacancy ordering proceeds continuously with increasing annealing time and annealing temperature, which results in a gradual but sizable increase in electrical conductance [39-41] and optical absorption [42-45]. This change in physical properties in response to thermal conditions must be considered for device design and practical use. Recently, we predicted the existence of a metastable crystalline phase of Sb 2Te via density functional theory (DFT) based ab initio molecular dynamics (AIMD) simulations at elevated temperatures [46]. We showed that Sb 2Te forms a chemically disordered rhombohedral structure with random occupation of Sb and Te atoms on the lattice sites after very rapid crystallization from the amorphous state. This metastable state is distinctly different from its ground state of ordered rhombohedral A7 structure that consists of alternately stacked Sb 2Te 3 quintuple-layers (QL) 3
+
+slabs and Sb 2 bilayers (BL) slabs. The energy difference between the metastable and ground state of Sb 2Te is about ~60 meV/atom, comparable to that between rocksalt and hexagonal GST [40]. Later, Zheng et al. carried out structural characterization experiments on several Sb–Te thin films, and revealed the existence of a metastable phase in Sb 2Te [47], confirming our theoretical prediction. Importantly, our DFT calculations suggested that the optical contrast should be reduced upon chemical ordering of the random-solution crystalline phase of Sb 2Te, opposite to the optical trend in GST [46]. This unusual optical property change in the reverse direction has not been confirmed thus far experimentally, nor taken advantage of in the design of optical devices. The potential widening of the optical contrast window is important in designing phase-change devices for photonic neuromorphic computing, which calls for as many as possible programmable optical levels per cell for higher computing accuracy. 
+
+In this work, we performed thorough structural and optical characterizations of Sb 2Te thin films at different annealing conditions, and developed a “the shorter the better” strategy for photonic waveguide memory devices based on the ab initio calculations and finite-difference time-domain (FDTD) simulations. Following the in-depth atomistic understanding gained from the simulations, we fabricated Sb 2Te-based photonic devices by etching and deposition of passive silicon-on-insulator (SOI) waveguides and carried out transmittance measurements via both thermal annealing and all-optical programming. We demonstrate in the following the critical role of the metastable disordered rhombohedral state in widening the contrast window and reducing the optical loss of the Sb 2Te waveguide device simultaneously. We have achieved 158 transmittance levels per cell, which is the record setting for all-optical phase-change photonic computing. 
+
+2. Results and Discussion 
+
+Figure 1a shows the multi-fold phase transition paths of Sb 2Te (abbreviated as ST in the following), in which the models of the relevant phases were generated using DFT optimization and AIMD melt-quench calculations. The amorphous (a-) ST model contains 216 atoms in a cubic box with the edge length of 19.13 Å, corresponding to the experimental density of 6.34 g cm -3 [48]. According to our previous AIMD calculations [46], a-ST transforms to a metastable (m-) rhombohedral structure with random occupation of the rocksalt lattice sites by Sb and Te atoms after rapid crystallization at ~600 K. Upon further chemical ordering (thermal annealing), the total energy of this m-state is gradually reduced until the ground (g-) state is reached, namely, a rhombohedral A7 structure with alternating Sb 2Te 3 QL and Sb 2 BLs. The g-ST model was built in a hexagonal unit cell of 9 atoms with a = 4.27 and c = 17.63 Å [49]. For m-ST, we constructed a 5×5×1 supercell of the ordered hexagonal unit cell, and randomly distributed Sb and Te atoms (in total 225 atoms) to the lattice sites with a Sb:Te ratio of ~2:1 per atomic layer. Then the atomic coordinates of the m-ST model were relaxed using DFT. Introducing the quantity lTe , which represents the atomic concentration of Te atoms in the Te-rich layers, the transformation from m-ST ( lTe ~ 33%) to g-ST ( lTe = 100%) can be regarded as the ordering of Te atoms into specific layers until regularly stacked pure Sb/Te layers are formed. The full atomic structures of the four models are included in Figure S1 and the corresponding coordinates are openly available in the CAID repository (see Data Availability). 4      
+
+> Figure 1. Ab initio calculations of liquid, amorphous and crystalline ST phases. (a) The multi-fold phase transitions between the liquid, amorphous, metastable crystalline and ground states of ST. (b) The calculated DOS and (c) refractive index nand extinction coefficient kof the three solid states using a hybrid functional.
+
+Next, we carried out electronic structure and optical response calculations using a hybrid functional, which yields results in better agreement with experimental data than standard gradient-corrected functionals (see Methods). Figure 1b shows the calculated density of states (DOS) for the three ST states. The a-ST model has a clear energy gap, and the g-ST model shows a pseudo gap, while the DOS of m-ST has a dip at the Fermi level. We calculated the dielectric functions of the three states (Figure S2) and converted them into the refractive index ( n) and extinction coefficient ( k) in the spectrum range of 400–2000 nm (Figure 1c), covering the visible-light range for non-volatile color display and the near-infrared range for photonic memory/computing. In comparison with the a-ST model, the g-ST model shows slightly smaller n values below ~600 nm and systematically larger n values at larger wavelengths. The n curve of the m-ST model follows a similar trend, but crosses the one of a-ST at a much higher wavelength ~1250 nm. The overall contrast window between the a-and m-ST model is larger than that between the a- and g-ST model, particularly above ~1500 nm. Regarding k, the two crystalline models both show higher values than the amorphous model across the whole wavelength range. However, the contrast window between the a-and m-ST model is larger than that between a- and g-ST. These calculations suggest that the disordered crystalline state is more suitable for waveguide applications, as it offers a larger programming window. 
+
+To verify this prediction experimentally, we prepared several ST films of ~100 nm thickness by magnetron sputtering. A ZnS:SiO 2 capping layer of ~20 nm was deposited to prevent potential oxidation. The thickness of our samples was determined by measuring the cross 5
+
+section under scanning electron microscope (SEM), and the compositional homogeneity was examined using energy-dispersive X-ray spectroscopy (EDS) mapping, as shown in Figure S3. The ST thin films were heated in an argon atmosphere to obtain crystalline samples. We first heated three ST samples to 160, 180 and 200 °C, which were then air-cooled down to room temperature. Next, we heated another three samples to 200, 250 and 300 °C with additional thermal annealing at these temperatures for 20 minutes before cooling. Figure 2a shows the X-ray diffraction (XRD) patterns of an as-deposited sample and the six thermally treated samples. The as-deposited film displays no visible XRD peaks except for the one from the Si substrate. For the annealed samples, there are three distinct peaks corresponding to the (004), (005) and (009) lattice planes of the ground state, indicating an out-of-plane texture of the films. With the increase of annealing temperature and/or annealing time, the peak positions gradually shift to lower diffraction angles. The change in atomic structure is even more evident in the Raman spectroscopy measurements. Figure 2b shows a gradual blue shift and enhancement of the peak above 150 cm -1 , accounting for the vibrational A1g 2mode (155 cm -1 ) of Sb 2Te 3 QL [50]. The peaks around 97 cm -1 and 129 cm -1 are related to the Eg and A1g modes of Sb–Sb bonds [51], which display small variations for the six crystalline samples, because these bonds are always present regardless if the Te atoms are ordered. 
+
+We next evaluated the impact of the structural transition on the refractive indices of ST thin films via spectroscopic ellipsometry measurements (see Methods). As shown in Figure 2c and 2D, thermal annealing induces strong effects on the optical response, in particular, in the near infrared range. For instance, at 2000 nm, the n value increases from 5.1 to 8.2 upon crystallization, but gradually decreases upon further thermal annealing, and finally reaches 7.3 in the 300 oC-20min sample. The same trend holds for k, which increases from 0.3 in the as-deposited sample to 4.1 in the 160 oC sample, but then decreases to 3.0 in the 300 oC-20min sample, as indicated by the colored arrows. In the whole near infrared range, the more disordered crystalline samples yield a bigger contrast window in k with respect to as-deposited amorphous sample than the more ordered crystalline samples. The difference in k
+
+for the crystalline samples becomes much smaller in the visible light range, consistent with our DFT prediction. As regards n, the c-ST samples show a major change from ~1.2 at 400 nm up to 8.2 at 2000 nm, while that of the a-ST sample changes from 3.1 at 400 nm to 5.1 at 2000 nm. The crossing of the n curves for the a-ST sample and the 160 oC c-ST sample takes place at 900 nm, and the crossing point gradually shifts to 800 nm upon thermal annealing of the crystalline samples. These two crossing points fall within the broader range determined computationally by considering the fully disordered and fully ordered crystalline ST states (Figure 1c). This indicates that the six crystalline samples are neither fully disordered nor fully ordered, although one cannot rule out potential discrepancies between theoretical values and optical measurements of n for a given level of disorder. 6      
+
+> Figure 2. Structural and optical characterizations of ST thin films. (a) The XRD patterns measured for as-deposited and post-annealed ST thin films. The gray dashed lines indicate the positions of the XRD peaks identified from the standard card of Sb 2Te (PDF#80-1722). (b) The Raman spectra measured for the ST thin films. The gray dashed lines indicate the Raman peaks for three typical vibrational modes. (c) The measured refractive index nand (c) the extinction coefficient kfor ST thin films via spectroscopic ellipsometry experiments.
+
+The partial ordering was confirmed in atomic-scale structural characterizations. We performed spherical aberration corrected high-angle annular dark-field scanning transmission electron microscopy (HAADF-STEM) and atomic EDS mapping experiments on the most disordered (160 oC) and the most ordered (300 oC-20min) c-ST samples. The layer spacings in the 160°C sample seem uniform (Figure 3a), while the structural features of the ordered A7 structure are more clearly visible in the 300°C-20min sample, where alternately stacked Sb-rich BLs and Te-rich QLs can be distinguished, as indicated by the pink and blue shaded areas (Figure 3b). The measured spacing for 9 layers along the [001] direction is also slightly enlarged in the ordered state. Atomic EDS mappings revealed small differences in Sb/Te concentration between adjacent layers in the 160°C sample (Figure 3c). In 300 oC-20min sample, the ordering of Te atoms in specific layers is evident (Figure 3d). Nevertheless, this state is still far from the ideal structure, where Te atoms solely occupy the three atomic layers of one Sb 2Te 3 QL block. We note that similar chemical ordering of the elemental species was observed in crystalline Sb 2Te 3, Sb 2Te and Sb 3Te thin films via STEM-EDS experiments. 7   
+
+> Figure 3. Atomic-scale structural characterizations of c-ST thin films. (a, b) The atomic-scale HAADF-STEM images and (c, d) the atomic EDS mappings of the 160 oC c-ST sample and the 300 oC20min c-ST sample.
+
+Since the formation of a more ordered phase results in a reduction in the optical window, it is important to avoid additional heating for ST-based optical devices. This trend is opposite to the GST-based devices, in which the phase transition from the metastable state to the ground state widens the optical window. Therefore, a different strategy needs to be adopted for the fabrication and programming of ST-based devices. To provide detailed guidance, we carried out FDTD simulations of SOI waveguide memory devices based on the measured n and k
+
+profiles of the ST thin films (see Methods). Figure 4a shows a typical waveguide device setup, where the thickness and width of the waveguide, and the thickness and length of the ST thin films and the indium tin oxide (ITO) capping layer, are denoted as hwg and wwg , hST , dST , hITO and dITO , respectively. We considered a 220-nm-thick SOI waveguide in a shallowly etched geometry covered with two thin-film layers on top, i.e., hwg = 0.15 μm, wwg = 0.45 μm, hST =10 nm and hITO = 15 nm. We set the ST and ITO lengths to dST = dITO = 4, 2 or 1 μm for optical programming. The transmittance of light ( T) for the ST-based waveguide devices can be calculated based on the input and output power ( P1 and P2, respectively) as T = P2/P1. The wavelength of the incident light ranges from 1500 to 1600 nm. The measured n and k data in the range between 1535 nm and 1565 nm of the measured amorphous and crystalline Sb 2Te thin films (black, blue and orange curves in Fig. 2c and 2d) were used as the input parameters for the FDTD simulations of the waveguide transmittance spectra in Fig. 4b. These n and k8
+
+data were measured at room temperature for the as-deposited amorphous thin film and for the thin films crystallized at 160 oC and 300 oC, respectively. 
+
+Figure 4b shows the simulated spectra of transmittance for the three waveguide devices with different dST operated in the three different ST states. By decreasing dST from 4 μm to 1 μm, the device transmittance in the as-deposited a-ST state is increased from 42.8% to 80.3% due to weaker light absorption by the ST thin film. For the device with dST = 4 μm, the overall transmittance window ΔT is 42.6%, and there is nearly no difference in transmittance when the device is programmed to the more ordered or the more disordered crystalline state. As expected, the impact of Te ordering becomes visible in shorter devices with dST = 2 μm or 1 
+
+μm, and the ΔT between the more ordered and the more disordered c-ST state is increased to ~4.3% in the latter device (blue and orange lines in Figure 4b). The overall amorphous-to-crystalline transmittance window ΔT is enlarged to ~62.5% in the two devices. Figure 4c and 4d show the simulated electric field intensity | E| of the OFF and ON state, representing the largest transmittance contrast, at 1500 nm for the three devices. For the 1-μm device, it is possible to obtain an even larger contrast window if the device can be programmed to a more disordered crystalline state using nanosecond laser pulses, as indicated by the red arrow in Figure 4b.           
+
+> Figure 4. FDTD simulations of ST-based waveguide devices. (a) A sketch of PCM-based waveguide device. (b) The simulated transmittance spectra of ST-based waveguide devices with fixed thin thickness hST = 10 nm and varying length dST = 4, 2 or 1 μm. The simulated electric field intensity | E|for the ST-based devices using the measured nand kof (c) the as-deposited thin films and (d) the thin films heated to 160°C. 9
+
+Following the atomistic understanding of ST, we fabricated SOI waveguides with short ST films of dST = 2 and 1 μm. The passive SOI waveguides were manufactured by the silicon photonic foundry (CUMEC) using the multi-project wafer (MPW) service with 180 nm Complementary Metal Oxide Semiconductor (CMOS) node technology. In a post-fabrication process, a partial area (yellow region in Figure 5a) of the silicon dioxide upper cladding of the SOI waveguide was etched away for facilitating the ST deposition. Electron beam lithography was performed to open windows in a positive-tone resist (PMMA) for ST deposition. A patch-shaped ST thin film was integrated with the SOI waveguide by magnetron sputtering and resist removal. Then the transmittance of the waveguide devices was measured via a well-developed fiber-to-chip characterization setup [16], as sketched in Figure S4 (see Methods for details). In these all-optical pump-probe experiments, ST thin films can be switched back and forth between the amorphized and recrystallized states by nanosecond amorphization (write) and crystallization (erase) optical pulses. Prior to optical switching, waveguide devices are usually annealed to form a fully crystalline state to allow better programming consistency. For the 1-μm device, the transmittance value changes from ~76% at 1530 nm to ~86% at 1570 nm in the as-deposited state, drops to ~21% in the 160°C state, and increases to ~35% in the 300°C20min state across the measured wavelength range (Figure 5b). Clearly, the Te ordering leads to an increase in transmittance by ~14% in this device. Regarding the 2-μmdevice, it shows a similar trend but smaller transmittance increase (~6%) induced by Te-ordering (Figure 5b). These observations are consistent with our theoretical predictions.               
+
+> Figure 5. Optical experiments of ST-based waveguide devices. (a) The optical microscope image of the waveguide device. (b) The measured transmittance spectra of waveguide devices with dST = 2 or
+> 1 μ m in the as-deposited state and two post-annealed states. (c, d) The transmittance response of the two waveguide devices upon optical switching at nanosecond timescale. The shapes and widths 10
+> of the programming pulses are sketched as insets in (c), where P0,P1and P2are 12.17, 11.87 and 3.84 mW for dST = 2 μm, and 10.72, 10.53 and 3.19 mW for dST = 1 μm, respectively.
+
+Starting with a well-annealed crystalline state, a train of amorphization and crystallization optical pulses was sent to program the 2-μm device (Figure 5c) and the 1-μm device (Figure 5d). We adopted the same programming pulse scheme proposed in a previous work [17] with a single-step pulse for melt-quenched amorphization and a double-step pulse for crystallization (Figure 5c inset). The pulse power and width were properly adjusted to achieve reliable and reversible optical switching. Blue and green arrows indicate amorphization and crystallization events, respectively. The ST devices were switched back and forth for five consecutive cycles. After the first amorphization pulse, the transmittance was increased to 25.7% and 43.3% in the 2-μm and 1-μm device, much smaller than that of the as-deposited state. This is because only part of the device was switched due to local heating via photothermal effects, and the rest of the device was still in the well-annealed crystalline state with relatively high optical loss. Subsequent crystallization of this melt-quenched amorphous volume resulted in a larger contrast window, indicating that a more disordered crystalline state was obtained as compared to the initial crystalline state. This trend is more evident in the 1-
+
+μm device (Figure 5d). After an amorphization pulse, we heated the device to 160 oC and carried out optical measurement after natural cooling. This state showed a higher transmittance value than the recrystallized state obtained via optical pulsing (Figure S5), showing that very fast crystallization can indeed result in an even more disordered crystalline state. Overall, the 1-μm device shows a slightly larger optical window of 22.5% (20.6% for the 2-μm device) and smaller optical loss in both ON and OFF states, and is therefore more suitable for multi-bit programming in a scalable crossbar array. 
+
+To assess the multilevel capability of ST, we performed iterative amorphization operations on the 1-μm device. A variable optical attenuator was adopted to control the pump power of amorphization pulses. As shown in Figure 6a inset, a sequence of pulses with monotonously increased pulse power was sent to progressively enlarge the amorphization area of the 1-μmdevice. The switching contrast is defined by ΔT/Tc , where ΔT = Ta–Tc, Ta and Tc are transmittance values of the ST device for the amorphized and crystallized states, respectively. Figure 6a shows 158 optical levels; these discrete states are better discerned in the zoom-in images shown in Figure 6b. It is noted that at the last stage of iterative amorphization, larger pump power was needed, which resulted in a transient decrease in transmittance after sending a partial amorphization pulse. This behavior is due to the temporary increase in local temperature that leads to a slightly larger optical loss of PCM. After thermal dissipation, the device was programmed to a higher transmittance state in a non-volatile manner. With fine-tuning of the crystalline–amorphous volume ratio, our ST device enables the largest number of programmable optical levels on SOI waveguide devices via all-optical approach, far more than the 64 and 45 levels obtained using GST [52] and AIST [53] waveguide devices. The device-to-device variability was tested, and the high amount of transmittance levels was well reproduced. We also performed the multilevel programming operation over five times using one ST-based device, and the multiple transmittance levels can still be well distinguished with inclusion of error bars. Besides, we prolonged the recording time of the high- and low-11 
+
+transmissive levels and observed limited variations. The wide contrast window can also be sustained upon repetitive write/erase cycling. These device testing data can be found in Figures S6-S9.              
+
+> Figure 6. Performance of ST-based waveguide devices and predicted recognition accuracies. (a) Experimental demonstration of multilevel programming capacity (158 levels) of the ST-based waveguide device ( dST = 1 μm). (b) Two zoom-in images of the areas marked by the blue boxes in (a). (c) The layer structure of an artificial neural network for digit recognition. (d) The predicted accuracy of the neural network using 158 and 64 optical levels.
+
+More optical levels per device could lead to a higher programming precision for photonic synapse emulation, and our ST device can support a >7-bit programming precision per node for photonic neural networks. As an attempt, we simulated a convolutional neural network (CNN) using the measured transmittance values of the 1-μm device. Figure 6c shows the CNN framework, which involves a convolutional layer containing four 3×3 convolutional kernels, a ReLU nonlinear activation layer, a flatten layer, and three fully-connected layers. We used the MNIST handwritten digits database for training the synaptic weight banks based on the stochastic gradient descent and standard backpropagation algorithms [54]. The detailed training process with prediction accuracy versus training epoch is shown in Figure 6d. Our ST devices-based CNN with 158 optical levels per node could potentially support an inference accuracy of ~98% (red curve), reaching the level of software-trained CNN (blue curve). We also used the optical data of GST devices with 64 levels per node for the same CNN simulation, but the prediction was less accurate and was subjected to higher randomness (yellow curve). Even more optical levels can be expected if the whole ST thin film can be switched via e.g., electrical programming using microheaters. It is noted that >7-bit precision was also achieved by programming N-doped or Se-substituted GST thin films electrically [55, 56]. This is because larger fractions of PCM thin films can be switched by local microheaters via electrical pulsing. 12 
+
+We note that the elemental ordering effects should be a generic feature for Sb-Te alloys with and without dopants. The common parent alloys for growth-driven PCMs also include Sb 3Te and Sb 4Te, and their ground state forms a similar A7 rhombohedral structure with one Sb 2Te 3QL block but three or four Sb 2 BLs in the unit cell. Zheng et al. showed that Sb 3Te also has a similar metastable rhombohedral phase with random distribution of Sb and Te atoms [47]. As shown in Figure S10, our DFT calculations of Sb 3Te and Sb 4Te lead to similar conclusions: the disordered state is more metallic-like and the ordered state is more semiconducting-like, which gives rise to a larger optical window in the telecom band. As regards elemental doping, AIST is known to form a disordered A7 structure after laser irradiation [57], which is supported by AIMD crystallization simulations at elevated temperatures [33]. Using STEM-EDS, Zhu et al. observed a clear layer structure in AIST after thermal annealing at 300 oC over 30 min, where Ag and In atoms were mostly found in the Sb 2Te 3 QL slabs rather than the Sb 2 BL slabs [58]. As shown in Figure S11, we computed the DOS, n and k of the amorphous, ordered and disordered crystalline of AIST, and the DFT calculations led to similar conclusions as for the undoped cases. Since the doping concentration for Sb-Te alloys is typically below 10 at% [59], the major contribution to the optical profiles stems from the parent phase. Hence, additional temperature rise should be avoided for these Sb-Te based PCMs. 
+
+This fabrication strategy is different from the standard device miniaturization principle, because the waveguide devices are produced using the common 180 nm CMOS technology node in foundry. Hence, the size of waveguide devices is not reduced. The only difference is that we propose to change the material length of PCM thin film from several μm to 1 μm using electron beam lithography, which adds marginal complexity to the fabrication process. Considering a waveguide crossbar array structure, there are waveguide coupler, waveguide crossing, and waveguide bends in between two adjacent unit waveguide PCM cells. This spatial separation is around 10 μm or more, which is large enough to avoid the thermal crosstalk and accumulation problem for reliable system-level operation [24]. We further estimate the scalability of Sb 2Te in a potential crossbar array by considering the insertion loss of waveguide cells and the light splitting ratio of the array (see Fig. S12). Our estimated array size is ~45×45 with a total loss of −40 dB, which is comparable to those estimated in a GST metasurface based mode converter array [60]. Yet, our approach that utilizes the metastable phase of Sb 2Te offers a more straightforward way for large-scale integration. We also note that the hybrid photonic-electronic platform with embedded microheaters is promising for high-density integration [61]. Although electrical switching could cost higher power consumptions, the hybrid mode can enable simultaneous electrical programming and optical computing, which could be more efficient in solving computing tasks in massive scale. It is anticipated to test the performance of Sb 2Te in the hybrid device. 
+
+3. Conclusion 
+
+In summary, we provided experimental evidence via optical measurements for an unconventional change in optical properties in Sb 2Te-based thin films and waveguide devices. The refractive index and extinction coefficient of Sb 2Te thin films in the near-infrared range first increased upon crystallization into the metastable disordered rhombohedral phase and then decreased upon further thermal annealing. The ordering of Sb and Te atoms into layered 13 
+
+structures leads to an opposite change in optical response as compared to the vacancy ordering process in crystalline GST alloys. Our combined theoretical and experimental study at the atomic scale helped us design and optimize waveguide devices with a simultaneous improvement on the programming window and the optical loss. In total, 158 distinguishable transmittance levels and 156% switching contrast, which are one of the highest values compared with those reported in previous literature references (see Table S1), were achieved using a 1-μm SOI waveguide device via the all-optical approach. It supports a CNN simulation with ~98% accuracy for the classification of the images of the MNIST database. The intrinsic improvement of the materials properties adds no complexity to the manufacturing and integration of waveguide devices in crossbar arrays. Our further DFT simulations predicted the elemental ordering to be a generic feature for the Sb-rich Sb-Te alloys with and without dopants. These growth-driven PCMs could be exploited for deterministic photonic computing because of the absence of stochastic nucleation processes. Taken together, our work above is a typical example of “from atom to device”, demonstrating the predictive power of in-depth atomistic understanding in uncovering unconventional metastable states that have major implications for the design and operation of phase-change photonic devices. 
+
+4. Methods 
+
+Ab initio calculations : The melt-quenched amorphous Sb 2Te model was generated via AIMD calculations using the CP2K package [62], and the density of this model was adjusted to the experimental value of amorphous Sb 2Te thin film [48]. Structural relaxation and dielectric function calculations of the amorphous models and the two crystalline models were made using the VASP Package [63]. For relaxation, the Perdew–Burke–Ernzerhof (PBE) functional [64] and projector augmented-wave (PAW) pseudopotentials [65] were used with an energy cutoff of 400 eV. The Γ point was used to sample the Brillouin zone of amorphous and disordered crystal models, and a k-point mesh of 12×12×2 was used for the ordered crystal model. The electronic structure and dielectric function calculations were performed using the Heyd–Scuseria–Ernzerhof (HSE06) hybrid functional [66], and the k-point density was increased to 24×24×5 for the ordered crystal model for better convergence of the optical profiles. The dielectric function calculations done within the independent particle approximation neglecting local field effects and many body effects, which was proven to be adequate to characterize the optical properties of PCMs [67-69]. 
+
+Sample preparation : Sb 2Te amorphous films with thickness of ~100 nm were deposited by magnetron sputtering on a Si(100) substrate using a stoichiometric Sb 2Te alloy target (20 W power from a direct current voltage source, 30 sccm argon flow rate). The films were then treated with six different thermal conditions. For three of the thermal conditions, samples were heated up to 160°C, 180°C and 200°C, respectively, and then naturally cooled to ambient temperature. For the other three, samples were annealed at 200°C, 250°C and 300°C respectively for 20 minutes. For all samples, the heating rate was 10 K·min -1 , and the thermal process was done in argon atmosphere. 
+
+Structural and compositional characterizations : The thickness of the as-deposited films was 14 
+
+determined by measuring the cross section using a Hitachi SU8230 scanning electron microscope (SEM). Using energy-dispersive X-ray spectroscopy (EDS), the concentration of Sb and Te was determined to be 69.04 and 30.96 at%, respectively. The X-ray diffraction (XRD) measurements were performed using a Bruker D8 ADVANCE diffractometer with Cu Kα radiation source. The Raman spectra were collected using a Renishaw invia Qontor Raman microscope with a 532-nm laser at ambient temperature. Specimens for transmission electron microscopy (TEM) characterization were prepared by Hitachi NX5000 focused ion beam system with a Ga ion beam at 30 keV beam energy and polished at 5 keV. High-angle annular dark field scanning transmission electron microscopy (HAADF-STEM) imaging and atomic EDS mappings were performed on a JEM-ARM300F2 microscope with double spherical aberration correctors. 
+
+Optical experiments and fitting : Spectroscopic ellipsometry measurements were performed with a UVISEL PLUS ellipsometer. The incidence angle was set to 70° with the light source of xenon lamps. The spectra datasets in the range of 400–2000 nm were fitted using the CODE software. The refractive indices of Sb 2Te were obtained by fitting the measured spectra with a multi-layer model involving the substrate, the Sb 2Te film and the capping layer. The dielectric model of amorphous Sb 2Te included a constant dielectric background and a Tauc–Lorentz oscillator [70] describing inter-band transitions, while an additional Drude contributor [71-73] for free carrier absorption was incorporated for the crystalline films. The dielectric functions of the substrate and the capping layer were determined independently based on reference samples. Such method has been established in optical measurements of typical phase-change materials [74]. 
+
+FDTD simulations : The photonic waveguide devices were modelled by 3D FDTD (Lumerical FDTD Solutions). The incident light is with the fundamental transverse magnetic (TM) mode and a wavelength range of 1500–1600 nm. The light source and the monitor were located at different sides of the PCM film to detect transmittance spectra. The perfectly matched layer (PML) boundary condition was applied to all boundaries. The grid sizes were set fine enough to obtain converged simulation results, with 1 nm grid size for the Sb 2Te and ITO films along the thickness direction. The optical constants are assumed to be spatially uniform across the phase-change programming region. Further details about FDTD simulations of PCM-based photonic devices can be found in Refs. [75-77] 
+
+Device measurement setup : Two tunable lasers (TSL-570, Santec and FTBx-2850, EXFO) are used as the pump and probe lasers respectively, with wavelengths of 1550 nm and 1540 nm, and power of 1 mW and 10 mW. To generate ns-level write and erase pulses, the pump laser beam first passed through a fiber polarization controller, and was next modulated by an electro-optic modulator (IM-1550-12-B, Optilab) driven by an arbitrary function generator (AFG31152, Tektronix) to send out write and erase pulses. An electronic variable optical attenuator (VOA) (V1550A, THORLABS) was programmed to control the write pulse power. Pump pulse power was further amplified by an erbium-doped fiber amplifier (EDFA) (AEDFA-CL-PS-23-B-FA, Amonics Ltd.). Pump and probe were coupled into the SOI photonic integrated circuits from different input ports based on the grating couplers with optimized 15 
+
+transmission using FPCs, such that pump and probe transmitted along the opposite directions through the photonic memory cells. Noises from pump reflection were filtered by an optical band-pass filter (optical tunable filter-320, Santec) for the probe detection. A 200 kHz low-noise photoreceiver (2011-FC, Newport) was used to record dynamic change of the probe transmission. 
+
+Supporting Information 
+
+Supporting Information associated with this article will be available online. 
+
+Acknowledgments 
+
+The authors thank the support of National Natural Science Foundation of China is 
+
+acknowledged (grant number 62374131 for W.Zhang, 62405242 for W.Zhou). The authors 
+
+acknowledge the support of XJTU for their work at CAID and the support of the HPC platform 
+
+of XJTU and the Computing Center in Xi'an for computational resources. The authors 
+
+acknowledge Chaobin Zeng from Hitachi High-Tech Scientific Solutions (Beijing) Co., Ltd. 
+
+and Yuanbin Qin for technical support on STEM experiments. The authors also thank Jia Liu 
+
+at Instrument Analysis Center of XJTU for the assistance regarding Raman spectroscopy 
+
+experiments. The International Joint Laboratory for Micro/Nano Manufacturing and 
+
+Measurement Technologies of XJTU is acknowledged. R.M. acknowledges funding from the 
+
+PRIN 2020 project “Neuromorphic devices based on chalcogenide heterostructures” funded 
+
+by the Italian Ministry for University and Research (MUR). 
+
+Conflict of Interest 
+
+The authors declare no competing interests. 
+
+Data Availability Statement 
+
+Upon formal journal publication, the data that support the findings of this study will be openly available in the CAID Repository at https://caid.xjtu.edu.cn/info/1003/1953.htm, reference number 1953. 
+
+References         
+
+> [1] W. Zhang, R. Mazzarello, M. Wuttig, E. Ma, Designing crystallization in phase-change materials for universal memory and neuro-inspired computing, Nat. Rev. Mater. 4, 150-168 (2019).
+> [2] M. Lanza, S. Pazos, F. Aguirre, A. Sebastian, M. Le Gallo, S.M. Alam, S. Ikegawa, J.J. Yang, E. Vianello, M.-F. Chang, G. Molas, I. Naveh, D. Ielmini, M. Liu, J.B. Roldan, The growing memristor industry, Nature 640, 613-622 (2025).
+> [3] G.S. Syed, M. Le Gallo, A. Sebastian, Phase-Change Memory for In-Memory Computing, Chem. Rev. 125, 5163-5194 (2025).
+> [4] M. Xu, X. Mai, J. Lin, W. Zhang, Y. Li, Y. He, H. Tong, X. Hou, P. Zhou, X. Miao, Recent Advances on Neuromorphic Devices Based on Chalcogenide Phase-Change Materials, Adv. Funct. Mater. 30, 2003419 (2020). 16
+
+[5] X.D. Li, N.K. Chen, B.Q. Wang, M. Niu, M. Xu, X. Miao, X.-B. Li, Resistive Memory Devices at the Thinnest Limit: Progress and Challenges, Adv. Mater. 36, 2307951 (2024). 
+
+[6] B. Liu, K. Li, J. Zhou, Z. Sun, Reversible Crystalline ‐Crystalline Transitions in Chalcogenide Phase ‐
+
+Change Materials, Adv. Funct. Mater. 34, 2407239 (2024). 
+
+[7] Y. Zhou, D.F. Thomas du Toit, S.R. Elliott, W. Zhang, V.L. Deringer, Full-cycle device-scale simulations of memory materials with a tailored atomic-cluster-expansion potential, Nat. Commun. 16, 8688 (2025). 
+
+[8] X. Wang, R. Wang, S. Sun, D. Xu, C. Nie, Z. Zhou, C. Wen, J. Zhang, R. Chu, X. Shen, W. Zhou, Z. Song, J.-J. Wang, E. Ma, W. Zhang, Amorphous phase-change memory alloy with no resistance drift, Nat. Mater. 25, 456-462 (2026). 
+
+[9] K. Ding, J. Wang, Y. Zhou, H. Tian, L. Lu, R. Mazzarello, C. Jia, W. Zhang, F. Rao, E. Ma, Phase-change heterostructure enables ultralow noise and drift for memory operation, Science 366, 210-215 (2019). 
+
+[10] C. Nie, X. Shen, W. Zhang, R. Mazzarello, J. Wang, Wafer-scale growth of highly textured TiTe2/Ge2Sb2Te5 heterostructure thin films, Appl. Phys. Lett. 128, 071901 (2026). 
+
+[11] M. Wuttig, N. Yamada, Phase-change materials for rewriteable data storage, Nat. Mater. 6, 824-832 (2007). 
+
+[12] S.W. Fong, C.M. Neumann, H.-S.P. Wong, Phase-Change Memory - Towards a Storage-Class Memory, 
+
+IEEE Trans. Electron. Dev. 64, 4374-4385 (2017). 
+
+[13] R. Wang, Z. Wan, X. Zou, S. Chen, S. Song, X. Zhou, Z. Song, High thermal stability chalcogenide phase-change materials for embedded memory applications, Rev. Mater. Res. 1, 100015 (2025). 
+
+[14] P. Cappelletti, R. Annunziata, F. Arnaud, F. Disegni, A. Maurelli, P. Zuliani, Phase change memory for automotive grade embedded NVM applications, J. Phys. D: Appl. Phys. 53, 193002 (2020). 
+
+[15] C. Ríos, P. Hosseini, C.D. Wright, H. Bhaskaran, W.H. Pernice, On-Chip Photonic Memory Elements Employing Phase-Change Materials, Adv. Mater. 26 1372-1377 (2014). 
+
+[16] C. Ríos, M. Stegmaier, P. Hosseini, D. Wang, T. Scherer, C.D. Wright, H. Bhaskaran, W.H.P. Pernice, Integrated all-photonic non-volatile multi-level memory, Nat. Photon. 9, 725-732 (2015). 
+
+[17] X. Li, N. Youngblood, C. Ríos, Z. Cheng, C.D. Wright, W.H.P. Pernice, H. Bhaskaran, Fast and reliable 
+
+storage using a 5 bit, nonvolatile photonic memory cell, Optica 6, 1-6 (2019). 
+
+[18] W. Zhou, X. Shen, X. Yang, J. Wang, W. Zhang, Fabrication and integration of photonic devices for phase-change memory and neuromorphic computing, Int. J. Extrem. Manuf. 6, 022001 (2024). 
+
+[19] Z. Fang, R. Chen, J. Zheng, A.I. Khan, K.M. Neilson, S.J. Geiger, D.M. Callahan, M.G. Moebius, A. Saxena, M.E. Chen, C. Rios, J. Hu, E. Pop, A. Majumdar, Ultra-low-energy programmable non-volatile silicon photonics based on phase-change materials with graphene heaters, Nat. Nanotechnol. 17, 842-848 (2022). 
+
+[20] B. Gholipour, S.R. Elliott, M.J. Müller, M. Wuttig, D.W. Hewak, B.E. Hayden, Y. Li, S.S. Jo, R. Jaramillo, R.E. Simpson, J. Tominaga, Y. Cui, A. Mandal, B.J. Eggleton, M. Rochette, M. Rezaei, I. Alamgir, H.M. Shamim, R. Kormokar, A. Anjum, G.T. Zeweldi, T.S. Karnik, J. Hu, S.O. Kasap, G. Belev, A. Reznik, Roadmap on chalcogenide photonics, J. Phys. Photon. 5, 012501 (2023). 
+
+[21] H. Zhang, X. Xing, J.J. Wang, C. Nie, Y. Du, J. Zhang, X. Shen, W. Zhou, M. Wuttig, R. Mazzarello, W. 17 
+
+Zhang, Atomistic Understanding of 2D Monatomic Phase  ‐ Change Material for Non  ‐ Volatile Optical Applications, Adv. Sci. 13, e13157 (2026). 
+
+[22] Z. Cheng, C. Ríos, W.H.P. Pernice, C.D. Wright, H. Bhaskaran, On-chip photonic synapse, Sci. Adv. 3, e1700160 (2017). 
+
+[23] C. Ríos, N. Youngblood, Z. Cheng, M.L. Gallo, W.H.P. Pernice, C.D. Wright, A. Sebastian, H. Bhaskaran, In-memory computing on a photonic platform, Sci. Adv. 5, eaau5759 (2019). 
+
+[24] J. Feldmann, N. Youngblood, M. Karpov, H. Gehring, X. Li, M. Stappers, M. Le Gallo, X. Fu, A. Lukashchuk, A.S. Raja, J. Liu, C.D. Wright, A. Sebastian, T.J. Kippenberg, W.H.P. Pernice, H. Bhaskaran, Parallel convolutional processing using an integrated photonic tensor core, Nature 589, 52-58 (2021). 
+
+[25] N. Youngblood, C.A. Ríos Ocampo, W.H.P. Pernice, H. Bhaskaran, Integrated optical memristors, Nat. Photon. 17, 561-572 (2023). 
+
+[26] X. Chen, Y. Xue, Y. Sun, J. Shen, S. Song, M. Zhu, Z. Song, Z. Cheng, P. Zhou, Neuromorphic Photonic Memory Devices Using Ultrafast, Non-Volatile Phase-Change Materials, Adv. Mater. 34, 2203909 (2022). 
+
+[27] N. Yamada, Erasable Phase-Change Optical Materials, MRS Bull. 21, 48-50 (1996). 
+
+[28] B. Zhang, W. Zhang, Z.-J. Shen, Y.-J. Chen, J.-X. Li, S.-B. Zhang, Z. Zhang, M. Wuttig, R. Mazzarello, E. Ma, X.-D. Han, Element-resolved atomic structure imaging of rocksalt Ge2Sb2Te5 phase-change material, Appl. Phys. Lett. 108, 191902 (2016). 
+
+[29] D. Loke, T.H. Lee, W.J. Wang, L.P. Shi, R. Zhao, Y.C. Yeo, T.C. Chong, S.R. Elliott, Breaking the speed limits of phase-change memory, Science 336, 1566-1569 (2012). 
+
+[30] J. Kalikka, J. Akola, J. Larrucea, R.O. Jones, Nucleus-driven crystallization of amorphous Ge2Sb2Te5: A density functional study, Phys. Rev. B 86, 144113 (2012). 
+
+[31] Y. Zhou, W. Zhang, E. Ma, V.L. Deringer, Device-scale atomistic modelling of phase-change memory materials, Nat. Electron. 6, 746-754 (2023). 
+
+[32] M. Salinga, E. Carria, A. Kaldenbach, M. Bornhofft, J. Benke, J. Mayer, M. Wuttig, Measurement of crystal growth velocity in a melt-quenched phase-change material, Nat. Commun. 4, 2371 (2013). 
+
+[33] W. Zhang, I. Ronneberger, P. Zalden, M. Xu, M. Salinga, M. Wuttig, R. Mazzarello, How fragility makes phase-change data storage robust: insights from ab initio simulations, Sci. Rep. 4, 6529 (2014). 
+
+[34] T. Matsunaga, J. Akola, S. Kohara, T. Honma, K. Kobayashi, E. Ikenaga, R.O. Jones, N. Yamada, M. Takata, R. Kojima, From local structure to nanosecond recrystallization dynamics in AgInSbTe phase-change materials, 
+
+Nat. Mater. 10, 129-134 (2011). 
+
+[35] T.-T. Jiang, X.-D. Wang, J.-J. Wang, H.-Y. Zhang, L. Lu, C. Jia, M. Wuttig, R. Mazzarello, W. Zhang, E. Ma, In situ characterization of vacancy ordering in Ge-Sb-Te phase-change memory alloys, Fundam. Res. 4, 1235-1242 (2024). 
+
+[36] B.J. Kooi, J.T.M. De Hosson, Electron diffraction and high-resolution transmission electron microscopy of the high temperature crystal structures of GexSb2Te3+x (x=1,2,3) phase change material, J. Appl. Phys. 92, 3584-3590 (2002). 18 
+
+[37] J.-J. Wang, J. Wang, H. Du, L. Lu, P.C. Schmitz, Johannes Reindl, A.M. Mio, C.-L. Jia, E. Ma, R. Mazzarello, M. Wuttig, W. Zhang, Genesis and Effects of Swapping Bilayers in Hexagonal GeSb2Te4, Chem. Mater. 30, 4770-4777 (2018). 
+
+[38] Y. Zheng, Y. Wang, T. Xin, Y. Cheng, R. Huang, P. Liu, M. Luo, Z. Zhang, S. Lv, Z. Song, S. Feng, Direct atomic identification of cation migration induced gradual cubic-to-hexagonal phase transition in Ge2Sb2Te5, 
+
+Commun. Chem. 2, 13 (2019). 
+
+[39] T. Siegrist, P. Jost, H. Volker, M. Woda, P. Merkelbach, C. Schlockermann, M. Wuttig, Disorder-induced localization in crystalline phase-change materials, Nat. Mater. 10, 202-208 (2011). 
+
+[40] W. Zhang, A. Thiess, P. Zalden, R. Zeller, P.H. Dederichs, J.Y. Raty, M. Wuttig, S. Blügel, R. Mazzarello, Role of vacancies in metal-insulator transitions of crystalline phase-change materials, Nat. Mater. 11, 952-956 (2012). 
+
+[41] Y. Xu, X. Wang, W. Zhang, L. Schäfer, J. Reindl, F. vom Bruch, Y. Zhou, V. Evang, J.J. Wang, V.L. Deringer, E. Ma, M. Wuttig, R. Mazzarello, Materials Screening for Disorder-Controlled Chalcogenide Crystals for Phase-Change Memory Applications, Adv. Mater. 33, 2006221 (2021). 
+
+[42] A. Mendoza-Galván, J. González-Hernández, Drude-like behavior of Ge:Sb:Te alloys in the infrared, J. Appl. Phys. 87, 760-765 (2000). 
+
+[43] P. Pitchappa, A. Kumar, S. Prakash, H. Jani, T. Venkatesan, R. Singh, Chalcogenide Phase Change Material for Active Terahertz Photonics, Adv. Mater. 31, 1808157 (2019). 
+
+[44] C. Bi, K. Xu, C. Hu, L. Zhang, Z. Yang, S. Tao, W. Zheng, Three distinct optical-switching states in phase-change materials containing impurities: From physical origin to material design, J. Mater. Sci. Technol. 75, 118-125 (2021). 
+
+[45] D. Wang, L. Zhao, S. Yu, X. Shen, J.-J. Wang, C. Hu, W. Zhou, W. Zhang, Non-volatile tunable optics by design: From chalcogenide phase-change materials to device structures, Mater. Today 68, 334-355 (2023). 
+
+[46] X.-D. Wang, W. Zhou, H. Zhang, S. Ahmed, T. Huang, R. Mazzarello, E. Ma, W. Zhang, Multiscale simulations of growth-dominated Sb2Te phase-change material for non-volatile photonic applications, npj Comput. Mater. 9, 136 (2023). 
+
+[47] Y. Zheng, W. Song, Z. Song, Y. Zhang, T. Xin, C. Liu, Y. Xue, S. Song, B. Liu, X. Lin, V.G. Kuznetsov, Tupitsyn, II, A.V. Kolobov, Y. Cheng, A Complicated Route from Disorder to Order in Antimony-Tellurium Binary Phase Change Materials, Adv. Sci. 11, 2301021 (2024). 
+
+[48] Y. Zheng, Y. Cheng, M. Zhu, X. Ji, Q. Wang, S. Song, Z. Song, W. Liu, S. Feng, A candidate Zr-doped Sb2Te alloy for phase change memory application, Appl. Phys. Lett. 108, 052107 (2016). 
+
+[49] V. Agafonov, N. Rodier, Structure of Sb2Te, Acta Cryst. C47 1141-1143 (1991). 
+
+[50] Y. Kim, X. Chen, Z. Wang, J. Shi, I. Miotkowski, Y.P. Chen, P.A. Sharma, A.L. Lima Sharma, M.A. Hekmaty, Z. Jiang, D. Smirnov, Temperature dependence of Raman-active optical phonons in Bi2Se3 and Sb2Te3, Appl. Phys. Lett. 100, 071907 (2012). 
+
+[51] Y. Xue, S. Yan, S. Lv, S. Song, Z. Song, Ta-Doped Sb2Te Allows Ultrafast Phase-Change Memory with Excellent High-Temperature Operation Characteristics, Nano-Micro Lett. 13, 33 (2021). 19 
+
+[52] G. Wang, J. Shen, Y. He, Z. Han, W. Huang, H. Wang, Z. Cheng, P. Zhou, Programmable Non-Volatile Photonic Analog-to-Digital Converter Based on Back-End-of-Line Compatible Phase-Change Materials, Adv. Mater. 37, 2419444 (2025). 
+
+[53] W. Zhou, N. Farmakidis, X. Li, J. Tan, S. Aggarwal, J. Feldmann, F. Brückerhoff-Plückelmann, C.D. Wright, W.H.P. Pernice, H. Bhaskaran, Artificial Biphasic Synapses Based on Nonvolatile Phase-Change Photonic Memory Cells, Phys. Status Solidi RRL 16, 2100487 (2022). 
+
+[54] D.E. Rumelhart, G.E. Hintont, R.J. Williams, Learning representations by back-propagating errors, Nature 
+
+323, 533–536 (1986). 
+
+[55] J. Xia, T. Wang, Z. Wang, J. Gong, Y. Dong, R. Yang, X. Miao, Seven Bit Nonvolatile Electrically Programmable Photonics Based on Phase-Change Materials for Image Recognition, ACS Photon. 11, 723–730 (2024). 
+
+[56] M. Wei, K. Xu, B. Tang, J. Li, Y. Yun, P. Zhang, Y. Wu, K. Bao, K. Lei, Z. Chen, H. Ma, C. Sun, R. Liu, M. Li, L. Li, H. Lin, Monolithic back-end-of-line integration of phase change materials into foundry-manufactured silicon photonics, Nat. Commun. 15, 2786 (2024). 
+
+[57] T. Matsunaga, Y. Umetani, N. Yamada, Structural study of a Ag3.4In3.7Sb76.4Te16.5 quadruple compound utilized for phase-change optical disks, Phys. Rev. B 64, 184116 (2001). 
+
+[58] M. Zhu, W. Song, P.M. Konze, T. Li, B. Gault, X. Chen, J. Shen, S. Lv, Z. Song, M. Wuttig, R. Dronskowski, Direct atomic insight into the role of dopants in phase-change materials, Nat. Commun. 10, 3525 (2019). 
+
+[59] L. van Pieterson, M.H.R. Lankhorst, M. van Schijndel, A.E.T. Kuiper, J.H.J. Roosen, Phase-change recording materials with a growth-dominated crystallization mechanism: A materials overview, J. Appl. Phys. 97, 083520 (2005). 
+
+[60] C. Wu, H. Yu, S. Lee, R. Peng, I. Takeuchi, M. Li, Programmable phase-change metasurfaces on waveguides for multimode photonic convolutional neural network, Nat. Commun. 12, 96 (2021). 
+
+[61] W. Zhou, B. Dong, N. Farmakidis, X. Li, N. Youngblood, K. Huang, Y. He, C. David Wright, W.H.P. Pernice, H. Bhaskaran, In-memory photonic dot-product engine with electrically programmable weight banks, Nat. Commun. 14, 2887 (2023). 
+
+[62] J. Hutter, M. Iannuzzi, F. Schiffmann, J. VandeVondele, cp2k:atomistic simulations of condensed matter systems, WIREs Comput. Mol. Sci. 4, 15-25 (2014). 
+
+[63] G. Kresse, J. Hafner, Ab initio molecular dynamics for liquid metals, Phys. Rev. B 47, 558-561 (1993). 
+
+[64] J.P. Perdew, K. Burke, M. Ernzerhof, Generalized gradient approximation made simple, Phys. Rev. Lett. 77, 3865-3868 (1996). 
+
+[65] G. Kresse, D. Joubert, From ultrasoft pseudopotentials to the projector augmented-wave method, Phys. Rev. B 59, 1758 (1999). 
+
+[66] J. Heyd, G.E. Scuseria, M. Ernzerhof, Erratum: “Hybrid functionals based on a screened Coulomb potential” [J. Chem. Phys. 118, 8207 (2003)], J. Chem. Phys. 124, 219906 (2006). 
+
+[67] W. Wełnic, S. Botti, L. Reining, M. Wuttig, Origin of the Optical Contrast in Phase-Change Materials, Phys. 20 
+
+Rev. Lett. 98, 236403 (2007). 
+
+[68] S. Caravati, M. Bernasconi, M. Parrinello, First principles study of the optical contrast in phase change materials, J. Phys. Condens. Matter. 22, 315801 (2010). 
+
+[69] H. Zhang, X. Wang, W. Zhang, First-principles investigation of amorphous Ge-Sb-Se-Te optical phase-change materials, Opt. Mater. Express 12, 2497 (2022). 
+
+[70] G.E. Jellison, F.A. Modine, Parameterization of the optical functions of amorphous materials in the interband region, Appl. Phys. Lett. 69, 371-373 (1996). 
+
+[71] J. Singleton, Band Theory and Electronic Properties of Solids, Oxford University Press, Oxford, UK, 2001. 
+
+[72] M. Dressel, G. Grüner, Electrodynamics of Solids: Optical Properties of Electrons in Matter, Cambridge University Press, Cambridge, 2002. 
+
+[73] M. Schubert, Infrared ellipsometry on semiconductor layer structures phonons, plasmons, and polaritons, 
+
+Springer Tracts in Modern Physics 209, 1-190 (2005). 
+
+[74] K. Shportko, S. Kremers, M. Woda, D. Lencer, J. Robertson, M. Wuttig, Resonant bonding in crystalline phase-change materials, Nat. Mater. 7, 653-658 (2008). 
+
+[75] X. Shen, R. Chu, Y. Jiang, W. Zhang, Progress on Materials Design and Multiscale Simulations for Phase-Change Memory, Acta Metall. Sin. 60, 1362-1378 (2024). 
+
+[76] H. Li, H. Zhang, W. Ma, Y. Gao, W. Zhou, W. Zhang, Multiscale simulations of Ge–Sb–Se–Te phase-change alloys for photonic memory applications, J. Mater. Inf. 6, 3 (2026). 
+
+[77] X. Shen, S. Zhang, Y. Jiang, T. Huang, S. Sun, W. Zhou, J. Wang, R. Mazzarello, W. Zhang, Multiscale simulations of amorphous and crystalline AgSnSe2 alloy for reconfigurable nanophotonic applications, MGE Adv. 2, e62 (2024). 21 
+
+# Supporting Information 
+
+## Optimization of all-optical phase-change waveguide devices for photonic computing from the atomic scale 
+
+Hanyi Zhang 1, Wanting Ma 1, Wen Zhou 1, *, Xueqi Xing 1, Junying Zhang 1, Tiankuo Huang 1,Ding Xu 1, Xiaozhe Wang 1, *, Riccardo Mazzarello 2, En Ma 1, Jiang-Jing Wang 1, *, Wei Zhang 1, *
+
+Figure S1. The full atomic structures of the four ST models shown in Figure 1a. The snapshot of AIMD-generated (a) liquid state at 1000 K (dynamical bonds are not visualized) and (b) amorphous state at 0 K. The DFT-optimized (c) metastable rhombohedral state and (d) ground state. The first two models are in cubic cell, and the latter two are in hexagonal cell. 22 
+
+Figure S2. The DFT-calculated real part ( ε1) and imaginary part ( ε2) dielectric function of the amorphous model and the two crystalline models using HSE06 hybrid functional. The refractive index ( n) and extinction coefficient ( k) shown in Figure 1C were calculated via 𝑛𝑛 =
+
+��𝜀𝜀 12 +𝜀𝜀 22+𝜀𝜀 12 �12
+
+and 𝑘𝑘 = ��𝜀𝜀 12 +𝜀𝜀 22−𝜀𝜀 12 �12
+
+.
+
+Figure S3. (a) The scanning electron microscopy (SEM) photograph for the cross-section of an as-deposited ST film. (b) The EDS map for an as-deposited film (in the top view). 23 
+
+Figure S4. The experimental setup for all-optical waveguide pump-probe and spectral scanning measurements. EDFA: erbium-doped fiber amplifier, FPC: fiber polarization controller, EOM: electro-optic modulator, BS: beam splitter, VOA: variable optical attenuator, PD: photodetector, DAQ: data acquisition, DC: direct current, RF: radio frequency. 
+
+Figure S5. Waveguide measurement of the 1-μm device. After the second amorphization pulse, the ST device was heated to 160 oC and then cooled down to room temperature for optical measurement. This annealed state shows a higher transmittance than the crystallized state obtained by optical pulsing. 
+
+Figure S6. (a) The multilevel operation shown in the main text. (b) Another device with the same length and thickness of Sb 2Te thin film ( dST = 1 μm and hST = 10 nm) was fabricated and programmed separately. The multiple programming ability was well reproduced.     
+
+> PD3
+> VVOA
+> PD1
+> Pump laser Pulse generator EDFA
+> Tunable wavelength probe laser
+> PD2 123
+> 231
+> DAQ 90/10 BS FPC1 FPC2 FPC3 Bandpass filter EOM Fibre for pump line Fibre for probe line DC/RF cables Spectral scanning Optical pump-probe Fiber array Circulator 24
+
+Figure S7 . (a) Repeated multilevel operation of one ST-based waveguide device. After the partial amorphization operation, a long laser pulse was sent to crystallize the device. Such operation was repeated for 5 times. (b) The average transmittance values with standard deviation for the five programming cycles. 
+
+Figure S8. The high- and low-transmissive levels of the ST-based waveguide device are robust over time. 
+
+Figure S9. Repetitive optical switching with large optical window over write/erase 200 cycles. 25 
+
+Figure S10. Electronic structure and optical calculations of Sb 3Te and Sb 4Te. (a) The atomic structure of a-Sb 3Te, a-Sb 4Te, g-Sb 3Te, g-Sb 4Te, m-Sb 3Te and m-Sb 4Te. (b) The DFT-calculated DOS, n and k calculated with HSE06 hybrid functional. 
+
+Figure S11. Electronic structure and optical calculations of Ag 8In 6Sb 144 Te 58 . (a) The atomic structure of amorphous model, ordered crystalline model and disordered crystalline model. (b) The DFT-calculated DOS, n and k calculated with HSE06 hybrid functional. 26 
+
+Figure S12. Estimation of the scalability of Sb 2Te in a potential crossbar array. The loss of the crossbar array expressed as D+10×log 10 (1/ m2) is contributed by the insertion loss ( D) of the PCM devices ( −7.0 dB for a 1-μm-long Sb 2Te device) and the light splitting ratio (1/ m) of the crossbar array 60 . When the loss reaches −40 dB, the estimated array size is 45×45. 
+
+Energy consumption 
+
+Write/Erase pulse widths 
+
+Optical contrast 
+
+Number of optical levels 
+
+Ge 2Sb 2Te 5
+
+Ref 16 
+
+430 pJ  100/700 ns  21%  8
+
+Ge 2Sb 2Te 5
+
+Ref 17 
+
+680 pJ  50/250 ns  28%  34 
+
+Ge 2Sb 2Te 5
+
+Ref 23 
+
+917 pJ  25/125 ns  29%  13 
+
+Ge 2Sb 2Te 5
+
+Ref 52 
+
+N.A.  10/100 ns  183%  65 
+
+Ag 3In 4Sb 76 Te 17 
+
+Ref 53 
+
+1.5 nJ  20/70 ns  20%  45 
+
+Sc0.2 Sb 2Te 3
+
+Ref 26 
+
+N.A.  5/50 ns  80%  9
+
+This work  1072 pJ  100/1025 ns  156%  158 
+
+Table S1 . Benchmarks on performances of all-optical waveguide memory devices. 
+
+> Loss (dB)
+
+Matrix size ( m)

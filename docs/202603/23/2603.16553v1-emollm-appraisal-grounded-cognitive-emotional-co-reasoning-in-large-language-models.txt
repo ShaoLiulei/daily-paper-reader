@@ -1,0 +1,951 @@
+Title: EmoLLM: Appraisal-Grounded Cognitive-Emotional Co-Reasoning in Large Language Models
+
+URL Source: https://arxiv.org/pdf/2603.16553v1
+
+Published Time: Wed, 18 Mar 2026 01:19:06 GMT
+
+Number of Pages: 20
+
+Markdown Content:
+# EmoLLM: Appraisal-Grounded Cognitive-Emotional Co-Reasoning in Large Language Models 
+
+Yifei Zhang, Mingyang Li, Henry Gao, Liang Zhao 
+
+Department of Computer Science, Emory University 
+
+{yifei.zhang2, mingyang.li, henry.gao2, liang.zhao}@emory.edu 
+
+Abstract 
+
+Large language models (LLMs) demonstrate strong cognitive intelligence (IQ), yet many real-world interactions also require emotional intelligence (EQ) to produce responses that are both factually reliable and emotionally appro-priate. In settings such as emotional support, technical assistance, and consultation, effec-tive dialogue depends on how situations are ap-praised with respect to the user’s needs, goals, and coping capacity. Inspired by appraisal theory, we propose EmoLLM, an appraisal-grounded framework for IQ–EQ co-reasoning in dialogue. EmoLLM uses an explicit Ap-praisal Reasoning Graph (ARG) to structure intermediate reasoning over contextual facts, inferred user needs, appraisal dimensions, emo-tional states, and response strategies before gen-erating a reply. We train EmoLLM in a multi-turn role-play environment with reinforcement learning, where reverse-perspective reasoning provides reward signals based on predicted user-side consequences of responses. Across diverse dialogue settings, EmoLLM improves emotional state outcomes and response quality over strong baselines while preserving strong factual reliability. Code available at https: //github.com/yifeizhangcs/EmoLLM .
+
+1 Introduction 
+
+Large language models (LLMs) (Achiam et al., 2023; Grattafiori et al., 2024; Yang et al., 2025a; Team et al., 2025) have demonstrated strong cog-nitive intelligence (IQ), with remarkable progress in reasoning and problem solving across mathe-matics, programming, and logical inference bench-marks (Wei et al., 2022; Ahn et al., 2024; He et al., 2024). At the same time, a growing body of work has improved LLMs’ emotional intelli-gence (EQ), including emotion recognition, em-pathetic response generation, and affect-aware di-alogue (Wang et al., 2023; Li et al., 2023; Sorin et al., 2024). However, many real-world interac-tions require cognitive and emotional capabilities 
+
+Figure 1: Why IQ–EQ co-reasoning matters. IQ-only responses can be factually relevant but emotionally in-sensitive, while EQ-only responses can be emotionally supportive but insufficiently grounded in the underlying situation. IQ–EQ co-reasoning enables responses that are factually grounded, emotionally attuned, and strate-gically appropriate. 
+
+to operate jointly rather than in isolation. In scenar-ios such as healthcare, counseling, and education, appropriate responses must reason jointly about the user’s emotional state and the situational context that gives rise to it, rather than treating emotion as a surface attribute independent of context. As illustrated in Figure 1, integrating these dimensions enables models to interpret situational factors to-gether with emotional signals, yielding responses that are both factually grounded and emotionally appropriate, instead of being driven by either cog-nitive reasoning or emotional cues alone. Existing work has improved both cognitive rea-soning and emotional intelligence in LLMs, but largely treats them separately. Advances in scaling and reasoning-oriented training have improved ana-lytical problem solving (Wei et al., 2022; Ahn et al., 2024; He et al., 2024), while prior work has en-hanced emotional intelligence through supervised fine-tuning, emotion-aware prompting, knowledge augmentation, and alignment with social or user-centered objectives (Rashkin et al., 2019; Zheng et al., 2023; Qian et al., 2023; Rakib et al., 2025). However, these approaches rarely model how sit-1
+
+> arXiv:2603.16553v1 [cs.CL] 17 Mar 2026
+
+uational facts, inferred user needs, and emotional understanding jointly shape response strategies. As a result, the structured process linking contextual interpretation, appraisal, emotion, and strategy re-mains underexplored. Psychological research offers a useful perspec-tive for addressing this gap. Appraisal Theory sug-gests that emotions arise not directly from events themselves, but from how those events are evalu-ated with respect to an individual’s goals, needs, and coping potential (Lazarus, 1991; Scherer, 2001; Ortony et al., 2022). Related work on perspective-taking further suggests that emotionally appropri-ate responses require reasoning about the user’s internal state and situational interpretation (Kosin-ski, 2023). These perspectives imply that appro-priate responses emerge from a structured pro-cess linking contextual facts, inferred goals and needs, evaluative appraisals, emotional states, and response strategies. Applying this perspective to LLMs presents three key challenges: representing appraisal as an explicit intermediate reasoning pro-cess, jointly improving cognitive reliability and emotional appropriateness, and training multi-turn behavior using user-side consequence signals rather than final-response quality alone. To address these challenges, we propose 
+
+EmoLLM , an appraisal-grounded framework for cognitive–emotional (IQ–EQ) co-reasoning in di-alogue. At its core, we introduce the Appraisal Reasoning Graph (ARG), an explicit structure or-ganizing contextual facts, inferred user needs, ap-praisals, emotions, and response strategies. We fur-ther introduce reverse-perspective reasoning, which predicts how a response updates the user’s needs, appraisals, and emotional state, providing reward signals based on the plausibility of this predicted transition. Building on this, we train EmoLLM in a multi-turn role-play environment with rein-forcement learning using reverse-perspective and ARG-derived structure-aware rewards. Experi-ments across diverse dialogue benchmarks show that EmoLLM consistently outperforms strong baselines on emotional state outcomes, empathic appropriateness, and factual reliability. 
+
+2 Problem Formulation 
+
+We study IQ–EQ co-reasoning in multi-turn dialogue. At turn t, let x≤t =(u1, y 1, . . . , u t−1, y t−1, u t) denote the dialogue history up to the current user utterance, where ui
+
+and yi are the user and assistant utterances at turn 
+
+i, respectively. Given x≤t, the model generates a response yt that is both factually reliable and emotionally appropriate. We model IQ and EQ as coupled latent factors rather than separable objectives. Let zIQ  
+
+> t
+
+and zEQ  
+
+> t
+
+denote latent cognitive and emotional reasoning states, and define: 
+
+pθ(yt | x≤t) = X 
+
+> zIQ
+> t, z EQ
+> t
+
+pθ(zIQ  
+
+> t
+
+, z EQ  
+
+> t
+
+| x≤t)
+
+· pθ(yt | x≤t, z IQ  
+
+> t
+
+, z EQ  
+
+> t
+
+) (1) where the joint prior pθ(zIQ  
+
+> t
+
+, z EQ  
+
+> t
+
+| x≤t) captures IQ–EQ coupling, i.e., we do not assume that it factorizes into independent IQ and EQ terms. Al-though formulated at the turn level, the task re-quires jointly modeling factual reliability and emo-tional appropriateness under the evolving dialogue context x≤t. Our objective is to learn θ such that responses remain factually reliable while also be-ing emotionally grounded through coherent IQ– EQ interactions. A key challenge is that stan-dard response-only training signals (e.g., likelihood or scalar turn-level scores) provide limited guid-ance for learning structured IQ–EQ coupling and for evaluating the longer-horizon user-side conse-quences of responses. 
+
+3 Methodology 
+
+To model dialogue as an appraisal-grounded pro-cess of cognitive–emotional co-reasoning, we intro-duce the Appraisal Reasoning Graph (ARG) (§3.1), an explicit dependency structure that organizes in-termediate reasoning from situational understand-ing to response strategy selection. This graph forms the core reasoning structure of EmoLLM and guides response generation before the final reply is pro-duced. Training of EmoLLM follows a two-stage pipeline (§3.2) that first initializes this structured co-reasoning process and then refines it through multi-turn role-play with reverse-perspective rea-soning and reinforcement learning. 
+
+3.1 Appraisal Reasoning Graph 
+
+At each dialogue turn, EmoLLM instantiates an Ap-praisal Reasoning Graph (ARG) from the dialogue context to guide response planning and generation. 
+
+Motivation from Appraisal Theory. Given dialogue context x≤t, appraisal-grounded co-reasoning decomposes response generation into five interdependent components: contextual facts 2Figure 2: Appraisal Reasoning Graph (ARG) in EmoLLM. At each dialogue turn, EmoLLM instantiates an ARG from the dialogue context to perform appraisal-grounded cognitive–emotional co-reasoning before generating a reply. The process repeats across turns in multi-turn interaction. 
+
+Ft, inferred user needs or goals Nt, appraisal di-mensions At, emotional states Et, and response strategies St. This decomposition is motivated by appraisal theory, which views emotion as aris-ing not directly from events themselves, but from evaluations of situational conditions with respect to an individual’s goals, needs, and coping poten-tial (Lazarus, 1991; Scherer, 2001; Ortony et al., 2022). This perspective motivates the graph struc-ture defined below. 
+
+ARG Definition. The Appraisal Reasoning Graph (ARG), illustrated in Figure 2, is defined as a directed acyclic graph GARG = ( V, E ARG )
+
+with node set V = {F, N, A, E, S }, representing contextual facts, inferred user needs or goals, ap-praisal dimensions, emotional state, and response strategy. The dependency structure EARG is fixed across dialogue turns and is specified as 
+
+(F, N ) → A, A → E , (F, N, A, E) → S. 
+
+At turn t, the graph is instantiated from dialogue history x≤t as (Ft, N t, A t, Et, S t). Under this in-stantiation, the abstract latent states in Eq. (1) are grounded through ARG nodes: the IQ-side state 
+
+zIQ  
+
+> t
+
+is instantiated primarily through contextual facts Ft, whereas the EQ-side state zEQ  
+
+> t
+
+is instan-tiated through the appraisal-grounded user state 
+
+(Nt, A t, Et). The resulting structured state is 
+
+zARG  
+
+> t
+
+= ( Ft, N t, A t, Et, S t).
+
+As the dialogue proceeds and x≤t grows, node values evolve under this shared graph template, enabling cognitive–emotional co-reasoning across multiple turns. 
+
+Structured Factorization. Eq. (1) formulates re-sponse generation through two coupled latent vari-ables, zIQ  
+
+> t
+
+and zEQ  
+
+> t
+
+. In EmoLLM, the ARG pro-vides an explicit structure for these variables: Ft in-stantiates the cognitive state zIQ  
+
+> t
+
+, while (Nt, A t, Et)
+
+instantiates the appraisal-grounded emotional state 
+
+zEQ  
+
+> t
+
+. Crucially, St acts as the binding variable that bridges joint IQ–EQ latent space, translating the internal cognitive–emotional understanding into an actionable response. We therefore write 
+
+pθ(yt | x≤t) = X
+
+> Ft,N t,A t,Et,S t
+
+pθ(Ft | x≤t) pθ(Nt | x≤t) pθ(At | Ft, N t)
+
+· pθ(Et | At) pθ(St | Ft, N t, A t, Et)
+
+· pθ(yt | x≤t, F t, N t, A t, Et, S t).
+
+This factorization structurally instantiates Eq. (1) .IQ–EQ coupling is preserved because appraisal depends on both facts and needs, and the strategy 
+
+St translates these joint states into the response yt.
+
+3.2 Training Framework 
+
+Training of EmoLLM follows a two-stage pipeline that progressively establishes and refines cognitive– emotional co-reasoning. Stage I (§3.2.1) initializes appraisal-grounded reasoning through knowledge-guided pretraining and teacher-guided supervi-sion. Stage II (§3.2.2) further improves interaction-level behavior through reinforcement learning in a multi-turn role-play environment, where reverse-perspective reasoning evaluates the predicted user-side consequences of candidate responses. 
+
+3.2.1 Stage I: Appraisal-Grounded Co-Reasoning Initialization 
+
+Stage I establishes appraisal-grounded co-reasoning prior to reinforcement learning. The stage consists of two components: (i) knowledge-grounded continued pretraining that injects 3scalable appraisal signals, and (ii) ARG-guided supervised initialization that anchors high-quality appraisal-to-strategy reasoning. 
+
+Knowledge-Grounded Continued Pretraining. 
+
+Continued pretraining (CPT) is performed on di-alogue corpora augmented with structured affec-tive knowledge. For each dialogue context x≤t, a knowledge-grounded tuple is constructed as 
+
+gt = G(x≤t, K) = ( Ft, N t, A t, Et),
+
+where G(·) extracts salient situational facts and retrieves relevant knowledge from K in order to infer user needs or goals, appraisal dimensions, and the corresponding emotional state. A linearized form of gt is then prepended as a short structured prefix to the original context, 
+
+˜xt = <think> gt </think> ∥ x≤t,
+
+and training continues with a standard causal lan-guage modeling objective. This procedure provides scalable weak supervision over appraisal states without requiring manual annotation. 
+
+ARG-Guided Supervised Initialization. To complement large-scale weak supervision, a small subset of contexts is sampled and high-quality su-pervision is obtained from a strong teacher LLM (for example, a proprietary API model). For each sampled context x≤t, the teacher generates an ARG state zARG  
+
+> t
+
+together with a gating label rt ∈ { 0, 1}
+
+indicating whether explicit structured reasoning should be emitted for that turn. The supervision target is defined as 
+
+˜yt =
+
+(
+
+<think> zARG  
+
+> t
+
+</think> yt, if rt = 1 ,yt, if rt = 0 ,
+
+and the student model is fine-tuned to reproduce 
+
+˜yt given x≤t. Compared with the knowledge-grounded tuple gt, the supervised ARG state addi-tionally includes the response strategy St, which enables direct supervision of the mapping from appraisal states to response strategies. 
+
+3.2.2 Stage II: Multi-Turn RL with Reverse-Perspective Reasoning 
+
+Stage II builds on Stage I’s appraisal-grounded ini-tialization and further refines EmoLLM through re-inforcement learning in a multi-turn role-play envi-ronment (Figure 3). Whereas Stage I enforces turn-level ARG-consistent appraisal-to-strategy reason-ing, Stage II improves behavior over entire inter-actions by training the policy with reward signals derived from the predicted downstream effects on the user. After generating a response, the policy performs internal reverse-perspective reasoning to estimate how the user’s needs, appraisals, and emo-tional state may evolve. 
+
+Multi-Turn Role-Play Environment. The pol-icy interacts with a user simulator to generate a di-alogue trajectory τ = {(xt, z ARG  
+
+> t
+
+, y t)}Tt=1 , where 
+
+xt denotes the turn context, zARG  
+
+> t
+
+denotes the ARG reasoning trace produced during training, and yt
+
+denotes the assistant response. Given (xt, y t), the simulator generates the next user utterance and up-dates the dialogue context, yielding multi-turn tra-jectories for reward computation. 
+
+Reverse-Perspective Reasoning. After gener-ating response yt at turn t, an internal reverse-perspective reasoning step estimates its user-side consequence. Let x≤t denote the dialogue history up to turn t. Using the underlying model under a specific user-role prompt, we predict a compact summary of the induced user-side transition: 
+
+ˆs(1)  
+
+> t
+
+= Tθ(x≤t, y t),
+
+ˆs(k+1)  
+
+> t
+
+= Tθ(x≤t, y t, ˆs(k) 
+
+> t
+
+), k = 1 , . . . , n − 1,
+
+where Tθ is the transition predictor and ˆs(k) 
+
+> t
+
+denotes the simulated user state at step k. After n steps, this process yields ˆs(n) 
+
+> t
+
+= ( ˆNt, ˆAt, ˆEt), which sum-marizes the predicted updates in the user’s needs, appraisals, and emotional state. A judge model then scores this transition to define the reverse-perspective reward RRP (t) = S
+
+
+
+ˆs(n)
+
+> t
+
+
+
+, where S
+
+evaluates plausibility and contextual consistency. Reverse-perspective reasoning is used only during training to estimate the user-side consequence and provide reward signals; at inference time, the policy generates responses directly. Additional implemen-tation details are provided in Appendix B.1. When n = 1 , this process evaluates the imme-diate predicted user reaction, whereas larger n en-ables deeper lookahead over downstream conse-quences. We can abstract this multi-turn evolution as a latent-state discounted MDP, where state st en-capsulates the dialogue history and latent user vari-ables, and response yt serves as action at. Under this abstraction, the following theorem formalizes how increasing lookahead depth n theoretically bounds the myopic evaluation bias. 
+
+Theorem 1 (Under the latent-state MDP abstrac-tion, lookahead depth reduces truncation bias) . As-sume a discounted MDP with bounded rewards 
+
+4Figure 3: Stage II: Multi-turn RL with reverse-perspective reasoning. The policy interacts with a user simulator to generate dialogue trajectories. For each response, the model performs reverse-perspective reasoning to estimate the induced user-side transition in needs, appraisals, and emotions, optionally with n-step lookahead. A judge model evaluates the predicted transition to produce reverse-perspective reward signals for policy optimization. 
+
+|r(s, a )| ≤ Rmax and discount factor γ ∈ (0 , 1) .Let Qπ(s, a ) denote the true action value under pol-icy π, and let Q(n) 
+
+> π
+
+(s, a ) denote its n-step truncated return. Then, for any policy π and any state–action pair (s, a ),
+
+Qπ(s, a ) − Q(n) 
+
+> π
+
+(s, a ) ≤ γn
+
+1 − γ Rmax .
+
+Proof. See Appendix B.3. □
+
+This result suggests that deeper reverse-perspective reasoning reduces myopic evaluation bias, although larger n may accumulate compound-ing simulation errors from the predictor Tθ. Shal-low lookahead is therefore adopted in practice to balance the lookahead horizon against simulation variance. 
+
+Reward Evaluation. At each turn, a judge model evaluates four aspects: cognitive reliability, ARG trace quality, reverse-perspective plausibility, and an overthinking penalty . This penalty discourages redundant computation, such as invoking an ARG trace for simple queries or performing excessive dynamic n-step lookahead. Finally, a trajectory-level reward evaluates the predicted user emotional trajectory (Appendix A). 
+
+Reward Aggregation and Optimization. These rewards are aggregated over the trajectory, and a weighted objective is optimized using trajectory-level GRPO; detailed aggregation and optimization formulas are provided in Appendix B.2. This ob-jective encourages responses that are cognitively reliable, appraisal–strategy coherent, and emotion-ally appropriate under multi-turn interaction. 
+
+4 Experimental Setup 
+
+Datasets and Scenarios. Training and evaluation of EmoLLM are conducted on dialogue datasets covering emotional support, technical assistance, medical consultation, and academic peer review. For Stage I CPT, the ESConv corpus (Liu et al., 2021) is used and augmented with affective knowl-edge from the ECoK graph (Wang et al., 2024). For supervised initialization and Stage II, Empathetic-Dialogues (Rashkin et al., 2019), MSDialog (Qu et al., 2018), MedDialog (He et al., 2020), and a collection of ICLR peer-review comments are used. To enable controlled multi-turn evaluation, 
+
+scenario seeds are constructed from these datasets, where each seed consists of a short scenario de-scription and an initial user utterance. Additional details on the datasets and scenario seeds are pro-vided in Appendix C. 
+
+Base Model. Experiments are conducted using Qwen3-8B (Yang et al., 2025a) as the initializa-tion of EmoLLM. Generalization to LLaMA-3.1-8B (Grattafiori et al., 2024) is reported in Ap-pendix G.2. 
+
+Training Procedure. Implementation details of the training procedure are provided in Appendix D. 
+
+Baselines. EmoLLM is compared with represen-tative baselines based on prompting, supervised fine-tuning, and reinforcement learning for emo-tional dialogue, as well as proprietary LLMs. De-5Table 1: Performance comparison across four datasets using Qwen3–8B.                                                                                                                                                                                                                          
+
+> Method ED MSD MedD ICLR
+> SR ↑AT ↓ES ↑EA ↑SR ↑AT ↓ES ↑EA ↑SR ↑AT ↓ES ↑EA ↑SR ↑AT ↓ES ↑EA ↑
+> Base Model
+> Qwen3-8B 88.7 3.03 4.58 3.84 77.6 3.27 4.13 3.41 89.2 2.92 3.95 3.57 83.4 1.64 3.79 3.83
+> Prompting Methods
+> Best-of-N90.4 2.78 4.48 3.72 79.6 3.12 4.08 3.51 90.8 2.41 3.92 3.97 84.9 1.71 3.77 3.64 ARG-Prompt 91.0 2.41 4.67 4.10 81.0 2.88 4.14 3.58 92.3 2.28 4.02 4.01 86.0 1.39 3.95 3.82 ICL-AIF (Fu et al., 2023) 91.3 2.29 4.73 4.24 81.5 2.81 4.16 3.62 92.7 2.31 4.06 4.06 86.4 1.35 3.99 3.86 Ask-an-Expert (Zhang et al., 2023) 89.4 2.71 4.51 3.97 79.1 3.15 4.05 3.46 90.8 2.63 3.96 3.72 84.2 1.58 3.85 3.66
+> SFT Methods
+> SFT 87.3 2.14 4.39 4.07 81.2 2.74 3.97 3.37 90.4 2.29 3.91 3.68 82.6 1.36 3.73 3.76 ESCoT (Rashkin et al., 2019) 89.7 2.64 4.66 3.88 79.4 3.06 4.18 3.47 91.2 2.58 4.01 3.76 84.1 1.47 3.86 3.73 PPDP (Deng et al., 2023) 90.2 2.41 4.63 4.12 80.4 2.93 4.11 3.54 91.8 2.37 4.00 3.89 85.3 1.42 3.90 3.79
+> RL Methods
+> RLFF-ESC (Yang et al., 2025b) 90.8 2.49 4.71 4.02 80.6 2.96 4.15 3.55 92.4 2.44 4.02 3.92 86.0 1.39 3.95 3.78 RLVER (Wang et al., 2025) 91.1 2.38 4.74 4.10 81.2 2.88 4.18 3.61 93.0 2.36 4.08 4.01 86.6 1.33 4.02 3.81 PERM (Wang et al., 2026) 91.8 2.22 4.79 4.28 82.1 2.74 4.20 3.64 94.0 2.28 4.10 4.18 88.3 1.26 4.05 3.88
+> Ours
+> EmoLLM 92.1 1.87 4.86 4.92 83.2 2.86 4.17 3.71 95.3 2.18 4.08 4.59 96.2 1.21 4.21 3.95
+> ∆vs. Base +3 .8% −38 .3% +6 .1% +28 .1% +7 .2% −12 .5% +1 .0% +8 .8% +6 .8% −25 .3% +3 .3% +28 .6% +15 .3% −26 .2% +11 .1% +3 .1%
+> EmoLLM
+> PERM
+> RLVER
+> Base
+
+0
+
+0.2
+
+0.4
+
+0.6
+
+0.8   
+
+> 0.55 0.52 0.49 0.45
+> Avg. EG / Turn
+
+ED    
+
+> EmoLLM
+> PERM
+> RLVER
+> Base
+> 0.40.37 0.34 0.32
+
+MSD    
+
+> EmoLLM
+> PERM
+> RLVER
+> Base
+> 0.45 0.43 0.41 0.38
+
+MedD    
+
+> EmoLLM
+> PERM
+> RLVER
+> Base
+> 0.79 0.75 0.70.67
+
+ICLR 
+
+Figure 4: Average Emotional Gain per Turn (EG/Turn) across four benchmarks. Higher values indicate greater positive emotional improvement during the dialogue. 
+
+tailed descriptions of the baselines are provided in Appendix E. 
+
+Evaluation. Evaluation of EmoLLM is conducted in a multi-turn role-play environment initialized from the constructed scenario seeds. Six metrics are reported: Factual Accuracy (FA) for cogni-tive reliability (IQ), and Success Rate (SR (%)), Average Turns (AT), Emotional State Score (ES), Emotional Gain per Turn (EG/Turn), and Empathic Appropriateness (EA) for emotional intelligence (EQ). Full definitions of the metrics and evaluation protocols are provided in Appendix F. 
+
+5 Experimental Results & Analysis 
+
+5.1 Main Results Comparison with Baselines. We evaluate EmoLLM against a diverse set of prompting, su-pervised, planning-based, and RL-based baselines across four datasets (ED, MSD, MedD, and ICLR). For the main comparison, we report Success Rate (SR), Average Turns (AT), Emotional State Score (ES), and Empathic Appropriateness (EA) in Table 1, and additionally summarize Emotional Gain per Turn (EG/Turn) in Figure 4. Together, these metrics capture emotional effectiveness, conversational efficiency, response appropriateness, and trajectory-level emotional improvement. As shown in Table 1 and Figure 4, EmoLLM consis-tently outperforms existing approaches across all benchmarks. It achieves higher SR while requiring fewer turns to reach success, and also yields stronger ES, EA, and EG/Turn, indicating more effective and emotionally grounded interaction dynamics. These results collectively show that ex-plicit cognitive–emotional co-reasoning improves both task success and interaction stability. 
+
+Comparison with Proprietary APIs. To con-textualize EmoLLM’s performance, we compare it against frontier proprietary LLM APIs under the same multi-turn role-play evaluation protocol. All models interact with an identical user simulator and scenario set, and are evaluated using the same four metrics: Success Rate (SR), Average Turns (AT), Emotional State Score (ES), and Empathic Appropriateness (EA). As summarized in Table 2, EmoLLM achieves performance comparable to, and in several metrics exceeding, strong propri-etary APIs despite its significantly smaller param-6Table 2: Comparison with proprietary LLM APIs across four datasets.                                                                                                    
+
+> Model ED MSD MedD ICLR
+> SR ↑AT ↓ES ↑EA ↑SR ↑AT ↓ES ↑EA ↑SR ↑AT ↓ES ↑EA ↑SR ↑AT ↓ES ↑EA ↑
+> Proprietary LLM APIs
+> gpt-5-nano 78.4 2.87 4.41 4.06 74.2 3.84 4.12 3.57 77.6 2.73 4.19 3.38 78.1 2.61 4.08 3.02 gpt-5-mini 90.3 3.08 3.63 4.47 81.4 2.97 4.01 3.53 88.2 2.15 4.06 4.28 92.1 2.08 3.91 3.57 gemini-2.5-flash 86.8 2.23 3.49 4.69 85.3 2.68 4.23 3.76 93.6 1.62 3.98 4.43 96.7 1.73 3.83 3.98 gemini-3.1-flash-lite 79.2 2.49 4.28 3.91 76.4 2.62 4.11 3.46 81.3 1.69 3.86 4.68 83.1 1.32 3.88 3.49
+> Ours (open-weight model)
+> EmoLLM 92.1 1.87 4.86 4.92 83.2 2.86 4.17 3.71 95.3 2.18 4.08 4.59 96.2 1.21 4.21 3.95
+
+eter scale. These findings highlight that explic-itly structured cognitive–emotional co-reasoning is a highly effective paradigm for equipping com-pact, open-weight models with the emotional intel-ligence typically associated with massive frontier systems. 
+
+5.2 Effect of Reverse-Perspective Lookahead Depth        
+
+> 01234
+> 75
+> 80
+> 85
+> 90
+> Reverse-perspective lookahead depth ( n)
+> SR (%)
+> SR ↑ES ↑EA ↑AT ↓
+> 1.5
+> 2
+> 2.5
+> 3
+> 3.5
+> 4
+> ES/EA (1–5) / AT (turns)
+
+Figure 5: Effect of reverse-perspective lookahead depth on EmpatheticDialogues. SR is shown on the left axis; ES/EA (rated on a 1–5 scale) and AT (turns; lower is better) are shown on the right axis. 
+
+As illustrated in Figure 5, increasing the looka-head depth from n = 1 to n = 3 consistently improves Success Rate (SR) and Empathic Appro-priateness (EA). This trend aligns with Theorem 1, suggesting that deeper reasoning reduces trunca-tion bias by capturing longer-term emotional tran-sitions. However, gains diminish beyond n = 3 ,as compounding simulation errors in Tθ offset the benefit of longer horizons. This trade-off indicates that n = 3 provides a favorable balance between reduced evaluation bias and increased model-based variance in our setting. 
+
+5.3 Factual Accuracy after Training 
+
+We further examine whether improving emotional intelligence compromises cognitive reliability by measuring Factual Accuracy (FA). As shown in Ta-
+
+Table 3: Factual Accuracy (FA; %) across four datasets. “w/o RL” denotes Stage I initialization without reinforce-ment learning. ∆ indicates the relative improvement over the base model.                      
+
+> Model ED MSD MedD ICLR
+> Qwen3-8B (Base) 73.4 94.4 87.5 83.8 w/o RL 72.3 87.5 76.1 78.9
+> EmoLLM 80.3 95.4 91.9 86.7
+> ∆vs. Base +9 .4% +1 .1% +5 .0% +3 .5%
+
+ble 3, Stage I initialization alone (w/o RL) causes noticeable drops in FA on several datasets, suggest-ing that structured initialization alone is insufficient to maintain stable factual grounding. In contrast, the full EmoLLM consistently improves FA over the base model (Qwen3-8B), with relative gains of +9.4% on ED, +1.1% on MSD, +5.0% on MedD, and +3.5% on ICLR. Part of this improvement is expected, since FA is explicitly encouraged during reinforcement learning. At the same time, the re-sult is consistent with the design of the framework: ARG promotes factual grounding, while reverse-perspective feedback filters out responses that are emotionally appropriate but weakly grounded in context. These findings suggest that emotional alignment in EmoLLM does not compromise cogni-tive reliability and can even improve it in multi-turn interactions. 
+
+5.4 Ablation Study 
+
+We conduct an ablation study to examine the con-tribution of EmoLLM’s three core components: the ARG, the Stage I initialization, and the RP rewards used in reinforcement learning. As shown in Table 4, removing ARG consistently reduces Emotional State (ES) and Empathic Appropriate-ness (EA), highlighting the importance of explicit cognitive–emotional structure. Removing Stage I initialization leads to broader degradation across metrics, indicating that early alignment provides an 7Table 4: Ablation study of EmoLLM across four datasets. “w/o ARG” removes the Appraisal Reasoning Graph structure; “w/o Stage-I (CPT+SFT)” removes the Stage I initialization consisting of knowledge-guided continued pretraining (CPT) and supervised ARG alignment (SFT); “w/o RP Rewards” removes the reverse-perspective rewards used during reinforcement learning.                                                                                    
+
+> Variant ED MSD MedD ICLR
+> SR ↑AT ↓ES ↑EA ↑SR ↑AT ↓ES ↑EA ↑SR ↑AT ↓ES ↑EA ↑SR ↑AT ↓ES ↑EA ↑
+> EmoLLM (Full) 92.1 1.87 4.86 4.92 83.2 2.86 4.17 3.71 95.3 2.18 4.08 4.59 96.2 1.21 4.21 3.95
+> w/o ARG 86.4 2.06 4.52 4.57 72.3 3.08 3.91 3.37 89.8 2.43 3.81 4.17 92.1 1.39 3.90 3.68 w/o Stage-I (CPT+SFT) 90.2 1.93 4.73 4.79 76.4 2.97 4.05 3.58 93.1 2.27 3.97 4.39 94.3 1.29 4.06 3.83 w/o RP Rewards 87.2 1.81 4.61 4.67 73.1 2.72 3.89 3.41 91.0 2.11 3.83 4.21 93.2 1.19 3.99 3.73
+
+important foundation for later emotional learning. In contrast, removing RP rewards mainly weak-ens interaction-level performance, most notably lowering Success Rate (SR) and overall multi-turn effectiveness. Average Turns (AT) should be inter-preted jointly with SR, since it is computed over successful episodes only. Taken together, these results suggest that EmoLLM benefits from the complementary integration of structured appraisal reasoning, staged optimization, and perspective-aware reinforcement learning. 
+
+6 Related Work 
+
+6.1 Emotional Dialogue in LLMs 
+
+A growing body of work studies emotional intel-ligence in LLMs, including emotion recognition, empathetic response generation, and affect-aware interaction (Wang et al., 2023; Li et al., 2023; Sorin et al., 2024). Early approaches rely on super-vised fine-tuning on emotion-annotated dialogue corpora such as EmpatheticDialogues (Rashkin et al., 2019), DailyDialog (Li et al., 2017), and MELD (Poria et al., 2019). Beyond direct im-itation, prior work explores emotional dialogue through prompting, instruction tuning, external af-fective knowledge, and user-state modeling (Zheng et al., 2023; Lee et al., 2023b; Chen et al., 2023; Zhang et al., 2024; Cao et al., 2025; Sarangi et al., 2025). More recent work studies emotional rea-soning through cognitive appraisal and perspective-aware inference rather than surface-level style adap-tation (Hong et al., 2025; Yeo and Jaidka, 2025). Benchmarks such as TEA-Bench (Sui et al., 2026), HEART (Iyer et al., 2026), and CogToM (Tong et al., 2026) further enable systematic evaluation. However, most existing methods focus on response-level improvements or isolated user-state inference, without modeling how situational facts, inferred needs, appraisal, emotion, and response strategy interact across multi-turn dialogue. 
+
+6.2 Reinforcement Learning for LLMs EQ 
+
+RL is widely used to align LLMs with hu-man preferences and desired behaviors, includ-ing RLHF (Ouyang et al., 2022; Bai et al., 2022), RLAIF (Lee et al., 2023a), and optimization meth-ods such as PPO, DPO, and GRPO (Schulman et al., 2017; Rafailov et al., 2023; Shao et al., 2024). Recent work extends RL to emotional and so-cial settings, including empathy-oriented dialogue agents (Jhan et al., 2021), value-based emotional alignment (Rakib et al., 2025), verifiable emotion rewards (Wang et al., 2025), psychology-grounded reward modeling (Wang et al., 2026), and future-oriented emotional support rewards (Yang et al., 2025b; Zhang et al., 2025). While these methods improve emotional outcomes, most reward signals remain heuristic or response-level, providing lim-ited supervision for coherent multi-turn cognitive– emotional reasoning. In contrast, EmoLLM uses RL to refine an appraisal-grounded structure link-ing situational facts, user-state inference, emotion, and response strategy. 
+
+7 Conclusion 
+
+We introduce EmoLLM, an appraisal-grounded framework for emotionally intelligent multi-turn dialogue based on explicit IQ–EQ co-reasoning. With the Appraisal Reasoning Graph as a struc-tured reasoning scaffold and reverse-perspective reinforcement learning with explicit lookahead as the optimization mechanism, EmoLLM evalu-ates candidate responses through their predicted downstream effects on the user’s appraisal and emotional state. Across diverse dialogue bench-marks, EmoLLM improves multi-turn interaction quality, conversational efficiency, and factual reli-ability. These findings highlight the value of ex-plicit cognitive–emotional modeling and point to a promising direction for developing conversational agents with more tightly integrated IQ and EQ. 8Limitations 
+
+Our study has several limitations. Most automatic metrics rely on LLM-based evaluators, which may introduce model-dependent biases despite consis-tent evaluation protocols. In addition, Stage II train-ing is conducted in a simulated multi-turn environ-ment rather than with real human users, which may not fully capture the diversity of real-world emo-tional interactions. While we evaluate across mul-tiple dialogue domains, further evaluation in more diverse real-world settings would strengthen the generality of our findings. Finally, the structured reasoning traces produced by EmoLLM should be viewed as task-oriented intermediate scaffolds rather than guaranteed faithful explanations of the model’s internal decision process. 
+
+Ethical Considerations 
+
+EmoLLM is designed for research on emotionally intelligent dialogue and should not be viewed as a replacement for professional support in sensi-tive domains such as mental health or medical con-sultation. Although the framework aims to im-prove emotional appropriateness, model-generated responses may still be incomplete or misleading. Because systems that model user emotions may cre-ate risks of over-trust or unintended emotional in-fluence, they should be deployed with transparency, clear limitations, and appropriate human oversight, particularly in high-stakes settings. 
+
+References 
+
+Josh Achiam, Steven Adler, Sandhini Agarwal, Lama Ahmad, Ilge Akkaya, Florencia Leoni Aleman, Diogo Almeida, Janko Altenschmidt, Sam Altman, Shyamal Anadkat, and 1 others. 2023. Gpt-4 techni-cal report. arXiv preprint arXiv:2303.08774 .Janice Ahn, Rishu Verma, Renze Lou, Di Liu, Rui Zhang, and Wenpeng Yin. 2024. Large language models for mathematical reasoning: Progresses and challenges. arXiv preprint arXiv:2402.00157 .Yuntao Bai, Andy Jones, Kamal Ndousse, Amanda Askell, Anna Chen, Nova DasSarma, Dawn Drain, Stanislav Fort, Deep Ganguli, Tom Henighan, and 1 others. 2022. Training a helpful and harmless assis-tant with reinforcement learning from human feed-back. arXiv preprint arXiv:2204.05862 .Huiying Cao, Yiqun Zhang, Shi Feng, Xiaocui Yang, Daling Wang, and Yifei Zhang. 2025. Tool-ed: En-hancing empathetic response generation with the tool calling capability of llm. In Proceedings of the 31st International Conference on Computational Linguis-tics , pages 5305–5320. Zhiyu Chen, Yujie Lu, and William Wang. 2023. Em-powering psychotherapy with large language models: Cognitive distortion detection through diagnosis of thought prompting. In Findings of the Association for Computational Linguistics: EMNLP 2023 , pages 4295–4304. Yang Deng, Wenxuan Zhang, Wai Lam, See-Kiong Ng, and Tat-Seng Chua. 2023. Plug-and-play policy planner for large language model powered dialogue agents. arXiv preprint arXiv:2311.00262 .Yao Fu, Hao Peng, Tushar Khot, and Mirella Lapata. 2023. Improving language model negotiation with self-play and in-context learning from ai feedback. 
+
+arXiv preprint arXiv:2305.10142 .Aaron Grattafiori, Abhimanyu Dubey, Abhinav Jauhri, Abhinav Pandey, Abhishek Kadian, Ahmad Al-Dahle, Aiesha Letman, Akhil Mathur, Alan Schelten, Alex Vaughan, and 1 others. 2024. The llama 3 herd of models. arXiv preprint arXiv:2407.21783 .Chaoqun He, Renjie Luo, Yuzhuo Bai, Shengding Hu, Zhen Thai, Junhao Shen, Jinyi Hu, Xu Han, Yujie Huang, Yuxiang Zhang, and 1 others. 2024. Olympiadbench: A challenging benchmark for pro-moting agi with olympiad-level bilingual multimodal scientific problems. In Proceedings of the 62nd An-nual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 3828– 3850. Xuehai He, Shu Chen, Zeqian Ju, Xiangyu Dong, Hongchao Fang, Sicheng Wang, Yue Yang, Jiaqi Zeng, Ruisi Zhang, Ruoyu Zhang, and 1 others. 2020. Meddialog: Two large-scale medical dialogue datasets. arXiv preprint arXiv:2004.03329 .Simin Hong, Jun Sun, and Hongyang Chen. 2025. Third-person appraisal agent: Simulating human emotional reasoning in text with large language mod-els. In Findings of the Association for Computational Linguistics: EMNLP 2025 , pages 23684–23701. Edward J Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Liang Wang, Weizhu Chen, and 1 others. 2022. Lora: Low-rank adaptation of large language models. Iclr , 1(2):3. Laya Iyer, Kriti Aggarwal, Sanmi Koyejo, Gail Hey-man, Desmond C Ong, and Subhabrata Mukherjee. 2026. Heart: A unified benchmark for assessing hu-mans and llms in emotional support dialogue. arXiv preprint arXiv:2601.19922 .Jiun-Hao Jhan, Chao-Peng Liu, Shyh-Kang Jeng, and Hung-Yi Lee. 2021. Cheerbots: Chatbots toward empathy and emotionusing reinforcement learning. 
+
+arXiv preprint arXiv:2110.03949 .Michal Kosinski. 2023. Theory of mind may have spon-taneously emerged in large language models. arXiv preprint arXiv:2302.02083 , 4:169. 
+
+9Richard S Lazarus. 1991. Emotion and adaptation . Ox-ford University Press. Harrison Lee, Samrat Phatale, Hassan Mansoor, Kel-lie Ren Lu, Thomas Mesnard, Johan Ferret, Colton Bishop, Ethan Hall, Victor Carbune, and Abhinav Rastogi. 2023a. Rlaif: Scaling reinforcement learn-ing from human feedback with ai feedback. Yoon Kyung Lee, Inju Lee, Minjung Shin, Seoyeon Bae, and Sowon Hahn. 2023b. Chain of empathy: En-hancing empathetic response of large language mod-els based on psychotherapy models. arXiv preprint arXiv:2311.04915 .Cheng Li, Jindong Wang, Yixuan Zhang, Kaijie Zhu, Wenxin Hou, Jianxun Lian, Fang Luo, Qiang Yang, and Xing Xie. 2023. Large language models un-derstand and can be enhanced by emotional stimuli. 
+
+arXiv preprint arXiv:2307.11760 .Yanran Li, Hui Su, Xiaoyu Shen, Wenjie Li, Ziqiang Cao, and Shuzi Niu. 2017. Dailydialog: A manually labelled multi-turn dialogue dataset. arXiv preprint arXiv:1710.03957 .Siyang Liu, Chujie Zheng, Orianna Demasi, Sahand Sabour, Yu Li, Zhou Yu, Yong Jiang, and Minlie Huang. 2021. Towards emotional support dialog systems. arXiv preprint arXiv:2106.01144 .Andrew Ortony, Gerald L Clore, and Allan Collins. 2022. The cognitive structure of emotions . Cam-bridge university press. Long Ouyang, Jeffrey Wu, Xu Jiang, Diogo Almeida, Carroll Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, and 1 others. 2022. Training language models to follow in-structions with human feedback. Advances in neural information processing systems , 35:27730–27744. Soujanya Poria, Devamanyu Hazarika, Navonil Ma-jumder, Gautam Naik, Erik Cambria, and Rada Mi-halcea. 2019. Meld: A multimodal multi-party dataset for emotion recognition in conversations. In 
+
+Proceedings of the 57th annual meeting of the associ-ation for computational linguistics , pages 527–536. Yushan Qian, Weinan Zhang, and Ting Liu. 2023. Har-nessing the power of large language models for empa-thetic response generation: Empirical investigations and improvements. In Findings of the Association for Computational Linguistics: EMNLP 2023 , pages 6516–6528. Chen Qu, Liu Yang, W Bruce Croft, Johanne R Trippas, Yongfeng Zhang, and Minghui Qiu. 2018. Analyzing and characterizing user intent in information-seeking conversations. In The 41st international acm sigir conference on research & development in informa-tion retrieval , pages 989–992. Rafael Rafailov, Archit Sharma, Eric Mitchell, Christo-pher D Manning, Stefano Ermon, and Chelsea Finn. 2023. Direct preference optimization: Your language model is secretly a reward model. Advances in neural information processing systems , 36:53728–53741. Tazeek Bin Abdur Rakib, Ambuj Mehrish, Lay-Ki Soon, Wern Han Lim, and Soujanya Poria. 2025. Dialogxpert: Driving intelligent and emotion-aware conversations through online value-based reinforce-ment learning with llm priors. arXiv preprint arXiv:2505.17795 .Hannah Rashkin, Eric Michael Smith, Margaret Li, and Y-Lan Boureau. 2019. Towards empathetic open-domain conversation models: A new benchmark and dataset. In Proceedings of the 57th annual meeting of the association for computational linguistics , pages 5370–5381. Sneheel Sarangi, Maha Elgarf, and Hanan Salam. 2025. Decompose-tom: Enhancing theory of mind reason-ing in large language models through simulation and task decomposition. In Proceedings of the 31st in-ternational conference on computational linguistics ,pages 10228–10241. Klaus R Scherer. 2001. Appraisal considered as a pro-cess of multilevel sequential checking. Appraisal processes in emotion: Theory, methods, research ,92(120):57. John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, and Oleg Klimov. 2017. Proxi-mal policy optimization algorithms. arXiv preprint arXiv:1707.06347 .Zhihong Shao, Peiyi Wang, Qihao Zhu, Runxin Xu, Junxiao Song, Xiao Bi, Haowei Zhang, Mingchuan Zhang, YK Li, Yang Wu, and 1 others. 2024. Deepseekmath: Pushing the limits of mathematical reasoning in open language models. arXiv preprint arXiv:2402.03300 .Vera Sorin, Dana Brin, Yiftach Barash, Eli Konen, Alexander Charney, Girish Nadkarni, and Eyal Klang. 2024. Large language models and empathy: system-atic review. Journal of medical Internet research ,26:e52597. Xingyu Sui, Yanyan Zhao, Yulin Hu, Jiahe Guo, Weix-iang Zhao, and Bing Qin. 2026. Tea-bench: Asystematic benchmarking of tool-enhanced emo-tional support dialogue agent. arXiv preprint arXiv:2601.18700 .Kimi Team, Yifan Bai, Yiping Bao, Guanduo Chen, Jiahao Chen, Ningxin Chen, Ruijue Chen, Yanru Chen, Yuankun Chen, Yutian Chen, and 1 others. 2025. Kimi k2: Open agentic intelligence. arXiv preprint arXiv:2507.20534 .Haibo Tong, Zeyang Yue, Feifei Zhao, Erliang Lin, Lu Jia, Ruolin Chen, Yinqian Sun, Qian Zhang, and Yi Zeng. 2026. Cogtom: A comprehensive theory of mind benchmark inspired by human cog-nition for large language models. arXiv preprint arXiv:2601.15628 .
+
+10 Chengbing Wang, Wuqiang Zheng, Yang Zhang, Feng-bin Zhu, Junyi Cheng, Yi Xie, Wenjie Wang, and Fuli Feng. 2026. Perm: Psychology-grounded empathetic reward modeling for large language models. arXiv preprint arXiv:2601.10532 .Peisong Wang, Ruotian Ma, Bang Zhang, Xingyu Chen, Zhiwei He, Kang Luo, Qingsong Lv, Qingxuan Jiang, Zheng Xie, Shanyi Wang, Yuan Li, Fanghua Ye, Jian Li, Yifan Yang, Zhaopeng Tu, and Xiaolong Li. 2025. Rlver: Reinforcement learning with verifiable emotion rewards for empathetic agents. Preprint ,arXiv:2507.03112. Xuena Wang, Xueting Li, Zi Yin, Yue Wu, and Jia Liu. 2023. Emotional intelligence of large lan-guage models. Journal of Pacific Rim Psychology ,17:18344909231213958. Zhunheng Wang, Xiaoyi Liu, Mengting Hu, Rui Ying, Ming Jiang, Jianfeng Wu, Yalan Xie, Hang Gao, and Renhong Cheng. 2024. Ecok: Emotional common-sense knowledge graph for mining emotional gold. In Findings of the Association for Computational Linguistics ACL 2024 , pages 8055–8074. Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Fei Xia, Ed Chi, Quoc V Le, Denny Zhou, and 1 others. 2022. Chain-of-thought prompting elic-its reasoning in large language models. Advances in neural information processing systems , 35:24824– 24837. An Yang, Anfeng Li, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo Zheng, Bowen Yu, Chang Gao, Chengen Huang, Chenxu Lv, and 1 others. 2025a. Qwen3 technical report. arXiv preprint arXiv:2505.09388 .Ting Yang, Li Chen, and Huimin Wang. 2025b. To-wards open-ended emotional support conversations in llms via reinforcement learning with future-oriented rewards. arXiv preprint arXiv:2508.12935 .Gerard Christopher Yeo and Kokil Jaidka. 2025. Be-yond context to cognitive appraisal: Emotion reason-ing as a theory of mind benchmark for large language models. In Findings of the Association for Computa-tional Linguistics: ACL 2025 , pages 26517–26525. Naifan Zhang, Ruihan Sun, Ruixi Su, Shiqi Ma, Shiya Zhang, Xianna Weng, Xiaofan Zhang, Yuhan Zhan, Yuyang Xu, Zhaohan Chen, and 1 others. 2025. Echo-n1: Affective rl frontier. arXiv preprint arXiv:2512.00344 .Qiang Zhang, Jason Naradowsky, and Yusuke Miyao. 2023. Ask an expert: Leveraging language models to improve strategic reasoning in goal-oriented dialogue models. arXiv preprint arXiv:2305.17878 .Yifan Zhang, Christopher Radishian, Sabine Brunswicker, Dan Whitenack, and Daniel WLinna Jr. 2024. Empathetic language in llms under prompt engineering: A comparative study in the legal field. Procedia Computer Science , 244:308–317. Zhonghua Zheng, Lizi Liao, Yang Deng, and Liqiang Nie. 2023. Building emotional support chatbots in the era of llms. arXiv preprint arXiv:2308.11584 .
+
+A Reward Rubrics 
+
+This section summarizes the judging criteria for the turn-level rewards and the trajectory-level emo-tional reward used in Stage II training. 
+
+Cognitive reliability reward Rcog (t). Evaluates whether the response yt is factually and logically consistent with the dialogue context x≤t. Higher re-wards are assigned to grounded, context-consistent responses, while hallucinations, contradictions, and unsupported claims receive lower scores. 
+
+ARG trace quality reward RARG (t). Evalu-ates whether the structured reasoning trace is well-formed and semantically coherent. This in-cludes grounded facts, justified needs, plausible ap-praisals, emotion–appraisal consistency, and strat-egy relevance. Lower rewards are given for unsup-ported inferences or internally inconsistent reason-ing chains. 
+
+Reverse-perspective reward RRP (t). Com-puted as RRP (t) = S(ˆ s(n) 
+
+> t
+
+) based on the predicted user-side transition. Unlike RARG (t), which eval-uates the assistant’s internal reasoning, RRP (t)
+
+evaluates whether the predicted user-side needs– appraisal–emotion update is plausible, contextually consistent, and aligned with the chosen response strategy. 
+
+Overthinking penalty Roverthink (t). Penalizes redundant computation to encourage efficient rea-soning. Higher penalties are applied when the model explicitly invokes an ARG trace for sim-ple, straightforward queries, or when it performs excessive dynamic n-step lookahead that provides little additional predictive value. 
+
+Trajectory-level emotional reward Remo (τ ).
+
+Measures the net improvement in the user’s pre-dicted emotional state over the full trajectory. Com-puted as the difference between the predicted ini-tial and final emotional-state scores, where larger values indicate greater overall emotional improve-ment. Together, these rewards encourage responses that are cognitively reliable, structurally coherent, and beneficial to the predicted user-side emotional trajectory. 11 B Details of Stage II Training 
+
+B.1 Reverse-Perspective Reasoning Details 
+
+This subsection provides additional implementa-tion details for the reverse-perspective reasoning module used in Stage II. Its role is not to change the external response format, but to provide an in-ternal estimate of the user-side consequence of a candidate response for reward evaluation. 
+
+User-role transition prediction. At turn t, after generating response yt, the model is prompted in a user role to predict the user-side transition in-duced by yt given the dialogue history x≤t. The prediction target is a compact latent summary 
+
+ˆs(n) 
+
+> t
+
+= ( ˆNt, ˆAt, ˆEt),
+
+which represents the predicted post-response up-date in the user’s needs/goals, appraisals, and emo-tional state. 
+
+Iterative lookahead depth. The transition pre-dictor is applied iteratively for a small number of steps, 
+
+ˆs(1)  
+
+> t
+
+= Tθ(x≤t, y t), ˆs(k+1)  
+
+> t
+
+= Tθ(x≤t, y t, ˆs(k) 
+
+> t
+
+),
+
+to approximate short-horizon user-side conse-quence estimation. In practice, we use shallow lookahead with n ∈ { 1, 2, 3}, which is sufficient to capture immediate and near-future user-side effects while limiting error accumulation in the learned predictor. 
+
+Judge-based scoring. A judge model evaluates the predicted transition ˆs(n) 
+
+> t
+
+and produces the reverse-perspective reward RRP (t). The scoring rubric considers: (i) contextual consistency with 
+
+x≤t; (ii) psychological plausibility of the inferred needs, appraisals, and emotional state; and (iii) consistency between the predicted user-side con-sequence and the selected response strategy. This score is used as one component of the Stage II reward. 
+
+B.2 Reward Aggregation and GRPO Objective 
+
+For a trajectory τ = {(xt, z ARG  
+
+> t
+
+, y t)}Tt=1 , we first define the turn-level reward at step t as 
+
+rt = λcog Rcog (t) + λARG RARG (t)+ λRP RRP (t) − λover Roverthink (t).
+
+where the λ’s are nonnegative weighting coeffi-cients. We then combine turn-level rewards with the trajectory-level emotional reward Remo (τ ) to obtain the overall trajectory score 
+
+R(τ ) = 
+
+> T
+
+X
+
+> t=1
+
+rt + λemo Remo (τ ). (2) Following GRPO, for each prompt or initial dia-logue context, we sample a group of G trajectories 
+
+{τi}Gi=1 ∼ πθold (· | x),
+
+and compute their normalized relative advantages as 
+
+μR = 1
+
+G
+
+> G
+
+X
+
+> i=1
+
+R(τi), σ R =
+
+vuut 1
+
+G
+
+> G
+
+X
+
+> i=1
+
+ R(τi) − μR
+
+2.Ai = R(τi) − μR
+
+σR + ϵ .
+
+The policy is then optimized with the GRPO objective 
+
+LGRPO (θ) = Ex, {τi}Gi=1 
+
+"
+
+1
+
+G
+
+> G
+
+X
+
+> i=1
+
+ℓi(θ)
+
+#
+
+,ℓi(θ) = min 
+
+
+
+ρi(θ)Ai, clip  ρi(θ), 1 − ε, 1 + εAi
+
+
+
+.
+
+where 
+
+ρi(θ) = 
+
+> Ti
+
+Y
+
+> t=1
+
+πθ(yi,t | xi, ≤t)
+
+πθold (yi,t | xi, ≤t) . (3) In practice, we optimize the token-level implemen-tation of this objective as in standard RLHF/RLVR training, while the above trajectory-level form high-lights how cognitive, appraisal, reverse-perspective, and emotional signals are jointly incorporated. 
+
+B.3 Proof of Theorem 1 
+
+In this section, we prove Theorem 1 under the latent-state discounted MDP abstraction introduced in Section 3.2.2. The result isolates the truncation bias inherent in finite-depth simulations. 
+
+Setup. Let the true action-value function under policy π be 
+
+Qπ(s, a ) = E
+
+" ∞X
+
+> k=0
+
+γkr(sk, a k) s0 = s, a 0 = a
+
+#
+
+,
+
+and let its n-step truncated lookahead estimate be 
+
+Q(n) 
+
+> π
+
+(s, a ) = E
+
+"n−1X
+
+> k=0
+
+γkr(sk, a k) s0 = s, a 0 = a
+
+#
+
+.
+
+12 Proof. By decomposing the infinite discounted re-turn into its first n terms and the remaining tail, we have 
+
+Qπ(s, a ) − Q(n) 
+
+> π
+
+(s, a ) = E
+
+" ∞X
+
+> k=n
+
+γkr(sk, a k)
+
+| s0 = s, a 0 = a] .
+
+Taking absolute values and using the triangle in-equality gives 
+
+Qπ(s, a ) − Q(n) 
+
+> π
+
+(s, a )
+
+≤ E
+
+" ∞X
+
+> k=n
+
+γk|r(sk, a k)| s0 = s, a 0 = a
+
+#
+
+≤
+
+> ∞
+
+X
+
+> k=n
+
+γkRmax 
+
+= γn
+
+> ∞
+
+X
+
+> j=0
+
+γj Rmax = γn
+
+1 − γ Rmax .
+
+This proves the claim. 
+
+C Dataset Sources and Scenario Preparation 
+
+Table 5 summarizes datasets used across stages of 
+
+EmoLLM . These span emotional support, techni-cal assistance, medical consultation, and academic peer review, enabling evaluation of cognitive– emotional co-reasoning under diverse interaction settings. 
+
+C.1 Stage I: Continued Pretraining Sources 
+
+For Stage I continued pretraining, ESConv (Liu et al., 2021) is used as the primary emotional sup-port corpus, augmented with appraisal-relevant knowledge from the ECoK graph (Wang et al., 2024). ECoK provides structured affective triples as weak structural grounding signals during contin-ued pretraining. 
+
+C.2 Stage II: Role-Play Scenario Sources 
+
+For ARG-guided supervised initialization and role-play reinforcement learning, EmpatheticDia-logues (Rashkin et al., 2019), MSDialog (Qu et al., 2018), MedDialog (He et al., 2020), and ICLR peer-review comments are used. For supervised initialization, 10% of training contexts are ran-domly sampled from each dataset and annotated with teacher-generated ARG traces and gating la-bels. For role-play training, dialogue examples are converted into compact scenario seeds summa-rizing the initial user situation and context, rather than replaying full conversations. Evaluation uses separately constructed held-out scenario sets in the same format, ensuring controlled and comparable multi-turn interactions without train–test leakage. 
+
+C.3 Scenario Construction 
+
+For multi-turn role-play evaluation, dialogue exam-ples from test splits are transformed into unified scenario seeds. Instead of replaying full conver-sations, a compact scenario representation is ex-tracted using the GPT API ( gpt-5-mini ), so each episode starts from a controlled yet open-ended initialization. For each dataset, 100 dialogue instances are ran-domly sampled from the test split. Given a dialogue example, GPT summarizes the interaction into two fields: (1) scenario , describing the assistant role and user situation, and (2) initial_prompt , the opening user utterance. The resulting format is 
+
+> {"scenario": "You are an empathetic companion supporting someone who feels emotionally overloaded and drained.", "initial_prompt": "Everything feels piled up at once, and I cannot keep up anymore." }
+
+This abstraction preserves essential situational and emotional context while preventing leakage from future turns. All models therefore start from the same initial condition and must generate the subsequent interaction trajectory. The constructed scenario sets will be released as a benchmark for reproducible evaluation of multi-turn cognitive– emotional interactions. 
+
+C.4 Role-Play Reformulation 
+
+All datasets are converted into a unified scenario-based format for multi-turn simulation. For single-turn sources (e.g., MedDialog), minimal conversa-tional scaffolds are constructed to preserve intent while enabling interactive role-play rollouts. For multi-turn sources, the original dialogue structure is retained when extracting scenario seeds and ini-tializing context. 
+
+D Training Setup 
+
+D.1 Stage I: Initialization Knowledge-Grounded Continued Pretraining. 
+
+In Stage I CPT, dialogue contexts are augmented 13 Table 5: Dataset statistics for EmoLLM training and evaluation.                             
+
+> Dataset Stage Conversations Avg. Turns Domain
+> ESConv CPT 1,300 10–15 Emotional Support ECoK CPT 24,000+ triples –Knowledge Graph MSDialog SFT/RL 35,536 5–10 Technical Support EmpatheticDialogues SFT/RL 23,149 4–6 Empathetic Dialogue MedDialog SFT/RL 603 1Medical Consultation ICLR Comments SFT/RL 18,942 3–5 Academic Discourse
+
+with appraisal-relevant knowledge retrieved from the ECoK graph and linearized as short reasoning blocks prepended to the input. The model is trained with a standard causal language modeling objective over the full sequence. We use LoRA (Hu et al., 2022) ( r=16 , α=32 , dropout 0.1) on the attention and MLP projections. Training uses AdamW with learning rate 1 × 10 −4, per-device batch size 16 ,gradient accumulation 2, one epoch, maximum se-quence length 320 , 100 warmup steps, and gradient clipping 1.0. BF16 is used where supported, other-wise FP16. 
+
+Supervised Reasoning Initialization. For su-pervised initialization, we construct a teacher-generated instruction-tuning dataset of ARG-aligned assistant outputs using gpt-5-mini . Each instance contains the full dialogue history as con-text, and loss is applied only to the teacher-generated target, which may include either an ARG trace plus response or a response-only output. We use the same LoRA configuration as in CPT. Train-ing uses AdamW with learning rate 2 × 10 −4,per-device batch size 2, gradient accumulation 4,three epochs, maximum sequence length 2,048 ,
+
+100 warmup steps, and gradient clipping 1.0.
+
+D.2 Stage II: Reinforcement Learning Reinforcement Learning Setup. Stage II rein-forcement learning is conducted in simulated multi-turn conversations of up to 8 turns. A user simu-lator ( gpt-5-mini ) generates user responses con-ditioned on the evolving dialogue state. Policy optimization uses GRPO (Shao et al., 2024) with KL coefficient β=0 .01 . At each turn, EmoLLM samples G=4 candidate responses (temperature 
+
+0.8, top-p=0 .9, top-k=50 , repetition penalty 1.1,up to 256 new tokens) to form a group for relative reward estimation. These candidates are evaluated by an LLM-based judge ( gpt-5-mini ) using the reward components defined in Section 3.2.2 and Appendix A. We train up to 50 RL steps with a new LoRA adapter ( r=16 , α=32 , dropout 0.1) on top of the merged Stage I model, using AdamW with learning rate 1 × 10 −5 and gradient clipping 1.0.
+
+D.3 Implementation Details 
+
+All experiments use Qwen3-8B as the main back-bone. The CPT and supervised initialization adapters are trained sequentially and merged into the base model before Stage II. Context length is truncated to 2,048 tokens during generation and to 
+
+896 tokens during GRPO updates for memory effi-ciency. Training is implemented in PyTorch with HuggingFace Transformers and PEFT. All mod-els are trained once, while evaluation results are averaged over three independent runs. 
+
+E Baselines 
+
+We compare EmoLLM with representative base-lines spanning four categories: the base model, prompting-based methods, supervised fine-tuning methods, and reinforcement learning methods. This grouping follows the main design paradigms used in emotionally aware dialogue modeling and matches the organization in Table 1. 
+
+E.1 Base Model Qwen3-8B. The instruction-tuned base language model is evaluated directly under standard prompt-ing, without explicit emotional reasoning instruc-tions or task-specific adaptation. 
+
+E.2 Prompting Methods Best-of-N . We sample multiple candidate re-sponses from the base model and select the one with the highest evaluation score according to the same LLM-based evaluator used in our framework. 
+
+ARG-Prompt. We prompt the base model to fol-low the ARG scaffold at inference time before gen-erating the final response, isolating the effect of structured prompting without additional training. 
+
+Ask-an-Expert (Zhang et al., 2023). An instruction-based prompting method that encour-ages the model to reason as a dialogue strategy expert before producing a response. 14 ICL-AIF (Fu et al., 2023). An in-context multi-agent framework in which LLMs perform emo-tional role-play and an additional model provides iterative feedback for refinement. 
+
+E.3 Supervised Fine-Tuning Methods SFT. A standard supervised fine-tuning baseline using response-level supervision only, without ex-plicit reasoning-trace supervision. 
+
+ESCoT (Rashkin et al., 2019). A chain-of-thought supervision baseline that guides the model through emotion recognition, appraisal, and supportive strategy planning before response generation. 
+
+PPDP (Deng et al., 2023). A strategy-planning framework that predicts dialogue strategies and improves responses using AI-feedback-driven opti-mization. 
+
+E.4 Reinforcement Learning Methods RLFF-ESC (Yang et al., 2025b). A reinforcement learning baseline for emotional support dialogue that optimizes responses using rewards defined over simulated future interaction outcomes. 
+
+RLVER (Wang et al., 2025). A reinforcement learning method that uses verifiable emotion-related rewards derived from simulated user emo-tional states. 
+
+PERM (Wang et al., 2026). A preference-based reinforcement learning method for emotional di-alogue generation that optimizes responses using feedback on empathy and helpfulness quality. 
+
+F Evaluation Protocol and Metrics 
+
+Multi-turn role-play protocol. All evaluations are conducted in a multi-turn role-play setting un-der an LLM-as-a-Judge framework. A fixed LLM-based user simulator generates user replies and emotional transitions, while a separate LLM-based evaluator scores outcomes. For each dataset, we construct scenario seeds specifying the initial user state, context, and implicit intent. Each model is evaluated on the same scenarios with a fixed maxi-mum number of turns. An episode terminates when a predefined emotional success condition is met or the turn limit is reached. 
+
+Success Rate and Average Turns. At each turn, an LLM-based evaluator determines whether the dialogue reaches a satisfactory emotional resolu-tion under the given scenario. Success Rate (SR) is the percentage of episodes that reach such a state within the turn limit. Average Turns (AT) mea-sures the mean number of assistant turns required to reach success, computed over successful episodes. 
+
+Emotional State (ES). Emotional State (ES) measures the predicted user emotional state at the end of the dialogue. An LLM-based evaluator as-signs a trajectory-level score on a 1–5 Likert scale, where higher values correspond to more positive states (e.g., relief, comfort, or reassurance). Given the predicted final state eT , we report the average ES across episodes. Higher ES indicates more pos-itive user states at the end of the interaction. 
+
+Emotional Gain per Turn (EG/Turn). To quan-tify emotional improvement normalized by inter-action length, we define Emotional Gain per Turn (EG/Turn). Let e0 and eT denote the predicted ini-tial and final user states on the same 1–5 scale, and let T denote the number of assistant turns until ter-mination. We compute EG /Turn = ( eT − e0)/T .Higher values indicate larger improvement per turn. We report EG/Turn when analyzing trajectory effi-ciency, such as in Figure 4. 
+
+Empathic Appropriateness. Empathic Appro-priateness (EA) evaluates response quality in terms of empathy, tone, and contextual fit. An LLM-based judge assigns a 1–5 Likert score to each re-sponse based on whether it acknowledges the user’s emotional state, provides supportive and relevant guidance, and avoids dismissive or inappropriate language. EA scores are averaged across dialogue turns and episodes. 
+
+Factual Accuracy. Factual Accuracy (FA) mea-sures whether responses remain correct on fact-sensitive turns, such as technical assistance or med-ical consultation. An LLM-based evaluator checks for hallucinations, incorrect claims, or misleading suggestions against reference information or do-main knowledge. FA is reported as the percentage of factually correct responses. 
+
+G Additional Experiments 
+
+G.1 Response Quality Analysis 
+
+Beyond task-level metrics, we further evaluate re-sponse quality along six human-centered dimen-sions relevant to emotional support dialogue: Em-pathy, Topic Guidance, Value Guidance, Intention Following, Fluency, and Colloquial Expression. We use an LLM-based evaluation protocol with a five-point Likert scale, where each response is 15 Empathy       
+
+> Topic Value
+> Intention Following
+> Fluency Colloquial Expression
+> 3.5 4.0 4.5 5.0
+> Base +ARG +ARG+RP
+
+Figure 6: Response-quality evaluation across six human-centered dimensions. Scores are measured on a 1–5 Lik-ert scale and linearly mapped to the plotted radial range for visualization. EmoLLM improves empathy and guidance-related dimensions over both the base model and the ARG-only variant, while preserving strong flu-ency and naturalness. 
+
+scored independently on these dimensions under a fixed rubric and prompt template. Scores are averaged across sampled dialogue episodes to ob-tain model-level results. As shown in Figure 6, EmoLLM improves empathy- and guidance-related dimensions over the base model and the ARG-only variant, while maintaining strong fluency and nat-ural conversational expression. These results sug-gest that structured appraisal reasoning helps the model better infer latent user needs and produce more supportive responses. 
+
+G.2 Backbone Generalization 
+
+Table 6: Backbone generalization results on LLaMA-3.1-8B. EmoLLM consistently improves emotional in-telligence metrics (SR, ES, AT, and EA) while also yielding stronger factual accuracy (FA) across datasets.                                                   
+
+> Dataset Model SR (%) ES AT EA FA (%)
+> ED Base 71.4 4.18 3.46 3.21 44.7 EmoLLM 95.6 4.37 1.94 4.45 77.9
+> MSD Base 88.7 3.86 2.73 2.52 52.4 EmoLLM 94.8 4.05 1.36 4.02 66.8
+> MedD Base 84.9 3.71 1.57 3.39 61.8 EmoLLM 91.2 3.92 1.24 4.06 76.4
+> ICLR Base 79.6 3.42 3.08 3.31 50.3 EmoLLM 89.1 3.78 2.15 3.92 70.6
+
+To assess backbone generalization, we replicate the EmoLLM training pipeline on LLaMA-3.1-8B (Grattafiori et al., 2024). Table 6 compares EmoLLM with the corresponding base model un-der the same evaluation protocol. EmoLLM con-sistently improves emotional intelligence and inter-action quality across all benchmarks. These results indicate that the benefits of structured cognitive– emotional co-reasoning are not backbone-specific and transfer effectively to alternative open-weight LLMs. 
+
+G.3 Efficiency Analysis 
+
+Table 7: Output-token overhead comparison between the base model and EmoLLM across the four evaluation datasets                      
+
+> Dataset Tokens / Turn Tokens / Conversation Base EmoLLM Base EmoLLM
+> ED 92 115 410 403 MSD 105 127 520 534 MedD 118 138 610 581 ICLR 96 116 470 446
+
+We analyze the efficiency of EmoLLM by com-paring output tokens with the base model. We report average tokens per turn and per conver-sation across four datasets. As shown in Ta-ble 7, EmoLLM produces moderately more tokens per turn due to selectively triggered co-reasoning traces. However, conversation-level overhead re-mains small and is sometimes even lower than the base model, because improved interaction ef-ficiency (i.e., fewer turns to resolution; Table 1) partially offsets the added tokens at each turn. This is further aided by the compact ARG representation relative to free-form chain-of-thought. 
+
+G.4 Manual Preference Check 
+
+Table 8: Manual ranking comparison between the base model, SFT, and EmoLLM. Lower average rank indi-cates better preference.                
+
+> Dataset Base SFT EmoLLM
+> ED 2.52 2.01 1.47 MSD 2.48 2.06 1.46 MedD 2.57 2.00 1.43 ICLR 2.44 2.08 1.48
+
+To complement the LLM-based evaluation, we conduct a small-scale blinded internal preference check comparing three systems: the base model (Qwen3-8B), the SFT model, and EmoLLM. For each dataset, we randomly sample 25 dialogue sce-narios and generate conversation trajectories from all three systems under identical prompts, resulting in 100 comparisons in total. For each scenario, the three trajectories are presented in randomized order with system identities hidden, and are ranked from 16 best to worst based on overall interaction quality, considering contextual appropriateness, emotional support, and response coherence. The reported score corresponds to the average rank of each sys-tem across the evaluated scenarios, where lower values indicate better preference. As shown in Ta-ble 8, EmoLLM consistently achieves the best aver-age rank across all datasets. Because this check is small in scale and intended only for qualitative val-idation, it should be interpreted as supplementary evidence rather than a formal human evaluation. 
+
+H Prompt Templates and Multi-Turn Role-Play Environment 
+
+We summarize representative prompt templates used for Stage I supervision, Stage II rollout, user simulation, and evaluation. The templates below illustrate the core formats used in our implementa-tion; minor wording variations may be used across stages or experimental settings. Prompts with ex-plicit reverse-perspective fields are used only dur-ing training-time rollout or controlled comparison. At inference time, EmoLLM generates responses directly without explicitly instantiating these fields. 
+
+Stage I: Supervised Initialization SFT Training Target Format. 
+
+Input (dialogue context): User: ... Assistant: ... User: ... ... Target (assistant output): <think> [Contextual Facts] ... [Inferred Needs and Goals] ... [Appraisal] ... [Emotional State] ... [Response Strategy] ... [Optional Reverse-Perspective Step 1] ... ( optional in a subset of teacher-generated samples) [Optional Reverse-Perspective Step 2] ... ( optional in a subset of teacher-generated samples) [Optional Reverse-Perspective Step 3] ... ( optional in a subset of teacher-generated samples) [Optional Strategy Revision Based on Reverse-Perspective Steps] ... (optional in a subset of teacher-generated samples) </think> <response> ... </response> 
+
+The optional reverse-perspective fields above are teacher-side augmentation and are not part of the core ARG state definition. 
+
+ARG Annotation Prompt. 
+
+You are an empathetic and thoughtful conversational assistant. Given a multi-turn conversation history and a current user message, generate an ARG-aligned reasoning trace and a response. Conversation History: <prior dialogue turns or "(No previous conversation)"> Current User Message: <current user utterance> Please provide your answer in the following EXACT format. The optional reverse-perspective sections should be included only when they provide useful additional reasoning. <think> [Contextual Facts] [Briefly summarize key facts/ events from the conversation.] [Inferred Needs and Goals] [Infer the user 'ssalient needs, goals, or concerns.] [Appraisal] [Evaluate facts relative to needs/ goals (e.g., goal congruence, controllability, responsibility).] [Emotional State] [State the emotional state implied by the appraisal.] [Response Strategy] [Select a response strategy conditioned on the previous sections. Include tone and concrete action focus.] [Optional Reverse-Perspective Step 1] [Optional: likely immediate user-side reaction to this response.] [Optional Reverse-Perspective Step 2] [Optional: next-step user reaction hypothesis.] [Optional Reverse-Perspective Step 3] [Optional: next-step user reaction hypothesis.] [Optional Strategy Revision Based on Reverse-Perspective Steps] [Optional: revise or confirm the strategy after considering rollout hypotheses.] </think> <response> [Your actual response to the user -- natural, empathetic, and contextually appropriate] </response> IMPORTANT: - Follow the EXACT section names and order shown above - Keep each section specific and grounded in the dialogue context - Do not invent unrelated facts - The optional reverse-perspective sections are teacher-side augmentation and are not part of the core ARG state definition - The final response should be natural, empathetic, and actionable 
+
+Annotation Prompt (response-only samples). 
+
+17 You are an empathetic and concise conversational assistant. Conversation History: <prior dialogue turns or "(No previous conversation)"> Current User Message: <current user utterance> For this sample, a structured reasoning trace is NOT required. Please output ONLY this format: <response> [Your actual response to the user -- natural, empathetic, and contextually appropriate] </response> IMPORTANT: - Do NOT output <think>...</think> - Keep the response direct, supportive, and actionable - Do not invent unrelated facts 
+
+Stage II: Multi-Turn RL with Reverse-Perspective Reasoning (A) Stage II training prompt with explicit reverse-perspective scaffold. 
+
+Dialogue History: <prior dialogue turns or "(No previous conversation)"> Current User Message: <current user utterance> Please respond in the following format. Use up to K=<rp_k_steps> reverse-perspective steps. You may stop early when the predicted user-side trajectory is already stable. Keep <think> concise: each section should be 1-2 short lines. Keep <response> concise and practical; typically 2-5 sentences unless more detail is needed. <think> [Contextual Facts] [Key contextual facts/events from the dialogue.] [Inferred Needs and Goals] [The user 's salient needs/goals.] [Appraisal] [Evaluation of facts relative to needs (goal congruence, controllability, responsibility).] [Emotional State] [Emotional state implied by the appraisal.] [Response Strategy] [Response strategy conditioned on contextual facts, needs, appraisal, and emotion.] [Reverse-Perspective Step 1] [Likely immediate user-side consequence of this candidate response.] ... [Reverse-Perspective Step K] [Optional next-step user-side consequence hypothesis.] [Chosen Strategy Based on Reverse-Perspective Steps] [Select or revise the response strategy after considering the predicted user-side consequences.] </think> <response> [Your actual response] </response> 
+
+These reverse-perspective fields are used only dur-ing training-time rollout to evaluate the user-side consequence of a candidate strategy/response; they are not explicitly instantiated at inference time. 
+
+(B) Comparison / ablation mode without explicit reverse-perspective scaffold. 
+
+Dialogue history only (no explicit reverse-perspective scaffold is injected): User: ... Assistant: ... User: ... ... Model generates the next assistant reply directly. (No forced reverse-perspective structure in this mode.) 
+
+(C) User-simulator prompt (generate next user turn). 
+
+You are role-playing as the USER in the following scenario: <scenario text> Instructions: - Stay in character based on the scenario - Respond naturally and conversationally - Express emotions and reactions appropriate to the scenario - Keep responses concise (1-3 sentences) - You are on turn <turn_number> of up to < max_turns> turns - You are the user in this interaction, NOT the assistant - Do not switch roles or start solving the problem for the assistant - If the conversation is reaching a natural conclusion, you may indicate that - Use first-person user voice only Respond ONLY as the user character, with no meta-commentary. Output only the user 's next utterance in plain text. 
+
+Multi-Turn Interaction Environment 
+
+We use the same scenario-based multi-turn envi-ronment for both training and evaluation. Each episode starts from a scenario seed consisting of a scenario description and an initial user utterance, and terminates when a stopping condition is met or the turn budget is exhausted. 18 Training-time interaction loop. During Stage II reinforcement learning, each episode runs for at most max_turns turns. At turn t, the policy gen-erates num_samples assistant candidates in paral-lel. For each candidate, the user simulator pro-duces the next user reply, after which turn-level rewards are computed using a composite scoring function including cognitive reliability, ARG trace quality, reverse-perspective reasoning quality, and an overthinking penalty. Internal reasoning fields are used only for rollout-time evaluation and are not retained in the dialogue history. After termination, a trajectory-level emotional reward is computed to update the policy. 
+
+Evaluation-time interaction loop. At evaluation time, we use the same simulator but decode a single assistant response at each turn. Given the gener-ated response, the simulator produces the next user reply, and the evaluator computes turn-level signals including sr_proxy . Here, sr_proxy ∈ { 0, 1}
+
+indicates whether the dialogue reaches a satisfac-tory emotional resolution under the scenario, and the success turn is defined as the first turn with 
+
+sr_proxy = 1 . SR and AT are computed from these success turns over all scenarios. Episode-level metrics, including ES, EA, and FA, are eval-uated on completed dialogues and aggregated for each dataset. When needed, EG/Turn is derived from the initial and final emotional-state scores normalized by dialogue length. 
+
+Termination conditions. A dialogue episode ter-minates under either of the following conditions: • the number of turns reaches max_turns ; or • the latest user utterance contains an end-of-conversation indicator, such as thank you ,
+
+thanks , goodbye , bye , that’s all , that’s enough ,
+
+i’m done , no more questions , or i understand now .
+
+LLM-as-a-Judge Prompts Judge Prompt 1: Emotional State Scoring (for ES; also used to derive EG/Turn). 
+
+> Analyze the emotional state expressed in the user text. Context: <scenario or optional dialogue context> User text: """<user utterance>""" Return ONLY one number in [1, 5]: 1 = highly distressed, hopeless, or emotionally overwhelmed 2 = clearly negative or strained 3 = neutral or mixed 4 = mildly positive, reassured, or more settled 5 = clearly positive, relieved, or emotionally stabilized
+
+Judge Prompt 2: Turn-Level Quality (SR, EA, FA). 
+
+> Evaluate one assistant turn in an emotionally grounded multi-turn dialogue. Scenario: <scenario description> Recent context: <recent dialogue turns> Assistant response: """<assistant reply>""" User follow-up: """<subsequent user reply>""" Rate with conservative judgment and return JSON only: {"sr_proxy": number, // binary: 1 if this turn achieves satisfactory emotional resolution , else 0 "ea": number, // 1~5, empathic appropriateness "fa": number // binary: 1 if factually reliable / grounded, else 0 }Rubric: - sr_proxy: 1 only if the current turn already reaches a satisfactory emotional resolution under the scenario; otherwise 0. - ea: warmth + validation + non-judgment + fit of support to the user 's needs. - fa: 1 if the response is factually reliable / grounded; otherwise 0.
+
+I Illustrative EmoLLM Examples 
+
+This section provides two illustrative examples to clarify how EmoLLM operates during training and inference. Section I.1 demonstrates how reverse-perspective reasoning is used during Stage II train-ing to evaluate the user-side consequence of a candidate response. Section I.2 shows a typical inference-time interaction where the learned policy generates responses directly. 
+
+I.1 Training-Time Illustration: Reverse-Perspective Evaluation 
+
+The following example illustrates how Stage II training evaluates the user-side consequence of a candidate response in a workplace-support scenario. For brevity, we show the structured appraisal rea-19 soning, a candidate response, and one-step reverse-perspective reasoning for the first assistant turn only. 
+
+User. I have a project deadline tomorrow, and my man-ager just messaged me asking for another revision tonight. I know I should keep working, but honestly I feel like shutting down. I do not even know where to start. 
+
+EmoLLM Thinking (ARG). 
+
+• Contextual Facts: The user faces an imminent deadline; the manager requested an additional re-vision tonight; the user feels overwhelmed and unable to start. • Inferred Needs: Regain a sense of control; reduce immediate stress; make concrete progress without further escalation. • Appraisal: The situation is high-pressure and time-sensitive; the user perceives low coping capacity and high evaluation risk. • Emotional State: Overwhelm; anxiety; possible helplessness. • Response Strategy: First stabilize the user emo-tionally, then offer a minimal and concrete action plan for the next step. 
+
+Candidate Response (for training-time evaluation). 
+
+You should break the revision into parts and start with the most urgent changes first. Make a checklist, prioritize the manager’s comments, and try to finish one section at a time tonight. 
+
+Reverse-Perspective Reasoning. 
+
+• Predicted User Need Update: The user’s immedi-ate need is to reduce pressure and regain a sense of control before handling the full revision workload. • Predicted Appraisal: The response is task-oriented but assumes the user is already capable of organizing and executing the plan. • Predicted Emotion: Anxiety and shutdown risk may remain high; the user may feel even more pressured by being told what they “should” do. • Preferred Strategy: Reduce pressure, validate the overwhelm, and suggest one small actionable step before expanding to a broader plan. 
+
+This example illustrates how reverse-perspective reasoning assigns lower reward to responses that overlook the user’s emotional state and favors alter-natives that better stabilize the user before propos-ing concrete actions. 
+
+I.2 Inference-Time Interaction 
+
+At inference time, EmoLLM generates responses directly using the learned policy without explic-itly performing reverse-perspective reasoning. The perspective-taking capability is implicitly internal-ized through reinforcement learning. 
+
+User. I have a project deadline tomorrow, and my man-ager just messaged me asking for another revision tonight. I know I should keep working, but honestly I feel like shutting down. I do not even know where to start. 
+
+EmoLLM. 
+
+That sounds really overwhelming, especially with the deadline being so close and another revision coming in tonight. When everything feels urgent at once, it is easy to feel stuck. Instead of trying to handle the whole project right away, try opening the revision request and identifying the single most important change your manager mentioned. Starting with just that one step can help you regain momentum. 
+
+User. I can probably do that, but I am scared that even if I fix one thing, it still will not be enough. 
+
+EmoLLM. 
+
+That fear makes sense when everything feels high-stakes. The goal right now is not to make the entire project perfect in one step; it is to regain some momentum and reduce the immediate pressure. After identifying the first change, you can separate the revision into “must-fix tonight” and “can improve later.” That way you are responding strategically to the deadline instead of trying to solve everything at once. 
+
+User. Okay, the main change is that the introduction needs to be rewritten. What should I do first? 
+
+EmoLLM. 
+
+Start by writing a rough two- or three-sentence version of the new introduction without worrying about polish. The goal is simply to get a workable draft on the page. Once that is done, you can refine wording and add details, but having a rough version first often makes the task feel much more manageable. 
+
+20

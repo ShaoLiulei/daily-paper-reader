@@ -1,0 +1,719 @@
+Title: Diminishing Returns in Expanding Generative Models and Godel-Tarski-Lob Limits
+
+URL Source: https://arxiv.org/pdf/2603.19687v1
+
+Published Time: Mon, 23 Mar 2026 00:32:55 GMT
+
+Number of Pages: 17
+
+Markdown Content:
+# Diminishing Returns in Expanding Generative Models and Gödel–Tarski–Löb Limits 
+
+Angshul Majumdar, Indraprastha Institute of Information Technology, Delhi 
+
+Abstract 
+
+Modern generative modelling systems are increasingly improved by expanding model capac-ity, training data, and computational resources. While empirical studies have documented such scaling behaviour across architectures including generative adversarial networks, variational au-toencoders, transformer-based models, and diffusion models, the theoretical limits of capability growth in expanding generative systems remain poorly understood. In this paper we develop a general task-space framework for analysing expanding generative reasoning systems. Each system induces a subset of a global task space representing the tasks it can successfully solve, and system capability is measured by the probability mass of this solved-task set under a fixed task distribution. Within this framework we prove a structural result showing that, under mild assumptions, the marginal improvement in solved tasks must converge to zero as system capacity increases. Thus expanding generative systems may continue to gain capability, but the probability mass of newly solvable tasks necessarily diminishes asymptotically. We further provide a prediction-theoretic refinement based on complexity-weighted hypoth-esis classes inspired by algorithmic probability, yielding quantitative bounds on marginal im-provement in prediction settings. Finally, we examine logical reasoning tasks and show that classical results from mathematical logic—including Rosser incompleteness, Tarski’s undefin-ability theorem, and Löb’s theorem—imply the persistence of unresolved logical tasks within sufficiently expressive reasoning systems. Together these results provide a mathematical perspective on the asymptotic behaviour of expanding generative systems, showing that long-run capability growth is constrained both by diminishing marginal improvements in task coverage and by fundamental logical limitations on internal reasoning. 
+
+Keywords: Generative models; Task-space analysis; Diminishing returns; Algorithmic probabil-ity; Kolmogorov complexity; Gödel–Tarski–Löb theorems; Formal systems; Theoretical artificial intelligence 
+
+# 1 Introduction 
+
+Generative modelling studies how to represent, predict, and sample from complex data-generating processes. Over the past decade, a broad spectrum of architectures has been developed for this purpose, including generative adversarial networks [4], variational autoencoders [9], transformer-based autoregressive models [19], and diffusion-based generative models [5, 12]. Although these approaches differ substantially in architecture, training objective, and output modality, they share a common empirical pattern: increasing model capacity, data, and computational resources often improves performance on generation and prediction tasks. This observation has led to intense interest in the scaling behaviour of modern learning systems. Empirical studies have reported regular relationships between performance, model size, data, and compute [8, 6]. However, most existing analyses are architecture-specific, empirical, or tied to 1
+
+> arXiv:2603.19687v1 [cs.LO] 20 Mar 2026
+
+particular loss functions. Much less is understood about the following more general question: if one considers an abstract family of expanding generative reasoning systems , what mathematical law governs the long-run growth of the tasks such systems can solve? This paper addresses that question through a task-space formulation. Instead of analysing a particular neural architecture, we consider a sequence of generative reasoning systems indexed by capacity. Each system induces a subset of a global task space consisting of the tasks it can solve successfully. A probability measure on the task space quantifies the prevalence of tasks in the environment, and the capability of a system is measured by the probability mass of its solved-task set. This leads to a natural notion of utility growth under expansion. Within this framework we study the asymptotic behaviour of the utility sequence associated with an expanding family of systems. The central structural question is whether continued expansion can sustain non-vanishing marginal gains in solved tasks. Our first main result shows that, under mild assumptions, the answer is negative: if solved-task sets expand monotonically within a fixed task distribution, then the marginal improvement in utility must converge to zero. Thus expanding generative systems may continue to gain capability, but the probability mass of newly solvable tasks necessarily diminishes asymptotically. The paper also develops a prediction-theoretic refinement of this result. For prediction tasks, we introduce a complexity-weighted hypothesis class inspired by Solomonoff induction and algorithmic information theory [16, 17, 10, 7]. This yields an explicit quantitative bound on successive utility increments in terms of the tail mass of a complexity-truncated prior. In this sense, the general structural theorem is supplemented by a rate-type estimate in prediction settings. A second theme of the paper concerns logical reasoning tasks internal to the system. When the reasoning component of a generative system is represented by a sufficiently expressive formal theory, classical incompleteness phenomena become unavoidable. Using Rosser’s strengthening of Gödel’s first incompleteness theorem [13], together with Tarski’s undefinability theorem [18] and Löb’s theorem on provability and reflection [11], we show that certain logical tasks remain unre-solved within every sufficiently expressive system. These results imply that capability expansion is constrained not only by diminishing marginal improvement in utility, but also by persistent logical frontiers that cannot be eliminated from within the system itself. The contribution of the paper is therefore twofold. First, it provides a general task-space theorem showing that expanding generative reasoning systems exhibit diminishing marginal im-provement under mild structural assumptions. Second, it shows that when such systems perform internal formal reasoning, classical logical obstructions imply the persistence of unsolved reasoning tasks. Together these results provide a mathematically explicit account of why capability growth in expanding generative systems can continue while nevertheless facing both asymptotic diminishing returns and permanent logical limitations. The remainder of the paper is organized as follows. Section 2 introduces the formal model of ex-panding generative reasoning systems. Section 3 develops the prediction-theoretic refinement based on complexity-weighted hypothesis classes. Section 4 studies the dynamics of utility growth, and Section 5 establishes the structural properties needed for the main asymptotic theorem. Section 6 proves that marginal utility gains vanish asymptotically. Section 7 then analyses logical limits on internal reasoning tasks. Section 8 concludes with a discussion of the broader implications of these results for the theory of generative systems. 22 Formal Model of Expanding Generative Reasoning Systems 
+
+Recent progress in generative modelling has been driven by increasingly expressive model classes and larger computational resources. Architectures such as generative adversarial networks, varia-tional autoencoders, transformer-based autoregressive models, and diffusion models illustrate this trend [4, 9, 19, 5]. Despite architectural differences, these systems share a common structure: a parameterized generative model, an internal inference or reasoning mechanism, and a procedure for producing outputs. In this section we introduce a formal abstraction that captures these common elements. 
+
+2.1 Task Space 
+
+Let Ω denote a measurable task space equipped with a probability measure μ.Each element ω ∈ Ω represents a computational or predictive task posed to the system. Exam-ples include predicting missing values in observed data, generating samples consistent with a target distribution, answering structured reasoning queries, and producing outputs satisfying specified constraints. 
+
+Assumption 1 (Fixed task distribution). The task space Ω and probability measure μ are fixed and independent of the system index n.
+
+2.2 Generative Model Classes 
+
+Let X denote a measurable data domain and let P denote the true but unknown data-generating distribution over X.
+
+Definition 1 (Generative model class) . A generative model class is a family of probability distri-butions 
+
+PΘ = {pθ(x) : θ ∈ Θ},
+
+parameterized by a parameter space Θ.
+
+Representative examples include adversarial generators [4], latent-variable models [9], autore-gressive transformer architectures [19], and diffusion-based generative models [5]. 
+
+2.3 Generative Reasoning Systems 
+
+Definition 2 (Generative reasoning system) . A generative reasoning system is a tuple 
+
+S = ( P, T, I ),
+
+where P is a generative model class, T is an internal reasoning theory or inference framework, and 
+
+I is an inference procedure that produces outputs for tasks in Ω.
+
+The inference procedure may involve probabilistic sampling, sequential generation, or symbolic reasoning over intermediate representations. 
+
+2.4 Expanding System Families 
+
+Definition 3 (Expanding generative system family) . A sequence of generative reasoning systems 
+
+S1, S 2, . . . 
+
+is called expanding if 
+
+P1 ⊆ P 2 ⊆ · · · and T1 ⊆ T2 ⊆ · · · .
+
+3Increasing the index n corresponds abstractly to enlarging model capacity, training data, algo-rithmic sophistication, or computational resources. 
+
+2.5 Solved-Task Sets 
+
+Definition 4 (Solved-task set) . The solved-task set of system Sn is 
+
+An = {ω ∈ Ω : Sn produces a valid solution for ω}.
+
+The precise meaning of “valid solution” depends on the task type but may correspond, for example, to prediction error below a specified threshold, generation of samples from the correct distribution, or production of a logically valid answer. 
+
+2.6 System Utility and Marginal Improvement 
+
+Definition 5 (Utility) . The utility of system Sn is defined as 
+
+U (n) = μ(An).
+
+Thus U (n) represents the probability that a randomly drawn task from Ω can be solved by system Sn.The marginal improvement obtained by increasing system capacity from level n to level n + 1 
+
+is 
+
+∆( n) = U (n + 1) − U (n).
+
+Equivalently, if 
+
+Nn+1 = An+1 \ A n
+
+denotes the novelty set of newly solvable tasks, then 
+
+∆( n) = μ(Nn+1 ).
+
+# 3 A Rigorous Prediction-Theoretic Refinement 
+
+The measure-theoretic theorem proved later does not require any special structure on the task space beyond monotonicity of the solved-task sets. However, for prediction tasks one can obtain a quantitative refinement using a complexity-weighted hypothesis class. This section provides that refinement in a form fully consistent with the task-space framework of Section 2. 
+
+3.1 Prediction Tasks 
+
+We consider the subclass of tasks in which a system observes a context c ∈ C and must predict an outcome y ∈ Y , where Y is finite. A prediction task is therefore a pair 
+
+ω = ( c, y ) ∈ Ωpred := C × Y .
+
+We assume that Ωpred ⊆ Ω.Let π be a probability measure on C describing the distribution of contexts. For each context 
+
+c, the outcome is generated according to a conditional distribution on Y.43.2 Hypothesis Class and Prior 
+
+Let H be a countable class of hypotheses. Each h ∈ H specifies a conditional distribution 
+
+qh( · | c)
+
+on Y for every c ∈ C .Let K(h) denote the Kolmogorov complexity of a description of h with respect to a fixed universal description language [10]. Define a prior 
+
+wh = 2−K(h)
+
+Z , Z := ∑
+
+> g∈H
+
+2−K(g).
+
+By Kraft’s inequality, Z ≤ 1 for any prefix-free coding scheme, so the prior is well defined after normalization [10]. Define the complexity-truncated class 
+
+Hn := {h ∈ H : K(h) ≤ n},
+
+and its prior mass 
+
+Zn := ∑
+
+> h∈H n
+
+wh, τn := 1 − Zn = ∑
+
+> K(h)>n
+
+wh.
+
+Since ∑ 
+
+> h∈H
+
+wh = 1 , we have τn ↓ 0 as n → ∞ .
+
+3.3 Full and Truncated Predictive Mixtures 
+
+The full predictive mixture is 
+
+q( · | c) := ∑
+
+> h∈H
+
+wh qh( · | c).
+
+The normalized truncated predictive mixture is 
+
+qn( · | c) := ∑
+
+> h∈H n
+
+wh
+
+Zn
+
+qh( · | c), Zn > 0.
+
+Define also the normalized tail mixture 
+
+rn( · | c) := ∑
+
+> K(h)>n
+
+wh
+
+τn
+
+qh( · | c), τn > 0.
+
+Then, for every context c,
+
+q( · | c) = Znqn( · | c) + τnrn( · | c).
+
+3.4 Decision-Theoretic Risk 
+
+Let U denote an action space. Let 
+
+ℓ : U × Y → [0 , 1] 
+
+be a bounded measurable loss function. For a predictive distribution ρ( · | c), define the Bayes risk at context c by 
+
+V (ρ, c ) := inf 
+
+> u∈U
+> ∑
+> y∈Y
+
+ℓ(u, y )ρ(y | c).
+
+5The corresponding context-averaged risk is 
+
+R(ρ) := 
+
+> ∫
+> C
+
+V (ρ, c ) π(dc ).
+
+We use the total variation distance in its dual form: 
+
+∥ρ − ρ′∥TV := sup  
+
+> |f|≤ 1
+> ∣∣∣∣∣∣∑
+> y∈Y
+
+f (y)ρ(y) − ∑
+
+> y∈Y
+
+f (y)ρ′(y) 
+
+> ∣∣∣∣∣∣
+
+.
+
+On finite spaces this is equivalent to the usual half-ℓ1 definition. 
+
+3.5 Stability of Bayes Risk Under Prior Truncation 
+
+Lemma 1 (Uniform perturbation bound) . For every context c ∈ C ,
+
+∥q( · | c) − qn( · | c)∥TV ≤ τn.
+
+Proof. Using 
+
+q( · | c) = Znqn( · | c) + τnrn( · | c),
+
+we obtain 
+
+q( · | c) − qn( · | c) = τn
+
+> (
+
+rn( · | c) − qn( · | c)).
+
+Hence 
+
+∥q( · | c) − qn( · | c)∥TV = τn∥rn( · | c) − qn( · | c)∥TV ≤ τn,
+
+because the total variation distance between two probability distributions is at most 1.
+
+Lemma 2 (Risk perturbation bound) . For every predictive distributions ρ and ρ′ on Y and every context c,
+
+|V (ρ, c ) − V (ρ′, c )| ≤ ∥ ρ − ρ′∥TV .
+
+Consequently, 
+
+|R(q) − R(qn)| ≤ τn.
+
+Proof. Fix c and u ∈ U . Since the function y 7 → ℓ(u, y ) takes values in [0 , 1] , the definition of total variation gives ∣∣∣∣∣∣∑
+
+> y∈Y
+
+ℓ(u, y )ρ(y) − ∑
+
+> y∈Y
+
+ℓ(u, y )ρ′(y) 
+
+> ∣∣∣∣∣∣
+
+≤ ∥ ρ − ρ′∥TV .
+
+Taking the infimum over u on both sides yields 
+
+|V (ρ, c ) − V (ρ′, c )| ≤ ∥ ρ − ρ′∥TV .
+
+Applying Lemma 1 pointwise in c and integrating over π proves the second claim. 63.6 Quantitative Diminishing Returns 
+
+Define the predictive utility of the truncated class by 
+
+Upred (n) := −R(qn).
+
+Theorem 1 (Quantitative marginal-gain bound) . For the utilities Upred (n) = −R(qn) defined above, 
+
+|Upred (n + 1) − Upred (n)| ≤ τn + τn+1 ≤ 2τn.
+
+In particular, 
+
+lim  
+
+> n→∞
+
+|Upred (n + 1) − Upred (n)| = 0 .
+
+Proof. By Lemma 2, 
+
+|R(qn) − R(q)| ≤ τn, |R(qn+1 ) − R(q)| ≤ τn+1 .
+
+Therefore 
+
+|R(qn+1 ) − R(qn)| ≤ | R(qn+1 ) − R(q)| + |R(q) − R(qn)| ≤ τn+1 + τn.
+
+Since Upred (n) = −R(qn), the same bound holds for the utilities. Because τn+1 ≤ τn, the bound by 
+
+2τn follows immediately. Theorem 1 gives a prediction-theoretic refinement of the general structural theorem proved later. The core structural result only requires nested solved-task sets and bounded utility, whereas the present section yields an explicit asymptotic bound in terms of the tail mass of the complexity prior. 
+
+# 4 Utility Dynamics of Expanding Generative Systems 
+
+Sections 2 and 3 introduced the formal model of generative reasoning systems and a prediction-theoretic refinement based on complexity-bounded hypothesis classes. In this section we analyse how system utility evolves as system capacity increases. The purpose of this section is to express the growth of solved-task sets in terms of marginal gains and to prepare the structural argument leading to Theorem 2. Related notions of incremental improvement and novelty sets appear naturally in algorithmic prediction and sequential decision settings [16, 17, 7, 10]. 
+
+4.1 Solved-Task Growth 
+
+Recall from Section 2 that the solved-task set of system Sn is 
+
+An = {ω ∈ Ω : Sn produces a valid solution for ω}.
+
+When the system expands from Sn to Sn+1 , additional tasks may become solvable. We define the set of newly solvable tasks as 
+
+Nn+1 = An+1 \ A n.
+
+We refer to Nn+1 as the novelty set of step n + 1 .74.2 Utility Decomposition 
+
+Recall that system utility is defined as 
+
+U (n) = μ(An).
+
+Because 
+
+An+1 = An ∪ N n+1 , An ∩ N n+1 = ∅,
+
+we obtain 
+
+U (n + 1) = U (n) + μ(Nn+1 ).
+
+Hence the marginal improvement defined in Section 2 can be written as 
+
+∆( n) = U (n + 1) − U (n) = μ(Nn+1 ).
+
+This identity expresses marginal improvement entirely in terms of the probability mass of newly solvable tasks. 
+
+4.3 Cumulative Improvement 
+
+Iterating the above relation yields 
+
+U (n) = U (1) + 
+
+> n−1∑
+> k=1
+
+∆( k).
+
+Thus the evolution of system utility can be interpreted as the cumulative contribution of suc-cessive novelty sets. 
+
+4.4 Prediction-Theoretic Interpretation 
+
+For prediction tasks considered in Section 3, system utility can be related to prediction risk. Let 
+
+Upred (n) = −R(qn)
+
+denote the predictive utility associated with the truncated mixture predictor qn defined in Section 3. The analysis there established that 
+
+|Upred (n + 1) − Upred (n)| ≤ 2τn,
+
+where 
+
+τn = ∑
+
+> K(h)>n
+
+wh
+
+is the complexity-prior tail mass. Such tail bounds are a standard consequence of universal pre-diction theory and algorithmic probability [16, 17, 7, 10]. They provide a quantitative estimate of marginal improvement in the predictive setting. 84.5 Structural Implications 
+
+The decomposition 
+
+U (n) = U (1) + 
+
+> n−1∑
+> k=1
+
+∆( k)
+
+shows that system utility grows through successive novelty sets. Accordingly, the asymptotic be-haviour of the marginal gains ∆( n) determines how quickly system utility approaches its limiting value. In the next section we establish the structural conditions under which the solved-task sets form a nested sequence. Those conditions imply that the utility sequence is monotone and bounded, which in turn yields the main diminishing-returns theorem of Section 6. 
+
+# 5 Structural Properties of Expanding Generative Systems 
+
+This section establishes the structural link between the formal model of Section 2 and the asymptotic theorem proved in Section 6. The key point is that, under a natural preservation assumption, expan-sion of model and reasoning capacity induces nested solved-task sets. This is the only structural property required for the general diminishing-marginal-improvement theorem. The prediction-theoretic analysis of Section 3 provides an additional quantitative refinement on the prediction subspace Ωpred ⊆ Ω.
+
+5.1 Capability Preservation 
+
+The expanding-family definition in Section 2 ensures that the representational class and the internal reasoning framework both grow with the system index. To connect this formal expansion to the solved-task sets An, we impose the following preservation assumption. 
+
+Assumption 2 (Capability preservation). If a task ω ∈ Ω can be validly solved by system 
+
+Sn, then the same generative model and the same valid reasoning chain remain available in system 
+
+Sn+1 .Assumption 2 formalizes a monotonic notion of system expansion: increasing capacity does not invalidate previously correct solutions. This assumption is structural rather than statistical; it does not require any specific architecture and is compatible with the abstract framework of Section 2. 
+
+5.2 Nested Capability 
+
+Lemma 3 (Nested capability) . Under Assumptions 1 and 2, 
+
+A1 ⊆ A 2 ⊆ · · · .
+
+Proof. Fix n ≥ 1 and let ω ∈ A n. By definition of the solved-task set, system Sn produces a valid solution for ω.Since Sn = ( Pn, T n, I n) belongs to an expanding family, we have 
+
+Pn ⊆ P n+1 and Tn ⊆ Tn+1 .
+
+Therefore every generative model available at level n remains representable at level n+1 , and every reasoning step valid in Tn remains valid in Tn+1 .By Assumption 2, the particular valid solution of ω available in Sn remains available in Sn+1 .Hence ω ∈ A n+1 .9Since ω ∈ A n was arbitrary, it follows that 
+
+An ⊆ A n+1 .
+
+As n was arbitrary, the full nested chain follows. 
+
+5.3 Consequences for Utility 
+
+Recall from Section 2 that 
+
+U (n) = μ(An) and ∆( n) = U (n + 1) − U (n).
+
+Lemma 3 implies immediately that the utility sequence is monotone non-decreasing: 
+
+U (1) ≤ U (2) ≤ · · · .
+
+Because μ is a probability measure, one also has 
+
+0 ≤ U (n) ≤ 1 for all n ≥ 1.
+
+Thus the utility sequence is bounded and monotone. Section 6 uses exactly these two properties to prove that the marginal improvements ∆( n) must vanish asymptotically. 
+
+5.4 Relation to the Prediction-Theoretic Refinement 
+
+The argument above is purely structural and applies to the full task space Ω. In contrast, Section 3 restricts attention to the prediction subspace Ωpred and introduces a complexity-weighted hypothesis class together with truncated predictive mixtures. In that setting the prediction utility 
+
+Upred (n) = −R(qn)
+
+obeys the explicit quantitative bound of Theorem 1. Accordingly, the present section supplies the monotonic-set property needed for the general theorem, whereas Section 3 supplies a sharper, rate-type statement for prediction tasks. 
+
+# 6 Diminishing Marginal Improvement 
+
+We now derive the central structural theorem of the paper. The result is measure-theoretic in nature and depends only on the formal framework introduced in Section 2 and the nested capability property established in Section 5. The prediction-theoretic analysis of Section 3 then provides a quantitative refinement for the special case of prediction tasks [16, 17, 10, 7]. 
+
+6.1 Utility and Marginal Gain 
+
+Recall from Section 2 that the solved-task set of system Sn is 
+
+An = {ω ∈ Ω : Sn produces a valid solution for ω},
+
+and its utility is 
+
+U (n) = μ(An).
+
+10 The marginal improvement obtained by expanding system capacity from level n to level n + 1 
+
+is 
+
+∆( n) = U (n + 1) − U (n).
+
+Equivalently, if 
+
+Nn+1 = An+1 \ A n
+
+denotes the novelty set of newly solvable tasks, then 
+
+∆( n) = μ(Nn+1 ).
+
+6.2 Monotonicity and Boundedness 
+
+By Lemma 3, under Assumptions 1 and 2 the solved-task sets are nested: 
+
+A1 ⊆ A 2 ⊆ · · · .
+
+Therefore the utility sequence is monotone non-decreasing: 
+
+U (1) ≤ U (2) ≤ · · · .
+
+Moreover, since μ is a probability measure on Ω, we have 
+
+0 ≤ U (n) ≤ 1 for all n ≥ 1.
+
+Hence {U (n)}n≥1 is a bounded monotone sequence. By the monotone convergence property for real sequences, the limit exists [14, 2]. 
+
+Lemma 4. The limit 
+
+U∞ := lim  
+
+> n→∞
+
+U (n)
+
+exists. Proof. Since {U (n)}n≥1 is monotone non-decreasing and bounded above by 1, it converges [14, 2]. 
+
+6.3 Telescoping Representation 
+
+The cumulative gain up to level n admits the telescoping representation 
+
+U (n) − U (1) = 
+
+> n−1∑
+> k=1
+
+∆( k).
+
+This identity follows immediately from the definition ∆( k) = U (k + 1) − U (k) and will be used in the proof below. 11 6.4 Main Structural Theorem 
+
+Theorem 2 (Diminishing marginal improvement) . Let {Sn}n≥1 be an expanding family of gener-ative reasoning systems satisfying Assumptions 1 and 2. Then 
+
+lim  
+
+> n→∞
+
+∆( n) = 0 .
+
+Proof. By Lemma 4, the limit 
+
+U∞ := lim  
+
+> n→∞
+
+U (n)
+
+exists and is finite. Using the telescoping representation, 
+
+> n−1∑
+> k=1
+
+∆( k) = U (n) − U (1) .
+
+Taking n → ∞ yields ∞∑
+
+> k=1
+
+∆( k) = U∞ − U (1) < ∞.
+
+Since each ∆( k) ≥ 0, convergence of the series implies 
+
+lim  
+
+> k→∞
+
+∆( k) = 0 .
+
+This proves the claim. 
+
+6.5 Equivalent Set-Theoretic Formulation 
+
+Theorem 2 may also be written directly in terms of novelty sets. Since 
+
+∆( n) = μ(Nn+1 ),
+
+Theorem 2 is equivalent to 
+
+lim  
+
+> n→∞
+
+μ(Nn+1 ) = 0 .
+
+Thus, although expanding system capacity may continue to enlarge the solved-task sets, the probability mass of newly solvable tasks must vanish asymptotically. 
+
+6.6 Relation to the Prediction-Theoretic Refinement 
+
+Theorem 2 is purely structural: it requires only a fixed task distribution, capability preservation, and nested solved-task sets. It does not depend on any particular learning architecture or on any special representation of the task space. In contrast, Section 3 considered prediction tasks equipped with a complexity-weighted hypoth-esis class and established an explicit quantitative bound in terms of the tail mass 
+
+τn = ∑
+
+> K(h)>n
+
+wh.
+
+That analysis shows that, in the predictive setting, 
+
+|Upred (n + 1) − Upred (n)| ≤ 2τn,
+
+which is consistent with the qualitative conclusion of Theorem 2 because τn → 0 [16, 17, 10, 7]. Accordingly, Theorem 2 provides the general asymptotic statement, while Section 3 supplies a sharper rate-type refinement for prediction tasks. 12 7 Logical Limits of Expanding Reasoning Systems 
+
+Sections 2–6 established that expanding generative reasoning systems exhibit diminishing marginal improvement in the probability mass of solvable tasks. We now analyse the logical limitations that arise when such systems perform internal reasoning about statements expressed in a formal language. Unlike the structural theorem of Section 6, the present section is not used to prove diminishing marginal improvement. Rather, it shows that even if system capacity continues to expand, there remains a persistent class of logical tasks that cannot be completely resolved from within the system itself [3, 13, 18, 11, 1, 15]. 
+
+7.1 Logical Task Space 
+
+Let Larith be a formal language extending first-order arithmetic. Define the logical task space 
+
+Ωlogic = {φ : φ is a sentence of Larith }.
+
+We assume that 
+
+Ωlogic ⊆ Ω,
+
+so that logical reasoning tasks form a distinguished subclass of the global task space introduced in Section 2. 
+
+7.2 Logical Solvability 
+
+Let Tn denote the reasoning component of system Sn, viewed as a formal theory in the language 
+
+Larith .
+
+Definition 6 (Logical task solvability) . A sentence φ ∈ Ωlogic is said to be solved by system Sn if 
+
+Tn ⊢ φ or Tn ⊢ ¬ φ. 
+
+Accordingly, the solved logical task set is 
+
+Alogic  
+
+> n
+
+= {φ ∈ Ωlogic : Tn ⊢ φ or Tn ⊢ ¬ φ}.
+
+By construction, 
+
+Alogic  
+
+> n
+
+⊆ A n.
+
+7.3 Assumptions on the Reasoning Theory 
+
+We assume that each theory Tn satisfies the following standard conditions: 
+
+• Tn is recursively axiomatizable, 
+
+• Tn is consistent, 
+
+• Tn extends a sufficient fragment of arithmetic. These assumptions are standard in the study of formal reasoning systems and incompleteness phenomena [1, 15]. 13 7.4 Rosser Incompleteness 
+
+To avoid stronger soundness assumptions, we use Rosser’s strengthening of Gödel’s first incom-pleteness theorem. 
+
+Theorem 3 (Rosser incompleteness theorem) . Let T be a consistent recursively axiomatizable theory extending a sufficient fragment of arithmetic. Then there exists a sentence ρT such that 
+
+T ⊬ ρT and T ⊬ ¬ρT .
+
+This theorem implies that each theory Tn leaves some logical tasks undecided [13, 1]. 
+
+Corollary 1. For every system Sn, there exists a sentence 
+
+ρn ∈ Ωlogic 
+
+such that 
+
+ρn /∈ A logic  
+
+> n
+
+.
+
+Hence 
+
+ρn /∈ A n.
+
+Proof. Apply Theorem 3 to Tn. The resulting sentence ρn is neither provable nor refutable in Tn,so by definition it does not belong to Alogic  
+
+> n
+
+. Since Alogic  
+
+> n
+
+⊆ A n, the final claim follows. 
+
+7.5 Tarski Undefinability 
+
+A second obstruction concerns truth evaluation within the language itself. 
+
+Theorem 4 (Tarski undefinability theorem) . Let Larith be sufficiently expressive to formalize arith-metic. Then arithmetic truth for sentences of Larith is not definable in Larith itself. 
+
+Equivalently, there is no formula True( x) in Larith such that for every sentence φ of Larith ,
+
+N |= True( ⌜φ⌝) ⇐⇒ N |= φ. 
+
+Thus no system whose internal reasoning is expressed in Larith can define a complete internal truth predicate for all of its own arithmetic sentences [18, 15]. 
+
+7.6 Löb and Uniform Reflection 
+
+We next consider self-verification tasks. Let Prov Tn (x) denote a standard arithmetized provability predicate for Tn.
+
+Theorem 5 (Löb’s theorem) . For any sentence φ of the language of Tn,
+
+Tn ⊢ (Prov Tn (⌜φ⌝) → φ) =⇒ Tn ⊢ φ. 
+
+Löb’s theorem implies that unrestricted internal reflection principles cannot be established wholesale within Tn unless the corresponding reflected statements are already provable [11, 15, 1]. In particular, tasks asking the system to certify a uniform schema of the form 
+
+∀φ (Prov Tn (⌜φ⌝) → φ)
+
+cannot in general be solved internally without passing to a substantially stronger theory. Hence unrestricted self-verification tasks remain outside the scope of Alogic  
+
+> n
+
+.14 7.7 Persistence of Unsolved Logical Tasks 
+
+Theorem 6 (Persistence of unsolved logical tasks) . Let {Sn}n≥1 be an expanding family of gener-ative reasoning systems whose reasoning components {Tn}n≥1 satisfy the assumptions above. Then for every n there exists a task 
+
+ωn ∈ Ωlogic 
+
+such that 
+
+ωn /∈ A n.
+
+Moreover, the source of unsolvability may arise from incompleteness, undefinability of arithmetic truth, or limitations on unrestricted internal reflection. Proof. By Corollary 1, for each n there exists a sentence ρn ∈ Ωlogic such that ρn /∈ A n. This already proves the first claim. The further statement follows from the nature of the three logical obstructions. Rosser incom-pleteness produces undecidable sentences. Tarski’s theorem shows that complete internal truth-evaluation tasks for arithmetic sentences cannot be captured in the same language. Löb’s theorem shows that unrestricted internal reflection cannot be uniformly established without already proving the reflected statements. Hence logical unsolvability persists in multiple formally distinct ways. 
+
+7.8 Interpretation 
+
+Theorem 6 complements the diminishing marginal improvement theorem of Section 6. Section 6 showed that the probability mass of newly solvable tasks must vanish asymptotically under the structural assumptions of the paper. The present section shows that, for reasoning tasks internal to sufficiently expressive formal systems, expansion does not eliminate all unsolved tasks. Thus the limiting behaviour of expanding generative reasoning systems is constrained not only by diminishing returns in utility growth, but also by persistent logical frontiers. 
+
+# 8 Discussion and Conclusion 
+
+This paper developed a task-space framework for analysing the long-run behaviour of expanding generative reasoning systems. Instead of focusing on particular neural architectures or training objectives, the analysis treated generative systems abstractly as mechanisms that attempt to solve tasks drawn from an underlying probability distribution over a global task space. Within this formulation, system capability is measured by the probability mass of the solved-task set associated with a given system instance. The central structural result of the paper shows that, under mild assumptions, the marginal utility gains of an expanding sequence of systems must converge to zero. Intuitively, if successive systems solve increasingly larger subsets of tasks while the underlying task distribution remains fixed, the probability mass of newly solvable tasks necessarily decreases. Consequently, although capability may continue to improve indefinitely, the incremental gains in solved tasks diminish asymptotically. This result is intentionally architecture-agnostic. The analysis does not depend on specific model classes such as generative adversarial networks, variational autoencoders, transformer-based language models, or diffusion-based generative models [4, 9, 19, 5, 12]. Instead, the theorem applies to any expanding family of generative reasoning systems whose solved-task sets evolve within a fixed probabilistic task environment. In this sense, the result provides a general mathematical 15 perspective on capability growth that complements empirical scaling analyses of modern machine learning systems [8, 6]. The prediction-theoretic refinement presented earlier further illustrates how diminishing im-provements arise when model classes expand according to complexity constraints. When predictive hypotheses are weighted according to algorithmic complexity, successive truncations of the hypoth-esis class yield bounds on marginal utility increments governed by the tail mass of the complexity prior [16, 17, 10, 7]. This provides a concrete quantitative mechanism through which diminishing improvements emerge in prediction settings. Beyond structural limits on capability growth, the paper also examined logical constraints on reasoning systems that operate over formal languages. When the reasoning component of a gen-erative system is represented by a sufficiently expressive formal theory, classical incompleteness phenomena arise. Rosser’s strengthening of Gödel’s incompleteness theorem guarantees the exis-tence of undecidable sentences in any consistent recursively axiomatizable extension of arithmetic [13]. Tarski’s undefinability theorem shows that arithmetic truth cannot be defined within the same language [18]. Löb’s theorem further constrains the ability of systems to establish unrestricted in-ternal reflection principles [11]. Together, these results imply that certain reasoning tasks remain unresolved within every sufficiently expressive formal system [1, 15]. The interaction between these two perspectives—diminishing marginal improvement and persis-tent logical limitations—suggests a broader view of the asymptotic behaviour of expanding gener-ative systems. On the one hand, capability growth is constrained probabilistically: the probability mass of newly solvable tasks decreases as systems cover larger portions of the task space. On the other hand, logical frontiers remain: even very powerful reasoning systems cannot internally resolve all formally expressible reasoning tasks. These phenomena operate at different conceptual levels but jointly limit the extent to which generative systems can achieve complete task solvability. Several directions for future work remain open. One natural extension is to study more refined models of task distributions in which the environment itself evolves as systems become more capable. Another direction concerns explicit quantitative rates of diminishing improvement under different structural assumptions on hypothesis classes or task-generation processes. Finally, it would be interesting to explore connections between the present framework and recent theoretical work on scaling laws, sample complexity, and generalization in large learning systems. In summary, the framework developed in this paper provides a mathematically explicit lens through which to view the long-term behaviour of expanding generative reasoning systems. The results indicate that capability growth may continue while nevertheless encountering two fundamen-tal constraints: diminishing marginal improvements in solved tasks and persistent logical limitations on internal reasoning. These principles suggest that the asymptotic frontier of generative systems is shaped simultaneously by probabilistic structure in the task environment and by deep logical properties of formal reasoning. 
+
+# References 
+
+[1] George S. Boolos, John P. Burgess, and Richard C. Jeffrey. Computability and Logic . Cam-bridge University Press, 4 edition, 2002. [2] Gerald B. Folland. Real Analysis: Modern Techniques and Their Applications . Wiley, 2 edition, 1999. [3] Kurt Gödel. Über formal unentscheidbare sätze der Principia Mathematica und verwandter Systeme i. Monatshefte für Mathematik und Physik , 38(1):173–198, 1931. 16 [4] Ian Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing Xu, David Warde-Farley, Sherjil Ozair, Aaron Courville, and Yoshua Bengio. Generative adversarial nets. In Advances in Neural Information Processing Systems 27 , pages 2672–2680, 2014. [5] Jonathan Ho, Ajay Jain, and Pieter Abbeel. Denoising diffusion probabilistic models. In 
+
+Advances in Neural Information Processing Systems 33 , pages 6840–6851, 2020. [6] Jordan Hoffmann, Sebastian Borgeaud, Arthur Mensch, Elena Buchatskaya, Trevor Cai, Eliza Rutherford, Diego de Las Casas, Lisa Anne Hendricks, Johannes Welbl, Aidan Clark, Tom Hennigan, Eric Noland, Katie Millican, George van den Driessche, Bogdan Damoc, Aurelia Guy, Simon Osindero, Karen Simonyan, Erich Elsen, Jack W. Rae, Oriol Vinyals, and Laurent Sifre. Training compute-optimal large language models. arXiv preprint arXiv:2203.15556 ,2022. [7] Marcus Hutter. Universal Artificial Intelligence: Sequential Decisions Based on Algorithmic Probability . Springer, Berlin, 2005. [8] Jared Kaplan, Sam McCandlish, Tom Henighan, Tom B. Brown, Benjamin Chess, Rewon Child, Scott Gray, Alec Radford, Jeffrey Wu, and Dario Amodei. Scaling laws for neural language models. arXiv preprint arXiv:2001.08361 , 2020. [9] Diederik P. Kingma and Max Welling. Auto-encoding variational bayes. In 2nd International Conference on Learning Representations (ICLR) , 2014. [10] Ming Li and Paul Vitányi. An Introduction to Kolmogorov Complexity and Its Applications .Springer, New York, 3 edition, 2008. [11] Martin Hugo Löb. Solution of a problem of Leon Henkin. Journal of Symbolic Logic , 20(2):115– 118, 1955. [12] Robin Rombach, Andreas Blattmann, Dominik Lorenz, Patrick Esser, and Björn Ommer. High-resolution image synthesis with latent diffusion models. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pages 10684–10695, 2022. [13] J. Barkley Rosser. Extensions of some theorems of Gödel and Church. Journal of Symbolic Logic , 1(3):87–91, 1936. [14] H. L. Royden and Patrick M. Fitzpatrick. Real Analysis . Pearson, 4 edition, 2010. [15] Craig Smoryński. The incompleteness theorems. In Jon Barwise, editor, Handbook of Mathe-matical Logic , pages 821–865. North-Holland, 1977. [16] Ray J. Solomonoff. A formal theory of inductive inference. part i. Information and Control ,7(1):1–22, 1964. [17] Ray J. Solomonoff. A formal theory of inductive inference. part ii. Information and Control ,7(2):224–254, 1964. [18] Alfred Tarski. The concept of truth in formalized languages. Studia Philosophica , 1:261–405, 1936. [19] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. In Advances in Neural Infor-mation Processing Systems 30 , pages 5998–6008, 2017. 17

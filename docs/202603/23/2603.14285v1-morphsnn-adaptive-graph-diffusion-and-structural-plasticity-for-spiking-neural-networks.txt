@@ -1,0 +1,1557 @@
+Title: MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks
+
+URL Source: https://arxiv.org/pdf/2603.14285v1
+
+Published Time: Tue, 17 Mar 2026 05:08:41 GMT
+
+Number of Pages: 24
+
+Markdown Content:
+# MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+Yongsheng Huang 1 2 Peibo Duan 1 Yujie Wu 3 Kai Sun 4 Zhipeng Liu 1 Jiaxiang Liu 2 Guangyu Li 2
+
+Changsheng Zhang 1 Bin Zhang 1 Mingkun Xu 2
+
+## Abstract 
+
+Spiking Neural Networks (SNNs) currently face a critical bottleneck: while individual neurons ex-hibit dynamic biological properties, their macro-scopic architectures remain confined within con-ventional connectivity patterns that are static and hierarchical. This discrepancy between neuron-level dynamics and network-level fixed connec-tivity eliminates critical brain-like lateral interac-tions, limiting adaptability in changing environ-ments. To address this, we propose MorphSNN ,a backbone framework inspired by biological non-synaptic diffusion and structural plasticity. Specif-ically, we introduce a Graph Diffusion (GD) 
+
+mechanism to facilitate efficient undirected sig-nal propagation, complementing the feedforward hierarchy. Furthermore, it incorporates a Spatio-Temporal Structural Plasticity (STSP) mecha-nism, endowing the network with the capability for instance-specific, dynamic topological reorga-nization, thereby overcoming the limitations of fixed topologies. Experiments demonstrate that MorphSNN achieves state-of-the-art accuracy on static and neuromorphic datasets; for instance, it reaches 83.35% accuracy on N-Caltech101 with only 5 timesteps. More importantly, its self-evolving topology functions as an intrinsic distribution fingerprint, enabling superior Out-of-Distribution (OOD) detection without auxiliary training. The code is available at anonymous. 4open.science/r/MorphSNN-B0BC .
+
+> 1
+
+School of Software, Northeastern University, China 
+
+> 2
+
+Guangdong Institute of Intelligence Science and Technolog, China 3The Hong Kong Polytechnic University, China 4Monash University, Australia. Correspondence to: Peibo Duan <duan-peibo@swc.neu.edu.cn >, Mingkun Xu <xumingkun@gdiist.cn >.
+
+Preprint. March 17, 2026. 
+
+## 1. Introduction 
+
+Recently, spiking neural networks (SNNs) have garnered growing interest due to their biological plausibility and their ability to generate rich temporal dynamics by leveraging the Integrate-and-Fire mechanism of biological neurons (Maass, 1997). Furthermore, driven by the rapid and mature develop-ment of artificial neural networks (ANNs) like Graph Neural Networks (GNNs) (Scarselli et al., 2008), ResNet (He et al., 2016), and Transformers (Vaswani et al., 2017), SNNs have advanced substantially, offering energy-efficient, real-time intelligent computation (Roy et al., 2019). As SNNs inherit ANN-based techniques, many of the chal-lenges inherent to ANNs have also been carried over into SNNs. A particularly critical issue stems from the static hierarchical architecture of ANNs, which constrains the evo-lutionary flexibility of SNNs and, in particular, hampers their ability to effectively encode dynamically changing neuromorphic data streams in two key ways. From the per-spective of “static”, the architecture of the model is frozen post-training, making it difficult to adapt to complex and volatile real-world scenarios. As a result, a plethora of post-hoc remedial methods have emerged for new task learning, such as Continual Learning and Out-of-Distribution (OOD) detection (Xu et al., 2024; Avramovi ´c et al., 2025). Exist-ing efforts toward dynamic SNNs, such as pruning (Han et al., 2023a;b; 2025a) and Neural Architecture Search (NAS) (Kim et al., 2022; Pan et al., 2024), concentrate on discovering efficient architectures by eliminating redundant connections. However, these modifications are typically restricted to the training-loop level. After deployment, the network structure becomes fixed, failing to achieve real-time structural adjustments at the inference timestep granularity in response to specific instances. From the “hierarchical” perspective, the unidirectional ver-tical stacking of layers inevitably leads to network degra-dation and increased signal latency (Fang et al., 2021a). Although residual connections (Hu et al., 2024) are fre-quently employed to alleviate these effects, the lack of adapt-able horizontal interactions gives rise to the feature binding problem (Greff et al., 2020; Zheng et al., 2022). These limitations, already present in ANNs, become even more 1
+
+> arXiv:2603.14285v1 [cs.NE] 15 Mar 2026 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks
+
+pronounced in SNNs due to their reliance on binary spike-based communication. While the self-attention mechanism (Lee et al., 2025) has been proposed as an effective solution, it is substantially more powerful for selective fusion than for global information diffusion (Dong et al., 2025). GNN-based SNNs (Xu, 2023) provide an alternative that does not adhere to a strict hierarchical structure, but they typically depend on inflexible image-to-graph conversions, which disrupt the spatial coherence of neuromorphic streams. Fundamentally, biological nervous systems operate on a dif-ferent principle, where countless neurons are organized in a complex graph structure and exhibit efficient and precise computation through non-synaptic diffusion and struc-tural plasticity (D’Angelo et al., 2016). Specifically, non-synaptic diffusion enables excitatory signals to spread in all directions across an undirected physical substrate via volume transmission (Mohan et al., 2011). Meanwhile, structural plasticity enables the millisecond-scale dynamic reorganization of synapses in response to input stimuli (Lam-precht & LeDoux, 2004). The synergistic interaction of these two mechanisms empowers neuronal populations to transcend static hierarchical constraints and rapidly synchro-nize states on a global scale (Singer, 1999). Inspired by the analysis above, this paper presents a novel attempt to develop a model that transcends the conventional static hierarchical architectures used in SNNs. To this end, we propose a graph-structured network, MorphSNN , which abstracts the principles of the two mechanisms discussed earlier and thus tackles objective classification tasks in a more fundamental yet efficient way. Concretely, MorphSNN consists of two core components. The first is Graph Dif-fusion (GD) , a mathematically principled mechanism that characterizes signal propagation as a continuous, energy-minimizing diffusion process, thereby capturing undirected propagation in non-synaptic diffusion. The second com-ponent, Spatio-Temporal Structural Plasticity (STSP) ,combines graph attention with plasticity modulation to em-ulate structural plasticity processes. The main contribution of this work is summarized as follows: • Framework : In contrast to GNN-based SNNs, we em-bed graph dynamics directly into convolutional feature maps, improving global information propagation while maintaining native spatial organization. • Model : The GD supports undirected information ex-change to efficiently capture global context. Unlike NAS, the STSP allows the network to reconfigure its topology at each inference timestep, yielding adaptive, instance-specific structures for representing complex neuromorphic inputs. • Analysis : A theoretical analysis shows that GD en-sures dynamic stability, allowing the model to learn with a monotonic convergence toward the energy equi-librium, which in turn helps prevent over-activation and erroneous feature binding. • Implementation : Experiments show that MorphSNN delivers SOTA results on neuromorphic benchmarks and remains competitive on conventional static datasets. Crucially, for new task learning that involves OOD detection, its dynamic topology serves as a training-free intrinsic metric, achieving performance on par with memory-heavy baseline methods. 
+
+## 2. Related Work 
+
+2.1. Typical Hierarchical Structure based SNNs 
+
+The architecture evolution of SNNs has largely followed that of ANNs, focusing on deepening fixed hierarchical struc-tures. Matsugu et al. (2002) established a simple three-layer convolutional SNN, which was later scaled to deep archi-tectures using ResNet-based backbones (He et al., 2016). Specifically, Spiking ResNet (Hu et al., 2021) pioneered the conversion of pre-trained ResNet to the spiking domain, extending SNN depth to 18 layers. SEW-ResNet (Fang et al., 2021a) modified the residual block by adding iden-tity mappings to post-activation residuals, enabling 150+ layer SNNs. Recently, the success of Vision Transform-ers (Dosovitskiy, 2020) has inspired spiking transformers. For instance, Spikformer (Zhou et al., 2022) was the first work to integrate self-attention into SNNs, achieving 74% accuracy on ImageNet-1k. Although self-attention theoret-ically constructs a global interaction graph, these models remain bound by a layer-wise, feed-forward execution flow. They rely on stacking rigid layers to expand the receptive field rather than utilizing continuous signal diffusion. Fur-thermore, Huang et al. (2025a) introduced the random graph architecture to construct SNNs, demonstrating the feasibil-ity and significant potential of graph-structured topologies in the spiking domain. 
+
+2.2. Static Paradigms in Conventional SNNs 
+
+While SNNs introduce temporal dynamics via spiking neu-rons, their underlying topological structures predominantly follow a static paradigm, lacking the adaptability to com-plex, varying environments during inference. Early Liquid State Machines (Maass, 2011) utilized high-dimensional reservoir dynamics but relied on fixed, task-agnostic topolo-gies. These task-independent connections remain constant throughout both training and inference, contrasting with the rapid synaptic rewiring observed in biological circuits. To introduce dynamics, PLIF (Fang et al., 2021b) and ILIF (Sun et al., 2025) provided dynamic and time-varying modulation of spiking neurons. However, these approaches operate pri-marily at the neuron level, regulating neuronal firing rates 2MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+without physically reshaping the information pathways. For continual learning, SA-SNN (Shen et al., 2024a) advanced this by employing trace-based K-WTA and variable thresh-olds to achieve selective activation. DSD-SNN (Han et al., 2023b) proposed dynamic pruning and growth of kernels in the training loop. Similarly, recent TD-MCL (Han et al., 2025b) mimicked brain development by employing evolu-tionary strategies to grow long-range pathways while prun-ing local redundancy. While effective for knowledge trans-fer, such developmental plasticity stabilizes after training, leaving the network topology static during the inference of specific instances. CogniSNN (Huang et al., 2025b) pre-liminarily explored inference-time dynamics based on pre-defined graph topological substructures, demonstrating the potential of such dynamics in enhancing model robustness. 
+
+## 3. Preliminaries 
+
+3.1. LIF Model 
+
+We employ the Leaky Integrate-and-Fire (LIF) model to process discrete input. Unlike the continuous activations in ANNs, LIF neurons are characterized by their rich dynamics. The membrane potential u(t) 
+
+> i
+
+of neuron i at timestep t is determined by the decay factor τdecay and the input current 
+
+C(t) 
+
+> i
+
+after synaptic integration: 
+
+u(t) 
+
+> i
+
+= τdecay · u(t−1)  
+
+> i
+
++ C(t) 
+
+> i
+
+− Vth · s(t−1)  
+
+> i
+
+. (1) When u(t) 
+
+> i
+
+accumulates beyond the threshold Vth , the neuron fires a spike and resets its potential. The spike generation process is defined by the Heaviside step function Θ( ·) as: 
+
+s(t) 
+
+> i
+
+= Θ( u(t) 
+
+> i
+
+− Vth ) ∈ { 0, 1} . (2) This event-driven nature grants SNNs energy efficiency while introducing non-differentiability. Thus, we employ surrogate gradient (Wu et al., 2018) for backpropagation. 
+
+3.2. GCN and GAT 
+
+Graph Convolutional Networks (GCNs; (Kipf, 2016)) en-able nodes to exchange information via neighborhood ag-gregation. Based on spectral graph theory, standard GCNs approximate graph convolution using first-order Chebyshev polynomials. The layer propagation rule is defined as: 
+
+H′ = σ
+
+ ˜D− 12 ˜A ˜D− 12 HW 
+
+
+
+, (3) where ˜A = A + Id is the adjacency matrix with self-loops (Id denotes the identity matrix), and ˜D is the degree matrix. 
+
+W is a learnable weight matrix, while H and H′ repre-sent the node features before and after graph convolution, respectively. σ(·) denotes the activation function. To capture the varying importance of neighbors, Graph At-tention Networks (GAT; (Veli ˇckovi ´c et al., 2017)) introduce an attention mechanism. The attention coefficient eij be-tween nodes i and j is computed as follows: 
+
+eij = LeakyReLU  a⊤[Wh i ∥ Wh j ] , (4) where hi and hj are input features of nodes i and j, a is the learnable attention vector, and ∥ indicates the concatenation. 
+
+## 4. Methodology 
+
+4.1. Overview of MorphSNN 
+
+As illustrated in Fig. 1, MorphSNN integrates a direct encoding layer, multiple Dynamic Graph Diffusion SNN (DGD-SNN) layers, and a linear classifier. Serving as the core feature extractor, each DGD-SNN layer is mathemat-ically modeled as a graph G = ( V, E) with N = |V| 
+
+nodes. Each node vi ∈ V is instantiated as a funda-mental ConvBNSN triplet used by Huang et al. (2025b): ConvBNSN (x) = SN (BN (Conv (x))) . The graph topology is parameterized by an adjacency matrix S ∈ RN ×N , where the entry Sij denotes the synaptic weight from node vj to 
+
+vi (with Sij ̸ = 0 implying (vj , v i) ∈ E ). In each batch, S is initialized as an all-ones symmetric matrix to ensure initial topological equivalence. Without loss of generality, we designate the first node v0
+
+as the dedicated source node for receiving the output from the direct encoding layer. This strategy establishes a stable spatial reference frame for the diffusion process, avoiding the optimization ambiguity associated with random source selection. For a given node vi, we denote its input and output as Ii and Oi, respectively. Consequently, for the source node v0 with input I(t)0 , its output O(t)0 at timestep t
+
+is expressed as: 
+
+O(t)0 = AvgP (ConvBNSN 0(I(t)0 )) , (5) where AvgP (·) denotes a 2 × 2 average pooling operation. To overcome the limitations of static connectivity, we use 
+
+STSP (Section 4.2 ) to update the matrix ˆS(t) at timestep t:
+
+ˆS(t) = STSP (S(t−1) ,
+
+n
+
+O(t)0 , O(t−1) 1 , . . . , O(t−1)  
+
+> N−1
+
+o
+
+). (6) Diverging from the rigid hierarchical transmission of stan-dard feedforward networks, we employ GD (Section 4.3 )for undirected signal propagation among nodes: 
+
+n
+
+I(t)1 , . . . , I(t) 
+
+> N−1
+
+o
+
+= GD (O(t)0 , ˆS(t)). (7) Subsequently, we utilize the ConvBNSN triplet within each node to extract features: 
+
+O(t) 
+
+> i
+
+= ConvBNSN i(I(t) 
+
+> i
+
+), 1 ≤ i < N. (8) 3MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks Conv 
+
+> BN
+> AvgP
+
+x L 
+
+> Classifier
+
+ConvBNSN Triplet Noise  ID 
+
+> OOD
+
+# MorphSNN  
+
+> Convolution Layer
+> BatchNorm Layer
+> Conv
+> BN
+> Spike Neuron
+> Source Neural Node
+> Neural Node
+> Conv
+> BN  Node Neural Node
+> Spike Propagation
+
+## GD 
+
+> W
+> Hebbian Plasticity
+> Top-k Pruning Homeostatic
+> Plasticity
+
+## STSP 
+
+> t = 1
+> t = 2 t = T
+
+Figure 1. The overall framework of MorphSNN. Input spikes flow from the direct encoding layer through L stacked DGD-SNN layers to the final classifier. Top Left: The model exhibits robustness against noise, with orange (In-Distribution, ID) and blue (OOD) samples activating distinct graph structures for OOD detection. Top Center: Each node is implemented as a ConvBNSN triplet. Bottom Left: The GD executes undirected signal propagation using the Laplacian operator. Bottom Center: The STSP strengthens synapses via Hebbian plasticity while maintaining stability via homeostatic plasticity, driving the temporal evolution of the entire graph structure ( Right ). 
+
+Finally, the output O(t) of the DGD-SNN is derived via a learnable weighted readout mechanism: 
+
+O(t) = AvgP ( 
+
+> N−1
+
+X
+
+> i=0
+
+σ1(wi) · O(t) 
+
+> i
+
+), 0 ≤ i < N. (9) Here, wi denotes the weight assigned to each node vi, and 
+
+σ1(·) is the Sigmoid function. For stacked layers, the ag-gregated output O(t) of the l-th layer serves directly as the input for the source node of the (l + 1) -th layer. 
+
+4.2. Spatio-Temporal Structure Plasticity 
+
+To infer robust, instance-specific connectivity from dynamic neural activities, we propose STSP . Our design draws inspi-ration from biological structural plasticity, synthesizing four key principles: Hebbian plasticity to reinforce co-activated connections based on firing rates, graph attention to model inter-nodal correlations, homeostatic plasticity to stabi-lize synaptic weights, and Short-Term Plasticity (STP) to regulate weight updates along the temporal dimension. For each input batch, the adjacency matrix is initialized as an all-ones matrix S(0) = 1N ×N , representing a uniform prior. Inferring the dynamic topology at timestep t requires the instantaneous states of all nodes. However, this presents a causal constraint: the source node v0 receives immedi-ate input, whereas the states of non-source nodes vi> 0 are updated only after the subsequent graph diffusion process. To address this, we construct a causal hybrid state tensor 
+
+˜O(t) 
+
+> i
+
+∈ RC×H×W that combines the current source input with the historical state of other nodes: 
+
+˜O(t) 
+
+> i
+
+=
+
+(
+
+O(t)0 , i = 0 (Source node) 
+
+O(t−1)  
+
+> i
+
+, 0 < i < N (Others) . (10) At t = 1 , states O(t−1) 1: N −1 are initialized as zero tensor. To project this hybrid state into a compact semantic embed-ding guided by the Hebbian principle (fire together, wire together), we employ global average pooling GAP (·) to ag-gregate spatial spikes into a channel-wise firing rate vector representing the global firing rate of each channel. The whole operation follows: 
+
+h(t) 
+
+> i
+
+= σ2
+
+
+
+Wproj · GAP ( ˜O(t) 
+
+> i
+
+)
+
+
+
+, 0 ≤ i < N, (11) where Wproj denotes a learnable projection matrix, and σ2
+
+is the ReLU activation function. The resulting h(t) 
+
+> i
+
+serves as the instantaneous feature vector for node vi used in sub-sequent topology inference. To incorporate historical context into topology inference, we introduce a synaptic trace Tr (t) 
+
+> i
+
+as a smoothed surrogate for node activity, calculated as follows: 
+
+Tr (t) 
+
+> i
+
+= λTr (t−1)  
+
+> i
+
++ (1 − λ)h(t) 
+
+> i
+
+, 0 ≤ i < N. (12) Here, λ ∈ [0 , 1] serves as a hyperparameter controlling his-tory retention. This temporal smoothing filters out transient 4MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+noise, ensuring that the structural evolution is driven by stable, long-term semantic associations. Furthermore, to capture diverse correlation patterns, we project the trace Tr (t) 
+
+> i
+
+into multiple semantic subspaces using a multi-head mechanism. For the m-th head ( m =1, ..., M head ), the projected feature h(t) 
+
+> i,m
+
+is obtained by 
+
+h(t) 
+
+> i,m
+
+= ( Whead · Tr (t) 
+
+> i
+
+)m, 0 ≤ i < N, (13) where Whead is a learnable transformation matrix, and (·)m
+
+denotes vector slicing operation. We set Mhead = 4 .Next, we compute pairwise correlation scores between nodes vi and vj (0 ≤ i, j < N ) in the m-th subspace. Un-like standard GAT, we compute dense bidirectional scores 
+
+e(t) 
+
+> ij,m
+
+to facilitate subsequent global topology inference: 
+
+e(t) 
+
+> ij,m
+
+= LeakyReLU 
+
+
+
+a⊤
+
+> m
+
+[h(t) 
+
+> i,m
+
+∥ h(t)
+
+> j,m
+
+]
+
+
+
+, (14) where am and ∥ denote the learnable weight vector for the 
+
+m-th attention head and concatenation, respectively. To enforce topological symmetry and fuse information across subspaces, we average the bidirectional scores within each head and subsequently aggregate across all Mhead 
+
+heads. The symmetric attention score ¯e(t) 
+
+> ij
+
+is derived as: 
+
+¯e(t) 
+
+> ij
+
+= 1
+
+Mhead 
+
+> Mhead
+
+X
+
+> m=1
+
+e(t) 
+
+> ij,m
+
++ e(t)
+
+> ji,m
+
+2
+
+!
+
+. (15) To maintain homeostasis, the symmetric scores are normal-ized via a Softmax function with a temperature τ = 0 .01 ,yielding the instantaneous adjacency matrix ˆA(t) 
+
+> ij
+
+:
+
+ˆA(t) 
+
+> ij
+
+= Drop 
+
+ exp 
+
+
+
+¯e(t) 
+
+> ij
+
+/τ 
+
+PNl=1 exp 
+
+
+
+¯e(t) 
+
+> il
+
+/τ 
+
+ , (16) where Drop (·) is dropout layer with a drop probability 0.2.Incorporating the principles of STP, we update the synaptic connectivity S(t) using ˆA(t). This is implemented via a momentum-based update rule: 
+
+S(t) = β S(t−1) + (1 − β) ˆA(t), (17) where β ∈ [0 , 1] serves as a hyperparameter controlling the evolution intensity of the graph structure. Notably, setting 
+
+β = 1 reduces the system to a static graph, a property utilized in our ablation studies. Finally, to mitigate noise and induce topological sparsity, we implement a dynamic Top-k pruning strategy, retaining only the k connections with the highest synaptic weights for each node. To address the non-differentiability of the Top-k
+
+selection, we employ a gradient masking mechanism during training. Specifically, the pruning operation acts as a dy-namic mask: during backpropagation, gradients propagate back to the learnable parameters exclusively through the val-ues of the retained active edges, while gradients for pruned connections are zeroed out. This ensures end-to-end opti-mization of the underlying attention weights based on the most task-relevant pathways. The operation is formulated as follows: 
+
+ˆS(t) 
+
+> ij
+
+=
+
+(
+
+S(t) 
+
+> ij
+
+, if S(t) 
+
+> ij
+
+∈ Top k
+
+
+
+S(t)
+
+> i, :
+
+
+
+0, otherwise , (18) where Top k(·) extracts the indices of the k largest elements in a row. 
+
+4.3. Graph Diffusion 
+
+Upon the inferred sparse topology ˆS, we introduce the GD 
+
+mechanism for signal propagation. Unlike traditional GCNs, we propagate information from the source node v0 to other nodes via M iterative diffusion steps. Crucially, we design the diffusion operator to achieve spatio-temporal decoupling. Since LIF neurons inherently encode temporal memory via membrane potential decay term τdecay u(t−1)  
+
+> i
+
+, we avoid the explicit addition of self-loops (i.e., the renormalization trick 
+
+A + Id as in Eq. 3) to prevent redundant self-information accumulation. Furthermore, to rectify the asymmetry intro-duced by Top-k pruning, we re-symmetrize the topology to ensure a valid undirected operator P(t):
+
+P(t) = D− 12
+
+ˆS(t) + ( ˆS(t))⊤
+
+2
+
+!
+
+D− 12 , (19) where D is the degree matrix of (ˆS(t) + ( ˆS(t))⊤)/2.To initiate the diffusion, we construct a global graph signal tensor X(t). Consistently with our source node design, we assign O(t)0 to the first row and zero-pad the remaining N −1
+
+rows, reflecting the latent state of the network prior to spatial propagation. Formally: 
+
+X(t) =
+
+ O(t)0
+
+0N −1
+
+
+
+, (20) where 0N −1 denotes the zero-initialized states of other non-source nodes. Finally, the signal propagates through the graph via an M -step diffusion process: 
+
+I(t) 
+
+> i
+
+=
+
+
+
+P(t)M
+
+X(t)
+
+
+
+> i
+
+, 1 ≤ i < N. (21) Here, M controls the diffusion depth, and the operator [·]i
+
+extracts the feature row corresponding to node vi.The complete algorithm is provided in Appendix A. 5MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+Table 1. Performance (%) comparison with state-of-the-art methods on DVS-Gesture, CIFAR10-DVS, and N-Caltech101. Bold and underline denote the best and second-best results, respectively. Results marked with ∗ denote our reproduction. 
+
+Method Architecture T DVS-Gesture CIFAR10-DVS NCaltech101 
+
+MLF (Feng et al., 2022) VGG-9 5 85.77 65.88 70.4 SSNN (Ding et al., 2024) VGG-9 5 90.74 73.63 77.97 Spikingformer (Zhou et al., 2023) Spikingformer-2-256 5 93.40 ∗ 77.50 ∗ 82.14 ∗
+
+CogniSNN (Huang et al., 2025b) WS-RGA-7 5 95.41 79.00 78.62 
+
+MorphSNN DGD-SNN-7-3 5 96.53 ± 0.11 79.90 ± 0.13 83.35 ± 0.18 
+
+SEW-ResNet (Fang et al., 2021a) ConvNet 16 97.92 74.40 -Spikformer (Zhou et al., 2022) Spikformer-2-256 16 98.30 80.90 -Spikingformer (Zhou et al., 2023) Spikingformer-2-256 16 98.30 81.30 -SpikingReformer (Shi et al., 2024) SpikingReformer-4-384 16 - 78.80 81.29 Spike-D- Transformer (Zhou et al., 2024) S-d-Transformer-2-256 16 98.26 ∗ 80.00 81.80 CogniSNN (Huang et al., 2025a) ER-RGA-7 16 98.61 81.60 ∗ 81.32 ∗
+
+MorphSNN DGD-SNN-7-3 16 98.96 ± 0.05 83.70 ± 0.10 82.74 ± 0.09 
+
+4.4. Theoretical Analysis 
+
+Graph diffusion in SNNs faces an intrinsic trade-off between feature binding and discrimination: excessive propagation leads to over-smoothing, causing the network to lose dis-criminative ability, while insufficient propagation results in under-activation, hindering feature synchronization and leading to the binding problem. Ideally, the network should converge to a global equilibrium, binding related features while preserving distinct class boundaries. To rigorously quantify this balance, we model the sig-nal propagation as a Dirichlet energy minimization pro-cess (Shuman et al., 2013), serving as a metric for global signal smoothness on the learned topology ˆS(t). Let Y de-note the post-diffusion input matrix, where y0 is the source node input and yi (i > 0) are the diffused states of non-source nodes. The Dirichlet energy of the diffused states Y
+
+is defined as: 
+
+EDir (Y) = tr  Y⊤Lnorm Y , (22) where Lnorm = Id − D−1/2S(t) 
+
+> sym
+
+D−1/2 is the symmetric normalized Laplacian, and S(t) 
+
+> sym
+
+= ( ˆS(t) + ( ˆS(t))⊤)/2 is the symmetrized adjacency matrix. 
+
+Proposition 4.1. Symmetry of P(t) is sufficient for the dif-fusion to constitute a valid gradient flow on EDir . This ensures real spectra, eliminating non-physical oscillations and guaranteeing stability of the gradient flow dynamics. 
+
+Theorem 4.2. The GD functions as a gradient descent step on EDir with the learning rate η = 0 .5. This represents the maximum stable step size, guaranteeing monotonic conver-gence to the energy equilibrium. 
+
+Implication. Theorem 4.2 guarantees convergence to a stable equilibrium. At this state, the signal is sufficiently smooth to bind related features yet retains necessary vari-ance for classification. Detailed proofs and empirical visual-ization are provided in Appendices B and F.1, respectively. 
+
+Table 2. Comparison (%) on static CIFAR-10/100 and ImageNet.                                       
+
+> Method TCIFAR-10 CIFAR-100 ImageNet
+> ResNet-19 (ANN) 194.97 75.35 -Transformer (ANN) 196.73 81.02 -
+> MorphANN (Ours) 196.50 80.29 -SNASNet (Kim et al., 2022) 593.64 73.04 -Spikformer (Zhou et al., 2022) 495.51 78.21 73.38 Spikingformer (Shi et al., 2024) 495.81 78.21 74.79 S-Transformer (Yao et al., 2023a) 495.60 78.40 74.57
+> MorphSNN (Ours) 495.97 ±0.07 79.87 ±0.19 75.04
+
+## 5. Experiments 
+
+Datasets and Implementation. We evaluate MorphSNN on seven benchmarks: DVS-Gesture , CIFAR10-DVS , N-Caltech101 , and UCF101-DVS for neuromorphic process-ing; CIFAR-10/100 and ImageNet for static classification. Experiments on ImageNet are conducted on four NVIDIA H100 GPUs, while others datasets utilize a single RTX 4090. Further implementation details are provided in Appendix E. 
+
+Comparative and Ablation Protocols. We benchmark MorphSNN against SOTA CNN and Transformer-based SNNs using three protocols: ❶ Mechanism Isolation: Com-paring with random directed topology (Huang et al., 2025a) to quantify GD and STSP gains; ❷ Cross Domain Gener-alization: Evaluating an ANN variant , MorphANN, with GeLU ( T = 1 ) to verify universality of GD; and ❸ Open-World Adaptability: Assessing OOD detection and per-turbation robustness to examine how STSP-driven dynamic adaptation enhances resilience in volatile environments. Hy-perparameter sensitivity, detailed visualizations, and energy efficiency analyses are provided in Appendices D, F, and G. 
+
+5.1. Overall Performance Performance on Neuromorphic Benchmarks. As sum-marized in Table 1, MorphSNN excels in rapid-response inference. Under a 5-timestep constraint on DVS-Gesture, it outperforms CogniSNN by 1.12%, demonstrating distinct 6MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks                                
+
+> Table 3. Ablation studies (%) . Sym denotes symmetric.
+> Method GD STSP Sym DVS128 C10DVS NCal101 Baseline ✗✗✗92.01 78.90 81.77
+> Static ✓✗✓95.44 79.90 83.35 Asym ✓✓✗94.44 78.20 82.14
+> Full ✓✓✓96.53 79.40 82.75
+
+advantages in rapid-response scenarios. In contrast, our reproduction of Spikingformer indicates that Transformer-based SNNs struggle in such settings, likely due to their reliance on long-term temporal accumulation. This advan-tage extends to CIFAR10-DVS and N-Caltech101, where MorphSNN surpasses the second-best methods by 0.9% and 1.21%, respectively. When extended to 16 timesteps, MorphSNN maintains a substantial lead. On CIFAR10-DVS, it achieves a 2.1% accuracy gain over CogniSNN, while preserving a slight 0.3% edge on DVS-Gesture. No-tably, on N-Caltech101, MorphSNN attains an accuracy of 82.74%, surpassing the 81.80% record held by the SOTA Spike-Driven Transformer. 
+
+Performance on Static Benchmarks. As shown in Ta-ble 2, while the ANN variant, MorphANN, improves upon ResNet-19 under a comparable 10M parameter budget, it trails Vision Transformers. However, in the spiking do-main, MorphSNN exhibits superior efficacy. It surpasses Spikingformer by 0.16% on CIFAR-10 and achieves a sub-stantial 1.4% margin over S-Transformer on the more com-plex CIFAR-100. Crucially, on ImageNet, MorphSNN achieves 75.04% Top-1 accuracy, outperforming Spiking-former (74.79%) and S-Transformer (74.57%). This perfor-mance contrast underscores the intrinsic synergy between SNNs and undirected graph diffusion: spiking neurons ef-fectively filter noise during membrane potential integration, whereas continuous-valued ANNs are prone to propagating and amplifying global errors across the graph. Notably, the optimal performance on static datasets, as well as on CIFAR10-DVS and N-Caltech101, is achieved by the static MorphSNN variant ( β = 1 ). We provide a detailed analysis of this phenomenon in the next section. 
+
+5.2. Ablation Studies 
+
+To quantify the individual contributions of the proposed GD and STSP, we construct four ablation variants: ❶ a
+
+Baseline employing random directed topology from Cog-niSNN (Huang et al., 2025a), which utilizes standard di-rected propagation instead of GD; ❷ a Static variant where fixing β = 1 freezes topological evolution, preserving the symmetric all-ones initialization; ❸ an Asym variant lacking adjacency matrix symmetrization; and ❹ the Full 
+
+MorphSNN framework. As detailed in Table 3, Static consistently outperforms Base-line across all benchmarks. The performance drop in Base-              
+
+> Table 4. Comparison and STSP ablation on UCF101-DVS.
+> Model TAccuracy (%) Event Frames (Bi et al., 2020) 857.9 Res-SNN18 + RM (Yao et al., 2023b) 863.5 TIM (Shen et al., 2024b) 10 63.8
+> MorphSNN (Static) 10 65.81
+> MorphSNN (Full) 10 67.12
+
+line stems from inefficient information routing within ran-dom topologies, validating that mathematically grounded diffusion rules are essential for effective graph utilization to prevent network degradation. Furthermore, the performance drop in Asym compared to Full empirically validates our theoretical proposition: enforced symmetry is a prerequisite for ensuring the convexity of Dirichlet energy minimization and convergence stability. Crucially, we observe that the efficacy of STSP is highly sensitive to the temporal nature of the data. While the 
+
+Full model outperforms the Static variant on DVS-Gesture, incorporating STSP leads to performance degradation on N-Caltech101 and CIFAR10-DVS. We attribute this to the in-trinsic nature of the data: STSP is designed to capture evolv-ing temporal semantics. Since N-Caltech101 and CIFAR10-DVS are derived from static images via saccades, they lack genuine temporal dynamics. Consequently, STSP captures spurious correlations rather than meaningful structural evo-lution, introducing optimization instability. To validate this hypothesis, we extend our evaluation to the large-scale dynamic dataset UCF101-DVS, as detailed in Table 4. The results corroborate our conjecture: the Full 
+
+variant regains its superiority and outperforms the Static 
+
+version by 1.31%. Moreover, both variants significantly exceed the second-best method, TIM. This confirms that STSP confers critical advantages specifically when process-ing inputs with rich, genuine temporal dynamics, whereas a static graph suffices for static-to-event datasets. 
+
+5.3. Open-world Adaptability 
+
+5.3.1. OOD D ETECTION 
+
+To further validate the advantages of STSP in dynamic environments, we conduct OOD detection based on the 
+
+Structural Consistency Hypothesis : ID samples activate topological patterns clustered around learned prototypes, whereas OOD inputs trigger divergent pathways. As Table 5 shows, conventional methods (e.g., MSP, Energy) falter with AUROC scores of merely 75–85% due to overconfident mis-classifications, while SCP lacks the granularity for subtle semantic shifts. To establish a performance upper bound, we introduce a non-parametric kNN baseline. While leveraging full geomet-7MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+Table 5. OOD detection scores obtained for Full MorphSNN in neuromorphic datasets. ↑ indicates higher is better, ↓ indicates lower is better. ∗ denotes our proposed method. Bold and underline denote the best and second-best results, respectively.                                                                                               
+
+> In dataset OOD dataset AUROC ↑AUPR-Out ↑FPR95 ↓
+> DGP ∗KNN SCP MSP Energy DGP ∗KNN SCP MSP Energy DGP ∗KNN SCP MSP Energy DVS128 C10-DVS 99.22 99.25 87.19 78.01 83.32 99.74 99.75 94.51 90.60 92.46 1.90 2.70 8.40 38.70 25.50 NCal-101 99.48 99.71 89.48 75.57 62.37 99.82 99.90 95.94 87.67 78.90 0.55 0.33 5.91 42.01 70.46 DVS-Lip 99.34 99.28 76.04 79.48 87.20 99.95 99.95 97.32 97.89 98.63 0.56 1.57 25.55 35.58 13.63 0123456789
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Accuracy (%)
+> (a) Salt-and-Pepper Noise
+> 0123456789
+> Interference Intensity
+> (b) Poisson Noise
+> 0123456789
+> (c) Frame Loss
+> MorphSNN (Static) MorphSNN (Full)
+
+Figure 2. Robustness evaluation of Static and Full models on DVS-Gesture under varying interference intensities. 
+
+ric density achieves top-tier metrics, the O(Ntrain ) memory complexity of kNN is prohibitive for resource-constrained neuromorphic devices. In contrast, our Dynamic Graph Prototypes (DGP) method matches kNN’s precision with negligible overhead by compressing distributions into com-pact O(Nclass ) topological centroids. On ID benchmarks, DGP consistently attains AUROC ex-ceeding 99.2% and AUPR-Out over 99.7% . Crucially, DGP suppresses FPR95 to below 1.90% , notably dropping to 
+
+0.55% on N-Caltech101. Most notably, in the challeng-ing Near-OOD DVS-Lip test, DGP achieves an FPR95 of 
+
+0.56% , significantly outperforming the 1.57% upper bound set by kNN. It also maintains a distinct lead on CIFAR10-DVS ( 1.90% vs. 2.70%). These results confirm that STSP-driven evolving topology serves as a robust, lightweight distribution descriptor capa-ble of identifying even subtle semantic deviations. Biolog-ically, this mechanism mimics stimulus-specific pathway recruitment, where the network learns to channel informa-tion through specialized synaptic routes. Consequently, ID samples follow these reinforced trajectories aligned with learned prototypes, while OOD inputs trigger unstructured activations that fail to match any established topological signature. Comprehensive descriptions of the DGP method-ology are provided in Appendix C. 5.3.2. R OBUSTNESS ANALYSIS 
+
+To assess the robustness of the proposed STSP mechanism against real-world environmental volatility, we subject the model to comprehensive interference tests on DVS-Gesture. Specifically, we benchmark the Full MorphSNN against the Static baseline ( β = 1 ) under varying intensities of three perturbation protocols: Salt-and-Pepper Noise, Pois-son Noise, and Frame Loss (details in the Appendix E.4). As illustrated in Figure 2, while the performance of both models naturally declines with increasing perturbation inten-sity, the Full model exhibits significantly superior resilience compared to the Static version. Notably, under Salt-and-Pepper and Poisson noise, the Full model maintains a per-formance margin of approximately 10% at high noise levels. We attribute this to the STSP mechanism: since transient noise spikes lack spatiotemporal consistency, they fail to accumulate sufficient trace values to consolidate into stable topological connections, thereby effectively blocking noise propagation. Furthermore, under Frame Loss scenarios, the Static variant suffers from signal starvation due to zeroed-out inputs, lead-ing to network silence. In contrast, the Full model exploits spatio-temporal compensation. Temporally, the hysteresis effect of synaptic traces preserves partial structural memory during input gaps; spatially, STSP adaptively redistributes weights to the remaining active nodes, ensuring continu-ous information flow. Consequently, MorphSNN effectively captures the robust underlying manifold features of neuro-morphic streams, yielding enhanced interference resistance. 
+
+## 6. Conclusion 
+
+We present MorphSNN, a framework that transcends the lim-itations of static hierarchical SNNs by integrating GD and 
+
+STSP . Theoretically, we prove that our diffusion-based prop-agation minimizes the Dirichlet energy, guaranteeing signal smoothness and stability. Empirically, MorphSNN achieves state-of-the-art performance across diverse neuromorphic 8MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+and static classification benchmarks, demonstrating remark-able scalability to complex datasets like ImageNet. Cru-cially, the proposed STSP enables instance-specific topology evolution, exhibiting superior robustness against environ-mental interference compared to static baselines. Further-more, we reveal that the evolved topologies encapsulate rich semantic information, facilitating near-perfect OOD detec-tion without auxiliary training. Ultimately, MorphSNN sug-gests that neuromorphic intelligence emerges fundamentally from the fluidity of connectivity, advocating for a paradigm shift toward dynamic, self-organizing architectures in future brain-inspired computing. 
+
+## Impact Statement 
+
+This paper presents work whose goal is to advance the field of Machine Learning. There are many potential societal consequences of our work, none which we feel must be specifically highlighted here. 
+
+## References 
+
+Amir, A., Taba, B., Berg, D., Melano, T., McKinstry, J., Di Nolfo, C., Nayak, T., Andreopoulos, A., Garreau, G., Mendoza, M., et al. A low power, fully event-based gesture recognition system. In Proceedings of the IEEE conference on computer vision and pattern recognition ,pp. 7243–7252, 2017. Avramovi ´c, A., Gaji ´c, S., Sluga, D., Dimitri ´c, D., Simi ´c, M., Laji ´c, R., Jovanovi ´c, V., Buli ´c, P., and Risojevi ´c, V. Out-of-distribution image detection with residual spiking neural network architectures. In 2025 24th International Symposium INFOTEH-JAHORINA (INFOTEH) , pp. 1–5. IEEE, 2025. Bi, Y., Chadha, A., Abbas, A., Bourtsoulatze, E., and An-dreopoulos, Y. Graph-based spatio-temporal feature learn-ing for neuromorphic vision sensing. IEEE Transactions on Image Processing , 29:9084–9098, 2020. Ding, Y., Zuo, L., Jing, M., He, P., and Xiao, Y. Shrinking your timestep: Towards low-latency neuromorphic object recognition with spiking neural networks. In Proceed-ings of the AAAI Conference on Artificial Intelligence ,volume 38, pp. 11811–11819, 2024. Dong, Z., Zhou, C., Deng, W., Wei, P., Ji, X., and Lin, L. Can we achieve efficient diffusion without self-attention? distilling self-attention into convolutions. arXiv preprint arXiv:2504.21292 , 2025. Dosovitskiy, A. An image is worth 16x16 words: Trans-formers for image recognition at scale. arXiv preprint arXiv:2010.11929 , 2020. D’Angelo, E., Antonietti, A., Casali, S., Casellato, C., Gar-rido, J. A., Luque, N. R., Mapelli, L., Masoli, S., Pe-drocchi, A., Prestori, F., et al. Modeling the cerebellar microcircuit: new strategies for a long-standing issue. 
+
+Frontiers in cellular neuroscience , 10:176, 2016. Fang, W., Yu, Z., Chen, Y., Huang, T., Masquelier, T., and Tian, Y. Deep residual learning in spiking neural net-works. Advances in Neural Information Processing Sys-tems , 34:21056–21069, 2021a. Fang, W., Yu, Z., Chen, Y., Masquelier, T., Huang, T., and Tian, Y. Incorporating learnable membrane time constant 9MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+to enhance learning of spiking neural networks. In Pro-ceedings of the IEEE/CVF international conference on computer vision , pp. 2661–2671, 2021b. Feng, L., Liu, Q., Tang, H., Ma, D., and Pan, G. Multi-level firing with spiking ds-resnet: Enabling better and deeper directly-trained spiking neural networks. arXiv preprint arXiv:2210.06386 , 2022. Greff, K., Van Steenkiste, S., and Schmidhuber, J. On the binding problem in artificial neural networks. arXiv preprint arXiv:2012.05208 , 2020. Han, B., Zhao, F., Pan, W., Zhao, Z., Li, X., Kong, Q., and Zeng, Y. Adaptive reorganization of neural pathways for continual learning with spiking neural networks. arXiv preprint arXiv:2309.09550 , 2023a. Han, B., Zhao, F., Zeng, Y., Pan, W., and Shen, G. Enhanc-ing efficient continual learning with dynamic structure development of spiking neural networks. arXiv preprint arXiv:2308.04749 , 2023b. Han, B., Zhao, F., Pan, W., and Zeng, Y. Adaptive sparse structure development with pruning and regeneration for spiking neural networks. Information Sciences , 689: 121481, 2025a. Han, B., Zhao, F., Sun, Y., Pan, W., and Zeng, Y. Con-tinual learning of multiple cognitive functions with brain-inspired temporal development mechanism. arXiv preprint arXiv:2504.05621 , 2025b. He, K., Zhang, X., Ren, S., and Sun, J. Deep residual learn-ing for image recognition. In Proceedings of the IEEE conference on computer vision and pattern recognition ,pp. 770–778, 2016. Hendrycks, D. and Gimpel, K. A baseline for detecting misclassified and out-of-distribution examples in neural networks. arXiv preprint arXiv:1610.02136 , 2016. Horowitz, M. 1.1 computing’s energy problem (and what we can do about it). In 2014 IEEE international solid-state circuits conference digest of technical papers (ISSCC) ,pp. 10–14. IEEE, 2014. Hu, Y., Tang, H., and Pan, G. Spiking deep residual net-works. IEEE Transactions on Neural Networks and Learning Systems , 34(8):5200–5205, 2021. Hu, Y., Deng, L., Wu, Y., Yao, M., and Li, G. Advancing spiking neural networks toward deep residual learning. 
+
+IEEE transactions on neural networks and learning sys-tems , 36(2):2353–2367, 2024. Huang, Y., Lin, X., Ren, H., Fu, H., Zhou, Y., Liu, Z., Pan, B., and Cheng, B. Clif: Complementary leaky integrate-and-fire neuron for spiking neural networks. 
+
+arXiv preprint arXiv:2402.04663 , 2024. Huang, Y., Duan, P., Liu, Z., Sun, K., Zhang, C., Zhang, B., and Xu, M. Cognisnn: A first exploration to random graph architecture based spiking neural networks with en-hanced expandability and neuroplasticity. arXiv preprint arXiv:2505.05992 , 2025a. Huang, Y., Duan, P., Wu, Y., Sun, K., Liu, Z., Zhang, C., Zhang, B., and Xu, M. Cognisnn: Enabling neuron-expandability, pathway-reusability, and dynamic-configurability with random graph architectures in spik-ing neural networks. arXiv preprint arXiv:2512.11743 ,2025b. Kim, Y., Li, Y., Park, H., Venkatesha, Y., and Panda, P. Neural architecture search for spiking neural networks. In European conference on computer vision , pp. 36–56. Springer, 2022. Kipf, T. Semi-supervised classification with graph con-volutional networks. arXiv preprint arXiv:1609.02907 ,2016. Lamprecht, R. and LeDoux, J. Structural plasticity and mem-ory. Nature Reviews Neuroscience , 5(1):45–54, 2004. Langley, P. Crafting papers on machine learning. In Langley, P. (ed.), Proceedings of the 17th International Conference on Machine Learning (ICML 2000) , pp. 1207–1216, Stan-ford, CA, 2000. Morgan Kaufmann. Lee, D., Li, Y., Kim, Y., Xiao, S., and Panda, P. Spiking transformer with spatial-temporal attention. In Proceed-ings of the Computer Vision and Pattern Recognition Conference , pp. 13948–13958, 2025. Lemaire, E., Cordone, L., Castagnetti, A., Novac, P.-E., Courtois, J., and Miramond, B. An analytical estimation of spiking neural networks energy efficiency. In Interna-tional conference on neural information processing , pp. 574–587. Springer, 2022. Li, H., Liu, H., Ji, X., Li, G., and Shi, L. Cifar10-dvs: an event-stream dataset for object classification. Frontiers in neuroscience , 2017. Liu, W., Wang, X., Owens, J., and Li, Y. Energy-based out-of-distribution detection. Advances in neural information processing systems , 33:21464–21475, 2020. Maass, W. Networks of spiking neurons: the third genera-tion of neural network models. Neural networks , 10(9): 1659–1671, 1997. Maass, W. Liquid state machines: motivation, theory, and applications. Computability in context: computation and logic in the real world , pp. 275–296, 2011. 10 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+Martinez-Seras, A., Del Ser, J., Lobo, J. L., Garcia-Bringas, P., and Kasabov, N. A novel out-of-distribution detection approach for spiking neural networks: Design, fusion, performance evaluation and explainability. Information Fusion , 100:101943, 2023. Matsugu, M., Mori, K., Ishii, M., and Mitarai, Y. Convolu-tional spiking neural network model for robust face detec-tion. In Proceedings of the 9th International Conference on Neural Information Processing, 2002. ICONIP’02. ,volume 2, pp. 660–664. IEEE, 2002. Mohan, A., Pendyam, S., Kalivas, P. W., and Nair, S. S. Molecular diffusion model of neurotransmitter homeosta-sis around synapses supporting gradients. Neural compu-tation , 23(4):984–1014, 2011. Orchard, G., Jayawant, A., Cohen, G. K., and Thakor, N. Converting static image datasets to spiking neuromorphic datasets using saccades. Frontiers in neuroscience , 9:437, 2015. Pan, W., Zhao, F., Zhao, Z., and Zeng, Y. Brain-inspired evolutionary architectures for spiking neural networks. 
+
+IEEE Transactions on Artificial Intelligence , 5(11):5760– 5770, 2024. Roy, K., Jaiswal, A., and Panda, P. Towards spike-based ma-chine intelligence with neuromorphic computing. Nature ,575(7784):607–617, 2019. Russakovsky, O., Deng, J., Su, H., Krause, J., Satheesh, S., Ma, S., Huang, Z., Karpathy, A., Khosla, A., Bernstein, M., et al. Imagenet large scale visual recognition chal-lenge. International journal of computer vision , 115(3): 211–252, 2015. Scarselli, F., Gori, M., Tsoi, A. C., Hagenbuchner, M., and Monfardini, G. The graph neural network model. IEEE transactions on neural networks , 20(1):61–80, 2008. Shen, J., Ni, W., Xu, Q., and Tang, H. Efficient spiking neural networks with sparse selective activation for con-tinual learning. In Proceedings of the AAAI Conference on Artificial Intelligence , volume 38, pp. 611–619, 2024a. Shen, S., Zhao, D., Shen, G., and Zeng, Y. Tim: an effi-cient temporal interaction module for spiking transformer. 
+
+arXiv preprint arXiv:2401.11687 , 2024b. Shi, X., Hao, Z., and Yu, Z. Spikingresformer: Bridging resnet and vision transformer in spiking neural networks. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , pp. 5610–5619, 2024. Shuman, D. I., Narang, S. K., Frossard, P., Ortega, A., and Vandergheynst, P. The emerging field of signal processing on graphs: Extending high-dimensional data analysis to networks and other irregular domains. IEEE signal processing magazine , 30(3):83–98, 2013. Singer, W. Neuronal synchrony: a versatile code for the definition of relations? Neuron , 24(1):49–65, 1999. Sun, K., Duan, P., Kuhlmann, L., Wang, B., and Zhang, B. Ilif: Temporal inhibitory leaky integrate-and-fire neu-ron for overactivation in spiking neural networks. arXiv preprint arXiv:2505.10371 , 2025. Sun, Y., Ming, Y., Zhu, X., and Li, Y. Out-of-distribution de-tection with deep nearest neighbors. In International con-ference on machine learning , pp. 20827–20840. PMLR, 2022. Tan, G., Wang, Y., Han, H., Cao, Y., Wu, F., and Zha, Z.-J. Multi-grained spatio-temporal features perceived net-work for event-based lip-reading. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pp. 20094–20103, 2022. Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., and Polosukhin, I. At-tention is all you need. Advances in neural information processing systems , 30, 2017. Veli ˇckovi ´c, P., Cucurull, G., Casanova, A., Romero, A., Lio, P., and Bengio, Y. Graph attention networks. arXiv preprint arXiv:1710.10903 , 2017. Wu, Y., Deng, L., Li, G., Zhu, J., and Shi, L. Spatio-temporal backpropagation for training high-performance spiking neural networks. Frontiers in neuroscience , 12: 331, 2018. Xu, M. Exploiting homeostatic synaptic modulation in spik-ing neural networks for semi-supervised graph learning. In Proceedings of the 32nd ACM international conference on information and knowledge management , pp. 5193– 5195, 2023. Xu, M., Liu, F., Hu, Y., Li, H., Wei, Y., Zhong, S., Pei, J., and Deng, L. Adaptive synaptic scaling in spiking networks for continual learning and enhanced robustness. 
+
+IEEE Transactions on Neural Networks and Learning Systems , 36(3):5151–5165, 2024. Yao, M., Hu, J., Zhou, Z., Yuan, L., Tian, Y., Xu, B., and Li, G. Spike-driven transformer. Advances in neural information processing systems , 36:64043–64058, 2023a. Yao, M., Zhang, H., Zhao, G., Zhang, X., Wang, D., Cao, G., and Li, G. Sparser spiking activity can be better: Feature refine-and-mask spiking neural network for event-based visual recognition. Neural Networks , 166:410–423, 2023b. 11 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+Zheng, H., Lin, H., Zhao, R., and Shi, L. Dance of snn and ann: solving binding problem by combining spike timing and reconstructive attention. Advances in Neural Information Processing Systems , 35:31430–31443, 2022. Zhou, C., Yu, L., Zhou, Z., Ma, Z., Zhang, H., Zhou, H., and Tian, Y. Spikingformer: Spike-driven residual learn-ing for transformer-based spiking neural network. arXiv preprint arXiv:2304.11954 , 2023. Zhou, C., Zhang, H., Zhou, Z., Yu, L., Huang, L., Fan, X., Yuan, L., Ma, Z., Zhou, H., and Tian, Y. Qkformer: Hierarchical spiking transformer using qk attention. Ad-vances in Neural Information Processing Systems , 37: 13074–13098, 2024. Zhou, Z., Zhu, Y., He, C., Wang, Y., Yan, S., Tian, Y., and Yuan, L. Spikformer: When spiking neural network meets transformer. arXiv preprint arXiv:2209.15425 , 2022. 12 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+Algorithm 1 Forward Propagation of DGD-SNN 
+
+Input : Input of source node I(t)0 , Initial Adjacency S(0) 
+
+Output : Output O(t) at timestep t 
+
+> 1:
+
+Initialize S(0) as an all-ones matrix  
+
+> 2:
+
+for t = 1 to T do 
+
+// Phase 1: Calculate output of source node  
+
+> 3:
+
+O(t)0 ← AvgP (ConvBNSN 0(I(t)0 )) in Eq. 5 // Phase 2: Update adjacency matrix using STSP  
+
+> 4:
+
+Calculate hybrid state tensor ˜O(t) 
+
+> i
+
+by Eq. 10  
+
+> 5:
+
+Calculate instantaneous attention adjacency probability matrix ˆA(t) by combining Eqs. 11–16  
+
+> 6:
+
+Update the adjacency matrix: S(t) ← β · S(t−1) + (1 − β) · ˆA(t) 
+
+> 7:
+
+Execute pruning: ˆS(t) ← Top k(S(t)) by Eq. 18 // Phase 3: Execute GD  
+
+> 8:
+
+Calculate the diffusion operation P(t) by Eq. 19  
+
+> 9:
+
+Calculate the inputs of others nodes I(t)1≤i<N by combining Eq. 20 and 21 // Phase 4: Calculate total output  
+
+> 10:
+
+Calculate the outputs of other nodes O(t)1≤i<N by Eq. 8  
+
+> 11:
+
+Aggregate the outputs from all nodes O(t)0≤i<N to obtain O(t) by Eq. 9  
+
+> 12:
+
+end for  
+
+> 13:
+
+return O(t)
+
+## A. Pseudocode of DGD-SNN 
+
+Due to space constraints, we present the algorithmic description of the DGD-SNN forward propagation here. Please refer to Algorithm 1. 
+
+## B. Theoretical Analysis and Proofs 
+
+Notation Clarification. To maintain mathematical rigor and standard conventions within the spectral analysis, we clarify the following definitions and symbols used in this appendix: • Strict Graph Definitions: To ensure consistency with the gradient derivations, the degree matrix D is strictly defined based on the symmetrized adjacency matrix S(t) 
+
+> sym
+
+= ( ˆS(t) + ( ˆS(t))⊤)/2. Specifically, Dii = P 
+
+> j
+
+(S(t)
+
+> sym
+
+)ij .Consequently, the diffusion operator is P = D−1/2S(t)
+
+> sym
+
+D−1/2, and the normalized Laplacian is Lnorm = Id − P.• Local Symbol Distinctions: Certain symbols are defined locally for the spectral analysis and are distinct from global hyperparameters in the main text: 
+
+– The variable t denotes the continuous physical diffusion time in the differential equation dY 
+
+> dt
+
+= −LY . It represents the extent of signal propagation depth. Theoretically, one discrete diffusion step (multiplication by P) corresponds to advancing this physical time by a specific interval. This is distinct from the discrete inference timestep index used in the main methodology. 
+
+– The indices k and j denote the spectral mode or node indices, distinct from the Top-k pruning parameter. 
+
+– The symbol λk represents the k-th eigenvalue of the Laplacian, distinct from the synaptic trace decay factor λ
+
+defined in Eq. (12). 
+
+– The symbols αk and βk represent the real and imaginary parts of eigenvalues, respectively, and are independent of the momentum coefficient β.
+
+– The vector y (and matrix Y) represents a general graph signal variable in the continuous state space, distinct from specific layer outputs. 13 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+B.1. Derivation of the Normalized Dirichlet Energy 
+
+Before proving the propositions, we first clarify the derivation of the Dirichlet energy form presented in Eq. (22). The standard combinatorial Dirichlet energy measures the smoothness of absolute signal differences. However, in our diffusion framework, which involves degree-normalization steps ( D−1/2), the appropriate physical quantity is the normalized 
+
+smoothness. The normalized Dirichlet energy measures the weighted sum of squared differences between the degree-normalized signals of connected nodes: 
+
+EDir (Y) = 12
+
+X
+
+> i,j
+
+(S(t)
+
+> sym
+
+)ij 
+
+yi
+
+√di
+
+− yj
+
+pdj
+
+> 22
+
+. (23) Expanding the quadratic term, we obtain: 
+
+EDir (Y) = 12
+
+X
+
+> i,j
+
+(S(t)
+
+> sym
+
+)ij 
+
+y⊤ 
+
+> i
+
+yi
+
+di
+
+− 2 y⊤ 
+
+> i
+
+yj
+
+pdidj
+
++ y⊤ 
+
+> j
+
+yj
+
+dj
+
+!
+
+= 12
+
+X
+
+> i
+
+y⊤ 
+
+> i
+
+yi
+
+di
+
+X
+
+> j
+
+(S(t)
+
+> sym
+
+)ij 
+
+| {z }
+
+> di
+
+− X
+
+> i,j
+
+y⊤
+
+> i
+
+(S(t)
+
+> sym
+
+)ij 
+
+pdidj
+
+yj + 12
+
+X
+
+> j
+
+y⊤ 
+
+> j
+
+yj
+
+dj
+
+X
+
+> i
+
+(S(t)
+
+> sym
+
+)ij 
+
+| {z }
+
+> dj
+
+= 12
+
+X
+
+> i
+
+y⊤ 
+
+> i
+
+yi − tr 
+
+
+
+Y⊤(D−1/2S(t)
+
+> sym
+
+D−1/2)Y
+
+
+
++ 12
+
+X
+
+> j
+
+y⊤ 
+
+> j
+
+yj
+
+= tr( Y⊤IdY ) − tr( Y⊤PY )= tr  Y⊤(Id − P)Y = tr  Y⊤Lnorm Y . (24) This derivation confirms that minimizing the trace form in Eq. (22) is mathematically equivalent to enforcing local smoothness on the degree-normalized graph signals. 
+
+B.2. Proofs Proposition 1. Symmetry of P(t) is sufficient for the diffusion to constitute a valid gradient flow on EDir . This ensures real spectra, eliminating non-physical oscillations and guaranteeing stability of the gradient flow dynamics. 
+
+Proof. The dynamics of the diffusion process are governed by the linear differential equation dY 
+
+> dt
+
+= −LY . Ideally, for this to represent a gradient flow on the energy landscape EDir (Y), the driving force −LY must align with the negative gradient direction −∇ Y EDir . Since EDir is a quadratic form, its gradient is determined solely by the symmetric part of the Laplacian, Lsym = ( L + L⊤)/2.
+
+Geometric Decomposition Analysis: Any square matrix L can be decomposed into a symmetric component Lsym and a skew-symmetric component Lskew = ( L − L⊤)/2. The diffusion dynamics can thus be split into two orthogonal fields: 
+
+dY
+
+dt = − Lsym Y
+
+| {z }
+
+> Gradient Descent
+
+− Lskew Y
+
+| {z }
+
+> Rotational Flow
+
+. (25) The first term minimizes the energy. The second term, however, represents a conservative rotational flow that moves the state along the level sets of the energy function without reducing it (since Y⊤Lskew Y = 0 ). If the graph is not symmetrized (Lskew ̸ = 0), this rotational component introduces non-vanishing circulation in the phase space. 
+
+Spectral Interpretation: This geometric rotation manifests spectrally as complex eigenvalues λk = αk + iβ k (βk̸ = 0 ). The time-evolution of the signal then becomes: 
+
+yk(t) ∝ e−αk t(cos( βkt) − i sin( βkt)) . (26) The term sin( βkt) creates non-physical oscillations. In SNNs, such oscillations are detrimental as they cause the membrane potential to fluctuate arbitrarily, potentially crossing the firing threshold Vth due to topological asymmetry rather than feature 14 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+accumulation. Therefore, enforcing symmetry ( Lskew = 0) is necessary to eliminate the rotational flow, ensuring βk = 0 
+
+and guaranteeing that the diffusion is a pure gradient descent process with monotonic stability. □
+
+Theorem 4.2. The GD functions as a gradient descent step on EDir with the learning rate η = 0 .5. This represents the maximum stable step size, guaranteeing monotonic convergence to the energy equilibrium. 
+
+Proof. Using the trace form derived above and applying standard matrix calculus identities, the gradient of the energy is 
+
+∇Y EDir = ( Lnorm + L⊤
+
+> norm
+
+)Y. Since Lnorm is symmetric, this simplifies to: 
+
+∇Y EDir = 2 Lnorm Y. (27) A discrete gradient descent step with learning rate η is: 
+
+Ynew = Yold − η(2 Lnorm Yold ) = ( Id − 2ηLnorm )Yold . (28) Substitute Lnorm = Id − P:
+
+Ynew = ( Id − 2η(Id − P)) Yold 
+
+= ((1 − 2η)Id + 2 ηP)Yold . (29) Setting η = 0 .5 eliminates the self-loop term ((1 − 1) Id ), yielding Ynew = PY old , which recovers our diffusion operator exactly. 
+
+Stability Boundary: The eigenvalues of Lnorm are in [0 , 2] . For the update Y ← (Id − Lnorm )Y (i.e., η = 0 .5) to be non-divergent, the amplification factor 1 − λ(Lnorm ) must be in [−1, 1] . Since λ(Lnorm ) ∈ [0 , 2] , the factor lies in 
+
+[1 − 2, 1 − 0] = [ −1, 1] . Thus, η = 0 .5 is the largest possible learning rate that maintains stability. Specifically, at the bipartite limit λ = 2 , the factor is −1, corresponding to stable oscillation, whereas η > 0.5 would cause divergence. □
+
+## C. OOD Detection 
+
+C.1. Method 
+
+We propose Dynamic Graph Prototypes (DGP) , an intrinsic OOD detection metric grounded in the Structural Consistency Hypothesis : In-Distribution (ID) samples induce regular connectivity patterns via STSP, whereas OOD samples trigger disordered topologies. To quantify this, we define the topological signature z of an input x by flattening the sequence of dynamic adjacency matrices evolved over T timesteps: 
+
+z = Φ( x) = Flatten 
+
+n
+
+S(t)oTt=1 
+
+
+
+∈ RT N 2
+
+, (30) where Φ serves as the feature extractor mapping the dynamic structure into a high-dimensional vector. Post-training, we characterize the structural manifold of each ID class nclass using the fixed backbone network. Given the ID training dataset Din = {(xi, y i)}Ntrain  
+
+> i=1
+
+, where yi ∈ { 1, . . . , N class }, we compute the prototypes μnclass for each class, defined as the centroid of the structural features: 
+
+μnclass = 1
+
+|D nclass  
+
+> in
+
+|
+
+X
+
+> (x,y )∈D nclass
+> in
+
+Φ( x), (31) where Dnclass  
+
+> in
+
+denotes the subset of training samples labeled as nclass . These prototypes serve as anchors for the known structural distributions. During inference, to quantify the degree to which a test sample x∗ is out-of-distribution, we measure the deviation of its structural pattern from the established ID manifolds. The anomaly score SDGP (x∗) is defined as the Euclidean distance to the nearest graph prototype: 
+
+SDGP (x∗) = min  
+
+> nclass ∈{ 1,...,N class }
+
+∥Φ( x∗) − μnclass ∥2. (32) A sample is classified as OOD if SDGP > κ , where κ is set to the 95th percentile of anomaly scores calculated on the ID training set, thereby maintaining a 95% True Positive Rate (TPR) for known data. 15 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+C.2. Baselines Maximum Softmax Probability (MSP). As a baseline method for OOD detection proposed by Hendrycks & Gimpel (2016), MSP relies on the hypothesis that classifiers tend to assign higher prediction confidence to ID samples compared to OOD ones. The method utilizes the maximum probability from the softmax output layer directly as the anomaly detection score. 
+
+Energy-based Score (Energy). Liu et al. (2020) proposed using Free Energy as a detection metric. Unlike softmax-based approaches that focus on relative probabilities, the energy score intrinsically reflects the log-likelihood relationship between the input sample and the probability density. Generally, ID samples exhibit lower energy levels, whereas OOD samples possess significantly higher energy. 
+
+Deep KNN. Sun et al. (2022) proposed a non-parametric approach that leverages the geometric information in the feature space. By computing the Euclidean distance between a test sample’s embedding and its k-th nearest neighbor in the training set, Deep KNN utilizes feature space proximity as a direct uncertainty measure, effectively distinguishing OOD samples that lie far from the ID data manifold. 
+
+Spike Count Pattern (SCP). This serves as a feature-space ablation baseline. Martinez-Seras et al. (2023) employed the same prototype distance metric mechanism as our proposed DGP method. However, it distinguishes itself by utilizing the mean firing rate of neurons in the penultimate layer as the feature vector. By contrasting SCP with DGP, we verify that the performance gains stem fundamentally from the topological evolution of the graph structure rather than merely from internal spiking statistical patterns. 
+
+C.3. Dataset DVS-Gesture. Please refer to Appendix E.3 for a detailed description. Serving as the ID dataset, we employ 288 samples from its training set as the ID samples. 
+
+CIFAR10-DVS. Please refer to Appendix E.3 for a detailed description. In our OOD detection experiments, we utilize the entire test set of 1,000 samples as the OOD samples. 
+
+NCaltech101. Please refer to Appendix E.3 for a detailed description. In our OOD detection experiments, we utilize the entire test set of 914 samples as the OOD samples. 
+
+DVS-Lip. We utilize the DVS-Lip dataset (Tan et al., 2022) to establish a Near-OOD benchmark that rigorously tests robustness against semantic shifts within a consistent sensor domain. The dataset contains roughly 20,000 samples recorded with the same DVS128 sensor used for the in-distribution DVS Gesture task. This shared hardware setup forces the model to distinguish samples based on structural semantics rather than low-level sensor statistics or resolution artifacts. For the OOD evaluation, we employ the test set of 4,975 samples as the OOD data. 
+
+C.4. Metrics AUROC. The Area Under the Receiver Operating Characteristic curve (AUROC) provides a threshold-independent assessment of the detector’s overall discriminative capability. Defined as the area under the curve plotting True Positive Rate (TPR) against False Positive Rate (FPR), it intuitively represents the probability that the model assigns a higher anomaly score to a randomly selected OOD sample than to a random ID sample. A higher AUROC indicates better global separability between the two distributions. 
+
+AUPR-Out. The Area Under the Precision-Recall curve (AUPR-Out) serves as a complementary metric that evaluates detection performance by treating OOD samples as the positive class. Unlike AUROC, AUPR focuses specifically on the trade-off between detection precision and recall. This makes it a more rigorous indicator of reliability in scenarios with class imbalance, ensuring that the model achieves high detection accuracy without incurring a disproportionate number of false alarms. 
+
+FPR95. The False Positive Rate at 95% True Positive Rate (FPR95) acts as a critical operational safety metric. It quantifies the percentage of ID samples that are wrongly classified as OOD when the decision threshold is calibrated to maintain a 95% detection rate for OOD data. A lower FPR95 indicates the model’s robustness in filtering out anomalies under strict constraints to guarantee high availability for normal inputs. 16 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+## D. Hyperparameter Sensitivity Analysis 3 4 5 6 7 8 9 10 
+
+> 92
+> 94
+> 96
+> 98
+> Accuracy (%)
+> 95.5
+> 96.2
+> 94.4
+> 94.8
+> 96.2
+> 94.8
+> 95.8
+> 94.1
+
+(a) Number of Nodes N .1 2 3 4 5 6   
+
+> 92
+> 94
+> 96
+> 98
+> Accuracy (%)
+> 94.4
+> 96.2 96.2
+> 95.5 95.5
+> 93.4
+
+(b) Diffusion Steps M .1 2 3 4 5 6 7 
+
+> 92
+> 94
+> 96
+> 98
+> Accuracy (%)
+> 94.8
+> 94.1
+> 96.2 96.2 96.5 96.2 95.8
+
+(c) Top-k Pruning k.0.0 0.2 0.4 0.6 0.8 1.0   
+
+> 92
+> 94
+> 96
+> 98
+> Accuracy (%)
+> 94.8
+> 95.5 95.8
+> 96.5
+> 94.4
+> 95.5
+
+(d) Trace Momentum λ.0.0 0.2 0.4 0.6 0.8 1.0   
+
+> 92
+> 94
+> 96
+> 98
+> Accuracy (%)
+> 95.5
+> 96.5
+> 95.8 95.8
+> 93.8
+> 95.1
+
+(e) Update Momentum β.
+
+Figure 3. Hyperparameter sensitivity analysis on DVS-Gesture. 
+
+To investigate the impact of key configurations, we conduct a comprehensive sensitivity analysis on the DVS-Gesture under 
+
+T = 5 . Unless otherwise specified, the default settings are: N = 7 , M = 2 , K = 3 , λ = 0 .6, and β = 0 .2.
+
+Analysis of N . The number of nodes N determines the model’s capacity for feature abstraction and topological complexity. While small N limits representational ability, excessive N imposes computational overhead. As shown in Figure 3a, the model achieves peak accuracy (96.2%) at both N = 4 and N = 7 . We select N = 7 to allow for richer graph structural variations and to ensure consistency with configurations used for larger datasets. 
+
+Analysis of M . The diffusion step M regulates the range of inter-node information exchange. Insufficient M restricts signal propagation, whereas excessive M leads to the over-smoothing problem, where node features become indistinguishable. Figure 3b indicates optimal performance at M = 2 and M = 3 . We adopt M = 2 for computational efficiency. Notably, performance drops significantly at M = 6 , confirming that excessive diffusion dilutes the discriminative power of local features. 
+
+Analysis of k. This parameter controls the sparsity of the dynamic adjacency matrix. k = 7 corresponds to a fully connected (non-pruned) graph, while k = 1 forces a rigid tree-like structure. Results in Figure 3c demonstrate that k = 5 yields the highest performance. The degradation observed at k = 7 validates the necessity of sparse pruning to remove noisy or redundant connections. Consequently, we fix k = 5 for the subsequent analyses of momentum terms. 
+
+Analysis of λ. The synaptic trace momentum λ governs the trade-off between historical memory and instantaneous sensory input during synaptic trace calculation. As illustrated in Fig. 3d, we evaluate λ across the range {0.0, 0.2, 0.4, 0.6, 0.8, 1.0}.The model achieves optimal performance, 96.5% at λ = 0 .6, Notably, λ = 0 .0 and λ = 1 .0 correspond to reliance solely on instantaneous input and historical memory, respectively. The suboptimal performance observed at both boundaries verifies the necessity of effective spatio-temporal fusion. 
+
+Analysis of β. The synaptic update momentum β directly regulates the stability of the evolving graph topology. As shown in Fig. 3e, we test β values within {0.0, 0.2, 0.4, 0.6, 0.8, 1.0}, observing peak performance at β = 0 .2. β = 0 implies the graph connectivity is entirely determined by the instantaneous update, while β = 1 degenerates the network into a static topology. The performance degradation at both extremes confirms the critical role of controlled dynamic evolution in capturing time-varying features. 
+
+## E. Experiment Description and Dataset Pre-processing 
+
+E.1. Architecture Detail 
+
+Table 6 details the specific network configurations across diverse datasets. To accommodate varying task complexities, we design scalable MorphSNN variants ranging from lightweight to deep architectures. 
+
+Neuromorphic Datasets. For low-latency gesture recognition (DVS-Gesture), we employ an extremely lightweight 3-stage architecture with only 0.20 M parameters, demonstrating the model’s efficiency. For more challenging event streams (e.g., CIFAR10-DVS, NCaltech101, UCF101-DVS), we uniformly expand the channel width to 156 to capture fine-grained spatiotemporal patterns. 
+
+Static Image Datasets. We adopt a pyramidal structure similar to standard CNNs. Notably, for the large-scale ImageNet 
+
+dataset, the architecture is scaled up to 4 stages with 29.89 M parameters and a 7 × 7 input stem, ensuring sufficient capacity for high-dimensional feature representation. 17 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks  
+
+> Table 6. Comparison of network architectures across all datasets
+
+Stage Neuromorphic Datasets Static Image Datasets DVS-Gesture C10DVS / NCal101 UCF101-DVS CIFAR-10 / 100 ImageNet 
+
+(Input: 128 × 128 ) (Input: 128 × 128 ) (Input: 64 × 64 ) (Input: 32 × 32 ) (Input: 224 × 224 )Encoder {3x3, 32, AP } {3x3, 156, AP } {3x3, 156 } {3x3, 64 } {7x7, 64, S2, P3, AP }
+
+1
+
+h
+
+3x3, 32 
+
+i
+
+× 7
+
+h
+
+3x3, 156 
+
+i
+
+× 7
+
+h
+
+3x3, 128 
+
+i
+
+× 4
+
+h
+
+3x3, 64 
+
+i
+
+× 8
+
+2
+
+h
+
+3x3, 32 
+
+i
+
+× 7
+
+h
+
+3x3, 156 
+
+i
+
+× 7
+
+h
+
+3x3, 256 
+
+i
+
+× 4
+
+h
+
+3x3, 128 
+
+i
+
+× 8
+
+3
+
+h
+
+3x3, 32 
+
+i
+
+× 7
+
+h
+
+3x3, 156 
+
+i
+
+× 7
+
+h
+
+3x3, 512 
+
+i
+
+× 4
+
+h
+
+3x3, 256 
+
+i
+
+× 16 
+
+4 - - -
+
+h
+
+3x3, 512 
+
+i
+
+× 8
+
+Feat. Size 1 × 1 1 × 1 4 × 4 (then GAP) 7 × 7 (then GAP) FC FC-11 FC-10 / 101 FC-101 FC-10/100 FC-1000 Param (M) 0.20 4.72 10.85 29.89 
+
+E.2. Training Configuration 
+
+Table 7 presents the comprehensive hyperparameter settings across all datasets. To adapt to the distinct data modalities, we employ differentiated optimization strategies. For static image datasets such as CIFAR and ImageNet, models are optimized using AdamW with a weight decay of 0.05 and larger batch sizes ranging from 64 to 256 under a uniform Cosine Annealing scheduler. In contrast, for neuromorphic datasets, we utilize SGD with zero weight decay to effectively preserve the sparsity of spiking activities. Due to the high memory overhead associated with multi-timestep processing, the batch size is restricted to 8, while learning rate schedules including Cosine or Step modes are empirically tailored to match the specific convergence profile of each event-driven task. To mitigate statistical variance, all experiments, with the exception of the large-scale ImageNet and UCF101-DVS datasets, are conducted across three independent runs, with the results reported as mean ±
+
+standard deviation.  
+
+> Table 7. Hyperparameter settings for different datasets.
+
+Dataset Optimizer Weight Decay Batch Size Epochs Init. LR Schedule 
+
+CIFAR-10 AdamW 0.05 64 400 1 × 10 −3 Cosine CIFAR-100 AdamW 0.05 64 400 1 × 10 −3 Cosine ImageNet AdamW 0.05 256 300 6 × 10 −4 Cosine DVS-Gesture SGD 0 8 300 1 × 10 −3 Cosine CIFAR10-DVS SGD 0 8 192 1 × 10 −3 Step N-Caltech101 SGD 0 8 192 1 × 10 −3 Step UCF101-DVS SGD 0 8 192 1 × 10 −3 Step 
+
+18 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 
+
+E.3. Datasets CIFAR-10 & CIFAR-100. CIFAR-10 consists of 60,000 color RGB images with a resolution of 32 × 32 pixels, distributed across 10 classes. Its more challenging counterpart, CIFAR-100, maintains the same total number of images and resolution but expands to 100 classes, resulting in a ten-fold reduction in sample size per class. Both datasets are split into 50,000 training samples and 10,000 test samples. We apply standard data augmentation and preprocessing protocols, consistent with the settings in the work (Zhou et al., 2024). For all static datasets, we employ a direct coding strategy, where the static image is repeated over 4 timesteps and fed directly into the first layer of the network. 
+
+ImageNet-1k (Russakovsky et al., 2015). As one of the most large-scale datasets in the field of image classification, ImageNet-1k serves as a primary benchmark for evaluating the final performance of neural network architectures. The dataset spans 1,000 diverse object categories, comprising approximately 1.28 million training images and 50,000 validation images. Following the experimental settings in (Zhou et al., 2024), we utilize the validation set for performance reporting and comparisons, and all input images are resized to the standard resolution of 224 × 224 
+
+DVS-Gesture (Amir et al., 2017). As an event-based action recognition benchmark, DVS-Gesture serves as the primary dataset for validating our proposed STSP mechanism. Captured by a 128 × 128 resolution DVS camera, it includes 11 hand gestures (e.g., waving, clapping) performed by 29 subjects under three distinct lighting conditions. Following the protocol established by Fang et al. (2021b), we partition the 1,464 samples into a training set of 1,176 samples and a test set of 288 samples. The event streams are fed into the network at their original 128 × 128 resolution without any additional data augmentation or preprocessing. 
+
+CIFAR10-DVS (Li et al., 2017). This dataset represents the neuromorphic conversion of CIFAR-10. It was generated by recording 10,000 static images from CIFAR-10 moving along repeated trajectories on a monitor using a DVS128 sensor. We maintain the original resolution of 128 ×128 for network input and split the dataset into training and validation sets with a 9:1 ratio. Standard SNN data augmentation techniques, including RandomCrop, RandomHorizontalFlip, and RandomRotation, are applied. 
+
+NCaltech101 (Orchard et al., 2015). N-Caltech101 is the neuromorphic version of the static Caltech101 dataset, generated by mounting an event camera on a motorized pan-tilt unit to record saccadic movements across static images displayed on an LCD screen. It comprises 8,246 event stream samples covering 101 object categories and 1 background category, with an original resolution of 180 × 240 . Following standard SNN practices, we discard the background class and downsample all samples to 128 × 128 using bilinear interpolation. The dataset split ratio and augmentation strategies are identical to those used for CIFAR10-DVS. 
+
+UCF101-DVS (Bi et al., 2020). Standing as one of the largest-scale action recognition benchmarks in SNNs, UCF101-DVS is a neuromorphic conversion of the origin RGB UCF101 dataset, generated by recording monitor displays via a DVS sensor. It comprises 13,320 event stream samples across 101 action categories with an original resolution of 240 × 180 . We incorporate this benchmark specifically to highlight the efficacy of the STSP mechanism in processing complex dynamic datasets. To ensure a fair comparison, we adhere to the protocol established in TIM, spatial resolution was downsampled to 
+
+64 × 64 , and the dataset was partitioned into training and validation sets with a 9:1 ratio, accompanied by standard data augmentation techniques. 
+
+E.4. Robustness Evaluation Protocols 
+
+To comprehensively evaluate the robustness of MorphSNN against environmental interference, we introduce three types of perturbations: Salt-and-Pepper Noise, Poisson Noise, and Frame Loss. The severity of each perturbation is controlled by an integer intensity level ρ ∈ { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9}. The specific implementation details are defined as follows: 
+
+Salt-and-Pepper Noise. This noise is designed to simulate sensor defects such as dead pixels. For a given input event frame, we treat ρ × 0.02 proportion of pixels as noise regions. Specifically, each pixel is randomly flipped to 0 (no event) or 1 (event) with probability ρ × 0.02 , while the remaining pixels remain unchanged. 
+
+Poisson Noise. The introduction of Poisson noise serves to simulate the randomness of photon arrival and shot noise inherent to the sensor. We inject noise conforming to a Poisson distribution into the input frame, where the intensity ρ acts as the scaling factor for the Poisson rate parameter. 
+
+Frame Loss. Frame drop experiments are used to evaluate a model’s robustness against data transmission packet loss or sensor failures. We simulate this process by randomly discarding frames, specifically with each frame in the input sequence 19 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks 0 50 100 150 200 250 300  
+
+> Epoch
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Accuracy (%)
+> Accuracy
+> Dirichlet Energy
+> Loss
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> Loss / Energy
+> Training Metrics over Epochs
+> Figure 4. Training Metrics over Epochs on DVS-Gesture.
+
+being randomly dropped with a probability of ρ × 0.05 .
+
+## F. Visualization 
+
+F.1. Dirichlet Energy 
+
+Figure 4 presents the evolution of training metrics over 300 epochs on DVS-Gesture, specifically highlighting the trajectory of Dirichlet Energy (blue curve) alongside Accuracy (red) and Training Loss (orange). A key theoretical premise of our proposed GD mechanism is that it can be modeled as a gradient flow minimizing the Dirichlet energy of the graph signals, effectively smoothing the node features. Crucially, although we did not explicitly include a Dirichlet energy regularization term in the objective function, the experimental results show a consistent monotonic decrease in Dirichlet energy as the training progresses and the loss converges. The network naturally evolves towards a state of lower topological energy, validating that the diffusion process effectively functions as an implicit energy minimization operator, resulting in robust and noise-resilient feature representations. 
+
+F.2. Feature Propagation Mechanisms 
+
+To investigate the internal dynamics of feature processing, we visualized the feature maps generated by Directed Connections (DC) and Graph Diffusion (GD), as shown in the Figure 5. A distinct contrast is observed in their activation patterns. The DC mechanism (top row) exhibits highly localized and sparse activations, characterized by large dead zones (deep blue areas) and isolated high-response blocks. This suggests that traditional directed propagation is prone to feature degradation, where signals are progressively filtered or suppressed, leading to potential information loss and an over-reliance on narrow local features. In contrast, the GD mechanism (bottom row) demonstrates a more comprehensive and robust feature propagation capability. The heatmaps display a diffuse, granular distribution, indicating that the diffusion process effectively preserves information density across the spatial domain. Unlike DC, which suffers from signal decay in non-active regions, GD ensures that feature information is distributed globally. This mechanism allows the network to maintain a holistic representation of the input, effectively mitigating the feature degradation problem and ensuring that the read-out features remain rich and complete throughout the network layers. 
+
+F.3. Graph Structure Evolution 
+
+As shown in the Figure 6, this visualization tracks the connection changes of undirected graph on a DVS-Gesture sample over time ( T = 1 to 5), revealing that the STSP process exhibits distinct characteristics of Short-Term Synaptic Depression (STD). Initially, when T = 1 , the network establishes strong, dense connections (red) to rapidly capture the onset of 20 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks G
+
+D
+
+D
+
+C   
+
+> Node 1 Node 2 Node 3 Node 4
+
+Input  Image 
+
+Figure 5. Visualization of feature maps generated by directed connections (DC) and our graph diffusion (GD). 0    
+
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> T= 1
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> T= 2
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> T= 3
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> T= 4
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> T= 5
+> 0.14 0.16 0.18 0.20 0.22
+
+Figure 6. Visualization of dynamic topological evolution for a single sample in DVS-Gesture. 
+
+neuromorphic signals. Subsequently, as the temporal information accumulates, the synaptic weights adaptively decay to a sparse state (blue). This STD-like behavior suggests that the network dynamically modulates its sensitivity: it prioritizes the capture of novel features in the initial phase while progressively suppressing temporal redundancy and noise in later stages, thereby self-organizing into an energy-efficient topology. Simultaneously, this distinct dynamic evolution trajectory offers sample-level topological cues for OOD detection, as anomalous inputs would typically induce deviant structural adaptation patterns. 
+
+F.4. T-SNE in OOD 
+
+Figure 7 visualizes the t-SNE embeddings of ID and OOD samples. A comparative analysis reveals fundamental differences in how the methods characterize latent data structures. As shown in the leftmost plot, our DGP method achieves the most distinct separation, exhibiting a unique ‘compact ID, clustered OOD’ topology. The ID samples form a tightly condensed cluster, confirming that the STSP evolution converges to a consistent structural state for familiar inputs. Remarkably, the OOD samples are not mapped as uniform noise but are separated into distinct sub-clusters. This indicates that DGP preserves the intrinsic semantic manifolds of the anomalous data: distinct lip movements, despite being unseen, induce consistent and deterministic topological deviations. In stark contrast, baseline methods (kNN, SCP, MSP, Energy) display a ‘diffuse ID, entangled OOD’ pattern. The OOD samples form a scattered, diffuse cloud that lacks internal structure and severely overlaps with the ID distribution. This chaotic entanglement stems from the over-confidence issue in static inference, where anomalous inputs trigger random high-confidence activations across ID classes. Consequently, these results confirm that the dynamic structural evolution captured by DGP provides a more robust and semantically meaningful fingerprint for anomaly detection than conventional static confidence scores. 21 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks GDP (Ours)  SCP  MSP  Energy    
+
+> OOD:DVS -Lip ID: DVS -Gesture
+> kNN
+> Figure 7. t-SNE visualization of ID (DVS-Gesture) and OOD (DVS-Lip) distributions between DGP and other baselines.
+
+## G. Analysis of Computation Efficiency 
+
+G.1. Energy Analysis of GD and STSP 
+
+Notably, in the spiking domain, the Static variant incorporates the Graph Diffusion mechanism compared to the Baseline, while the Full variant further integrates STSP. To demonstrate the hardware efficiency of these additional modules, we explicitly analyze their energy consumption based on 45nm CMOS process benchmarks ( Emac = 4 .6pJ , E ac = 0 .9pJ ,(Huang et al., 2024)). Firstly, for the graph diffusion mechanism, given the adjacency matrix S ∈ RN ×N and the feature matrix X ∈ RN ×(C·H·W ),we establish a rigorous theoretical upper bound on energy consumption by modeling the iterative process as dense matrix multiplication. Specifically, the operation S · X is decomposed into Multiplication operations (MULs) and Accumulation operations (ACs), formulated as follows: MULs GD = T · M · (N 2) · C · H · W, (33) ACs GD = T · M · (N (N − 1)) · C · H · W. (34) Substituting the parameters N = 7 , T = 5 , M = 2 , and dimensions C = H = W = 32 , and utilizing energy benchmarks from 45nm CMOS technology where Emul = Emac − Eac = 3 .7pJ, we calculate the total energy consumption: 
+
+EGD = MULs GD · Emul + ACs GD · Eac ≈ 0.0718 mJ . (35) Even under this worst-case dense assumption, the total energy consumption is approximately 5.2% of a standard convolutional layer (typically > 1.39 mJ (Horowitz, 2014)). Crucially, in the actual MorphSNN implementation, the expensive floating-point multiplications are largely bypassed due to the binary nature of the spiking input X, the initialization sparsity where only the first row is active, and the topological sparsity of the pruned S. Consequently, the real-world energy footprint will be significantly lower than this theoretical upper bound. Secondly, for the STSP mechanism, the energy consumption is primarily attributed to Average Pooling, Feature Projection, Trace Update, Attention Calculation, and Structure Update. The derivation of the computational complexity for the principal components of STSP over T timesteps is as follows: 
+
+ACs stsp ≈ T · [CHW | {z } 
+
+> Pooling
+
++ 2 N C (C − 1) 
+
+| {z }
+
+> Projection
+
++ N 2(C − 1) 
+
+| {z }
+
+> Attention
+
+] ≈ 1.93 × 10 5, (36) 
+
+MACs stsp ≈ T · [N · C2
+
+| {z } 
+
+> Projection
+
++ 2 N C | {z } 
+
+> Trace
+
++  2N C 2 + N 2C| {z }
+
+> Attention
+
++ 2 N 2
+
+|{z} 
+
+> S-Up
+
+] ≈ 9.45 × 10 4. (37) By substituting into the energy consumption formula E = MACs · Emac + ACs · Eac , we calculate the total energy consumption of the STSP mechanism to be merely 0.00062 mJ. In conclusion, the combined energy overhead of GD and the STSP mechanism is negligible compared to traditional convolutional operations. This efficiency stems from the fact that graph diffusion is conducted via highly sparse matrix computations, while STSP operates solely on channel-wise firing rate representations with collapsed spatial dimensions, rather than within the high-dimensional pixel space. 
+
+G.2. Analysis of Firing Rates 
+
+Firing rate serves as a fundamental metric in neuromorphic computing, acting as a quantitative proxy for both neural excitability and information density. In biological neural networks, while high-frequency firing typically signifies strong re-22 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks Encoder 0 1 2 3 4 5 6 7 8 9 10 11     
+
+> Node Index
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> 35
+> 40
+> Average Firing Rate (%)  Stage 1 Stage 2 Stage 3
+> Baseline MorphSNN (Static) MorphSNN (Full)
+
+(a) Results on CIFAR10. Encoder                          
+
+> 012345678910 11 12 13 14 15 16 17 18 19 20
+> Node Index
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> 35
+> 40
+> Average Firing Rate (%)  Stage 1 Stage 2 Stage 3
+> Baseline MorphSNN (Static) MorphSNN (Full)
+
+(b) Results on DVS-Gesture. 
+
+Figure 8. Averaging Firing Rate of each node. 
+
+sponses to specific stimuli, biological systems globally optimize for metabolic efficiency through sparse coding mechanisms. For SNNs, this metric is critical as it correlates directly with the dynamic power consumption of neuromorphic hardware. Consequently, an ideal SNN model should achieve high task performance with minimal spiking activity, effectively balancing representational capacity with energy efficiency. As illustrated in Figure 8, we evaluate the average firing rates of all test samples across individual nodes for the Baseline, Static, and Full variants discussed in Section 5.2 on the DVS-Gesture dataset under T = 5 . Our node-wise analysis highlights significant differences in signal propagation dynamics. Specifically, the Baseline, utilizing directed graph connections, exhibits uncontrolled activity surges in deeper layers, reaching a firing rate of 33.78%. This phenomenon is characteristic of ResNet-based SNNs, where excessive information accumulation along residual branches leads to over-firing. In contrast, both the Static and Full versions of MorphSNN maintain a stable and sparse firing regime. Notably, only the source nodes of the three stages (Nodes 0, 7, and 14) exhibit moderately higher firing rates, acting as information hubs, while subsequent nodes remain sparse. This “low firing rate, high accuracy” outcome demonstrates the signal propagation efficiency of our undirected graph diffusion and the robust representational capability of individual neural nodes. Furthermore, compared to the Static version, the Full version, following structural evolution via STSP, achieves an even lower average firing rate, demonstrating extreme efficiency in parameter utilization. 
+
+G.3. Actual computation cost 
+
+Following the detailed computation overhead analysis of GD and STSP, as well as the node-wise firing rates, we evaluate the actual energy consumption of the four variants introduced in Section 5.2 (MorphANN, Baseline, Static, and Full) on the CIFAR-10 dataset, adopting the methodology from Sun et al. (2025). Specifically, the computation overhead of neural networks is primarily assessed based on the Total Synaptic Operations (SOPs) during inference, which generally consist of MAC and AC operations. In general, ACs are defined as: ACs =
+
+> T
+
+X
+
+> t=1
+> L−1
+
+X 
+
+> l=1
+> Nl
+
+X
+
+> i=1
+
+f li sli[t], (38) where fan-out f li represents the number of outgoing connections, T denotes the simulation length in timesteps, L is the total number of layers, and N l is the number of neurons in the l-th layer. Similarly, MACs are defined as: MACs =
+
+> L−1
+
+X 
+
+> l=1
+> Nl
+
+X
+
+> i=1
+
+f li . (39) In ANNs, given a specific architecture, SOPs are predominantly composed of MACs and remain constant. Conversely, in event-driven SNNs, SOPs are dictated by the firing rates of each layer and consist mainly of sparse ACs. Table 8 presents the specific computational cost metrics for the four variants. Here, T=1 indicates the ANN model, and ‘Time (s)’ denotes the actual running time (in seconds) required to train one epoch on an NVIDIA RTX 4090 GPU. The results demonstrate that although MorphANN achieves the highest training accuracy, it consumes approximately 26 × more 23 MorphSNN: Adaptive Graph Diffusion and Structural Plasticity for Spiking Neural Networks  
+
+> Table 8. Computation Cost of different models on CIFAR-10.
+
+Method T Time Param Fire Rate ACs MACs SOP Energy Accuracy (s) (M) (%) (M) (M) (μJ) (%) MorphANN 1 32 11.03 - 0.29 400.20 1841.18 96.50 
+
+Baseline 4 70 10.64 10.07 68.24 1.77 69.558 92.01 
+
+Static 4 72 10.85 9.91 69.69 1.77 70.863 95.97 
+
+Full 4 121 11.54 9.86 68.10 3.69 78.264 95.54 
+
+energy compared to the three SNN variants. Among the SNN models, the Baseline, with its random connectivity, yields the lowest energy consumption but suffers from slightly degraded accuracy. The Full model incorporates the STSP mechanism; however, this proves somewhat superfluous for static datasets like CIFAR-10, incurring additional energy overhead. In contrast, the Static model, serving as a paradigm tailored for static datasets, effectively strikes a balance between accuracy and efficiency, achieving performance comparable to the ANN while maintaining significantly lower power consumption. It is worth noting that in terms of actual training time, Full consumes nearly twice as much time as Static. This does not imply that STSP incurs extremely high computational overhead, but rather stems from the fact that STSP operates on the intrinsic timestep, necessitating a single-step serial architecture rather than multi-step parallel processing. This is a challenge we must overcome in the future.  
+
+> Table 9. Detailed energy consumption breakdown for different methods on CIFAR-10.
+
+Method Mem. Read & Write Synaptic & Neuron Op. (mJ) Addr. ( μJ) Total (mJ) Membrane Potential (mJ) Parameters (mJ) In / Out (mJ) MorphANN 0 39.8431 39.8192 1.8412 0.5563 81.5041 Baseline 13.2920 6.6460 0.0004 0.0696 59.9272 20.0676 Static 13.3569 6.6785 0.0005 0.0709 60.2313 20.1666 Full 13.5729 6.7214 0.0074 0.0691 60.3827 20.4313 
+
+Furthermore, according to (Lemaire et al., 2022), in actual hardware execution, memory read/write operations (particularly for membrane potentials and parameters) are the dominant factors in energy consumption, dwarfing the negligible energy cost of synaptic operations. As shown in Table 9, energy consumption in ANNs is dominated by parameter retrieval and input/output (In/Out) operations. In SNNs, the irregular memory access patterns associated with membrane potential updates and sparse connectivity contribute significantly to the total cost. Consequently, the ranking of actual energy consumption aligns with intuitive expectations: MorphANN ≫ Full ≳ Static ≳ Baseline. 
+
+## H. Discussion 
+
+Prospect. As a mainstream paradigm in neuromorphic computing, SNN research benefits from placing greater emphasis on brain-inspired architectural exploration rather than focusing exclusively on performance benchmarks. Given that ANNs already excel at static classification, the unique promise of SNNs lies in mimicking biological operational mechanisms to bridge the gap in processing dynamic streaming scenarios. MorphSNN addresses this by incorporating bio-inspired undirected diffusion and structural plasticity into signal propagation. Looking ahead, we aim to pursue more granular innovations in brain-inspired architectures, extending beyond conventional convolution-based node designs. We aspire to endow neuromorphic models with the vitality needed for complex, open-ended environments, such as continual learning and spatial navigation. We believe these challenging domains deserve increased attention, broadening the scope of SNN research beyond single classification tasks. 
+
+Reproducibility. To ensure the reproducibility of our results, all experiments are implemented using PyTorch, SpikingJelly, and Timm, with the random seed strictly fixed at 2020. We have provided comprehensive descriptions of all architectural details. Our source code is publicly available on anonymous.4open.science/r/MorphSNN-B0BC .24

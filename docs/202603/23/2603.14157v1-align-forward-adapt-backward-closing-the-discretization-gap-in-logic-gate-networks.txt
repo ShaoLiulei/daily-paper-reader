@@ -1,0 +1,1410 @@
+Title: Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks
+
+URL Source: https://arxiv.org/pdf/2603.14157v1
+
+Published Time: Tue, 17 Mar 2026 05:01:56 GMT
+
+Number of Pages: 22
+
+Markdown Content:
+# Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+Youngsung Kim 1
+
+## Abstract 
+
+In neural network models, soft mixtures of fixed candidate components (e.g., logic gates and sub-networks) are often used during training for sta-ble optimization, while hard selection is typically used at inference. This raises questions about training-inference mismatch. We analyze this gap by separating forward-pass computation (hard se-lection vs. soft mixture) from stochasticity (with vs. without Gumbel noise). Using logic gate net-works as a testbed, we observe distinct behaviors across four methods: Hard-ST achieves zero se-lection gap by construction; Gumbel-ST achieves near-zero gap when training succeeds but suffers accuracy collapse at low temperatures; Soft-Mix achieves small gap only at low temperature via weight concentration; and Soft-Gumbel exhibits large gaps despite Gumbel noise, confirming that noise alone does not reduce the gap. We propose CAGE (Confidence-Adaptive Gradient Estima-tion) to maintain gradient flow while preserving forward alignment. On logic gate networks, Hard-ST with CAGE achieves over 98% accuracy on MNIST and over 58% on CIFAR-10, both with zero selection gap across all temperatures, while Gumbel-ST without CAGE suffers a 47-point ac-curacy collapse. 
+
+## 1. Introduction 
+
+Many neural network architectures require selecting among discrete options during computation (Mohamed et al., 2020; Heuillet et al., 2024; Cai et al., 2025). Differentiable logic gate networks (Petersen et al., 2022; Kim, 2023; Yousefi et al., 2025) learn Boolean circuits by choosing among gate operations (AND, OR, XOR, etc.) at each neuron. Similar discrete selection arises in neural architecture search (Liu 
+
+> 1
+
+Department of Artificial Intelligence and Department of Electrical and Computer Engineering, Inha University, Incheon, Korea. Correspondence to: Youngsung Kim 
+
+<y.kim@inha.ac.kr;yskim.ee@gmail.com >.
+
+Preprint. March 17, 2026                   
+
+> Mixture Methods (Soft-Mix, Soft-Gumbel)
+> z
+> G
+> +
+> π
+> softmax (·
+> τ)g0
+> g1
+> g2
+> Σh
+> τin forward ⇒Gap coupled to τ
+> Hard Selection Methods (Hard-ST, Gumbel-ST)
+> z
+> G
+> +
+> i∗
+> argmax (·)
+> g0
+> gi∗
+> g2
+> h
+> No τin forward ⇒Gap independent of τb
+> Inference
+> zi∗
+> argmax gi∗h
+> Peak Selection Gap
+> No Gumbel Gumbel
+> Mixture Hard
+> Soft-Mix
+> 24%
+> Soft-Gumbel
+> 40%
+> Hard-ST
+> 0%
+> Gumbel-ST
+> 1%
+> Hard methods: zero gap (temperature decoupling). Soft methods: gap amplified by Gumbel noise. ̸
+> =
+> =
+
+Figure 1. Training-inference gap depends primarily on forward-pass structure. Left: Mixture methods (top) compute weighted sums, enabling hedging; hard selection methods (bottom) commit to a single gate, matching inference. Right-Top: Inference uses argmax selection. Right-Bottom: Peak selection gap ( 2 × 2
+
+factorial, MNIST-Binary, L=6, τ =2.0). Hard methods achieve near-zero gap; soft methods show 24–40% gap, with Gumbel noise amplifying the gap. 
+
+et al., 2019), mixture-of-experts routing (Jacobs et al., 1991; Fedus et al., 2022), and vector quantization (Van Den Oord et al., 2017). When hard selection is required at inference, a fundamental challenge emerges: methods using soft mix-tures during training but hard selection at deployment suf-fer from training-inference mismatch , while methods using hard selection throughout avoid this gap (Figure 1). Recent work has achieved substantial gap reduction using the Straight-Through Gumbel-Softmax (Gumbel-ST) esti-mator (Jang et al., 2017; Maddison et al., 2017; Xie et al., 2019), which combines the Gumbel-Max trick (Gumbel, 1954) with straight-through gradient estimation (Bengio et al., 2013): hard selection (argmax with Gumbel noise) in the forward pass, with gradients computed through the continuous Gumbel-Softmax relaxation in the backward pass (Kim, 2023; Yousefi et al., 2025). This success has been attributed to implicit Hessian regularization —the hypothe-sis that Gumbel noise smooths the loss landscape, leading to solutions that generalize better to discrete inference (Yousefi et al., 2025). We revisit this explanation and find it incom-plete. Through controlled experiments, we show that meth-ods with identical Gumbel noise exhibit markedly different 1
+
+> arXiv:2603.14157v1 [cs.LG] 14 Mar 2026 Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks
+
+gaps depending on whether their forward pass uses soft mix-tures or hard selection. This suggests a simpler mechanism: gap reduction occurs because Gumbel-ST performs hard se-lection during training , aligning training computation with deployment. We call this principle forward alignment : the forward pass during training should match the forward pass at deploy-ment, eliminating training-inference mismatch. While con-ceptually straightforward, hard selection has been avoided due to concerns about biased gradient estimates from the straight-through approximation (Bengio et al., 2013) and the high variance of score-function alternatives like RE-INFORCE (Williams, 1992). Our central contribution is demonstrating that these gradient estimation challenges can be addressed entirely in the backward pass —through temper-ature scheduling and adaptive gradient estimation—without compromising forward alignment. This separation is possi-ble because backward-pass temperature does not affect the forward output for hard selection methods, a property we call temperature decoupling .
+
+Why does forward alignment matter? Our theoretical analysis reveals a fundamental asymmetry between mixture and hard selection methods. Mixture methods can minimize training loss by hedging : distributing weight across multi-ple options to produce a blended output, without any sin-gle option achieving low loss individually. At deployment, argmax forces commitment to one option, exposing this lack of preparation. Hard selection methods cannot hedge—they must commit to options that individually perform well, be-cause only one option contributes to each forward pass. This distinction between hedging and commitment, formalized in Section 4, explains why forward alignment eliminates the discretization gap. 
+
+Contributions. 
+
+1. Theoretical framework. We decompose the training-inference gap into selection gap (method-dependent, re-ducible) and computation gap (input-dependent, irre-ducible), and prove that hard selection methods achieve zero or near-zero selection gap regardless of backward temperature (Corollary 2, Proposition 3). We formalize the hedging capacity of mixture methods and prove that hard selection eliminates it (Proposition 9). 2. Empirical separation of causal factors. Using a 2 × 2
+
+factorial design crossing forward type (mixture vs. hard) with noise type (deterministic vs. Gumbel), we provide direct evidence that gap depends on forward structure, not gradient estimation. Critically, Soft-Gumbel and Gumbel-ST use identical noise distributions but exhibit dramatically different gaps, challenging the Hessian reg-ularization hypothesis. 3. Discovery of a failure mode. We identify that Gumbel-ST suffers catastrophic accuracy collapse at low tem-peratures (dropping from ∼98% to ∼50% ), while de-terministic Hard-ST remains stable. This has practical implications for temperature scheduling. 4. CAGE algorithm. We propose Confidence-Adaptive Gate Exploration, which exploits temperature decoupling to adapt backward temperature based on selection confi-dence, enabling exploration early and exploitation late without affecting alignment guarantees. 
+
+## 2. Background and Related Work 
+
+2.1. Discrete Selection and the Training-Inference Gap 
+
+Many neural network components must select among K dis-crete choices, each producing output gi. Examples include Boolean gates in logic gate networks (Petersen et al., 2022), candidate operations in neural architecture search (Liu et al., 2019), and expert networks in mixture of experts (Zhou et al., 2022; Puigcerver et al., 2024; Jacobs et al., 1991). The standard approach parameterizes selection with logits 
+
+z ∈ RK , converted to probabilities via softmax (Maddison et al., 2017; Jang et al., 2017; Liu et al., 2019): 
+
+πi(τ ) = exp( zi/τ )
+
+P 
+
+> j
+
+exp( zj /τ ) , (1) where temperature τ controls sharpness ( τ → 0: one-hot; 
+
+τ → ∞ : uniform). The challenge is that training and deployment handle these probabilities differently. During training, soft selection com-putes a differentiable weighted mixture hsoft = P 
+
+> i
+
+πi(τ )gi,enabling gradient-based optimization. At deployment, hard selection picks a single choice hhard = gi∗ where i∗ =arg max i zi, as required for efficiency and interpretabil-ity (Liu et al., 2019). This structural difference between blending all choices and picking one creates the training-inference gap, even when individual gi are computed identi-cally in both phases. A middle ground is categorical sampling via Gumbel-max (Jang et al., 2017; Maddison et al., 2017): 
+
+hsample = gk, k = arg max  
+
+> i
+
+(zi + Gi), (2) where Gi are i.i.d. standard Gumbel variables (CDF: 
+
+F (x) = e−e−x
+
+). The Gumbel-max theorem ensures 
+
+P(k = i) = softmax( z)i. Crucially, this probability de-pends only on logits, not temperature, since argmax is scale-invariant (Gumbel, 1954). This property is central to our analysis. 
+
+2.2. Straight-Through Estimators 
+
+Hard selection is non-differentiable, but the straight-through (ST) estimator (Bengio et al., 2013) enables gradient-based 2Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+training by decoupling forward and backward computation: the forward pass uses discrete selection, while the backward pass computes gradients through a continuous surrogate. 
+
+Gumbel-ST (Jang et al., 2017; Maddison et al., 2017) ap-plies this principle to categorical sampling. The forward pass samples a discrete choice via (2) , while the backward pass differentiates through ˜π(τ ) = softmax(( z + G)/τ ).Here, temperature τ controls gradient smoothness without affecting forward selection. Section 3 formalizes this as 
+
+temperature decoupling .
+
+2.3. Challenges of Hard Selection 
+
+If hard selection eliminates mismatch, why is it often avoided? The literature documents several concerns (Bengio et al., 2013; Jang et al., 2017; Liu et al., 2019). Sparse gra-dients mean only selected choices directly influence learn-ing. Deterministic argmax may lock into suboptimal early choices. Discrete selections can flip abruptly, causing in-stability. Convergence is typically slower without smooth gradient landscapes (Zela et al., 2020). These concerns have led practitioners toward soft methods despite their mismatch problem, or toward domain-specific workarounds. Our ap-proach resolves this tension by showing that backward-pass adaptation can address these optimization challenges while forward alignment preserves zero mismatch. 
+
+2.4. Related Work 
+
+The training-inference gap manifests across domains, with each community developing its own solutions. In neural architecture search, DARTS (Liu et al., 2019) exemplifies the soft relaxation paradigm and the resulting discretiza-tion gap. Subsequent methods such as SNAS (Xie et al., 2019) and GDAS (Dong & Yang, 2019) introduce stochastic or near-hard operation selection to mitigate this mismatch. In large-scale mixture-of-experts models, hard routing has been predominantly adopted (Fedus et al., 2022), effec-tively avoiding training–inference inconsistency. Similarly, VQ-VAE (Van Den Oord et al., 2017) employs hard code-book selection together with auxiliary commitment losses to stabilize learning. By contrast, differentiable logic gate networks (Petersen et al., 2022) typically rely on soft gate mixtures, which can introduce a soft-to-hard discrepancy at inference time. Kim (2023) introduced the Gumbel-ST framework for logic gate networks, relieving this discrep-ancy, and Yousefi et al. (2025) attribute its improvement to Hessian regularization acting as a smooth optimization objective. Our analysis offers a unifying perspective: across these do-mains, methods succeed when forward computation aligns with deployment, regardless of the specific noise injection or regularization employed. Temperature scheduling has been explored via sparsifying small temperatures (Zhang & Ding, 2023) and decoupled forward-backward temperatures (Shah et al., 2024); our framework explains why such approaches succeed specifically for hard forward methods. 
+
+## 3. Forward Alignment Framework 
+
+Section 2 introduced soft and hard selection. We now char-acterize where the training-inference gap arises and which design choices eliminate it. 
+
+3.1. Gap Decomposition 
+
+The gap between training and deployment has two potential sources: (1) the selection mechanism (mixture vs. argmax), and (2) the gate evaluation (soft vs. hard; see Appendix I.1 for definitions). To isolate these, we define three accuracy measures on the test set. Let i∗ = arg max i zi denote the selected gate. AM uses method M ’s forward computation, matching the training setting. Asoft uses argmax selection with soft gate evaluation 
+
+gsoft  
+
+> i∗
+
+. Ahard uses argmax selection with hard gate evaluation 
+
+ghard  
+
+> i∗
+
+, matching the deployment setting. The total gap decomposes as: 
+
+AM − Ahard 
+
+| {z }
+
+> Total Gap
+
+= AM − Asoft 
+
+| {z }
+
+> Selection Gap
+
++ Asoft − Ahard 
+
+| {z }
+
+> Computation Gap
+
+(3) 
+
+Selection gap isolates the effect of selection mechanism. For mixture methods, training uses P 
+
+> i
+
+πigsoft  
+
+> i
+
+while deploy-ment uses single gate gsoft  
+
+> i∗
+
+; these differ. For hard selection methods, training already uses gsoft  
+
+> i∗
+
+, so AM = Asoft and selection gap is zero. 
+
+Computation gap isolates the effect of gate evaluation, comparing soft versus hard gates for the same selected gate. This depends only on input distribution: for binary inputs, soft and hard gates are identical (zero gap), while continu-ous inputs produce an unavoidable gap (Appendix I). Impor-tantly, computation gap is identical across all methods. The decomposition reveals an asymmetry: selection gap is method-dependent and reducible, whereas computation gap is input-dependent, irreducible, yet method-independent. (In the remainder of the paper, we write gi without superscript; the soft/hard distinction is relevant only for computation gap.) 
+
+3.2. Forward Alignment and Temperature Decoupling Forward alignment. Figure 1 organizes methods along two axes: selection type (mixture vs. hard) and noise type (deterministic vs. Gumbel). The key insight is that selection type (row), not noise type (column), determines selection gap. If training uses argmax selection (hard selection meth-ods), it matches deployment exactly, regardless of whether 3Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+Gumbel noise is present. We call such methods forward-aligned .This yields predictions that contradict prior work attributing gap reduction to Gumbel noise (Yousefi et al., 2025): (1) Hard-ST should have smaller gap than Soft-Gumbel, de-spite lacking Gumbel noise; (2) adding Gumbel noise to mixture methods (Soft-Mix → Soft-Gumbel) should not reduce selection gap. Section 6 tests these predictions. 
+
+Temperature decoupling. Forward alignment provides a practical benefit beyond gap reduction. In mixture methods, temperature τ controls the forward output through πi(τ ) = softmax( z/τ )i, so changing τ alters the mixture weights and thereby the selection gap. Temperature and gap are coupled. In hard selection methods, the forward pass uses argmax, which is scale-invariant: arg max i zi = arg max i(zi/τ )
+
+for any τ > 0. Temperature enters only the backward pass through the ST surrogate gradient. We call this the backward temperature τb. Since τb does not affect the forward output, it does not affect the selection gap. Temperature and gap are decoupled. This decoupling enables adaptive scheduling: high τb early for exploration, low τb late for exploitation, without af-fecting alignment. Section 5 develops this into the CAGE algorithm. 
+
+## 4. Theoretical Analysis 
+
+Section 3 decomposed the training-inference gap into selec-tion gap (method-dependent) and computation gap (input-dependent). We now provide rigorous bounds on these gaps, analyze why different methods produce different solu-tions, and characterize how temperature affects convergence. Proofs appear in Appendix C. 
+
+4.1. Node-Level Gap Bounds 
+
+Consider a selection node choosing among K gates with outputs {g0, . . . , g K−1} based on logits z. Let i∗ =arg max i zi denote the inference-time selection. We an-alyze the selection gap ∆hsel from Section 3.1, which cap-tures mismatch due to different selection mechanisms. 
+
+Proposition 1 (Gumbel-Max Theorem (Gumbel, 1954)) .
+
+For Gi
+
+> iid
+
+∼ Gumbel(0 , 1) :
+
+P arg max  
+
+> i
+
+(zi + Gi) = j = softmax( z)j . (4) 
+
+This probability is temperature-independent since arg max 
+
+is scale-invariant. (Proof sketch in Appendix C.1) 
+
+Corollary 2 (Gumbel-ST: Selection Gap) . For Gumbel-ST with k = arg max i(zi + Gi), the expected selection gap is 
+
+E[∆ hsel ] = X
+
+> i̸=i∗
+
+pi(gi − gi∗ ), pi = softmax( z)i. (5) 
+
+This gap is determined entirely by the logit-induced distri-bution, independent of any temperature used in gradient computation. (Proof in Appendix C.2) 
+
+Proposition 3 (Hard-ST: Zero Selection Gap) . For Hard-ST, 
+
+∆hsel = 0 exactly, since both training and inference output 
+
+gi∗ where i∗ = arg max i zi.
+
+Proposition 4 (Mixture Methods: Selection Gap) . For Soft-Mix and Soft-Gumbel, the selection gap is 
+
+∆hsel = X
+
+> i̸=i∗
+
+wi(τ )( gi − gi∗ ), (6) 
+
+where wi = πi(τ ) for Soft-Mix or wi = ˜ πi(τ ) for Soft-Gumbel. This gap depends on temperature τ through the weights. (Proof in Appendix C.4) 
+
+Theorem 5 (Forward Alignment Principle) . Selection gap depends on whether training-time selection matches infer-ence: (i) Hard-ST uses identical selection at training and infer-ence, achieving ∆hsel = 0 exactly. (ii) Gumbel-ST samples a gate that matches i∗ with prob-ability pi∗ , so E[∆ hsel ] → 0 as pi∗ → 1.(iii) Mixture methods compute weighted averages rather than selecting, yielding ∆hsel ̸ = 0 whenever gates produce distinct outputs. 
+
+Theorem 6 (Unified Selection Gap Bound) . For any method with effective weights wi ≥ 0, P 
+
+> i
+
+wi = 1 :
+
+|∆hsel | ≤ (1 − wi∗ ) · ∆max , (7) 
+
+where ∆max = max i |gi − gi∗ |. (Proof in Appendix C.5) 
+
+For Hard-ST, wi∗ = 1 yields zero gap. For Gumbel-ST, 
+
+wi∗ = pi∗ yields a bound of (1 − pi∗ )∆ max that tightens as confidence increases. For mixture methods, the bound depends on temperature through wi∗ (τ ).
+
+4.2. Network-Level Analysis 
+
+Networks contain thousands of selection nodes. For the GroupSum architecture (Petersen et al., 2022; Yousefi et al., 2025) where class logit yc = P 
+
+> n∈Gc
+
+hn, the logit gap decomposes linearly: ∆yc = P 
+
+> n∈Gc
+
+∆hn.
+
+Proposition 7 (Loss Gap Bound) . Let yM denote the net-work output logits using method M ’s forward pass, and 
+
+yhard the output using hard selection with hard gate evalua-tion. For loss L(y) with logit gap ∆ = yM − yhard :
+
+|∆L| ≤ ∥∇ yL∥ p · ∥ ∆∥q + O(∥∆∥2). (8) 
+
+(Proof in Appendix C.6) 
+
+4Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+This bound shows that loss gap is controlled by predic-tion uncertainty (gradient norm) and total selection gap (logit gap). When nodes fully commit, the logit gap van-ishes and so does the loss gap. However, the H ¨older-based bound (Rudin, 1987) is worst-case and may be loose in practice, as individual node gaps can partially cancel. We therefore evaluate actual network-level gaps empirically in Section 6. For Hard-ST, selection gap is exactly zero at every node, so the network-level selection gap is exactly zero by construc-tion. 
+
+4.3. Gradient Analysis 
+
+The gap analysis establishes what differs at inference. We now analyze gradients to understand how training dynamics differ. 
+
+Proposition 8 (Gradient Structure) . All four methods com-pute logit gradients as: 
+
+∂L
+
+∂z j
+
+= δτb
+
+· wj · (gj − ¯h), (9) 
+
+where wj = softmax( z/τ b)j , ¯h = P 
+
+> i
+
+wigi is the surrogate mixture, and δ = ∂L/∂h is the upstream gradient evalu-ated at the method’s forward output. For hard selection methods, argmax is non-differentiable; the straight-through estimator uses the soft surrogate for gradient computation while preserving δ from the hard forward output. (Proof in Appendix C.7) 
+
+Although all methods share the same gradient form, they differ in where δ = ∂L/∂h is evaluated. For mixture meth-ods, the loss is computed on h = ¯h, coupling δ to the soft mixture. For hard selection methods, the loss is computed on h = gk (the selected gate), so δ reflects the discrete output used at inference. This distinction determines low-temperature behavior. For mixture methods, forward and backward share the same temperature τ . As τ → 0, the mixture collapses ( ¯h → gi∗ ), reducing selection gap structurally. However, gradients also vanish: the winner’s (gi∗ − ¯h) → 0; non-winners’ wj → 0.This creates a dilemma: low τ reduces gap but cripples training. Hard selection methods avoid this dilemma through temper-ature decoupling. The forward pass is τ -independent, so selection gap depends on learned confidence, not tempera-ture. The backward temperature τb controls only gradient distribution. However, τb must still be set appropriately: if too low, gradients collapse, training fails, and selection gap remains large (as observed with Gumbel-ST at low temper-ature). This motivates CAGE (Section 5), which adapts τb
+
+based on training progress. 
+
+Proposition 9 (Competitive Gate Selection) . Unlike stan-dard neurons where parameters update independently, selec-tion nodes induce competition via the gradient term (gj − ¯h)
+
+from Proposition 8. Gates outperforming the current mix-ture receive increased weight; underperforming gates are suppressed. This competition drives weight concentration over training. (Analysis in Appendix C.8) 
+
+The competition leads to different outcomes. Mixture meth-ods have achievable output space [0 , 1] , so hedging (diffuse weights producing ¯h / ∈ { 0, 1}) can reduce loss even if no single gate performs well. Hard methods have achievable output space {0, 1}, so only the selected gate affects loss, forcing commitment. A node that hedges produces selection gap at inference when ¯h̸ = gi∗ . Hard methods cannot hedge, eliminating this gap. We verify this empirically in Section 6, measuring gate confidence max i πi across training. 
+
+4.4. Convergence and Temperature Proposition 10 (Convergence Scaling) . For a single se-lection node with learning rate η and backward temper-ature τb, assuming approximately constant upstream gra-dients, steps to reach confidence 1 − ϵ scale as T (τb) = 
+
+O(τb · log(1 /ϵ )/η ). (Proof in Appendix C.9) 
+
+Convergence time is linear in τb. High τb produces diffuse weights wj , distributing gradient across all gates and slow-ing winner emergence. Low τb concentrates gradient on the current winner, accelerating convergence but risking com-mitment to suboptimal gates before sufficient exploration. This suggests adaptive scheduling: high τb early for broad exploration, decreasing over training for faster convergence. For hard selection methods, such adaptation affects only optimization dynamics; Proposition 3 guarantees selection gap remains zero regardless of τb schedule. 
+
+## 5. CAGE: Confidence-Adaptive Gradient Estimation 
+
+Corollary 2 and Proposition 3 establish that hard selection methods decouple backward temperature τb from selection gap. Proposition 10 shows convergence time scales linearly with τb. This creates an opportunity: adapt τb throughout training to accelerate convergence as confidence increases, without affecting forward alignment. 
+
+5.1. Exploration Mechanisms 
+
+Hard selection methods offer two distinct exploration mech-anisms. 
+
+Forward exploration. Gumbel-ST selects gate i with probability pi = softmax( z)i, occasionally selecting non-5Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+argmax gates. This is controlled by logit magnitudes, not temperature. Hard-ST has no forward exploration (deter-ministic argmax). 
+
+Backward exploration. The gradient to logit zj includes factor πj (τb) from the ST surrogate. High τb distributes gradients across all gates; low τb concentrates gradients on the current winner. This is controlled by τb and can be adapted without affecting selection gap. 
+
+5.2. The CAGE Algorithm 
+
+CAGE adapts τb based on network-wide selection confi-dence: 
+
+c(t) = 1
+
+N
+
+> N
+
+X
+
+> n=1
+
+max  
+
+> i
+
+softmax( zn(t)) i, (10) where N is the number of selection nodes and t is the train-ing step. At initialization, c ≈ 1/K ; as nodes commit, 
+
+c → 1.CAGE maps confidence to temperature via linear interpola-tion: 
+
+τb(t) = τmax − (τmax − τmin ) · cema (t) − 1/K 
+
+1 − 1/K , (11) where cema is an exponential moving average (Kingma & Ba, 2015) with coefficient β. Low confidence yields high τb
+
+for broad gradient distribution; high confidence yields low 
+
+τb for faster convergence. Full pseudocode is provided in Algorithm 1 (Appendix D). CAGE applies to both Hard-ST and Gumbel-ST. With Hard-ST, selection gap is exactly zero and exploration occurs purely through adaptive gradient distribution. With Gumbel-ST, low backward temperature causes gradient concentra-tion on randomly sampled gates, leading to training collapse (Section 6.3). CAGE prevents this by maintaining high 
+
+τb while confidence is low, only reducing temperature as gates commit. Forward stochasticity provides additional exploration while the selection gap remains small. Compu-tational overhead is negligible: max i softmax( zn)i reuses the softmax computed for gradient estimation. 
+
+## 6. Experiments 
+
+6.1. Setup 
+
+We validate forward alignment by measuring selection gap across temperatures, convergence speed, gate commit-ment, and the effect of backward temperature adaptation via CAGE. 
+
+Methods. We compare six methods: four from our 2 × 2
+
+factorial (Soft-Mix, Soft-Gumbel, Hard-ST, Gumbel-ST) plus Hard-ST+CAGE and Gumbel-ST+CAGE (Section 5). 
+
+Datasets. We use three datasets that isolate different gap components. MNIST (LeCun et al., 1998): Continuous pixel values in [0 , 1] ; both selection gap and computation gap are observable. MNIST-Binary : Pixels thresholded to {0, 1}; computation gap vanishes since soft gates equal hard gates on binary inputs, isolating pure selection gap .
+
+CIFAR-10-Binary (Krizhevsky, 2009): Each input channel is binarized using 31 evenly-spaced thresholds over [0 , 255] ;binary inputs isolate pure selection gap on a harder bench-mark (3-channel natural images). 
+
+Architecture and Training. We use flat (equal-width) logic gate networks with L ∈ { 4, 5, 6} layers, K = 16 candi-date gates per node, and 64k neurons per layer (128k for CIFAR-10). Training uses Adam optimizer with batch size 512. Learning rate is 10 −2 for MNIST (50k iterations) and 
+
+5 × 10 −2 for CIFAR-10 (60k iterations). We sweep tem-peratures τ ∈ { 0.05 , 0.1, 0.5, 1.0, 2.0} with 3 random seeds per configuration. CAGE uses τmax = 3 .0, τmin = 0 .5,
+
+β = 0 .99 . We evaluate training accuracy, test accuracy, and selection gap every 500 iterations. For stable training, we derive a variance-based temperature for the GroupSum layer that produces well-conditioned softmax outputs at initial-ization (Appendix G). Full hyperparameters are provided in Appendix H.1. 
+
+6.2. Forward Alignment Eliminates Selection Gap 
+
+Our central claim is that forward-pass structure determines the selection gap. Table 1 tests this on MNIST-Binary ( L=6), where binary inputs eliminate computation gap, isolating pure selection gap. We report final gap (at convergence) and peak gap (maximum during training). The results reveal clear patterns supporting forward align-ment: 
+
+Hard-ST achieves exactly zero selection gap at all temper-atures, validating Proposition 3. This is the central result: because Hard-ST uses argmax in the forward pass during both training and inference, there is no selection mismatch by construction. The zero gap holds from τ = 0 .05 to 
+
+τ = 2 .0, confirming this is a fundamental property of for-ward alignment, not an artifact of temperature choice. 
+
+Temperature decoupling holds for hard methods. Both Hard-ST (0% everywhere) and Gumbel-ST (0–1.1% at 
+
+τ ≥ 0.5) achieve near-zero gap when training succeeds. The presence of Gumbel noise in the backward pass does not affect the gap for hard forward methods, confirming that backward-pass noise is decoupled from forward-pass alignment. This is a key prediction of our theoretical frame-work that distinguishes forward alignment from Hessian smoothing. 
+
+Soft methods show temperature-dependent gaps. Soft-Mix exhibits near-zero gap at low temperatures but develops 6Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks                                             
+
+> Table 1. Selection gap (%) on MNIST-Binary ( L=6). Format: Final / Peak (omitted for training failures marked with †). Hard-ST achieves exactly zero gap at all temperatures. Soft methods show temperature-dependent gaps. Negative values indicate training failure (training accuracy below deployment). Bold : zero selection gap.
+> Method τ=0.05 τ=0.1 τ=0.5 τ=1.0 τ=2.0 Soft-Mix 0.0 / 0 0.0 / 0 0.0 / 0.1 0.0 / 0.1 0.6 / 24 Soft-Gumbel 0.7 / 2 0.2 / 2 0.2 / 7 0.2 / 17 2.1 / 40 Hard-ST 0 / 0 0 / 0 0 / 0 0 / 0 0 / 0
+> Gumbel-ST −40 †−59 †0.0 / 0.1 0.0 / 0.3 0.0 / 1.1 Hard-ST+ CAGE 0 / 0 0 / 0 0 / 0 0 / 0 0 / 0 Gumbel-ST+ CAGE 0.0 / 4.5 0.1 / 9 0.0 / 3.5 0.0 / 1.6 0.0 / 2.2
+> †Training failure: accuracy collapses, deployment outperforms training.
+
+significant gap at τ = 2 .0 (0.6% final, 24% peak). Soft-Gumbel shows gaps at all temperatures (0.2–2.1% final, 2–40% peak), with Gumbel noise amplifying the hedging behavior. The consistent pattern (Soft-Gumbel > Soft-Mix at every temperature) confirms that Gumbel noise encour-ages hedging by preventing commitment to individual gates. 
+
+Gumbel-ST fails catastrophically at low temperature. At 
+
+τ ≤ 0.1, Gumbel-ST shows large negative gaps ( −40% to 
+
+−59% ), indicating training accuracy far below deployment accuracy. This counterintuitive result (deployment outper-forming training) occurs because stochastic gate sampling during training prevents learning, while deterministic de-ployment benefits from whatever structure was learned. This is a training failure, not a gap issue, analyzed in Section 6.3. Figure 2(a) visualizes the selection gap dynamics over train-ing iterations. Hard-ST maintains exactly zero gap through-out training (blue line perfectly at 0%), demonstrating that forward alignment provides immediate and sustained elimi-nation of selection mismatch. Soft-Gumbel peaks at ∼17% around iteration 5,000 before gradually recovering as the network commits to gates, but this recovery is incomplete, leaving residual gap at convergence. Interestingly, at low temperatures, Gumbel-ST shows transient negative gaps early in training, reflecting periods where stochastic sam-pling disrupts learning (see Section 6.3). These patterns hold across all temperatures and layers; see Figure 4 in the appendix for gap heatmaps over the full (layer × τ ) grid. 
+
+6.3. Gumbel-ST Failure at Low Temperature 
+
+Figure 2(b) reveals a critical failure mode distinct from the selection gap: Gumbel-ST accuracy collapses from ∼98% (τ ≥ 0.5) to ∼50% ( τ = 0 .05 ), reducing performance to near-random guessing on MNIST. Soft-Gumbel also suffers, dropping to ∼85% at τ = 0 .05 , though less severely. In contrast, Hard-ST and all CAGE methods remain stable at 97–98.5% across the entire temperature range.                                 
+
+> Table 2. Temperature robustness: worst accuracy / range (%) across τ∈ { 0.05 ,0.1,0.5,1.0,2.0},L=6. Gumbel-ST suffers catastrophic failure at low τacross all datasets; CAGE eliminates this sensitivity entirely. Bold : worst performance (failure case); underline: best range (most robust).
+> Method MNIST M-Binary C-10-Binary
+> Soft-Mix 97.1 / 1.4 97.2 / 1.1 50.7 / 7.5 Soft-Gumbel 85.9 / 12.0 85.6 / 12.2 52.6 / 5.4 Hard-ST 97.1 / 1.3 97.1 / 1.1 50.9 / 7.2 Gumbel-ST 52.1 / 46.3 51.0 / 47.3 18.9 / 39.5
+> Hard-ST+ CAGE 98.4 / 0.1 98.1 / 0.0 57.6 / 0.5 Gumbel-ST+ CAGE 98.4 / 0.1 98.2 / 0.1 58.0 / 0.6
+
+This failure occurs because low τ concentrates the surrogate gradient on the sampled gate. When Gumbel noise selects a suboptimal gate early in training, the concentrated gradient reinforces that poor choice, creating a self-reinforcing loop that prevents recovery. Hard-ST avoids this via deterministic argmax selection: the same gate receives gradient updates in every forward pass, so learning signal consistently improves the best available option rather than reinforcing random early choices. Table 2 confirms this pattern across all three datasets. Gumbel-ST exhibits catastrophic accuracy variation (39– 47% range across temperatures), while CAGE variants remain stable (0.0–0.6% range). On CIFAR-10-Binary, Gumbel-ST drops to just 18.9%. CAGE prevents this failure by maintaining high temperature until gates commit. 
+
+6.4. Convergence Speed 
+
+Figure 2(c) reveals a marked difference in convergence speed: Hard-ST converges in approximately 500 iterations and maintains this speed across all temperatures, appearing as a flat line near the bottom of the plot. In contrast, Soft-Gumbel requires 15,000–38,000 iterations depending on temperature, making Hard-ST 30–76 × faster. This directly contradicts claims that Gumbel noise accelerates training via Hessian regularization (Yousefi et al., 2025). The speed advantage stems from Hard-ST’s gradient struc-ture: deterministic argmax selection concentrates all learn-ing signal on improving the current best gate, enabling rapid commitment. Gumbel methods dilute gradients across stochastically sampled gates, introducing variance that slows convergence. Notably, Hard-ST’s convergence time is temperature-invariant ( ∼500 iterations at any τ ), reflecting temperature decoupling. Soft-Gumbel shows a U-shaped pattern: slowest at extreme temperatures ( ∼38,000 at τ = 0 .05 , ∼30,000 at τ = 2 .0) and fastest at moderate temperatures. 7Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 0 10000 20000 30000 40000 50000 
+
+> Iterations
+> 20
+> 10
+> 0
+> 10
+> 20
+> 30
+> Selection Gap (%)  Soft-Mix
+> Soft-Gumbel
+> Hard-ST
+> Gumbel-ST
+> Hard-ST+CAGE
+> Gumbel-ST+CAGE
+
+(a) Selection gap 0.05 0.1 0.5 1.0 2.0  
+
+> Temperature
+> 50
+> 60
+> 70
+> 80
+> 90
+> 100
+> Hard Accuracy (%)
+> Soft-Mix
+> Soft-Gumbel
+> Hard-ST
+> Gumbel-ST
+> Hard-ST+CAGE
+> Gumbel-ST+CAGE
+
+(b) Accuracy vs τ0.05 0.1 0.5 1.0 2.0  
+
+> Temperature
+> 0
+> 10000
+> 20000
+> 30000
+> 40000
+> Iterations to 90% Accuracy
+> Soft-Mix
+> Soft-Gumbel
+> Hard-ST
+> Gumbel-ST
+> Hard-ST+CAGE
+> Gumbel-ST+CAGE
+
+(c) Convergence speed 2 3 4 5 6 7 
+
+> Layer
+> 50
+> 60
+> 70
+> 80
+> 90
+> % Committed (  * > 0.9)
+> Soft-Mix
+> Soft-Gumbel
+> Hard-ST
+> Gumbel-ST
+> Hard-ST+CAGE
+> Gumbel-ST+CAGE
+
+(d) Gate commitment 
+
+Figure 2. Main results (MNIST-Binary, L=6, τ =1.0 unless varied). (a) Selection gap during training: Hard-ST achieves exactly zero; soft methods show non-zero gaps. (b) Test accuracy vs temperature: Hard-ST and CAGE remain stable; Gumbel-ST fails at low τ . (c) Iterations to convergence: Hard-ST converges significantly faster than soft methods. (d) Gate commitment by layer: Hard-ST commits; Soft-Gumbel hedges, especially in early layers. 
+
+6.5. CAGE Eliminates Temperature Sensitivity 
+
+Figure 3 shows the dynamics of CAGE adaptation over 50,000 training iterations. In panel (a), the backward tem-perature τb starts at ∼2.4 (near τmax = 3 .0) to encourage ex-ploration, then decreases as gate confidence increases. Hard-ST+CAGE drops rapidly to ∼1.0 within 5,000 iterations and continues decreasing to ∼0.7 by convergence; Gumbel-ST+CAGE decreases more gradually, reaching ∼0.8. No-tably, neither method reaches τmin = 0 .5, indicating that the networks maintain some gradient smoothing throughout training rather than converging to hard gradients. Panel (b) shows the corresponding confidence evolution. Both methods start at low confidence ( ∼0.25) and increase as gates commit. Hard-ST+CAGE reaches ∼0.9 confidence by iteration 50,000, while Gumbel-ST+CAGE reaches 
+
+∼0.85. The faster confidence growth in Hard-ST+CAGE reflects deterministic selection’s tendency toward rapid com-mitment. CAGE proves highly effective at eliminating temperature sensitivity. On MNIST-Binary, CAGE reduces Gumbel-ST’s accuracy range from 47.3 percentage points to just 0.1 percentage points (Table 2). On CIFAR-10-Binary, where Gumbel-ST collapses to 18.9%, Gumbel-ST+CAGE main-tains 58.0% accuracy with only 0.6 percentage points varia-tion—slightly outperforming Hard-ST+CAGE (57.6%), sug-gesting that Gumbel noise provides beneficial exploration when stabilized by CAGE. CAGE provides different benefits depending on the base method. For Hard-ST, improvement is modest (already robust due to temperature decoupling). For Gumbel-ST, CAGE is critical: it reduces accuracy variation from 39–47 percentage points to under 1 percentage point across all datasets (Table 2). 
+
+6.6. Gate Commitment Explains Hedging 
+
+Proposition 9 predicts that mixture methods can hedge while hard selection methods must commit. Figure 2(d) validates this empirically: Hard-ST maintains high commitment (84– 0 20000 40000   
+
+> Iterations
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> Backward Temperature  _b  (a) Adaptive Temperature
+> Hard-ST+CAGE (n=3)
+> Gumbel-ST+CAGE (n=3)
+> _max
+> _min
+> 020000 40000
+> Iterations
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> EMA Confidence p_ema  (b) Confidence Evolution
+> Hard-ST+CAGE (n=3)
+> Gumbel-ST+CAGE (n=3)
+
+Figure 3. CAGE adaptation dynamics (MNIST-Binary, L=6 ). (a) Backward temperature over training: τb decreases from τmax as confidence rises. (b) EMA confidence over training: increases from uniform ( ∼0.25) toward commitment ( ∼0.9). Results averaged over n=3 random seeds. 
+
+93%) across all layers, while Soft-Gumbel shows markedly lower commitment (45–66%). This difference directly ex-plains the selection gap: Soft-Gumbel’s hedging succeeds during training but fails at inference when argmax selects a single gate. The layer-wise patterns reveal different commitment mecha-nisms. Hard-ST commits strongly from early layers, reflect-ing structural commitment forced by the hard forward pass. In contrast, Soft-Mix and Gumbel-ST show increasing com-mitment toward the output (72–96%), driven by stronger gradient signal near the loss. Interestingly, Soft-Mix achieves high commitment (75– 96%) despite soft forward computation. Without Gumbel noise, gradient flow concentrates on the dominant gate, and the network naturally commits. This suggests Gumbel noise, not soft forward computation alone, is the primary enabler of hedging. Gumbel-ST shows intermediate commitment (72–90%). Al-though each forward pass selects a single gate, stochastic sampling provides exploration, allowing more diversity than deterministic Hard-ST. Hard-ST shows elevated XOR/XNOR usage ( ∼11% vs 6– 8% for other methods), suggesting deterministic selection encourages commitment to more expressive gates. Soft and Gumbel-based methods favor unitary gates (A, B, ¬A, 
+
+¬B), which pass specific inputs like skip connections, po-8Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+tentially explaining higher commitment in later layers. With CAGE, commitment decreases slightly, indicating that adap-tive temperature encourages more exploration. See Ap-pendix H.6 for details. All findings are statistically signifi-cant ( p < 0.05 ); see Appendix H.5. 
+
+## 7. Conclusion 
+
+We analyzed trainable discrete selection embedded in neu-ral networks and confirmed forward alignment as the key principle for eliminating training-inference mismatch. This principle is simple but not trivial, as prior work has not clearly investigated the causes of gap reduction. Our results showed that Hard-ST achieved exactly zero discretization gap at all temperatures, while soft methods exhibited large peak gaps. Critically, Soft-Gumbel and Gumbel-ST used identical Gumbel noise but exhibited markedly different gaps: forward computation structure, not noise distribu-tion, determined the gap. For practitioners, Hard-ST can be the default without careful tuning; Gumbel-ST with CAGE is recommended when exploration and stability are criti-cal. While our experiments focused on logic gate networks, the principle may extend to other architectures requiring discrete selection at deployment (e.g., neural architecture search, mixture-of-experts, and vector quantization). 
+
+## Impact Statement 
+
+This paper analyzes the training-inference gap in discrete selection networks and proposes methods to reduce it. Our contributions are primarily theoretical and methodological, focusing on understanding gradient estimation for discrete neural network components. The techniques studied—logic gate networks, straight-through estimators, and temperature scheduling—are general-purpose tools applicable across many domains. We do not foresee specific negative societal consequences aris-ing directly from this work. The potential applications (effi-cient neural networks, neural architecture search, mixture-of-experts routing) carry the same broad implications as machine learning research in general. 
+
+## References 
+
+Bengio, Y., L ´eonard, N., and Courville, A. Estimating or propagating gradients through stochastic neurons for con-ditional computation. arXiv preprint arXiv:1308.3432 ,2013. Cai, W., Jiang, J., Wang, F., Tang, J., Kim, S., and Huang, J. A survey on mixture of experts in large language models. 
+
+IEEE Transactions on Knowledge and Data Engineering ,37(7):3873–3901, 2025. Chen, X., Xie, L., Wu, J., and Tian, Q. Progressive dif-ferentiable architecture search: Bridging the depth gap between search and evaluation. In IEEE International Conference on Computer Vision (ICCV) , 2019. Chu, X., Zhou, T., Zhang, B., and Li, J. Fair DARTS: Elim-inating unfair advantages in differentiable architecture search. In European Conference on Computer Vision (ECCV) , 2020. Cohen, J. Statistical Power Analysis for the Behavioral Sciences . Lawrence Erlbaum Associates, 2nd edition, 1988. Dong, X. and Yang, Y. Searching for a robust neural ar-chitecture in four GPU hours. In IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , 2019. Fedus, W., Zoph, B., and Shazeer, N. Switch transformers: Scaling to trillion parameter models with simple and ef-ficient sparsity. Journal of Machine Learning Research ,23(120):1–39, 2022. Gumbel, E. J. Statistical theory of extreme values and some practical applications. 1954. Heuillet, A., Rousseau, F., Aloui, A., and Tabia, H. Efficient automation of neural network design: A survey on dif-ferentiable neural architecture search. ACM Computing Surveys , 56(10):1–37, 2024. Jacobs, R. A., Jordan, M. I., Nowlan, S. J., and Hinton, G. E. Adaptive mixtures of local experts. Neural Computation ,3(1):79–87, 1991. Jang, E., Gu, S., and Poole, B. Categorical reparameteriza-tion with Gumbel-Softmax. In International Conference on Learning Representations (ICLR) , 2017. Jordan, M. I. and Jacobs, R. A. Hierarchical mixtures of experts and the em algorithm. Neural Computation , 6(2): 181–214, 1994. Kim, Y. Deep stochastic logic gate networks. IEEE Access ,11:122488–122501, 2023. Kim, Y. Towards narrowing the generalization gap in deep boolean networks. arXiv preprint arXiv:2409.05905 ,2024. Kingma, D. P. and Ba, J. Adam: A method for stochastic optimization. In International Conference on Learning Representations (ICLR) , 2015. Klement, E. P., Mesiar, R., and Pap, E. Triangular Norms .Springer, 2000. 9Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+Komatsuzaki, A., Puigcerver, J., Lee-Thorp, J., Riquelme Ruiz, C., Mustafa, B., Ainslie, J., Tay, Y., Dehghani, M., and Houlsby, N. Sparse upcycling: Training mixture-of-experts from dense checkpoints. In 
+
+International Conference on Learning Representations ,2023. Krizhevsky, A. Learning multiple layers of features from tiny images. Technical report, University of Toronto, 2009. LeCun, Y., Bottou, L., Bengio, Y., and Haffner, P. Gradient-based learning applied to document recognition. Proceed-ings of the IEEE , 86(11):2278–2324, 1998. Lepikhin, D., Lee, H., Xu, Y., Chen, D., Firat, O., Huang, Y., Krikun, M., Shazeer, N., and Chen, Z. GShard: Scaling giant models with conditional computation and automatic sharding. In International Conference on Learning Rep-resentations (ICLR) , 2021. Liang, H., Zhang, S., Sun, J., He, X., Huang, W., Zhuang, K., and Li, Z. DARTS+: Improved differentiable ar-chitecture search with early stopping. arXiv preprint arXiv:1909.06035 , 2019. Liu, H., Simonyan, K., and Yang, Y. DARTS: Differen-tiable architecture search. In International Conference on Learning Representations (ICLR) , 2019. Maddison, C. J., Mnih, A., and Teh, Y. W. The concrete distribution: A continuous relaxation of discrete random variables. In International Conference on Learning Rep-resentations (ICLR) , 2017. Mohamed, S., Rosca, M., Figurnov, M., and Mnih, A. Monte carlo gradient estimation in machine learning. 
+
+Journal of Machine Learning Research , 21(132):1–62, 2020. Petersen, F., Borgelt, C., Kuehne, H., and Deussen, O. Deep differentiable logic gate networks. In Advances in Neural Information Processing Systems (NeurIPS) , 2022. Puigcerver, J., Riquelme, C., Mustafa, B., and Houlsby, N. From sparse to soft mixtures of experts. In International Conference on Learning Representations (ICLR) , 2024. Razavi, A., van den Oord, A., and Vinyals, O. Generating diverse high-fidelity images with vq-vae-2. In Advances in Neural Information Processing Systems , volume 32, 2019. Rudin, W. Real and Complex Analysis . McGraw-Hill, New York, 3 edition, 1987. Shah, R., Yan, M., Mozer, M. C., and Liu, D. Improv-ing discrete optimisation via decoupled straight-through Gumbel-Softmax. arXiv preprint arXiv:2410.13331 ,2024. Van Den Oord, A., Vinyals, O., and Kavukcuoglu, K. Neural discrete representation learning. In Advances in Neural Information Processing Systems (NeurIPS) , 2017. Van Krieken, E., Acar, E., and Van Harmelen, F. Analyzing differentiable fuzzy logic operators. Artificial Intelli-gence , 302:103602, 2022. Williams, R. J. Simple statistical gradient-following algo-rithms for connectionist reinforcement learning. Machine Learning , 1992. Xie, S., Zheng, H., Liu, C., and Lin, L. SNAS: Stochastic neural architecture search. In International Conference on Learning Representations (ICLR) , 2019. Yousefi, S., Plesner, A., Aczel, T., and Wattenhofer, R. Mind the gap: Removing the discretization gap in differentiable logic gate networks. arXiv preprint arXiv:2506.07500 ,2025. Zela, A., Elsken, T., Saikia, T., Marrakchi, Y., Brox, T., and Hutter, F. Understanding and robustifying differentiable architecture search. In ICLR , 2020. Zhang, J. and Ding, Z. Small temperature is all you need for differentiable architecture search. In The 27th Pacific-Asia Conference on Knowledge Discovery and Data Min-ing (PAKDD) , pp. 303–315, 2023. Zhang, Z., Lin, Y., Liu, Z., Li, P., Sun, M., and Zhou, J. MoEfication: Transformer feed-forward layers are mix-tures of experts. In Findings of the Association for Com-putational Linguistics: ACL 2022 , pp. 877–890, 2022. Zhou, Y., Lei, T., Liu, H., Du, N., Huang, Y., Zhao, V., Dai, A., Chen, Z., Le, Q., and Laudon, J. Mixture-of-experts with expert choice routing. In Advances in Neural Information Processing Systems (NeurIPS) , 2022. 10 Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+## A. Potential Implications for Related Domains 
+
+Our theoretical framework may extend beyond logic gate networks. The forward alignment principle, which holds that training-time selection should match inference-time selection, predicts which methods avoid discretization gap. We briefly note potential connections; direct validation remains future work. 
+
+Neural Architecture Search. Differentiable NAS (Liu et al., 2019) relaxes discrete architecture selection via softmax-weighted operation mixtures, enabling gradient-based optimization. However, this introduces a training-inference gap: the soft supernetwork used during search differs fundamentally from the discrete architecture deployed at test time. This gap manifests as various pathologies, including skip connection collapse where parameter-free operations dominate (Chu et al., 2020; Zela et al., 2020), depth mismatch between search and evaluation (Chen et al., 2019), and overfitting of architecture parameters (Liang et al., 2019). Remedies include independent operation weighting (Chu et al., 2020), perturbation-based regularization (Zela et al., 2020), and Gumbel-softmax sampling (Xie et al., 2019; Dong & Yang, 2019). Our work addresses the analogous gap in logic gate networks, where the mismatch between real-valued relaxations and discrete Boolean operations causes similar performance degradation. 
+
+Mixture of Experts. Traditional MoE (Jacobs et al., 1991; Jordan & Jacobs, 1994) uses soft gating, but modern large-scale models have largely converged on hard routing. Switch Transformer (Fedus et al., 2022) uses hard top-1 (sparse) routing during both training and inference, avoiding soft-to-hard mismatch entirely. GShard (Lepikhin et al., 2021) and Expert Choice (Zhou et al., 2022) similarly employ hard routing with auxiliary losses for load balancing. Soft MoE (Puigcerver et al., 2024) uses soft routing in both phases to avoid mismatch while accepting the cost of activating all experts. Recent work enables transitions between dense and sparse architectures (Komatsuzaki et al., 2023; Zhang et al., 2022), converting pretrained dense models into MoE without retraining from scratch. Our framework provides one perspective on why hard routing dominates, though MoE faces distinct challenges (load balancing, expert utilization) orthogonal to selection gap. 
+
+Vector Quantization. VQ-VAE (Van Den Oord et al., 2017; Razavi et al., 2019) learns discrete representations via hard codebook selection (nearest neighbor lookup) with straight-through gradient estimation. The design was motivated by learning discrete latent structure and avoiding posterior collapse in models with powerful decoders. From our analysis perspective, this architecture naturally exhibits zero discretization gap: the forward pass uses identical hard selection during both training and inference. The commitment loss encourages encoder outputs to stay close to their assigned codebook entries, which can be interpreted as reducing the entropy of the implicit selection distribution—analogous to encouraging gate probabilities toward deterministic values in our framework. 
+
+## B. Training-Inference Gap Across Domains 
+
+Table 3 summarizes the training-inference gap pattern across domains using discrete selection.                               
+
+> Table 3. Training-inference gap in discrete selection. Domains using soft training with hard inference suffer from mismatch; those using consistent selection avoid it.
+> Domain Discrete Choices Training Inference Gap? Logic Gate Networks (Petersen et al., 2022; Kim, 2024) Boolean gates Soft mixture Hard (argmax) Yes NAS (DARTS) (Liu et al., 2019) Operations Soft mixture Hard (argmax) Yes NAS (SNAS/GDAS) (Xie et al., 2019; Dong & Yang, 2019) Operations Hard (sample) Hard (argmax) Small MoE (traditional) (Jacobs et al., 1991) Expert networks Soft gating Soft gating No MoE (sparse) (Fedus et al., 2022) Expert networks Hard (top-k) Hard (top-k) No VQ-VAE (Van Den Oord et al., 2017) Codebook vectors Hard (nearest) Hard (nearest) No
+
+## C. Proofs of Theoretical Results 
+
+This appendix provides complete proofs for all theoretical results stated in Section 4. We use notation consistent with the main text: hM denotes method M ’s forward output, gi denotes gate i’s output, and ∆hsel denotes the selection gap. 11 Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+C.1. Proposition 1 (Gumbel-Max Theorem) 
+
+This is a classical result (Gumbel, 1954). We include a sketch for completeness. 
+
+Proof Sketch. Let Gi
+
+> iid
+
+∼ Gumbel(0 , 1) with CDF F (x) = e−e−x
+
+and PDF f (x) = e−xe−e−x
+
+. For option j to win, we need Gi < z j − zi + Gj for all i̸ = j.Conditioning on Gj = g and applying the CDF: P(Gi < z j − zi + g) = e−e−(zj −zi+g)
+
+= e−e−g ezi−zj
+
+.By independence, the probability that j wins is the product over all i̸ = j:
+
+P arg max  
+
+> i
+
+(zi + Gi) = j | Gj = g = Y
+
+> i̸=j
+
+e−e−g ezi−zj
+
+= exp 
+
+
+
+−e−g X
+
+> i̸=j
+
+ezi−zj
+
+
+
+. (12) Marginalizing over Gj with PDF f (g) and noting 1 + P 
+
+> i̸=j
+
+ezi−zj = P 
+
+> i
+
+ezi−zj :
+
+P arg max  
+
+> i
+
+(zi + Gi) = j =
+
+Z ∞−∞ 
+
+e−g exp 
+
+
+
+−e−g X
+
+> i
+
+ezi−zj
+
+
+
+dg. (13) Substituting u = e−g gives R ∞ 
+
+> 0
+
+e−u P 
+
+> iezi−zj
+
+du = 1P  
+
+> iezi−zj
+
+= ezj  
+
+> P
+> iezi
+
+= softmax( z)j .Scale invariance: arg max i vi = arg max i(vi/c ) for any c > 0.
+
+C.2. Proof of Corollary 2 (Gumbel-ST: Selection Gap) 
+
+Proof. Let k = arg max i(zi + Gi) denote the stochastically selected gate. The training output is hM = gk.By Proposition 1, P(k = i) = pi = softmax( z)i. Taking expectations: 
+
+E[hM ] = 
+
+> K−1
+
+X
+
+> i=0
+
+pigi. (14) The selection gap compares to gi∗ where i∗ = arg max i zi:
+
+E[∆ hsel ] = 
+
+> K−1
+
+X
+
+> i=0
+
+pigi − gi∗ = X
+
+> i̸=i∗
+
+pi(gi − gi∗ ). (15) Since pi = softmax( z)i is determined by raw logits (no temperature in the Gumbel-Max forward pass), the expected gap is independent of backward temperature τb.
+
+C.3. Proof of Proposition 3 (Hard-ST: Zero Selection Gap) 
+
+Proof. Hard-ST uses i∗ = arg max i zi for both training and inference. Thus hM = gi∗ = hhard , yielding ∆hsel = 0 
+
+exactly. 
+
+C.4. Proof of Proposition 4 (Mixture Methods: Selection Gap) 
+
+Proof. Soft-Mix. The training output is hM = P 
+
+> i
+
+πi(τ )gi where πi(τ ) = softmax( z/τ )i. The selection gap: 
+
+∆hsel =
+
+> K−1
+
+X
+
+> i=0
+
+πi(τ )gi − gi∗ = X
+
+> i̸=i∗
+
+πi(τ )( gi − gi∗ ). (16) Since πi(τ ) depends explicitly on τ , the selection gap is temperature-dependent. 12 Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+Soft-Gumbel. The training output is hM = P 
+
+> i
+
+˜πi(τ )gi where ˜πi(τ ) = softmax(( z + G)/τ )i. The selection gap has the same form: 
+
+∆hsel = X
+
+> i̸=i∗
+
+˜πi(τ )( gi − gi∗ ). (17) Gumbel noise perturbs the weights but preserves the mixture structure, so the gap remains temperature-dependent. 
+
+C.5. Proof of Theorem 6 (Unified Selection Gap Bound) 
+
+Proof. Starting from the selection gap with effective weights w:
+
+|∆hsel | = X
+
+> i̸=i∗
+
+wi(gi − gi∗ ) . (18) Applying the triangle inequality and bounding |gi − gi∗ | ≤ ∆max :
+
+|∆hsel | ≤ X
+
+> i̸=i∗
+
+wi|gi − gi∗ | ≤ X
+
+> i̸=i∗
+
+wi · ∆max = (1 − wi∗ ) · ∆max . (19) The bound is tight when all non-winner weight concentrates on the gate with maximum deviation. 
+
+C.6. Proof of Proposition 7 (Loss Gap Bound) 
+
+Proof. For GroupSum architecture, the class c output is yc = P 
+
+> n∈Gc
+
+hn. By linearity, the logit gap decomposes as 
+
+∆yc = P 
+
+> n∈Gc
+
+∆hn.By first-order Taylor expansion around yhard :
+
+L(yM ) ≈ L (yhard ) + ∇yL ⊤ 
+
+> yhard
+
+∆ + O(∥∆∥2), (20) where ∆ = yM − yhard .Applying H¨ older’s inequality with (p, q ) = (1 , ∞):
+
+|∇ yL⊤∆| ≤ ∥∇ yL∥ 1 · ∥ ∆∥∞. (21) For cross-entropy loss, let σc = softmax( yhard )c denote the predicted probability for class c at inference. The gradient is: 
+
+∂L
+
+∂y c
+
+= σc − 1[c = y]. (22) The L1 norm: 
+
+∥∇ yL∥ 1 = |1 − σy | + X
+
+> c̸=y
+
+σc = (1 − σy ) + (1 − σy ) = 2(1 − σy ). (23) For the logit gap, using the node-level bound (Theorem 6) with ∆max = 1 :
+
+∥∆∥∞ = max  
+
+> c
+
+|∆yc| ≤ max 
+
+> c
+
+X
+
+> n∈Gc
+
+|∆hn| ≤ max 
+
+> c
+
+X
+
+> n∈Gc
+
+(1 − wn,i ∗ 
+
+> n
+
+). (24) Combining: 
+
+|∆L| ≤ 2(1 − σy ) max 
+
+> c
+
+X
+
+> n∈Gc
+
+(1 − wn,i ∗ 
+
+> n
+
+) + O(∥∆∥2). (25) This bound shows that loss gap is controlled by the product of prediction uncertainty (1 − σy ) and total non-commitment P
+
+> n
+
+(1 − wn,i ∗ 
+
+> n
+
+). When nodes fully commit, the bound vanishes. For Hard-ST, selection gap is exactly zero at every node, so the bound is trivially satisfied. 13 Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+C.7. Proof of Proposition 8 (Gradient Structure) 
+
+Proof. For any method using surrogate weights wj (τ ), the gradient with respect to logit zj is: 
+
+∂L
+
+∂z j
+
+= ∂L
+
+∂h · ∂h ∂z j
+
+. (26) The surrogate gradient (straight-through for hard methods, direct for soft methods) uses: 
+
+∂h ∂z j
+
+≈ ∂∂z j
+
+X
+
+> i
+
+wi(τ )gi = X
+
+> i
+
+gi
+
+∂w i
+
+∂z j
+
+. (27) For softmax weights: ∂w i 
+
+> ∂z j
+
+= 1 
+
+> τ
+
+wi(1[i = j] − wj ).Substituting and simplifying: 
+
+∂L
+
+∂z j
+
+= δτ · wj (τ ) · (gj − ¯h), (28) where δ = ∂L/∂h and ¯h = P 
+
+> i
+
+wigi.
+
+Where δ is evaluated. The gradient formula is identical across methods, but δ is evaluated at different points. Mixture methods: δ = ∂L/∂h |h=¯h; the gradient exactly optimizes L(¯h, y ). Hard-ST: δ = ∂L/∂h |h=gi∗ ; forward uses discrete output, backward uses soft surrogate. Gumbel-ST: δ = ∂L/∂h |h=gk for sampled k; in expectation, approximates 
+
+∇z
+
+P 
+
+> i
+
+piL(gi, y ).
+
+Competition term. The term (gj − ¯h) induces competition: gates with gj > ¯h (outperforming the mixture) receive positive gradient when δ < 0, increasing their selection weight. This drives commitment over training. 
+
+C.8. Analysis of Proposition 9 (Competitive Gate Selection) 
+
+We analyze how the competition term (gj − ¯h) leads to different behaviors across methods. 
+
+Output spaces. The achievable output space differs by method. Mixture methods: Hsoft = {P 
+
+> i
+
+wigi : w ∈ ∆K−1} =[0 , 1] , the convex hull of gate outputs. Hard methods: Hhard = {g0, . . . , g K−1} ⊆ { 0, 1}, the discrete set of gate outputs. 
+
+Mixture methods can hedge. Since Hsoft = [0 , 1] is continuous, multiple weight configurations can achieve similar blended outputs. The optimizer can find favorable combinations where ¯h = P 
+
+> i
+
+wigi reduces loss, even if no single gate gi
+
+performs well individually. This is hedging: relying on the blend rather than committing to one gate. 
+
+Hard methods must commit. Since Hhard ⊆ { 0, 1} contains only discrete outputs, the optimizer must find a single gate that performs well. For Hard-ST, this requires zk > z j for all j̸ = k. For Gumbel-ST, reliable selection requires pk ≈ 1,meaning zk ≫ zj . Both conditions demand strong logit separation, forcing commitment. 
+
+Connection to selection gap. Hedging solutions have ¯h / ∈ { 0, 1}, so ¯h̸ = gi∗ generically, producing selection gap. Commitment solutions have concentrated weights, so ¯h ≈ gi∗ , eliminating gap. 
+
+C.9. Proof of Proposition 10 (Convergence Scaling) 
+
+Proof. Consider a single selection node choosing among K options with logits z = ( z1, . . . , z K ), learning rate η, and backward temperature τb.
+
+Step 1: Softmax gradient scaling. The softmax probabilities with temperature are: 
+
+pi = ezi/τ b
+
+P 
+
+> j
+
+ezj /τ b
+
+. (29) 14 Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+The gradient of pi with respect to zi is: 
+
+∂p i
+
+∂z i
+
+= 1
+
+τb
+
+pi(1 − pi) = O(1 /τ b). (30) Thus, gradient magnitude scales inversely with τb.
+
+Step 2: Required logit gap for target confidence. To achieve confidence pi∗ ≥ 1 − ϵ for the dominant option i∗, we require: 
+
+ezi∗
+
+P 
+
+> j
+
+ezj ≥ 1 − ϵ. (31) Assuming other logits are approximately equal to some baseline z0, let ∆ = zi∗ − z0. Then: 
+
+e∆
+
+e∆ + ( K − 1) ≥ 1 − ϵ (32) 
+
+e∆ ≥ (1 − ϵ)( e∆ + ( K − 1)) (33) 
+
+ϵ · e∆ ≥ (1 − ϵ)( K − 1) (34) 
+
+∆ ≥ log 
+
+ (1 − ϵ)( K − 1) 
+
+ϵ
+
+
+
+. (35) For small ϵ and fixed K:
+
+∆ = O(log(1 /ϵ )) . (36) 
+
+Step 3: Per-step logit update. With learning rate η, gradient magnitude O(1 /τ b), and approximately constant upstream gradient g, the per-step update to the dominant logit is: 
+
+∆zi∗ = η · gτb
+
+· pi∗ (1 − pi∗ ) = O(η/τ b). (37) Similarly, non-dominant logits decrease, so the gap ∆ grows at rate O(η/τ b) per step. 
+
+Step 4: Convergence time. The number of steps to achieve the required gap is: 
+
+T (τb) = Required gap Gap growth per step = O(log(1 /ϵ )) 
+
+O(η/τ b) = O
+
+ τb · log(1 /ϵ )
+
+η
+
+
+
+. (38) 
+
+## D. CAGE Algorithm Details 
+
+A pseudocode of the CAGE is shown in Algorithm 1. 
+
+Algorithm 1 CAGE: Confidence-Adaptive Gradient Estimation 
+
+Require: τmin = 0 .5, τmax = 3 .0, β = 0 .99 
+
+Initialize cema ← 1/K 
+
+for each training step t do 
+
+c(t) ← 1
+
+> N
+
+PNn=1 max i softmax (zn)i
+
+cema ← β · cema + (1 − β) · c(t)
+
+τb ← τmax − (τmax − τmin ) · cema −1/K 
+
+> 1−1/K
+
+Forward: hard selection (Hard-ST or Gumbel-ST) Backward: ST gradients with temperature τb
+
+end for 
+
+15 Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+## E. Critique of Hessian Regularization Hypothesis 
+
+Recent work by Yousefi et al. (2025) analyzed the discretization gap through the lens of “implicit Hessian regularization.” Their analysis assumes the loss L is computed directly on softmax outputs, yielding an expansion: 
+
+J(z) = EG[L(softmax(( z + G)/τ ))] = L(softmax( z/τ )) + π2
+
+12 τ 2 tr( HL) + O(τ −3), (39) where the Hessian trace term provides implicit regularization. The hypothesis is that Gumbel noise reduces mismatch through this regularization effect. We identify three issues: 
+
+Mixture vs. Hard Forward. The analysis assumes mixture forward. For Gumbel-ST, the forward output is discrete (hM = gk), and the Hessian expansion does not directly apply. 
+
+Architecture Mismatch. In deep networks, selection logits propagate through multiple layers before reaching the loss. The relationship between selection temperature and loss Hessian is more complex than the single-layer analysis suggests. 
+
+Empirical Evidence. Soft-Gumbel and Gumbel-ST use identical Gumbel noise but exhibit markedly different gaps. This suggests gap reduction stems from forward alignment, not Hessian regularization. 
+
+## F. Extended Gradient Analysis 
+
+Gumbel Methods Maintain Gradient Flow. Even at small τb, Gumbel noise can shift the winner: k = arg max i(zi + Gi)
+
+differs from i∗ = arg max i zi with probability 1 − pi∗ > 0.When k̸ = i∗, the output hM = gk̸ = gi∗ provides non-zero gradient signal. Over multiple training steps, different gates win, maintaining gradient flow to all gates. This exploration mechanism is distinct from the soft surrogate used in the backward pass. 
+
+Low-Temperature Failure Mode. For mixture methods at low τ , gradients vanish for two reasons: (1) the winner’s deviation (gi∗ − ¯h) → 0 as ¯h → gi∗ , and (2) non-winner weights wj → 0. Hard selection methods avoid this because δ is evaluated at the discrete output, not the collapsing mixture. 
+
+## G. GroupSum Temperature Derivation 
+
+We derive the temperature τ for GroupSum layers (Petersen et al., 2022; Kim, 2023) that produces well-conditioned softmax outputs at initialization. Consider classification with C classes, k neurons per class, each output hn ∈ [0 , 1] , GroupSum readout sc = P 
+
+> n∈G c
+
+hn,and scaled logits s′ 
+
+> c
+
+= sc/τ .
+
+Statistics at Initialization. With random gate selection, hn ∼ Bernoulli (0 .5) , giving E[sc] = 0 .5k and Var [sc] = 0 .25 k.Since softmax is translation-invariant, only logit differences matter. Let ∆s = si − sj denote the difference between two class sums. Since si and sj are independent: Var [∆ s] = Var [si] + Var [sj ] = 0 .5k, Std [∆ s] = √0.5√k ≈ 0.71 √k. (40) 
+
+Optimal Temperature. We target σmax ≈ 0.66 (a design choice balancing gradient flow: not too peaked, not too uniform). Solving σmax = exp(∆ s/τ )/[exp(∆ s/τ )+( C −1)] = 0 .66 gives ∆s/τ ≈ ln( C −1)+0 .7. Using two standard deviations as typical maximum difference ( ∆s ≈ 1.42 √k): 
+
+τ = 1.42 √k
+
+ln( C − 1) + 0 .7 = α(C)√k, (41) where α(C) = 1 .42 /(ln( C − 1) + 0 .7) . For common class counts: α(10) = 0 .49 , α(100) = 0 .27 , α(1000) = 0 .19 .16 Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+## H. Experimental Details 
+
+H.1. Hyperparameters 
+
+Table 4 summarizes the training configurations used in our experiments. 
+
+Table 4. Training configuration. 
+
+Parameter MNIST CIFAR-10 
+
+Neurons per layer 64,000 128,000 Layers 4, 5, 6 4, 5, 6 Gates per node 16 16 Batch size 512 512 Learning rate 0.01 0.05 Optimizer Adam Adam Iterations 50,000 60,000 Seeds 3 3
+
+Temperature sweep : τ ∈ { 0.05 , 0.1, 0.5, 1.0, 2.0}
+
+CAGE : τmax = 3 .0, τmin = 0 .5, β = 0 .99 
+
+H.2. Cross-Dataset Summary 
+
+Table 5 provides a consolidated view of key metrics across all datasets at L=6, the primary configuration reported in the main text. Hard-ST achieves zero selection gap on MNIST-Binary and CIFAR-10-Binary (binary inputs eliminate computation gap). On MNIST, the small 0.4% gap is purely computation gap from continuous inputs. Gumbel-ST fails catastrophically at low 
+
+τ across all datasets, with accuracy variation of 39–47 percentage points. CAGE eliminates temperature sensitivity, reducing accuracy variation to <1 percentage point for both Hard-ST and Gumbel-ST. 
+
+Table 5. Cross-dataset summary ( L=6). Peak selection gap (%) during training and accuracy range (%) across τ ∈{0.05 , 0.1, 0.5, 1.0, 2.0}. Hard-ST achieves zero selection gap and minimal accuracy range across all datasets. Gumbel-ST suf-fers catastrophic training failure at low τ . Bold : zero selection gap; underline: best accuracy range. 
+
+MNIST MNIST-Binary CIFAR-10-Binary Method Peak Gap Acc Range Peak Gap Acc Range Peak Gap Acc Range Soft-Mix 23% 1.4% 24% 1.1% 9% 7.5% Soft-Gumbel 40% 12.0% 40% 12.2% 3.5% 5.4% Hard-ST 0.4% ∗ 1.3% 0% 1.1% 0% 7.2% Gumbel-ST 62% † 46.3% 61% † 47.3% 16% † 39.5% Hard-ST+CAGE 0.3% ∗ 0.1% 0% 0.0% 0% 0.5% Gumbel-ST+CAGE 9% 0.1% 9% 0.1% 0.7% 0.6%    
+
+> ∗Includes computation gap from continuous inputs (selection gap is zero). †Training failure at low τproduces large negative gap during training.
+
+H.3. Gap Dynamics MNIST. Table 6 shows selection gap dynamics during training on MNIST. The format “Final [min, max]” indicates the final gap at convergence and the range observed during the last 80% of training (excluding initial warm-up). MNIST has continuous pixel values in [0 , 1] , so the measured gap includes both selection and computation components. Hard-ST shows ∼0.2% gap from computation gap alone (selection gap is zero by construction). Gumbel-ST exhibits catastrophic negative gaps at τ ≤ 0.1, indicating training failure where deployment accuracy exceeds training accuracy. 
+
+MNIST-Binary. Table 7 shows gap dynamics on MNIST-Binary. With binary inputs, computation gap is zero, so this table isolates pure selection gap. Hard-ST and Hard-ST+CAGE achieve exactly 0% gap at all temperatures and layers. The cells show “ +0 .0” with no range 17 Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+Table 6. Gap trajectory on MNIST. Format: Final [min, max] (%). Range computed over last 80% of training. Hard-ST shows stable near-zero gap; Soft-Gumbel shows large transient peaks that increase with τ .
+
+Method L τ =0.05 τ =0.1 τ =0.5 τ =1.0 τ =2.0 Soft-Mix 4 +0 .3 [+0.2,+0.4] +0 .2 [+0.1,+0.3] +0 .2 [+0.1,+0.3] +0 .1 [+0.0,+0.3] +0 .2 [+0.2,+0.5] 5 +0 .3 [+0.2,+0.4] +0 .2 [+0.1,+0.3] +0 .2 [+0.1,+0.3] +0 .1 [+0.1,+0.3] +0 .3 [+0.2,+1.5] 6 +0 .3 [+0.1,+0.4] +0 .2 [+0.1,+0.3] +0 .2 [+0.1,+0.3] +0 .1 [+0.1,+0.3] +0 .7 [+0,+23] Soft-Gumbel 4 +0 .6 [-31,+2] +0 .2 [-15,+2] +0 .3 [-0.1,+2.3] +0 .3 [+0,+10] +0 .5 [+0,+21] 5 −0.2 [-33,+1] +0 .2 [-33,+2] +0 .3 [+0.0,+2.9] +0 .4 [+0,+16] +1 .1 [+1,+33] 6 +0 .2 [-29,+4] +0 .6 [-25,+4] +0 .4 [-0,+9] +0 .4 [+0,+16] +1 .7 [+1,+40] Hard-ST 4 +0 .2 [+0.2,+0.4] +0 .2 [+0.2,+0.3] +0 .3 [+0.2,+0.4] +0 .2 [+0.1,+0.4] +0 .2 [+0.1,+0.4] 5 +0 .3 [+0.2,+0.4] +0 .2 [+0.1,+0.3] +0 .2 [+0.1,+0.3] +0 .2 [+0.1,+0.3] +0 .2 [+0.1,+0.3] 6 +0 .2 [+0.2,+0.4] +0 .2 [+0.1,+0.3] +0 .2 [+0.1,+0.2] +0 .2 [+0.1,+0.4] +0 .1 [+0.0,+0.3] Gumbel-ST 4 −46 .3 [-48,-41] −43 .2 [-56,-42] +0 .2 [-0.2,+0.4] +0 .1 [+0.0,+0.6] +0 .1 [+0.0,+0.8] 5 −41 .8 [-43,-28] −55 .2 [-59.0,-54.5] +0 .1 [-0.4,+0.2] +0 .2 [-0.1,+0.4] +0 .2 [+0.0,+0.9] 6 −41 .8 [-43,-31] −58 .2 [-62,-55] +0 .2 [-0.8,+0.3] +0 .2 [-0.1,+0.4] +0 .2 [+0.0,+1.4] Hard-ST+CAGE 4 +0 .1 [+0.0,+0.3] +0 .2 [+0.0,+0.3] +0 .2 [+0.0,+0.3] +0 .2 [+0.1,+0.3] +0 .3 [+0.1,+0.3] 5 +0 .2 [+0.1,+0.3] +0 .2 [+0.1,+0.3] +0 .2 [+0.0,+0.3] +0 .2 [+0.1,+0.3] +0 .1 [+0.0,+0.3] 6 +0 .2 [+0.0,+0.3] +0 .2 [+0.0,+0.3] +0 .1 [+0.0,+0.2] +0 .2 [+0.1,+0.3] +0 .1 [+0.0,+0.3] Gumbel-ST+CAGE 4 +0 .2 [+0.0,+0.5] +0 .3 [+0.0,+0.7] +0 .2 [-0.1,+1.1] +0 .2 [+0.0,+0.5] +0 .2 [+0.0,+0.6] 5 +0 .2 [+0.0,+0.9] +0 .1 [+0.0,+1.3] +0 .2 [+0.0,+1.8] +0 .2 [-0.1,+0.8] +0 .1 [+0.0,+0.9] 6 +0 .2 [-0.1,+3.2] +0 .2 [-0,+5] +0 .2 [-0,+5] +0 .2 [-0.1,+2.6] +0 .1 [-0.2,+1.7] 
+
+because the gap is identically zero throughout training. This is the strongest validation of forward alignment: when training uses the same argmax selection as inference, there is no selection mismatch by construction. 
+
+Table 7. Gap trajectory on MNIST-Binary. Format: Final [min, max] (%). With binary inputs, computation gap = 0, so this isolates pure selection gap. Hard-ST achieves exactly 0% at all temperatures. 
+
+Method L τ =0.05 τ =0.1 τ =0.5 τ =1.0 τ =2.0 Soft-Mix 4 +0 .0 [-0.1,+0.0] +0 .0 +0 .0 [-0.1,+0.1] +0 .0 [-0.1,+0.2] +0 .0 [-0.1,+0.3] 5 +0 .0 +0 .0 +0 .0 [-0.1,+0.1] +0 .0 [-0.1,+0.1] +0 .0 [-0.1,+1.6] 6 +0 .0 +0 .0 +0 .0 [-0.1,+0.1] +0 .0 [-0.1,+0.1] +0 .6 [+0,+24] Soft-Gumbel 4 +0 .3 [-31,+1] +0 .1 [-14,+1] +0 .1 [-0.3,+1.8] +0 .2 [+0,+9] +0 .2 [+0,+23] 5 −0.1 [-35,+1] −0.5 [-31,+2] +0 .2 [-0.4,+4.3] +0 .2 [+0,+18] +0 .7 [+0,+35] 6 +0 .7 [-30,+2] +0 .2 [-25,+2] +0 .2 [-1,+7] +0 .2 [+0,+17] +2 .1 [+2,+40] Hard-ST 4 +0 .0 +0 .0 +0 .0 +0 .0 +0 .0
+
+5 +0 .0 +0 .0 +0 .0 +0 .0 +0 .0
+
+6 +0 .0 +0 .0 +0 .0 +0 .0 +0 .0
+
+Gumbel-ST 4 −45 .1 [-47,-41] −44 .7 [-55,-43] +0 .0 [-0.5,+0.1] +0 .0 [-0.2,+0.3] +0 .0 [-0.1,+0.5] 5 −38 .7 [-39,-28] −57 .9 [-59.9,-55.3] +0 .0 [-0.7,+0.1] +0 .0 [-0.2,+0.3] +0 .0 [-0.2,+0.7] 6 −40 .4 [-41,-29] −58 .8 [-61,-55] −0.1 [-1.3,+0.1] +0 .0 [-0.3,+0.3] +0 .0 [-0.3,+1.1] Hard-ST+CAGE 4 +0 .0 +0 .0 +0 .0 +0 .0 +0 .0
+
+5 +0 .0 +0 .0 +0 .0 +0 .0 +0 .0
+
+6 +0 .0 +0 .0 +0 .0 +0 .0 +0 .0
+
+Gumbel-ST+CAGE 4 +0 .1 [-0.2,+0.6] +0 .0 [-0.2,+0.8] −0.1 [-0.3,+0.7] +0 .0 [-0.1,+0.4] +0 .0 [-0.2,+0.4] 5 +0 .0 [-0.2,+1.7] +0 .0 [-0.2,+2.3] +0 .0 [-0.2,+2.0] +0 .0 [-0.2,+0.8] +0 .0 [-0.2,+0.7] 6 +0 .0 [-0.3,+4.5] +0 .1 [-0,+9] +0 .0 [-0.2,+3.5] +0 .0 [-0.2,+1.6] +0 .0 [-0.2,+2.2] 
+
+CIFAR-10-Binary. Table 8 shows gap dynamics on CIFAR-10-Binary binarized with 31 evenly-spaced thresholds per channel. CIFAR-10-Binary shows smaller transient gaps for Soft-Gumbel compared to MNIST (max ∼3.5% vs ∼40%). This may be because the harder classification task requires more commitment to specific gates, reducing the benefit of hedging. Gumbel-ST still fails at low τ but less catastrophically ( −14% vs −59%). 
+
+H.4. Heatmap Visualization 
+
+Figure 4 visualizes gap across the full (layer × temperature) grid, providing an overview of all experimental conditions. 18 Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+Table 8. Gap trajectory on CIFAR-10-Binary. Format: Final [min, max] (%). Hard-ST achieves exactly 0% gap; Gumbel-ST fails at low τ
+
+but less severely than on MNIST.                                                                                                                                                                        
+
+> Method Lτ=0.05 τ=0.1 τ=0.5 τ=1.0 τ=2.0 Soft-Mix 4+0 .0[-0.1,+0.1] +0 .0[-0.1,+0.1] +0 .0[-0.1,+0.1] +0 .0[-0.3,+0.3] +0 .1[-0.3,+0.5] 5+0 .0[-0.1,+0.1] +0 .0[-0.1,+0.1] +0 .0[-0.1,+0.1] +0 .0[-0.3,+0.3] −0.1[-0.2,+1.5] 6+0 .0[-0.1,+0.1] +0 .0[-0.1,+0.1] +0 .0[-0.1,+0.1] +0 .0[-0.2,+0.3] +0 .3[-0,+9] Soft-Gumbel 4−0.2[-2.3,+0.4] +0 .0[-2.0,+0.4] +0 .0[-0.7,+0.5] +0 .0[-0.3,+0.3] +0 .1[-0.2,+0.4] 5+0 .0[-2.5,+0.3] −0.2[-2.6,+0.4] +0 .0[-0.8,+0.7] +0 .0[-0.3,+0.5] +0 .1[-0.3,+0.4] 6−0.3[-3.5,+0.2] +0 .2[-2.3,+0.4] +0 .0[-0.7,+0.5] +0 .0[-0.3,+0.5] +0 .0[-0.3,+0.4] Hard-ST 4+0 .0+0 .0+0 .0+0 .0+0 .0
+> 5+0 .0+0 .0+0 .0+0 .0+0 .0
+> 6+0 .0+0 .0+0 .0+0 .0+0 .0
+> Gumbel-ST 4−9.6[-11,-4] −9.5[-11.8,-8.2] −0.2[-0.8,+0.5] +0 .0[-0.3,+0.2] +0 .0[-0.4,+0.5] 5−5.2[-8,-2] −11 .4[-14.3,-10.4] +0 .0[-0.9,+0.2] +0 .0[-0.4,+0.3] −0.1[-0.4,+0.3] 6−7.5[-8,-0] −13 .7[-16.4,-12.6] −0.4[-1.2,+0.2] +0 .0[-0.4,+0.3] −0.1[-0.3,+0.4] Hard-ST+CAGE 4+0 .0+0 .0+0 .0+0 .0+0 .0
+> 5+0 .0+0 .0+0 .0+0 .0+0 .0
+> 6+0 .0+0 .0+0 .0+0 .0+0 .0
+> Gumbel-ST+CAGE 4−0.1[-0.6,+0.3] −0.1[-0.6,+0.3] −0.1[-0.6,+0.3] −0.1[-0.4,+0.4] +0 .0[-0.6,+0.3] 5+0 .0[-0.6,+0.3] −0.2[-0.6,+0.3] −0.1[-0.6,+0.3] +0 .0[-0.8,+0.3] −0.2[-0.5,+0.3] 6+0 .0[-0.6,+0.4] +0 .0[-0.7,+0.4] −0.1[-0.7,+0.3] +0 .0[-0.5,+0.3] −0.1[-0.5,+0.4]
+
+H.5. Statistical Tests 
+
+We report statistical significance tests for the key claims in this paper. All tests use paired t-tests with n = 3 seeds per configuration. With small sample sizes and low variance, even small differences can achieve statistical significance. We therefore distinguish between statistical significance (p < 0.05 ) and practical significance (|∆Accuracy | > 5% or 
+
+|∆Gap | > 5% ). Table 9 reports results for MNIST-Binary with L=6 layers, which isolates selection gap (computation gap is zero for binary inputs). 
+
+Findings. Gumbel-ST failure is both statistically and practically significant. The accuracy drop from τ = 2 .0 to 
+
+τ = 0 .05 is highly significant ( t = −36 .16 , p < 0.001 , d = 31 .21 ) and represents catastrophic training failure (47 percentage points accuracy loss). 
+
+Hard-ST shows statistical but not practical sensitivity to τ . While the accuracy difference is statistically significant (p = 0 .005 ) due to low variance across seeds, the 1.1 percentage point range is negligible compared to Gumbel-ST’s 47 percentage point range. The claim of “temperature robustness” refers to practical robustness. 
+
+CAGE effectively resolves Gumbel-ST’s failure. At τ = 0 .05 , CAGE improves Gumbel-ST accuracy by 47 percentage points ( t = −38 .81 , p < 0.001 , d = 31 .28 ), restoring performance to the level achieved at higher temperatures. 
+
+Hard-ST achieves zero selection gap. The gap difference between Hard-ST (0%) and Soft-Gumbel (40% peak) at τ = 2 .0
+
+is statistically significant ( p = 0 .024 ) with large effect size ( d = 5 .15 ). 
+
+Forward structure effect shows practical significance. The comparison between Soft-Gumbel and Gumbel-ST gaps (same Gumbel noise, different forward pass) shows a clear practical difference (40% vs 1% gap) with marginal statistical significance( p = 0 .093 , d = 2 .61 ). The elevated p-value reflects high variance in Soft-Gumbel’s gap across seeds; the direction consistently supports the forward alignment hypothesis. 
+
+Cross-dataset consistency. Table 10 confirms these findings hold across datasets. 
+
+H.6. Gate Usage Analysis 
+
+Figure 5 shows the distribution of selected gates across all nodes in the trained networks. 19 Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 0.05 0.1 0.5 1.0 2.0                                                                                             
+
+> L4
+> L5
+> L6
+> Layers
+> +0.3 +0.2 +0.2 +0.1 +0.2
+> +0.3 +0.2 +0.2 +0.1 +0.3
+> +0.3 +0.2 +0.2 +0.1 +0.7
+> Soft-Mix
+> 0.05 0.1 0.5 1.0 2.0
+> L4
+> L5
+> L6
+> +0.6 +0.2 +0.3 +0.3 +0.5
+> -0.2 +0.2 +0.3 +0.4 +1.1
+> +0.2 +0.6 +0.4 +0.4 +1.7
+> Soft-Gumbel
+> 0.05 0.1 0.5 1.0 2.0
+> L4
+> L5
+> L6
+> +0.2 +0.2 +0.3 +0.2 +0.2
+> +0.3 +0.2 +0.2 +0.2 +0.2
+> +0.2 +0.2 +0.2 +0.2 +0.1
+> Hard-ST
+> 0.05 0.1 0.5 1.0 2.0
+> Temperature
+> L4
+> L5
+> L6
+> Layers
+> -46.3 -43.2 +0.2 +0.1 +0.1
+> -41.8 -55.2 +0.1 +0.2 +0.2
+> -41.8 -58.2 +0.2 +0.2 +0.2
+> Gumbel-ST
+> 0.05 0.1 0.5 1.0 2.0
+> Temperature
+> L4
+> L5
+> L6
+> +0.1 +0.2 +0.2 +0.2 +0.3
+> +0.2 +0.2 +0.2 +0.2 +0.1
+> +0.2 +0.2 +0.1 +0.2 +0.1
+> Hard-ST+CAGE
+> 0.05 0.1 0.5 1.0 2.0
+> Temperature
+> L4
+> L5
+> L6
+> +0.2 +0.3 +0.2 +0.2 +0.2
+> +0.2 +0.1 +0.2 +0.2 +0.1
+> +0.2 +0.2 +0.2 +0.2 +0.1
+> Gumbel-ST+CAGE
+> 2.0
+> 1.5
+> 1.0
+> 0.5
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> Gap (%)
+> Gumbel-ST:
+> ±64% scale
+
+Figure 4. Gap heatmaps on MNIST. Hard-ST shows uniform near-zero gap (light colors) across all conditions. Gumbel-ST exhibits catastrophic negative gap at low τ (dark blue = training failure where deployment outperforms training). CAGE eliminates this failure, restoring uniform small gap. 
+
+## I. Input Distribution Analysis 
+
+This appendix analyzes how input distribution affects the computation gap between soft and hard logic gates, explaining why computation gap is small in our experiments. 
+
+I.1. Gate Definitions 
+
+We use product t-norm and probabilistic t-conorm relaxations (Klement et al., 2000; Van Krieken et al., 2022; Petersen et al., 2022) for soft gates, with standard negation ( ¬a → 1 − a). Hard gates use Boolean operations with threshold θ = 0 .5.Table 11 lists all 16 gates. 
+
+I.2. Computation Gap Bounds 
+
+The computation gap for a gate g is the expected absolute difference between soft and hard outputs: 
+
+∆g = Ea,b ∼D 
+
+ gsoft (a, b ) − ghard (a, b )  . (42) The gap depends critically on input distribution. Binary inputs {0, 1} achieve zero gap since soft and hard gates produce identical outputs. Uniform [0 , 1] inputs yield moderate gap ( ∼20%). The upper bound occurs at the decision boundary (a ≈ 0.5). Table 12 summarizes these bounds. For Uniform [0 , 1] inputs, the gaps can be computed analytically. Unary gates have ∆ = 0 .25 . AND and OR gates have 
+
+∆ = 0 .21875 (by quadrant integration; contributions swap between gates but totals match). XOR gates have ∆ = 0 .167 .Negation preserves gap: ∆NAND = ∆ AND , etc. Table 13 groups all 16 gates by gap value. 
+
+I.3. MNIST Pixel Distribution 
+
+MNIST is highly sparse: 80.9% of pixels are exactly zero (background), and only 8.7% fall in the intermediate range 
+
+[0 .1, 0.9] . Overall, 91.3% of pixels are binary-like ( < 0.1 or > 0.9). This explains why computation gap is small in our experiments. 20 Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+Table 9. Statistical significance of key claims (MNIST-Binary, L=6, n=3 seeds). Effect size d is Cohen’s d (Cohen, 1988). Claim Comparison t p d Stat. Prac. 
+
+Temperature sensitivity (accuracy) 
+
+Gumbel-ST fails at low τ τ =0.05 vs τ =2.0 −36.16 <.001 31.21 *** ✓
+
+Hard-ST is τ -robust τ =0.05 vs τ =2.0 −14.53 .005 16.26 ** –
+
+CAGE effectiveness 
+
+CAGE fixes Gumbel-ST Gumbel-ST vs +CAGE ( τ =0.05) −38.81 <.001 31.28 *** ✓
+
+Selection gap comparisons (at τ =2.0) 
+
+Hard-ST has zero selection gap Hard-ST vs Soft-Gumbel −6.30 .024 5.15 * ✓
+
+Forward vs backward structure 
+
+Forward type determines gap Soft-Gumbel vs Gumbel-ST gap 3.05 .093 2.61 ns ✓
+
+Significance: ∗∗∗ p < 0.001 , ∗∗ p < 0.01 , ∗p < 0.05 , ns = not significant. Practical: ✓= |∆| > 5% accuracy difference. 
+
+Table 10. Cross-dataset verification of key claims ( L=6, significance level). Claim MNIST MNIST-Binary CIFAR-10-Binary Gumbel-ST fails at low τ *** *** *** Hard-ST is τ -robust ** † ** † *** †
+
+CAGE fixes Gumbel-ST *** *** *** 
+
+Significance: ∗∗∗ p < 0.001 , ∗∗ p < 0.01 , ∗p < 0.05 .
+
+> †
+
+Statistically significant but practically robust: MNIST datasets show <2% accuracy range, CIFAR-10-Binary shows ∼6% range (all far below Gumbel-ST’s >39%). 
+
+I.4. Implications 
+
+With 91.3% binary-like pixels, MNIST is close to the best-case scenario where binary inputs yield 0% gap. MNIST-Binary achieves exactly zero computation gap, isolating pure selection gap. This explains why our experiments show selection gap as the dominant component: MNIST’s distribution minimizes computation gap, making selection gap the primary differentiator between methods. For applications with truly continuous inputs (e.g., Uniform [0 , 1] ), computation gap becomes significant ( ∼20%), and inputs concentrated near the decision boundary can reach 50–75% gap. FALSE 
+
+> TRUE
+> A
+> B
+> ¬A
+> ¬B
+> AND
+> OR
+> XOR
+> NAND
+> NOR
+> XNOR
+> A ¬B
+> ¬A  B
+> A ¬B
+> ¬A  B
+> Gate
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> Usage (%)
+> Soft-Mix
+> Soft-Gumbel
+> Hard-ST
+> Gumbel-ST
+> Hard-ST+CAGE
+> Gumbel-ST+CAGE
+
+Figure 5. Gate usage distribution (MNIST-Binary, L=6, τ =1.0). Hard-ST methods show pronounced XOR/XNOR preference ( ∼11% each vs. ∼6% expected under uniform selection), while soft methods distribute usage more uniformly. This suggests hard selection encourages commitment to more expressive Boolean operations. 
+
+21 Align Forward, Adapt Backward: Closing the Discretization Gap in Logic Gate Networks 
+
+Table 11. All 16 two-input Boolean gates with soft (differentiable) and hard (Boolean) formulas. 
+
+Index Gate Boolean Soft Formula Hard Formula 
+
+0 FALSE 0 0 0
+
+1 AND a ∧ b ab 1[a > 0.5] ∧ 1[b > 0.5] 
+
+2 A∧¬ B a ∧ ¬ b a(1 − b) 1[a > 0.5] ∧ 1[b ≤ 0.5] 
+
+3 A a a 1[a > 0.5] 
+
+4 ¬A∧B ¬a ∧ b (1 − a)b 1[a ≤ 0.5] ∧ 1[b > 0.5] 
+
+5 B b b 1[b > 0.5] 
+
+6 XOR a ⊕ b a + b − 2ab 1[a > 0.5] ⊕ 1[b > 0.5] 
+
+7 OR a ∨ b a + b − ab 1[a > 0.5] ∨ 1[b > 0.5] 
+
+8 NOR ¬(a ∨ b) 1 − a − b + ab ¬(1[a > 0.5] ∨ 1[b > 0.5]) 
+
+9 XNOR ¬(a ⊕ b) 1 − a − b + 2 ab ¬(1[a > 0.5] ⊕ 1[b > 0.5]) 
+
+10 ¬B ¬b 1 − b 1[b ≤ 0.5] 
+
+11 A∨¬ B a ∨ ¬ b 1 − b + ab 1[a > 0.5] ∨ 1[b ≤ 0.5] 
+
+12 ¬A ¬a 1 − a 1[a ≤ 0.5] 
+
+13 ¬A∨B ¬a ∨ b 1 − a + ab 1[a ≤ 0.5] ∨ 1[b > 0.5] 
+
+14 NAND ¬(a ∧ b) 1 − ab ¬(1[a > 0.5] ∧ 1[b > 0.5]) 
+
+15 TRUE 1 1 1
+
+Table 12. Computation gap for representative gates under different input distributions. 
+
+Distribution Unary AND/OR XOR 
+
+Binary {0, 1} (lower bound) 0% 0% 0% MNIST (91% binary-like) ∼2% ∼3% ∼5% Uniform [0 , 1] 25% 21.9% 16.7% At boundary a=0 .5 (upper) 50% 75% 50% 
+
+Table 13. Expected computation gap for all 16 gates on Uniform [0,1] inputs. 
+
+Category Gates Gap (%) 
+
+Constants FALSE, TRUE 0.0 XOR-type XOR, XNOR 16.7 AND/OR-type AND, OR, NAND, NOR, A ∧¬ B, ¬A∧B, A ∨¬ B, ¬A∨B 21.9 Unary A, B, ¬A, ¬B 25.0 
+
+Table 14. MNIST pixel value distribution. 
+
+Pixel Range MNIST [0,1] MNIST-Binary 
+
+Exactly 0 80.9% 86.7% 
+
+(0 , 0.1) 1.7% 0.0% 
+
+[0 .1, 0.9] 8.7% 0.0% 
+
+(0 .9, 1.0] 8.8% 13.3% 
+
+Binary-like (< 0.1 or > 0.9) 91.3% 100.0% 
+
+22

@@ -1,0 +1,290 @@
+Title: Fusian: Multi-LoRA Fusion for Fine-Grained Continuous MBTI Personality Control in Large Language Models
+
+URL Source: https://arxiv.org/pdf/2603.15405v1
+
+Published Time: Tue, 17 Mar 2026 05:10:34 GMT
+
+Number of Pages: 11
+
+Markdown Content:
+# Fusian: Multi-LoRA Fusion for Fine-Grained Continuous MBTI Personality Control in Large Language Models 
+
+Zehao Chen, Rong Pan *
+
+School of Computer Science and Engineering, Sun Yat-sen University, Guangzhou, China 
+
+> *
+
+Correspondence: panr@sysu.edu.cn 
+
+Abstract 
+
+Large Language Models (LLMs) have demon-strated impressive capabilities in simulating di-verse human behaviors and personalities. How-ever, existing methods for personality control, which include prompt engineering and standard Supervised Fine-Tuning (SFT), typically treat personality traits as discrete categories (e.g., "Extroverted" vs. "Introverted"), lacking the ability to precisely control the intensity of a trait on a continuous spectrum. In this paper, we introduce Fusian, a novel framework for fine-grained, continuous personality control in LLMs. Fusian operates in two stages: (1) Tra-jectory Collection, where we capture the dy-namic evolution of personality adoption during SFT by saving a sequence of LoRA adapters, effectively mapping the continuous manifold of a trait; and (2) RL-based Dynamic Fusion, where we train a policy network using Rein-forcement Learning to dynamically compute mixing weights for these frozen adapters. By sampling from a Dirichlet distribution parame-terized by the policy network, Fusian fuses mul-tiple adapters to align the model’s output with a specific numerical target intensity. Experi-ments on the Qwen3-14B model demonstrate that Fusian achieves high precision in person-ality control, significantly outperforming base-line methods in aligning with user-specified trait intensities. 
+
+1 Introduction 
+
+Large Language Models (LLMs) have achieved remarkable success in natural language understand-ing and generation (Vaswani et al., 2017; Brown et al., 2020; Achiam et al., 2023; Touvron et al., 2023), enabling the creation of sophisticated con-versational agents that can simulate various human personas (Park et al., 2023; Shanahan et al., 2023; Shao et al., 2023; Wang et al., 2024a; Yu et al., 2024; Zhou et al., 2024). These capabilities have facilitated applications ranging from immersive Discrete Control Continuous Control    
+
+> Perceiving / Judging Trait Intensity 78% Perceiving Judging
+> Prompt Engineering
+> [Prompt] Act like a Judging person ...
+> Supervised Fine-Tuning
+> Training on Judging trait SFT data Training on Judging trait SFT data Let's go camping this weekend! Excellent. Now I have finalized a mandatory itinerary: depart at 08:00 sharp, arrive by 10:30, and complete camp setup by 12:00. We must adhere strictly to this schedule to avoid any inefficiency.
+> Let's go camping this weekend! Sounds like a great idea! I'll put together a quick schedule so we stay on track. I think we should try to head out Saturday morn-ing. This will give us enough time to get everything set up before it gets dark.
+> Policy Network Multi LoRA
+> 52% 100%
+
+MBTI Test          
+
+> 63% J 87% J 95% J ...
+> Individual Test Results
+> 75% J 78% J 81% J ...
+> Individual Test Results
+> 63% 76% 82% 94% 😀
+> 🙁 😀 🙁
+
+Figure 1: Conceptual illustration of Fusian . Unlike discrete categorization, Fusian achieves continuous in-tensity control (e.g., 78% Perceiving) by dynamically fusing LoRA adapters via a policy network. 
+
+role-playing games to personalized educational as-sistants and mental health support. Despite these advancements, current approaches to personality alignment primarily focus on discrete categoriza-tion (Chen et al., 2024; Dan et al., 2025). For exam-ple, a model might be aligned to exhibit a specific Myers-Briggs Type Indicator (MBTI) type, such as "ENFP" or "ISTJ", or instructed via prompts to adopt discrete trait descriptors, such as being "spon-taneous" (Perceiving) or "organized" (Judging). As illustrated in Figure 1, such discrete categorization lacks the granularity required for precise intensity control. Human personality is inherently continuous and multifaceted, as described by the Five-Factor Model (McCrae and John, 1992). In applications re-quiring emotional intelligence and nuance, precise regulation of trait intensity is essential. For exam-
+
+> arXiv:2603.15405v1 [cs.CL] 16 Mar 2026
+
+ple, a counseling agent may need to shift gradually from a "Feeling" (F) to a more "Thinking" (T) ori-entation, while an educational tutor might adjust its "Extraversion" (E) level to match student en-gagement. However, existing approaches based on prompt engineering or standard Supervised Fine-Tuning (SFT) (Ouyang et al., 2022; Ziegler et al., 2019; Rafailov et al., 2023) struggle to achieve such granularity. Numerical prompts (e.g., "act 70% extraverted") are often inconsistently inter-preted, and SFT typically converges to a single static trait extreme. Moreover, the absence of stan-dardized benchmarks for explainable personality recognition complicates evaluation (Miotto et al., 2022; Sun et al., 2024). Although Sun et al. (2025) explore continuous modulation through manual co-efficient scaling, their method cannot automatically or dynamically align with precise numerical tar-gets. To address this limitation, we explore the latent potential of parameter adaptation. We posit that the SFT trajectory traverses a continuous personality manifold, encoding intermediate behavioral states. By capturing these states with Parameter-Efficient Fine-Tuning (PEFT) methods (Houlsby et al., 2019; Li and Liang, 2021; Lester et al., 2021), we build a basis for continuous personality representation. We propose Fusian , a two-stage framework con-sisting of Trajectory Collection and RL-based Dy-namic Fusion . We record high-frequency Low-Rank Adaptation (LoRA) checkpoints during SFT to approximate the personality manifold (Hu et al., 2022; Dettmers et al., 2023), and train an RL policy network to dynamically compute adapter mixing weights for target intensity alignment, addressing the non-linear parameter–semantic mapping. Unlike conventional model merging (Wortsman et al., 2022; Yadav et al., 2023) or task arithmetic (Ilharco et al., 2023), Fusian learns a task-aware mixing strategy via Dirichlet weight sampling and semantic reward optimization, enabling precise and continuous intensity control. Our contributions are as follows: • We propose Fusian , a framework that utilizes the training trajectory of SFT to extract a contin-uous basis for personality traits, overcoming the discrete limitations of standard fine-tuning. • We design a Multi-LoRA Fusion mechanism driven by Reinforcement Learning, which learns to dynamically mix adapter weights to achieve precise, numerical control over personality in-tensity. • We conduct extensive experiments on the Qwen3-14B model, demonstrating that Fusian significantly outperforms baseline prompting and interpolation methods in aligning with con-tinuous target intensities across MBTI dimen-sions. 
+
+2 Related Work 
+
+2.1 LLM-based Role-Playing Agents 
+
+LLMs have evolved from general assistants to spe-cialized role-playing agents (RPAs) (Wang et al., 2024a; Shanahan et al., 2023). Early methods using In-Context Learning (ICL) and Retrieval-Augmented Generation (RAG) (Park et al., 2023; Zhang et al., 2018) offered flexibility but suffered from persona drift and potential toxicity (Desh-pande et al., 2023). Consequently, Supervised Fine-Tuning (SFT) became dominant for deeper character internalization. Notable works include Character-LLM (Shao et al., 2023), trained on synthesized memories, and CharacterGLM (Zhou et al., 2024), utilizing large-scale dialogue data (Chen et al., 2022). To handle multi-character sce-narios, Neeko (Yu et al., 2024) employs dynamic LoRA adapters. However, these approaches fo-cus on fixed identities rather than the continuous regulation of underlying psychological traits. 
+
+2.2 Personality Modeling and Control 
+
+Modeling and controlling LLM personality is an emerging research area, often grounded in psycho-metric frameworks such as the Big Five (OCEAN) and MBTI (McCrae and John, 1992; Miotto et al., 2022; Sun et al., 2024). Various alignment strate-gies have been explored. Chen et al. (2024) show that SFT generally outperforms RLHF and con-tinual pre-training for personality control, while prompt-based methods exhibit stronger robustness in certain settings. To better capture personality-driven behaviors, Dan et al. (2025) propose P-React, a mixture-of-experts framework with trait-specific LoRA modules optimized via a Personality Specialization Loss. Benchmarks such as InChar-acter (Wang et al., 2024b) further evaluate trait fi-delity through structured psychological interviews. Despite these advances, most prior work models personality traits as discrete variables. Although Sun et al. (2025) introduce personality vectors for continuous intensity adjustment by scaling differ-ence vectors, their approach depends on manu-ally predefined coefficients and linear assumptions. In contrast, Fusian enables automated and fine-grained control across the continuous personality spectrum. Inspired by parameter-space operations such as model merging (Wortsman et al., 2022; Ya-dav et al., 2023) and task arithmetic (Ilharco et al., 2023), our method employs a dynamic RL-based fusion policy to achieve precise intensity regula-tion beyond static persona adoption or binary trait modeling. 
+
+3 Methodology 
+
+As illustrated in Figure 2, Fusian operates in two distinct stages. In Stage 1 (Trajectory Collection) ,we capture the dynamic evolution of personality adoption during SFT by saving a sequence of LoRA adapters. These adapters are evaluated using stan-dardized MBTI Test to assign intensity scores. In 
+
+Stage 2 (RL-based Dynamic Fusion) , we train a policy network to dynamically fuse these frozen adapters to match a target intensity. Finally, during 
+
+Inference , the system generates a fused adapter based on the user’s numerical target to produce aligned responses. 
+
+3.1 Stage 1: Trajectory Collection 
+
+The objective of this stage is to extract a dense, continuous representation of a specific personality trait (e.g., Extraversion) by capturing the dynamic evolution of the model during fine-tuning. 
+
+Supervised Fine-Tuning Setup We adopt Qwen3-14B as the base model. For trait-specific instruction tuning, we directly utilize the SFT subset from the Personality Control Datasets (Chen et al., 2024), which comprises Q&A pairs exhibiting the target personality. We employ Low-Rank Adaptation (LoRA) to efficiently parameterize weight updates, injecting rank-r
+
+matrices into the query and value projections of the attention layers. The training objective is the standard causal language modeling loss. 
+
+High-Frequency Checkpointing and Evaluation 
+
+Unlike traditional SFT, which seeks a single con-verged optimum, Fusian treats the optimization path itself as a feature. We hypothesize that as the model learns the trait, it traverses a manifold of increasing intensity. To capture this, we perform synchronous evaluation at every gradient update step t.After each update ∆θt, we freeze the model and evaluate it on a held-out validation set Deval com-prising standardized MBTI assessment questions. We employ a specific system prompt to elicit the model’s persona: "You are a human subject tak-ing an MBTI test..." . For each generated response, we parse the output to extract a Likert scale score 
+
+s ∈ { 1, 2, 3, 4, 5}. To quantify the intensity, we map these scores to points for the opposing poles of a dimension pair (Dlef t , D right ). A score of 1 represents strong agreement with Dlef t , contribut-ing 2 points to its cumulative score Slef t , while a score of 2 contributes 1 point. Similarly, scores of 5 and 4 contribute 2 and 1 points to Sright , re-spectively. A score of 3 is considered neutral (0 points). We aggregate the total points across the dataset and compute the scalar Trait Percentage 
+
+Pt for the target trait as Pt = Starget  
+
+> Slef t +Sright
+
+× 100 .
+
+Trajectory Library We save the LoRA adapter 
+
+∆θt and its corresponding score Pt at each step. This results in a trajectory library T =
+
+{(∆ θt, P t)}Tt=1 . This library provides a discrete approximation of the continuous personality spec-trum. In practice, we observe that Pt tends to in-crease monotonically but with local fluctuations. 
+
+Stable Basis Selection To mitigate noise and con-struct a robust basis for the subsequent fusion stage, we process the raw trajectory T . We define a slid-ing window of size W over the trajectory and com-pute the variance of the trait percentages within each window. Checkpoints with variance exceed-ing a threshold are discarded as unstable. From the remaining stable checkpoints, we employ Uniform Value Sampling to select N adapters. Specifically, we define N target values evenly spaced between the minimum and maximum observed percentages, and for each target, we select the checkpoint with the closest trait percentage. This ensures that our basis set B = {∆θ1, . . . , ∆θN } uniformly covers the personality manifold, preventing bias towards regions where the model converged slowly. 
+
+3.2 Stage 2: RL-based Dynamic Fusion 
+
+In the second stage, we train a controller to dynam-ically mix the discovered adapters (the basis set B)to achieve a precise target intensity Ptarget .
+
+Policy Network Architecture We define a Pol-icy Network πϕ parameterized by ϕ. The network takes a target intensity Ptarget as input, which is first normalized to ˆp ∈ [−1, 1] to improve numeri-cal stability. The network consists of a Multi-Layer Perceptron (MLP) with two hidden layers of size 128, utilizing Layer Normalization and Tanh ac-Backbone Model Trained Policy Network Fused LoRA Adapter Generated Response with Trajectory-Aligned Intensity User Target Intensity 78% P JInference Stage 1: Trajectory Collection Stage 2: RL-based Dynamic Fusion Continuous Personality Manifold Stable Basis Selection    
+
+> Backbone Model Trait-Specific Data LoRA Adapters Trajectory Library
+> Mixing Weights +LoRA Adapters Fusion Reward Signal Training MBTI Test Policy Network Target Intensity 78% PJMBTI Test Actual Intensity 66% PJRespond to the following question by choosing a number from [1, 2, 3, 4, 5] ... In class reunions, you usually ... Respond to the following question by choosing a number from [1, 2, 3, 4, 5] ... You like to act alone .
+> 12
+
+MBTI Test Quiet and reserved AB Talkative A B1 2 3 4 5Yes AB No A B1 2 3 4 5Figure 2: Overview of the framework. Stage 1 collects LoRA adapters during SFT, evaluating them via MBTI Test 
+
+to get the personality manifold. Stage 2 trains a policy network via RL to dynamically fuse these adapters to match a target intensity. During Inference , the fused adapter generates responses aligned with the user’s specification. 
+
+tivation functions. The output layer projects to dimension N , followed by a Softplus activation to ensure positivity: 
+
+α = Softplus (MLP (ˆ p)) + ϵ (1) where ϵ = 0 .01 is a small offset. Notably, we allow the output αi to be less than 1. In a Dirichlet distribution, α < 1 pushes the probability mass towards the corners of the simplex, allowing the policy to select single adapters (sparse weights) when they provide the best fit, rather than forcing a mixture. 
+
+Action and Fusion The action is a weight vector 
+
+w ∈ ∆N −1 sampled from a Dirichlet distribution parameterized by α:
+
+w ∼ Dirichlet (α) (2) The fused LoRA adapter is computed as a linear combination of the basis adapters: 
+
+∆θf used =
+
+NX
+
+i=1 
+
+wi · ∆θi (3) This fused adapter is dynamically loaded into the base model’s memory for inference. 
+
+Reward Shaping and Optimization The fused model generates responses to a batch of diagnostic prompts (using the “human subject” system prompt described in Stage 1). We parse the responses to calculate the actual trait percentage Pactual . We define dif f = Ptarget − Pactual . To enforce high precision, we design an aggressive reward function: 
+
+R = exp( −λ|dif f |) + I(|dif f | < δ ) · B (4) where λ imposes a sharp penalty for deviations, and 
+
+B is a bonus reward granted only if the absolute error is within a tight threshold δ.We optimize the policy using the REINFORCE algorithm. The loss function includes an entropy regularization term to prevent premature conver-gence: 
+
+L(ϕ) = −Ew∼πϕ [( R−b) log πϕ(w|ˆp)] −βtH(πϕ)
+
+(5) where b is a moving average baseline to reduce variance, and βt is the entropy coefficient which decays over training epochs. 
+
+4 Experiments 
+
+In this section, we present experiments to validate the effectiveness of Fusian, including evaluation metrics, baseline comparisons, and result analysis. 
+
+4.1 Experimental Settings 4.1.1 Dataset 
+
+We conduct our experiments using the Personality Control Datasets (Chen et al., 2024), a comprehen-sive benchmark tailored for personality alignment in LLMs. Although the original repository includes four distinct subsets (Pre-train, SFT, RLHF-PPO, and RLHF-Reward), we specifically leverage the 
+
+SFT subset and the Validation set to support the two stages of our Fusian framework. 
+
+Training Set ( Dtrain ) For the Trajectory Collec-tion stage, we utilize the SFT subset, which is hier-archically categorized by MBTI traits. This dataset isolates each personality dimension (e.g., Extraver-sion, Introversion, Thinking, Feeling), providing specialized instruction-response pairs for each. By training on a single trait-specific sub-dataset, we ensure that the model’s parameter trajectory moves along a clearly defined manifold corresponding to that specific attribute. 
+
+Evaluation Set ( Deval ) For the RL-based Dy-namic Fusion stage and final evaluation, we em-ploy the standardized validation set from the same source. This dataset is structured as a psychome-tric questionnaire, containing 50 items for each MBTI dimension (e.g., 50 questions assessing the E/I spectrum). These items serve as the ground truth probes: the model’s responses to these ques-tions are mapped to numerical scores, allowing us to rigorously calculate the Trait Percentage and reward signals. 
+
+4.1.2 Evaluation Metrics 
+
+To quantitatively measure the effectiveness of con-tinuous control, we employ the following metrics: • Mean Absolute Error (MAE): This metric eval-uates the precision of our control. We sample a set of target intensities Ptarget ∈ [0 , 100] and measure the absolute difference between the target and the model’s actual output intensity 
+
+Pactual , which is derived from the standardized validation questionnaire. Lower MAE indicates higher accuracy in matching the user’s desired personality intensity. • Pearson Correlation ( r): This metric assesses the linearity and monotonicity of the control mechanism. We evaluate the model on a se-quence of uniformly spaced target intensities (e.g., 0, 10 , . . . , 100 ) and calculate the Pearson correlation coefficient between these input tar-gets and the measured output intensities. A value close to 1.0 indicates that the model’s behav-ior changes monotonically and predictably in response to the control signal, which is essential for reliable continuous control. 
+
+4.1.3 Baselines 
+
+We compare Fusian against several strong base-lines: • Prompt Engineering: This method utilizes carefully designed system prompts specifying the desired intensity (e.g., "You are 70% Ex-traverted..."). Both the base Qwen3-14B and 
+
+gpt-5-mini are evaluated to benchmark the capa-bilities of in-context learning. • Standard LoRA: This baseline selects the LoRA checkpoint from the SFT trajectory that is closest to the target intensity, rather than using the final converged model. • PISF: A baseline method introduced by Chen et al. (2024) for controlling the personality of large language models. • Personality Vector (P-Vector): A model merg-ing method from Sun et al. (2025) that controls trait intensity by scaling a pre-computed "Per-sonality Vector" with a manual coefficient. 
+
+4.1.4 Implementation Details Stage 1 (SFT) We adopt Qwen3-14B as the base model and perform trait-specific instruction tun-ing using LoRA. We use LoRA with rank r = 8 ,
+
+α = 32 , and dropout 0.05 , targeting the q_proj 
+
+and v_proj modules. The learning rate is set to 
+
+2 × 10 −4 with a cosine scheduler. We save LoRA checkpoints after every gradient update step to cap-ture the training trajectory. Backbone Method E I N S F T P J Overall 
+
+Mean Absolute Error (MAE) ↓
+
+gpt-5-mini Prompt 10.98 17.49 15.38 11.95 13.18 18.89 17.29 14.58 14.97 Qwen3-14B Prompt 35.45 23.35 20.97 21.24 24.88 22.71 23.64 23.43 24.46 Qwen3-14B LoRA 9.58 8.60 13.81 5.00 12.87 12.80 8.54 10.26 10.18 Qwen3-14B PISF 16.54 19.32 16.25 17.62 20.68 20.63 19.37 22.25 19.08 Qwen3-14B P-Vector 13.50 11.80 16.93 10.53 11.21 7.51 8.16 11.27 11.36 Qwen3-14B Fusian 8.26 6.75 11.88 4.49 4.95 5.44 6.35 6.21 6.79 Pearson Correlation ( r) ↑
+
+gpt-5-mini Prompt 0.59 -0.57 0.67 0.47 0.45 0.68 0.05 0.45 0.35 Qwen3-14B Prompt -0.78 0.33 -0.38 0.50 0.17 0.67 0.41 0.44 0.17 Qwen3-14B LoRA 0.64 0.76 0.54 0.94 0.49 0.75 0.71 0.70 0.69 Qwen3-14B PISF 0.20 -0.28 -0.17 -0.36 -0.13 0.14 0.17 0.26 -0.02 Qwen3-14B P-Vector 0.53 0.70 -0.15 0.68 0.84 0.84 0.79 0.75 0.62 Qwen3-14B Fusian 0.75 0.85 0.79 0.96 0.97 0.93 0.89 0.90 0.88 
+
+> Table 1: Performance comparison on MBTI personality control. We report Mean Absolute Error (MAE, lower is better) and Pearson Correlation ( r, higher is better).
+
+Stage 2 (RL) The Policy Network is imple-mented as an MLP with hidden size 128. We train the policy using the AdamW optimizer with a learn-ing rate of 1 × 10 −3 for 20 epochs. Additional implementation details and hyperpa-rameters are provided in Appendix A. 
+
+4.2 Performance Comparison 
+
+Table 1 presents the main results across four MBTI dimensions. We observe that Fusian consistently outperforms all baseline methods in terms of both precision (MAE) and linearity (Pearson r). 
+
+Limitations of Prompt Engineering The results highlight the inherent difficulty LLMs face in inter-preting numerical intensity constraints via natural language. Even the advanced gpt-5-mini model achieves an overall MAE of 14.97 and a low cor-relation of 0.35. While it understands the general direction of a trait, it struggles to distinguish be-tween fine-grained intensities (e.g., 60% vs. 80%). The base Qwen3-14B model performs significantly worse with prompting (MAE 24.46), often default-ing to a generic persona regardless of the specified intensity. This confirms that prompt engineering is insufficient for precise continuous control. 
+
+Effectiveness of Parameter-Space Methods 
+
+Methods operating in the parameter space ( LoRA ,
+
+Personality Vector , and Fusian ) demonstrate a clear advantage over prompting. The Standard LoRA baseline, which selects the discrete check-point closest to the target, achieves a respectable MAE of 10.18 and correlation of 0.69. This val-idates our hypothesis that the SFT trajectory nat-urally encodes the personality spectrum. We also evaluate the Personality Vector method, which controls intensity by scaling a difference vector. It demonstrates strong performance on specific traits, particularly Thinking (T), Feeling (F), Perceiving (P), and Judging (J), where it achieves Pearson cor-relations ranging from 0.75 to 0.84. This suggests that for certain well-defined traits, a linear vector operation in parameter space is effective. However, its overall precision (MAE 11.36) is still lower than Fusian, and it exhibits instability in other dimen-sions. 
+
+Challenges in the Intuition (N) Dimension Anotable observation from Table 1 is the difficulty most methods face in controlling the "Intuition" (N) dimension. The Pearson correlation coefficients for Prompt (Qwen3-14B), PISF, and Personality Vector are all negative ( −0.38 , −0.17 , and −0.15 ,respectively), indicating a failure to establish a monotonic control relationship. We hypothesize that this is because the "Intuition" trait, which is characterized by abstract thinking, patterns, and fu-ture possibilities, is more linguistically subtle and context-dependent than traits like "Thinking" or "Feeling". The semantic cues for N might be less linearly separable in the parameter space, causing Model MAE ↓ r ↑
+
+Fusian 4.95 0.97 
+
+w/o Dynamic Fusion 10.02 0.53 w/o Stable Basis 9.21 0.77 w/o Aggressive Reward 7.08 0.86 
+
+> Table 2: Ablation study of different components in Fu-sian.
+
+simple scaling or prompting methods to misalign. In contrast, Fusian maintains a high correlation of 0.79 on the N dimension, proving that the RL-driven dynamic fusion can effectively navigate this complex, non-linear manifold. 
+
+Superiority of Fusian Fusian bridges these gaps by dynamically fusing adapters. It achieves the low-est overall MAE of 6.79 and the highest Pearson correlation of 0.88 . Specifically, on the "Think-ing" (T) dimension, Fusian reduces the error by over 50% compared to standard LoRA (MAE 5.44 vs. 12.80). The high correlation indicates that Fu-sian provides a smooth, monotonic control knob, whereas other methods often exhibit jumpy or in-consistent behavior. The PISF baseline, while ef-fective for other tasks, fails to establish a linear control relationship in this context (correlation near zero), likely due to its inability to model the con-tinuous manifold of personality traits explicitly. In summary, Fusian’s RL-driven fusion strategy effectively learns the non-linear mapping between parameter mixing weights and semantic output in-tensity, enabling precise and continuous personality regulation that static baselines cannot match. 
+
+4.3 Ablation Study 
+
+We conduct ablation studies to examine the impact of key components in Fusian and verify their ne-cessity for precise personality control. The results are summarized in Table 2. 
+
+Effect of RL-based Dynamic Fusion We inves-tigate the impact of the RL-based fusion module by replacing it with a deterministic Linear Interpola-tion strategy (w/o Dynamic Fusion). Instead of a learned policy, this baseline selects the two basis adapters closest to the target intensity and computes weights via linear interpolation. As presented in Ta-ble 2, this results in a significant performance drop, with MAE increasing from 4.95 to 10.02 and Pear-son correlation falling from 0.97 to 0.53. These results highlight that the relationship between the LoRA parameter space and the resulting person-ality intensity is complex and non-linear. The RL agent effectively learns to navigate this non-linear manifold, adjusting weights to correct for semantic deviations that simple interpolation cannot capture. 
+
+Impact of Stable Basis Selection To evaluate the importance of filtering out unstable checkpoints, we conduct an experiment where we remove the variance threshold (w/o Stable Basis), effectively disabling the stability filter. This allows the in-clusion of adapters from training steps where the model exhibits high fluctuation in trait intensity. As shown in Table 2, removing this component results in a significant performance drop: MAE in-creases from 4.95 to 9.21, and Pearson correlation decreases from 0.97 to 0.77. These results indicate that the SFT trajectory contains "noisy" regions where the parameter updates do not correspond to stable semantic shifts. Including these unstable checkpoints in the basis set disrupts the continuity of the personality manifold, making it difficult for the policy network to learn a consistent fusion strat-egy. The stable basis selection is therefore crucial for constructing a reliable interpolation space. 
+
+Reward Function Design Finally, we analyze the impact of our reward shaping strategy. In 
+
+Fusian , we employ an aggressive reward func-tion combining exponential decay ( e−λ|dif f |) with a discrete bonus for high precision. We com-pare this against a standard linear reward function (R = 1 − | dif f |), denoted as "w/o Aggressive Re-ward". As shown in Table 2, reverting to a linear reward leads to a degradation in performance, with MAE increasing to 7.08 and Pearson correlation dropping to 0.86. The linear reward provides con-stant gradients regardless of proximity to the target, which fails to incentivize the policy to fine-tune the weights once the output is reasonably close. In con-trast, the aggressive formulation provides sharper gradients as the error approaches zero, effectively forcing the policy to seek the optimal mixture for precise intensity alignment. In summary, the ablation results demonstrate that Fusian’s performance is not due to any single fac-tor but the synergy of its components. The stable basis selection ensures a high-quality interpolation space, the aggressive reward function provides the necessary optimization pressure for precision, and the RL-based dynamic fusion effectively navigates the non-linear parameter-to-personality mapping. Removing any of these elements leads to a demon-Intensity Generated Response        
+
+> Low F (20%) First, analyze specifically what went wrong during the presentation. Was it the content or the delivery? You should practice public speaking tech-niques to control your nervousness next time. Failure is just data for im-provement. Medium F (50%) It is normal to feel bad after a mistake, but don’t be too hard on yourself. Try to reflect on what happened so you can do better next time. Maybe take a break first, then review your perfor-mance. High F (80%) I am so sorry to hear that! Please don’t say you are a failure. One bad moment doesn’t define you. You worked so hard, and that effort still counts. It’s okay to be upset right now, just be kind to yourself. Send-ing you a big hug!
+
+Table 3: Case study on the "Feeling" dimension. As the target intensity increases, the model shifts from analyti-cal problem-solving to emotional support. 
+
+strable degradation in control capability. 
+
+4.4 Case Study 
+
+To qualitatively evaluate Fusian’s ability to control personality intensity, we conduct a case study on the "Feeling" (F) dimension. We query the model with a scenario involving personal failure and emo-tional distress: "I spent two weeks preparing for a presentation, but I messed it up today because I was too nervous. I feel like a total failure. What should I do?" . Table 3 presents the responses generated by Fusian at three distinct target intensities. The results illustrate a smooth semantic transi-tion. At low intensity (20%, corresponding to high "Thinking"), the model prioritizes objective analy-sis and future correction, treating the user’s distress as a problem to be solved logically. As the inten-sity increases to 50%, the model adopts a balanced approach, acknowledging the emotion while offer-ing constructive advice. At high intensity (80%), the persona shifts entirely to an empathetic sup-porter, using emotional language and focusing on validating the user’s worth rather than immediate problem-solving. This confirms that Fusian effec-tively manipulates the underlying semantic focus of the model. 
+
+4.5 Analysis of Personality Manifold 
+
+To gain a deeper understanding of the properties of the learned personality subspace, we analyze the training trajectory captured in Stage 1 (Figure 3). 0 20 40 60 80 100 120 140 160 
+
+> Training Step
+> 50
+> 60
+> 70
+> 80
+> 90
+> 100
+> Intensity (%)
+> Training Trajectory of F Personality Manifold
+
+Figure 3: The personality manifold from the SFT trajec-tory. Trait intensity evolution reveals non-monotonicity and diminishing returns. 
+
+The selection of LoRA adapters reveals two critical characteristics of the optimization landscape. 
+
+Non-Monotonicity and Local Fluctuations 
+
+Contrary to the assumption that trait intensity in-creases monotonically with training steps, we ob-serve local fluctuations in the early phases. For instance, in the "Feeling" (F) trajectory, the adapter at Step 3 exhibits a higher trait intensity ( 61 .22% )than Step 6 ( 51 .06% ). This instability suggests that the model’s traversal of the personality manifold is noisy initially. Consequently, our Stable Basis Selection strategy, which filters based on variance and value rather than step count, is essential for constructing a reliable interpolation basis. 
+
+Diminishing Returns The distribution of se-lected checkpoints highlights a "diminishing re-turns" phenomenon. The model rapidly acquires the majority of the trait intensity (reaching ∼ 96% 
+
+by Step 38) but requires a disproportionately large number of steps to perfect the final increment (ex-tending to Step 119 for 100% ). This indicates that the gradient of personality intensity flattens signifi-cantly near the extremes, making the "long tail" of training crucial for achieving full intensity control. 
+
+5 Conclusion 
+
+We introduce Fusian, a framework addressing the lack of fine-grained and continuous personality con-trol in large language models. Departing from dis-crete or prompt-based strategies, Fusian leverages the latent structure of SFT trajectories and performs RL-driven Multi-LoRA fusion to model personal-ity as a continuous manifold. Through dynamic weight computation over trajectory checkpoints, our approach enables precise and stable intensity alignment while accounting for the non-linear pa-rameter–semantic relationship. Limitations 
+
+Our current framework is designed to control a single MBTI dimension at a time. Extending the methodology to simultaneously fuse adapters from multiple, potentially interacting dimensions (e.g., Extraversion and Thinking) to compose a complete personality profile requires further exploration. Ad-ditionally, the computational cost of evaluating the model during the RL phase is non-trivial, although the training is done offline. 
+
+References 
+
+Josh Achiam, Steven Adler, Sandhini Agarwal, Lama Ahmad, Ilge Akkaya, Florencia Leoni Aleman, Diogo Almeida, Janko Altenschmidt, Sam Altman, Shyamal Anadkat, and 1 others. 2023. Gpt-4 techni-cal report. arXiv preprint arXiv:2303.08774 .Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared D Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, and 1 others. 2020. Language models are few-shot learners. Advances in neural information processing systems , 33:1877–1901. Yanquan Chen, Zhen Wu, Junjie Guo, Shujian Huang, and Xinyu Dai. 2024. Extroversion or introversion? controlling the personality of your large language models. arXiv preprint arXiv:2406.04583 .Yirong Chen, Weiquan Fan, Xiaofen Xing, Jianxin Pang, Minlie Huang, Wenjing Han, Qianfeng Tie, and Xi-angmin Xu. 2022. Cped: A large-scale chinese per-sonalized and emotional dialogue dataset for conver-sational ai. arXiv preprint arXiv:2205.14727 .Yuhao Dan, Jie Zhou, Qin Chen, Junfeng Tian, and Liang He. 2025. P-react: Synthesizing topic-adaptive reactions of personality traits via mixture of special-ized lora experts. In Findings of the Association for Computational Linguistics: ACL 2025 , pages 6342– 6362. Ameet Deshpande, Vishvak Murahari, Tanmay Rajpuro-hit, Ashwin Kalyan, and Karthik Narasimhan. 2023. Toxicity in chatgpt: Analyzing persona-assigned lan-guage models. In Findings of the association for com-putational linguistics: EMNLP 2023 , pages 1236– 1270. Tim Dettmers, Artidoro Pagnoni, Ari Holtzman, and Luke Zettlemoyer. 2023. Qlora: Efficient finetuning of quantized llms. Advances in neural information processing systems , 36:10088–10115. Neil Houlsby, Andrei Giurgiu, Stanislaw Jastrzebski, Bruna Morrone, Quentin De Laroussilhe, Andrea Gesmundo, Mona Attariyan, and Sylvain Gelly. 2019. Parameter-efficient transfer learning for nlp. In In-ternational conference on machine learning , pages 2790–2799. PMLR. Edward J Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Liang Wang, Weizhu Chen, and 1 others. 2022. Lora: Low-rank adaptation of large language models. Iclr , 1(2):3. Gabriel Ilharco, Marco Tulio Ribeiro, Mitchell Worts-man, Ludwig Schmidt, Hannaneh Hajishirzi, and Ali Farhadi. 2023. Editing models with task arithmetic. In The Eleventh International Conference on Learn-ing Representations .Brian Lester, Rami Al-Rfou, and Noah Constant. 2021. The power of scale for parameter-efficient prompt tuning. In Proceedings of the 2021 conference on empirical methods in natural language processing ,pages 3045–3059. Xiang Lisa Li and Percy Liang. 2021. Prefix-tuning: Optimizing continuous prompts for generation. In 
+
+Proceedings of the 59th Annual Meeting of the Asso-ciation for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing (Volume 1: Long Papers) , pages 4582– 4597. Robert R McCrae and Oliver P John. 1992. An intro-duction to the five-factor model and its applications. 
+
+Journal of personality , 60(2):175–215. Marilù Miotto, Nicola Rossberg, and Bennett Kleinberg. 2022. Who is gpt-3? an exploration of personal-ity, values and demographics. In Proceedings of the Fifth Workshop on Natural Language Processing and Computational Social Science (NLP+ CSS) , pages 218–227. Long Ouyang, Jeffrey Wu, Xu Jiang, Diogo Almeida, Carroll Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, and 1 others. 2022. Training language models to follow in-structions with human feedback. Advances in neural information processing systems , 35:27730–27744. Joon Sung Park, Joseph O’Brien, Carrie Jun Cai, Mered-ith Ringel Morris, Percy Liang, and Michael S Bern-stein. 2023. Generative agents: Interactive simulacra of human behavior. In Proceedings of the 36th an-nual acm symposium on user interface software and technology , pages 1–22. Rafael Rafailov, Archit Sharma, Eric Mitchell, Christo-pher D Manning, Stefano Ermon, and Chelsea Finn. 2023. Direct preference optimization: Your language model is secretly a reward model. Advances in neural information processing systems , 36:53728–53741. Murray Shanahan, Kyle McDonell, and Laria Reynolds. 2023. Role play with large language models. Nature ,623(7987):493–498. Yunfan Shao, Linyang Li, Junqi Dai, and Xipeng Qiu. 2023. Character-llm: A trainable agent for role-playing. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing ,pages 13153–13187. Lei Sun, Jinming Zhao, and Qin Jin. 2024. Reveal-ing personality traits: A new benchmark dataset for explainable personality recognition on dialogues. In Proceedings of the 2024 Conference on Empiri-cal Methods in Natural Language Processing , pages 19988–20002. Seungjong Sun, Seo Yeon Baek, and Jang Hyun Kim. 2025. Personality vector: Modulating personality of large language models by model merging. In Pro-ceedings of the 2025 Conference on Empirical Meth-ods in Natural Language Processing , pages 24667– 24688. Hugo Touvron, Louis Martin, Kevin Stone, Peter Al-bert, Amjad Almahairi, Yasmine Babaei, Nikolay Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti Bhosale, and 1 others. 2023. Llama 2: Open foun-dation and fine-tuned chat models. arXiv preprint arXiv:2307.09288 .Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. 2017. Attention is all you need. Advances in neural information processing systems , 30. Noah Wang, Zy Peng, Haoran Que, Jiaheng Liu, Wangchunshu Zhou, Yuhan Wu, Hongcheng Guo, Ruitong Gan, Zehao Ni, Jian Yang, and 1 others. 2024a. Rolellm: Benchmarking, eliciting, and en-hancing role-playing abilities of large language mod-els. In Findings of the Association for Computational Linguistics: ACL 2024 , pages 14743–14777. Xintao Wang, Yunze Xiao, Jen-tse Huang, Siyu Yuan, Rui Xu, Haoran Guo, Quan Tu, Yaying Fei, Ziang Leng, Wei Wang, and 1 others. 2024b. Incharacter: Evaluating personality fidelity in role-playing agents through psychological interviews. In Proceedings of the 62nd annual meeting of the association for computational linguistics (volume 1: Long papers) ,pages 1840–1873. Mitchell Wortsman, Gabriel Ilharco, Samir Ya Gadre, Rebecca Roelofs, Raphael Gontijo-Lopes, Ari S Mor-cos, Hongseok Namkoong, Ali Farhadi, Yair Car-mon, Simon Kornblith, and 1 others. 2022. Model soups: averaging weights of multiple fine-tuned mod-els improves accuracy without increasing inference time. In International conference on machine learn-ing , pages 23965–23998. PMLR. Prateek Yadav, Derek Tam, Leshem Choshen, Colin A Raffel, and Mohit Bansal. 2023. Ties-merging: Re-solving interference when merging models. Ad-vances in neural information processing systems ,36:7093–7115. Xiaoyan Yu, Tongxu Luo, Yifan Wei, Fangyu Lei, Yim-ing Huang, Hao Peng, and Liehuang Zhu. 2024. Neeko: Leveraging dynamic lora for efficient multi-character role-playing agent. In Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing , pages 12540–12557. Saizheng Zhang, Emily Dinan, Jack Urbanek, Arthur Szlam, Douwe Kiela, and Jason Weston. 2018. Per-sonalizing dialogue agents: I have a dog, do you have pets too? In Proceedings of the 56th Annual Meet-ing of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 2204–2213. Jinfeng Zhou, Zhuang Chen, Dazhen Wan, Bosi Wen, Yi Song, Jifan Yu, Yongkang Huang, Pei Ke, Guan-qun Bi, Libiao Peng, and 1 others. 2024. Character-glm: Customizing social characters with large lan-guage models. In Proceedings of the 2024 conference on empirical methods in natural language processing: Industry track , pages 1457–1476. Daniel M Ziegler, Nisan Stiennon, Jeffrey Wu, Tom B Brown, Alec Radford, Dario Amodei, Paul Chris-tiano, and Geoffrey Irving. 2019. Fine-tuning lan-guage models from human preferences. arXiv preprint arXiv:1909.08593 .A Additional Training Details 
+
+Adapter Selection From the trajectory library, we select N = 10 stable adapters using a sliding window variance filter with window size W = 3 
+
+and variance threshold σ2 
+
+> thresh
+
+= 10 .0.
+
+Policy Network and Sampling The Policy Net-work outputs the concentration parameters of a Dirichlet distribution used to sample LoRA fusion weights. A small offset ϵ = 0 .01 is added to the Dirichlet parameters to ensure numerical stability. 
+
+Sampling Strategy In each training epoch, we sample 32 target personality values uniformly across the controllable range using evenly spaced points with small random perturbations. 
+
+Reward and Baseline The reward uses the expo-nential shaping function described in Equation 4. The reward scaling factor is set to λ = 20 .0. A bonus reward B = 0 .5 is added when the abso-lute prediction error is below δ = 0 .01 . To reduce variance, we use an exponential moving average baseline with decay rate 0.95 .
+
+Optimization Training uses gradient accumula-tion with 4 steps. Gradients are clipped to a maxi-mum norm of 0.5 to stabilize policy updates. 
+
+Entropy Regularization The entropy coefficient is initialized at 0.1 and decays by a factor of 0.9
+
+per epoch, with a minimum value of 0.01 .

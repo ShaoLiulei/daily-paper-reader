@@ -1,0 +1,23485 @@
+Title: Learning to Recall with Transformers Beyond Orthogonal Embeddings
+
+URL Source: https://arxiv.org/pdf/2603.15923v1
+
+Published Time: Wed, 18 Mar 2026 00:25:46 GMT
+
+Number of Pages: 75
+
+Markdown Content:
+# Learning to Recall with Transformers Beyond Orthogonal Embeddings 
+
+## Nuri Mert Vural ∗
+
+## , Alberto Bietti †
+
+## , Mahdi Soltanolkotabi ‡
+
+## , Denny Wu §
+
+## March 18, 2026 
+
+Abstract 
+
+Modern large language models (LLMs) excel at tasks that require storing and retrieving knowledge, such as factual recall and question answering. Transformers are central to this capability because they can encode information during training and retrieve it at inference. Existing theoretical analyses typ-ically study transformers under idealized assumptions such as infinite data or orthogonal embeddings. In realistic settings, however, models are trained on finite datasets with non-orthogonal (random) em-beddings. We address this gap by analyzing a single-layer transformer with random embeddings trained with (empirical) gradient descent on a simple token-retrieval task, where the model must identify an informative token within a length-L sequence and learn a one-to-one mapping from tokens to labels. Our analysis tracks the “early phase” of gradient descent and yields explicit formulas for the model’s storage capacity—revealing a multiplicative dependence between sample size N , embedding dimension d, and sequence length L. We validate these scalings numerically and further complement them with a lower bound for the underlying statistical problem, demonstrating that this multiplicative scaling is intrinsic under non-orthogonal embeddings. Code to reproduce all experiments is publicly available. 1
+
+# 1 Introduction 
+
+Large language models (LLMs) routinely answer knowledge questions with little or no external context, indicating that substantial factual information is stored in parameters and can be retrieved by suitable prompts [PRL +19, JXAN20, RRS20]. A deeper theoretical understanding of how such parametric memories are learned and accessed is increasingly important: it can guide scaling choices (e.g., trading off memory capacity against compute budgets, [CIJ +22, AZL24]) and clarify failure modes (e.g., hallucination, [ZBC +25, HZG +25]). Motivated by empirical results documenting the prevalence of parametric factual recall and its scaling with model size [AZL24, MSG +25], recent theoretical works have begun to analyze the capacity and learning dynamics of transformers on controlled factual-recall tasks [CDB24, NLB25]. Many theoretical studies of transformer optimization work in population-dynamics settings and adopt simplifying assumptions, such as treating token embeddings as orthogonal or one-hot vectors (see, e.g., [TWZ +23, CSWY24, GHR24]). While these choices do not always reflect practical applications, they make the mathematics, particularly gradient calculations, more tractable, and population analyses of this kind do not characterize the statistical or computational complexity of gradient-based learning. In factual-recall setups, strictly orthogonal embeddings are known not to be capacity-optimal, whereas random or non-orthogonal embeddings (i.e., superposition ) enable near-optimal factual storage [NLB25]. At the same time, removing the orthogonality assumption introduces token interference that leads to intricate optimization be-havior (e.g., oscillatory trajectories [CSB24]), and in practice, superposition-based, memory-efficient solutions      
+
+> ∗University of Toronto and Vector Institute. vural@cs.toronto.edu . Work done while interning at the Flatiron Institute.
+> †Flatiron Institute. abietti@flatironinstitute.org .
+> ‡University of Southern California. soltanol@usc.edu .
+> §New York University and Flatiron Institute. dennywu@nyu.edu .
+> 1Code available at https://github.com/nurimertvural/learning-to-recall-experiments .
+
+1
+
+> arXiv:2603.15923v1 [stat.ML] 16 Mar 2026
+
+can also be more difficult to train [EHO +22], which highlight a fundamental trade-off between optimization and statistical efficiency versus storage capacity. Motivated by the above gaps, we aim to address the following question. 
+
+Can we characterize the optimization and sample complexity of a transformer with non-orthogonal embeddings trained by gradient descent in the learning of a factual recall task? 
+
+## 1.1 Our Contributions 
+
+In this paper, we analyze gradient-based learning of a single-layer transformer with an attention+MLP block and random embeddings on a synthetic task inspired by [NLB25]: the model must retrieve an informative token from a context containing many noisy tokens via attention, then map it to the correct label via factual recall. To mitigate the complex optimization dynamics arising from non-orthogonal embeddings, we follow [BCB +23, ORST23] and consider a simplified training regime involving only a few gradient steps with finite samples on the attention and value matrices. This perspective effectively zooms in the “early phase” of the training as commonly studied in the feature-learning literature [BES +22, DLS22, DKL +23, VE24, WNB +25]. Our analysis provides a fine-grained characterization of how vocabulary size V , sample size N , embedding dimension d, sequence length L, and MLP width m interact to permit successful gradient-based learning of the recall mechanism. Our main result states that 
+
+• The success of learning depends on ( V, N, d, L, m ) in a multiplicative manner: learning becomes easier as (N, d, m ) increase, which reflects the benefits of more data, higher-dimensional (and thus more orthogonal) embeddings, and larger MLP width; whereas learning becomes harder as ( V, L ) increase; that is, the task becomes more difficult with a larger vocabulary or longer sequences. This multiplicative relation is visualized in Figure 1a, where we examine how the parameter size m × d depends on the vocabulary size V
+
+for different sequence lengths L. The full phase diagram corresponding to this relation, which formalizes Figure 1a, is shown in Figure 1b. 
+
+• Consequently, while optimal capacity and sample complexity can be achieved jointly for short sequences, successful learning on long sequences requires either a larger embedding dimension (thus sacrificing capac-ity) or larger sample sizes (worsening statistical complexity). The multiplicative rate above formalizes the “tradeoff” intuition that smaller embedding dimension d —which increases superposition and thereby improves storage capacity — simultaneously yields a harder learning problem, as reflected in the required sample size. We complement this with a statistical lower bound showing that the trade-off is inherent for any estimator that accesses only gradient information from the initialized transformer. Finally, although our theory is derived for a specific three-step training algorithm, we empirically observe qualitatively similar multiplicative scaling when the transformer is optimized by gradient descent to low empirical risk. 
+
+## 1.2 Related Work 
+
+Learning dynamics of transformers. A growing line of work analyzes how transformers acquire spe-cific behaviors from gradient-based training. Much of this literature imposes population-level assumptions and orthogonal/one-hot embeddings to make gradients tractable, often on discrete synthetic tasks [LLR23, BCB +23, TWCD23, NDL24, CSWY24, GHR24, CBB25, WNB +25]. Several works study few-step training regimes as a lens on the “early phase” of feature learning [BCB +23, WNB +25]. Beyond discrete settings, related analyses investigate attention learning for continuous inputs and sparse-signal retrieval [ORST23, MBBB25, DMB +26]. A complementary thread focuses on the emergence of in-context learning and induc-tion mechanisms: single- and two-layer attention trained on linear-regression or Markov data provably imple-ments gradient-descent-like updates and generalized induction heads [VONR +23, ZFB24, CSWY24, NDL24]. These results typically rely on simplified settings and do not address storage capacity. In contrast, our work analyzes finite-sample training with non-orthogonal embeddings in an attention+MLP architecture with a particular focus on factual recall. 2(a)                
+
+> No Learning (md ≪V)
+> vocab size ( V)
+> width ( m)
+> Slope  ≍ d
+> Slope ≍1/d
+> Mean Bias
+> md ≳mL 43
+> V23N23
+> Gradient Noise
+> md ≳mL 14
+> √N
+
+MLP Noise    
+
+> md ≳V√mL 2
+> N
+> dL
+> d2L
+
+(b) 
+
+Figure 1: (a) Empirical scaling of the parameter size required for a GD-trained one-layer transformer to learn factual recall, where we use m ≍ d2 (see Section 4.2 for details). For small L, the trained model achieves the optimal capacity 
+
+V ≍ md (purple line). As the sequence length L increases, the scaling changes, suggesting a multiplicative rate (blue and red lines). (b) Phase diagram for the theoretical scaling of the parameter count given in Corollary 2. Each region corresponds to a regime where a particular noise term in Theorem 1 is dominant. The parameter-size condition ( md )in each region is given in Corollary 2. 
+
+Associative memories and storage capacity. Classical associative memories (Hopfield-type models) study recall of vector patterns and established foundational capacity results [Hop82, AGS85, MPRV88, KH16, DHL +17, RSL +20, SIS21]. Recent works adapt associative-memory viewpoints to transformers, modeling inner weights as superpositions of outer products and deriving scaling laws and optimization behav-iors [BCB +23, CDB24, CSB24]. In factual recall specifically, random (non-orthogonal) embeddings enable near-parameter-count storage, whereas strictly orthogonal embeddings are not capacity-optimal [NLB25]. Various empirical works have studied the mechanisms and scaling behaviors of LLMs in factual association tasks [PRL +19, JXAN20, GSBL20, AZL24]. We provide a theoretical analysis of such mechanisms and quantify how vocabulary size, sequence length, embedding dimension, and MLP width jointly govern learn-ing efficiency. Our work operates in a setting similar to [NLB25] but allows finite samples and explicitly considers gradient descent dynamics. Our result is similar to the finite-sample results in [ORST23], where the required sample size grows with the dimensionality and sparsity level of informative tokens, while we allow non-orthogonal embeddings and show optimal capacity as in [NLB25] under certain conditions. 
+
+# 2 Problem Setting 
+
+Our goal is to understand the capacity of transformers trained on finite data with non-orthogonal embeddings, in a setting where the relevant information is hidden in a potentially large sequence of non-informative noisy tokens. The attention operation should then identify the relevant token, while the subsequent linear or MLP block can then recall the correct label via an associative memory mechanism. This is similar to the factual recall task studied by [NLB25], with simplifications that make the analysis more tractable, as detailed below. 
+
+Notation. σ denotes the softmax function. 1V := (1 , . . . , 1) ⊤ ∈ RV is the V -dimensional all-ones vector; 
+
+ei is the one-hot vector with a 1 in the i-th position (dimension understood from context). We use ≳ (resp. 
+
+≲) to mean “ ≥” (resp. “ ≤”) up to polylogarithmic factors in V : fV ≳ gV ⇐⇒ fV ≥ poly(log V )gV and 
+
+fV ≲ gV ⇐⇒ fV ≤ poly(log V )gV , for some fixed polynomial. Lastly, ∥·∥ 2 denotes the Euclidean norm for vectors and the operator (spectral) norm for matrices. 
+
+Problem setup. Let the input/output tokens take values from a finite alphabet [ V ] := {1, · · · , V }. For notational convenience, we represent the alphabet by the one-hot vocabulary V = {e1, · · · , eV }. Each example in the data consists of a length-L input sequence X = [ x1, . . . , xL] ∈ V L and a label p ∈ V 
+
+generated as follows: 3• Input tokens are sampled independently and uniformly: [ x1, . . . , xL] ∼ Unif( VL). 
+
+• Informative position is a random index ℓ ∼ Unif([ L]) independent of X.
+
+• Ground-truth function is a permutation matrix Π∗ ∈ { 0, 1}V ×V . Labels are generated as the permuted informative token, p = Π∗xℓ, while the remaining tokens are non-informative. The goal is to identify the correct token position ℓ and learn the target function (permutation) Π∗.
+
+Transformer architecture. We consider a basic transformer block which first maps input tokens into a d-dimensional embedding space where d < V . The embedding layer is parameterized by ( Zin , Zout , ztrig , zEOS ) ∈
+
+Rd×V × Rd×V × Rd × Rd, where 
+
+• The input tokens are embedded by the columns of the matrix Zin ∈ Rd×V .
+
+• Output tokens are associated with unembedding vectors, which are collected in Zout ∈ Rd×V .
+
+• ztrig is a trigger vector that marks the informative token. 
+
+• zEOS is the special embedding vector that marks the end-of-sequence. Given the embedding parameters, we define the self-attention head, parameterized by the key-query matrix 
+
+WKQ ∈ Rd×d, which operates on the embedded sequence of inputs Zin X ∈ Rd×L:attn( X; WKQ ) := Zin Xσ
+
+
+
+(ztrig e⊤ 
+
+> ℓ
+
++ Zin X)⊤WKQ zEOS 
+
+
+
+. (2.1) The trigger embedding ztrig is used to “mark” the informative token with a special direction, mimicking the behavior of previous transformer layers that may learn to flag particular tokens by adding to its residual stream 2 (note that the number of trainable parameters inside softmax can be reduced to d by collapsing 
+
+WKQ zEOS into a vector). We consider two different learning models: an Attention-only model and a width-
+
+m, two-layer neural network model Attention-MLP , defined as: ˆp(X; V , WKQ ) = 
+
+
+
+σ
+
+
+
+Z⊤
+
+> out
+
+V attn( X; WKQ )
+
+
+
+, Attention only 
+
+σ
+
+
+
+Z⊤
+
+> out
+
+V ϕ(Win attn( X; WKQ )
+
+
+
+, Attention-MLP (2.2) where V ∈ Rd×d for the Attention-only and V ∈ Rd×m, Win ∈ Rm×d for the Attention-MLP model. Note that compared with Attention-only model, the Attention-MLP model contains an additional set of trainable parameters and nonlinear activation function ϕ before the value matrix. Similar to in [NLB25], the MLP allows using a smaller embedding dimension d while keeping the capacity large by increasing width m.For the Attention-MLP , we keep Win fixed at its random initialization. The trainable parameters for both of our models are ( V , WKQ ). We use cross-entropy loss to train our model: 
+
+L (V , WKQ ), (X, p) = − PVi=1 pi log ˆ pi.
+
+Training algorithm. Following [ORST23], we consider a 3-step gradient-based algorithm with dataset 
+
+{(Xi, pi)}Ni=1 with a sample size of N . We initialize our parameters as V (0) = 0, W (0) KQ = 0 and use the learning rates η, γ > 0: 
+
+V (1) = V (0) − η · 1
+
+> N
+
+PNi=1 ∇V L (V (0) , W (0) KQ ); ( Xi, pi) (2.3) 
+
+W (1) KQ = W (0) KQ − γ · 1
+
+> N
+
+PNi=1 ∇WKQ L (V (1) , W (0) KQ ); ( Xi, pi) (2.4) 
+
+V (2) = V (1) − γ · 1
+
+> N
+
+PNi=1 ∇V L (V (1) , W (1) KQ ); ( Xi, pi). (2.5) 
+
+> 2The “trigger” terminology is borrowed from [BCB +23], where a special previous token “triggers” a retrieval operation in the context of induction heads. Our setup resembles learning only the “induction head” layer assuming the first “previous token head” layer is already in place. The triggers often appear to be single directions in interpretability literature, see, e.g., the “X in opposite of X” feature in [KAK +25].
+
+4Network prediction and storage. Given our model and training method, we use argmax decoding at inference and define the test accuracy as Accuracy := P(X,p)
+
+p = epred( X)
+
+, where pred( X) := arg max  
+
+> j∈[V]
+
+ˆpj (X; V (2) , W (1) KQ ),
+
+where ˆ p(X; V (2) , W (1) KQ ) is the network output defined in (2.2). In what follows, we characterize conditions under which the model stores the informative tokens asymptotically, i.e., Accuracy → 1 as V → ∞ , in terms of the relevant parameters ( V, N, d, L, m ). 
+
+# 3 Main Results 
+
+We first present our general theorem on learnability via gradient descent, and then specialize into different regimes to derive more interpretable scaling behaviors in Section 4. We provide a proof sketch in Section 5, and defer the full proof to Appendix C. 
+
+## 3.1 Technical Assumptions 
+
+We first state generic assumptions that apply to both the Attention-only and Attention-MLP models. 
+
+Assumption 1. 
+
+• Parameter range: Let L = V c for c ∈ (0 , 1) , Ω( V log V ) ≤ N = o(V L ), and V ≥ Ω(1) .
+
+• Learning rate: We use a sufficiently small learning rate η for the initial step (2.3) , and sufficiently large learning rate γ for the remaining steps (2.4) -(2.5) that satisfy Assumption 4. 
+
+• Embeddings: Let Zin , Zout ∈ Rd×V be independent Gaussian matrices, and let ztrig , zEOS ∈ Rd be independent Gaussian vectors, all with i.i.d. entries distributed as N (0 , 1/d).
+
+We assume c ∈ (0 , 1) since in many practical pretraining setups, the context length is smaller than the vocabulary size, and the condition L ≪ V simplifies several terms in the proofs. The lower bound N ≳
+
+V log V is required so that each element from the alphabet of size V is seen at least once with high probability. The learning rates follow prior analyses [ORST23, NDL24]: a small η ensures that the network’s predictions remain close to uniform after the first step, whereas a large γ is needed to push the attention scores and predictions toward one-hot vectors. In addition to the above assumptions, we require the transformer model to have sufficient capacity to reach perfect test accuracy. Such conditions are characterized by [NLB25]. For the Attention-only model, we have the following condition (see [NLB25, Theorem 3]). 
+
+Assumption 2 (Attention-only) . For the Attention-only model, we require d2 ≳ V .
+
+With a nonlinear MLP layer, a smaller embedding dimension can suffice if the width is large enough. Hence for Attention-MLP we require the following condition. 
+
+Assumption 3 (Attention-MLP) . For the Attention-MLP model, we assume that 
+
+• Polynomial activation: ϕ : R → R satisfies ϕ(0) , ϕ ′(0) , ϕ ′′ (0) ̸ = 0 .
+
+• MLP width: md ≳ V and d ≳ V 1 
+
+> k⋆ +1
+
+, where k⋆ denotes the smallest nonzero Hermite mode of ϕ, i.e., 
+
+k⋆ := min {k > 0 : EZ∼N (0 ,1) [ϕ(Z)hk(Z)] ̸ = 0 } where hk is the k th Hermite polynomial. 
+
+• Initialization: Win ∈ Rm×d are fixed with entries i.i.d. distributed as N (0 , 1) .
+
+The nonlinear MLP layer allows us to compensate for the embedding dimension and go beyond the d2 ≳ V
+
+lower bound required by the Attention-only model (Assumption 2). Note that md ≳ V is a necessary condi-tion for capacity as shown in [NLB25]. The additional requirements imposed on the polynomial activation function appear to be artifacts of our three-step GD analysis, and we conjecture that they could be relaxed when considering a longer training horizon. 53.2 Learnability Statement 
+
+Now we are ready to present our main theorem on the complexity of learning the factual recall task. Specifi-cally, the transformer learns the desired mechanism when the signal term dominates the noise and bias terms as stated below. 
+
+Theorem 1. Let Assumptions 1 and 3 hold for Attention-MLP , and 1 and 2 hold for Attention-only . The 
+
+Attention-MLP model achieves Accuracy = 1 − oV (1) with probability 1 − oV (1) whenever 
+
+1
+
+V L 2
+
+| {z } 
+
+> Signal
+
+≳ 1
+
+N √Ld (d ∧ L)
+
+| {z }
+
+> Gradient noise
+
++ 1
+
+N √V d (d ∧ L)
+
+| {z }
+
+> Mean bias
+
++ 1
+
+N d √m
+
+| {z }
+
+> MLP noise
+
+. (3.1) 
+
+For the Attention-only model, the same holds with the last MLP noise term removed. 
+
+Theorem 1 characterizes learnability as a function of ( V, N, d, L, m ) and identifies the following terms that impact the gradient signal-to-noise ratio: 1. Signal measures the alignment between the key–query weights W (1) KQ and the trigger ztrig .2. Gradient noise is due to the concentration error in the update of W (1) KQ .3. Mean bias arises from the nonzero mean of token vectors {Xi}Ni=1 .4. MLP noise reflects the randomness in the MLP weight matrix Win in Attention–MLP .We make the following observations. 
+
+• Multiplicative scaling. Note that the parameters ( V, N, d, L, m ) interact in a multiplicative fashion. For example, the noise and bias terms in (3.1) all decay with ( N × d), suggesting that increasing the embedding dimensions d can lower the statistical complexity of learning the correct recall mechanism. While the full 5-parameter trade-off can be opaque, in Section 4 we focus on specific regimes that lead to simplification of the scaling relationship and validate the rate empirically. 
+
+• Optimal storage & sample complexity. Recall that the capacity-optimal construction for the factual recall task requires md ≳ V parameters (or d2 ≳ V for Attention–only ); and as discussed earlier, a sample size N ≍ V log V is necessary to observe all distinct tokens. (3.1) implies that in the small-L regime, the optimized transformer achieve optimal capacity and sample complexity simultaneously. For longer sequences, however, these two conditions may not be achieved at the same time, i.e., one must increase either the network width or sample size beyond optimality to learn the task — this confirms the empirical observation in Figure 1. 
+
+## 3.3 Statistical Lower Bound 
+
+Theorem 1 provides an upper bound (i.e., sufficient condition) on the model and sample size for learning factual recall under a 3-gradient-step optimization procedure. We complement this sufficient condition with a lower bound indicating that the multiplicative dependence on the problem parameters is partly statistical; that is, the scaling behavior will be observed in any model satisfying the broader conditions stated below. Our lower bound applies to statistical methods that can query the dataset through the attention outputs at initialization, hi := attn( Xi, W (0) KQ ). In particular, we consider queries of the form hi as the gradient with respect to the key–query matrix WKQ depends on {hi, hih⊤ 
+
+> i
+
+}Ni=1 (see (B.1)). The statement is given below: 
+
+Theorem 2 (Informal) . Any method that relies on the noisy version of the queries {hi, hih⊤ 
+
+> i
+
+}Ni=1 fails, i.e., Accuracy ̸ → 1 with finite probability, if N ≲ V min {1, L/d 2}.
+
+The complete statement of Theorem 2 is deferred to Theorem 4 in Appendix E. We observe that the lower bound does not exactly match our upper bound in Theorem 1, as Signal ≲ Gradient Noise in (3.1) is stronger than the stated lower bound. This being said, Theorem 2 also confirms the multiplicative scaling, hence 6(a) N ≍ V log V (b) N ≍ V 1.5 (c) Attention only, L ≍ V
+
+Figure 2: Empirical scaling of parameter size via three-step GD for the Attention-only model. In (a) and (b), top-left and top-right use L ≍ V 0.5; bottom-left and bottom-right use L ≍ V . In (c), we compare the parameter counts from (a) and (b) for the L ≍ V case under two sample-size regimes, N ≍ V log V and N ≍ V 1.5. Line fitting: We identify in the heatmaps the smallest embedding dimension that achieves accuracies {0.1, 0.125 , 0.15 } and perform a least squares fit. The slopes of the fitted lines and their theoretical counterparts are reported on the heatmaps. 
+
+suggesting the trade-off between capacity and sample efficiency is present in a boarder class of learning algorithms. A stronger computational lower bound for transformers and gradient-based optimization is an interesting problem we leave for future work. 
+
+# 4 Implications and Empirical Verifications 
+
+In this section, we leverage our main theorem to obtain more concrete scalings between parameters, and present empirical evidence on the derived multiplicative rate. 
+
+## 4.1 Attention-only Model 
+
+We start with the Attention-only model which gives a simpler phase diagram. 
+
+Corollary 1. For the Attention-only model, the bottleneck term in (3.1) is the Mean bias term. Therefore, Theorem 1 is equivalent to the parameter size requirement d2 ≳ max {V, V 2/3L8/3/N 4/3}.
+
+We make the following observations: 
+
+• The condition in Corollary 1 is the maximum of two terms, where d2 ≳ V is due to the capacity require-ment in Assumption 2, whereas the second term ensures Signal ≳ Mean bias and implies a multiplicative scaling between the sample size N and embedding dimension d (i.e., increasing one of the parameters can compensate for the other). 
+
+• Note that the Mean bias term arises from a nonzero token mean, which can potentially be alleviated by centering the tokens, for instance through an appropriate normalization layer. Exploring the effect of applying normalization in this model is an interesting direction for future work. 
+
+Empirical Findings. We run the three-step gradient descent algorithm on an Attention-only model over varying V and d, and report the accuracies in the heatmaps (Figure 2). The plots are in log-log scale; therefore, the slopes give the exponent s in d ≍ V s. As shown in the top row of Figures 2a-2b, the slope for relatively small L (where L ≍ V 0.5) matches the optimal capacity condition d2 ≍ V . By contrast, when the 7context window is larger ( L ≍ V ), the requirement becomes d ≍ V , which is also reflected in the experimental results, as observed in the bottom panel of Figure 2a. In Figure 2b we run experiments with increasing sample size to observe the multiplicative trade-off. As seen in the bottom figure of Figure 2b, increasing the sample size from V log V to V 1.5 reduces the exponent of the parameter size from 2 .02 to 1 .42 (the theoretical value is s = 1 .32). Finally, the learnability thresholds for L ≍ V in Figures 2a and 2b are plotted together in Figure 2c, to illustrate that increasing the sample size can compensate for the number of parameters in the network. 
+
+(a) N ≍ V log V (b) N ≍ V 1.5 (c) L ≍ V 0.5 and m ≍ d2
+
+Figure 3: Empirical scaling of parameter size for the Attention-MLP model under two sample size regimes, N ≍
+
+V log V and N ≍ V 1.5. In (a) and (b), top-row uses L ≍ V 0.25 ; bottom-row uses L ≍ V 0.5. In (c), we compare the parameter counts from (a) and (b) for the L ≍ V 0.5 case under both sample-size regimes. 
+
+(a) m ≍ d2 (b) m ≍ d3 (c) L ≍ V 0.5 and N ≍ V log V
+
+Figure 4: Empirical scaling of embedding parameter size for the Attention-MLP model under two width regimes, 
+
+m ≍ d2 and m ≍ d3. In (a) and (b), top-row uses L ≍ V 0.25 ; bottom-row uses L ≍ V 0.5. In (c), we compare the parameter counts from (a) and (b) for the L ≍ V 0.5 case under both width regimes. 
+
+84.2 Attention-MLP Model 
+
+For the attention-MLP model, the nonlinear MLP layer introduces additional phases as stated below. 
+
+Corollary 2. For the Attention-MLP model, Theorem 1 translates to md ≳ V and 
+
+Signal ≳
+
+
+
+MLP noise , m = o(d2L) and m = o(dV )Gradient noise , V ≳ dL and m ≳ d2L
+
+Mean bias , V = o(dL ) and m ≳ dV, 
+
+where 
+
+• Signal ≳ MLP noise is equivalent to md ≳ V √mL 2 
+
+> N
+
+.
+
+• Signal ≳ Gradient noise is equivalent to md ≳ V mL 14
+
+> √N
+
+• Signal ≳ Mean bias is equivalent to md ≳ mL 43 V 13 
+
+> N23
+
+.
+
+The phase diagram for the Attention-MLP model is visualized in Figure 1b. Compared to the Attention-only case, it exhibits additional regimes because we can trade off m and d and thus use a smaller embedding dimension; this can lead to different dominant terms in the gradient. In particular, since large L and d entail a larger magnitude of the Mean bias (as in the Attention-only setting), increasing the MLP width m and thereby reducing the required embedding dimension d may suppress this bias term. 
+
+Empirical Findings. We run the 3-step gradient descent algorithm on an Attention-MLP network over varying V and d and plot the accuracies in Figures 3 and 4. We take the nonlinearity to be the mixture of two Hermite polynomials ϕ = 0 .7h2 + 0 .3h3, satisfying the conditions in Assumption 3. We run experiments with width m ≍ d2 and m ≍ d3. Due to the prohibitive cost of increasing the width further, we restrict ourselves to the MLP noise -dominated region. In Figure 1a, we plot the scaling of the number of parameters ( md ) as a function of vocabulary size V for different sequence-length regimes in L. We observe that L ≍ V 0.25 requires md ≍ V , which is the optimal capacity, as predicted by our theory. As L increases, we need more parameters to achieve the same capacity, as observed in the L ≍ V 0.5 and L ≍ V 0.75 cases in Figure 1, where the slopes agree with our theoretical predictions as well (see also Figures 3a and 3b). We further test the effect of sample size in Figure 3, where we use L ≍ V 0.5 and m ≍ d2. We plot both heat maps in Figures 3a and 3b, and the fitted lines for L ≍ V 0.5 together in Figure 3c. We observe that increasing N from N ≍ V log V to N ≍ V 1.5 reduces the network size to the optimal level, aligning with our theoretical prediction. The heatmap versions of these experiments are shown in Figures 3a and 3b. Lastly, we probe the width scaling by keeping the sample size N ≍ V log V and L ≍ V 0.5 fixed in Figure 4. Here, we observe that we can reduce the embedding-dimension requirement by increasing m in Theorem 1, although it increases the total parameter count overall, as seen in Figures 4b and 4c, since width must grow proportionally more than d to achieve the same accuracy. This is also consistent with our result. 
+
+## 4.3 Beyond Early Phase of Training 
+
+While our theoretical analysis focuses on a particular three-gradient-step training procedure, we empirically observe qualitatively similar multiplicative scalings when the transformer model is optimized beyond the “early phase”. Specifically, we train our Attention-only model using Adam [KB15] with mini-batch gradients. In the experiments, we use layer normalization in both the attention and output layers and set the learning rate to 0 .005. We use a batch size of ⌊N/ 2⌋ (except in the last experiment, where we use ⌊N/ 16 ⌋), and run the training for 16 epochs. We highlight the following observations: 
+
+• Capacity improvement with multi-pass training. In the top row of Figure 5, we plot the heatmaps for 
+
+L ≍ V and N ≍ V log V . In early training the slope is suboptimal; notably, by the end of Epoch 1 it closely aligns with our theoretical prediction. Moreover, training the network additional epochs improves the capacity condition to a near-optimal level, as shown in Figures 5c and 5d. 9• Effect of sample size. In the bottom row of Figure 5, we plot the heatmaps for L ≍ V and N ≍ V 1.5. We observe a similar trajectory in capacity, while the overall capacities improve compared to the small-sample regime, showing the multiplicative dependence on sample size N .
+
+• Effect of sequence length. In Figure 6, we plot the heatmaps for L ≍ V 0.85 and N ≍ V log V . We observe improvements in capacity over multiple epochs, while the capacity is larger than in the L ≍ V setting at every stage of training, which shows the effect of the sequence length L.
+
+• Effect of batch size. In Figure 7, we repeat the experiments from this section using the same learning rate and architecture but with a smaller batch size ⌊N/ 16 ⌋. As before, we consider L ≍ V in two sample-size regimes, N ≍ V log V and N ≍ V 1.5. We observe behavior similar to the larger batch size setting, but with improved slopes in Figure 7. This suggests that smaller batch sizes may improve capacity in practice. Overall, these experiments suggest that the multiplicative relation between the hyperparameters remains throughout training. However, the exponents depend on the iteration number and batch size. Understanding how capacity evolves during training remains an interesting open question.       
+
+> (a) Epoch 1 (b) Epoch 2 (c) Epoch 8 (d) Epoch 16
+> (e) Epoch 1 (f) Epoch 2 (g) Epoch 8 (h) Epoch 16
+
+Figure 5: Empirical scaling of the parameter size for the Attention-only model under two sample size regimes. Top row (a–d): N ≍ V log V . Bottom row (e–h): N ≍ V 1.5. The model uses L ≍ V and is trained using Adam over 16 epochs. We observe that the capacity improves as the number of epochs increases.    
+
+> (a) Epoch = 1 (b) Epoch = 2 (c) Epoch = 8 (d) Epoch = 16
+
+Figure 6: Empirical scaling of the parameter size for the Attention-only model with N ≍ V log V and L ≍ V 0.85 .The model is trained using Adam over 16 epochs. The slopes are smaller than in Figure 5, which is consistent with the shorter sequence length. 
+
+10 (a) Epoch 1 (b) Epoch 2 (c) Epoch 8 (d) Epoch 16 
+
+(e) Epoch 1 (f) Epoch 2 (g) Epoch 8 (h) Epoch 16 
+
+Figure 7: Empirical scaling of the parameter size for the Attention-only model ( L ≍ V ), trained with Adam using a batch size of ⌊N/ 16 ⌋. Top row (a–d): N ≍ V log V . Bottom row (e–h): N ≍ V 1.5.
+
+# 5 Proof Overview 
+
+In this section, we outline the main ideas behind the proof of Theorem 1. The key observation is that the recall task is achieved with near-perfect accuracy if and only if the attention mechanism can distinguish informative tokens. Once this occurs, the remaining task reduces to learning a linearly separable problem, which is well understood. Therefore, the proof focuses on the attention scores in (2.1) and characterizes the conditions under which the mechanism selects the informative tokens. The pre-softmax scores evaluated on a fresh sequence Xin , with the key-query matrix given by the first gradient-descent iterate W (1) KQ , are given by scores :=  ztrig e⊤ 
+
+> ℓ
+
++ Zin Xin 
+
+⊤W (1) KQ zEOS . (5.1) By substituting the exact expression for W (1) KQ into (5.1), we analyze scores. For intuition, we present the simplified expression below (see (B.1) for the full expression): scores ≈ γ∥ztrig ∥22eℓ
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+x⊤
+
+> i,ℓ
+
+Z⊤ 
+
+> in
+
+(V (1) )⊤Zout (pi − 1 
+
+> V
+
+1V )
+
+| {z }
+
+> Informative
+
+(5.2) + γX⊤ 
+
+> in
+
+Z⊤
+
+> in
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+Zin XiX⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+(V (1) )⊤Zout (pi − 1 
+
+> V
+
+1V )
+
+| {z }
+
+> Non-informative
+
+. (5.3) Here V (1) denotes the first iterate of the value matrix defined in (2.3). The informative term in (5.2) captures the alignment between the trigger vector in the fresh input and the one encoded in the learned weights W (1) KQ ,and therefore contains position information about the informative token. By contrast, the non-informative term in (5.3) reflects correlations between tokens and does not contain information about the token position. Thus, the proof reduces to characterizing the conditions under which the informative term in (5.2) dominates the non-informative term in (5.3). Under these conditions, the attention mechanism correctly identifies the informative token, and the remaining prediction problem becomes linearly separable. 11 5.1 Empirical Dynamics with Non-Orthogonal Embeddings 
+
+We now provide a proof sketch for the finite-sample setting with non-orthogonal embeddings and explain how each noise term in Theorem 1 arises. In particular, we consider (5.2)–(5.3) and, without loss of generality, assume ℓ = 1 and Π∗ = IV (accordingly, pi = xi, 1). Our goal is to show how the Signal , Gradient noise ,
+
+Mean bias , and MLP noise terms arise from the dynamics of the first gradient step. The analysis proceeds in two steps. First, we show that the first iterate of the value matrix V (1) admits a natural decomposition into mean, bias, and noise components. We then show how this decomposition gives rise to the terms appearing in Theorem 1. 
+
+5.1.1 Decomposition of the value matrix 
+
+Both the informative and non-informative terms depend on V (1) . We show that it can be decomposed as 
+
+V (1) = Zout 
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+(xi, 1 − 1 
+
+> V
+
+1V )( Xi1L)⊤
+
+Z⊤ 
+
+> in
+
+(5.4) = Zout 
+
+ 1
+
+V L (IV − 1 
+
+> V
+
+1V 1⊤ 
+
+> V
+
+)
+
+| {z }
+
+> Mean
+
++ 1
+
+V N 
+
+> N
+
+X
+
+> i=1
+
+(xi, 1 − 1 
+
+> V
+
+1V )1⊤
+
+> V
+
+| {z }
+
+> Bias
+
++ 1
+
+√LV N Ξ
+
+| {z }
+
+> Noise
+
+
+
+Z⊤ 
+
+> in
+
+(5.5) where the noise term is given by 
+
+Ξ := 
+
+r VLN 
+
+ NX
+
+> i=1
+
+(xi, 1 − 1
+
+V 1V )( Xi1L − LV 1V )⊤ − 1
+
+V (IV − 1
+
+V 1V 1⊤ 
+
+> V
+
+)
+
+
+
+.
+
+Here, the bias term arises from aggregating tokens at initialization; specifically, the aggregate-token averages  
+
+> 1
+> L
+
+Xi1L in (5.4) concentrate around their mean 1 
+
+> V
+
+1V as L grows, and this effect appears as the bias term. The noise term captures finite-sample fluctuations of tokens around this mean. In (5.5), we explicitly factor out the typical operator-norm scaling 1 /√V LN from the noise term so that the remaining matrix Ξ has constant norm on average, i.e., E[∥Ξ∥22] ≍ 1. 
+
+5.1.2 Characterization of noise terms Signal. Using the mean component in (5.5), the informative term in (5.2) can be written as Informative = γ∥ztrig ∥22e1
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+x⊤
+
+> i, 1
+
+Z⊤ 
+
+> in
+
+(V (1) )⊤Zout (pi − 1 
+
+> V
+
+1V )
+
+
+
+= γ∥ztrig ∥22
+
+V L 2
+
+1
+
+N
+
+> N
+
+X
+
+> i=1
+
+x⊤
+
+> i, 1
+
+Z⊤ 
+
+> in
+
+Zin (IV − 1
+
+V 1V 1⊤ 
+
+> V
+
+)Z⊤
+
+> out
+
+Zout (xi, 1 − 1
+
+V 1V )
+
+| {z }  
+
+> Signal ≍1
+> V L 2
+
++ negligible terms 
+
+| {z }   
+
+> =o(1
+> V L 2)
+
+.
+
+The first term is due to the mean component; the negligible terms are due to the bias and noise in (5.5). Standard concentration arguments for Gaussian matrices can be used to show that the leading term scales as 1 
+
+> V L 2
+
+, which gives us the Signal term in (3.1). The detailed derivations are provided in Section D.1.1. 
+
+Gradient Noise and Mean Bias. For ease of presentation, we focus on the large-L regime where we can use the following approximation due to concentration 1
+
+L Zin XiX⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+≈ 1
+
+d Id. (5.6) 12 Let xin denote an arbitrary row of Xin . Using (5.6), we can approximate the non-informative with Non-informative ≈ 1
+
+d√LN V x⊤
+
+> in
+
+Z⊤ 
+
+> in
+
+Zin ΞZ⊤
+
+> out
+
+Zout 
+
+1
+
+N
+
+> N
+
+X
+
+> i=1
+
+(xi, 1 − 1
+
+V 1V )
+
+| {z }
+
+> Gradient noise
+
++ 1
+
+V d x⊤
+
+> in
+
+Z⊤ 
+
+> in
+
+Zin 1V Zout 
+
+1
+
+N
+
+> N
+
+X
+
+> i=1
+
+(xi, 1 − 1
+
+V 1V ) 22
+
+| {z }
+
+> Mean bias
+
++ negligible terms .
+
+The first term arises from the noise component Ξ and determines the scaling of the Gradient noise term. The second term comes from the bias component and yields the Mean bias term in (3.1). We hide the contributions from the mean component in the negligible terms, since they are smaller in magnitude. The fluctuations of each term can be bounded as stated in Theorem 1 using standard concentration arguments. The detailed derivations are provided in Section D.1.2. 
+
+MLP noise. In this part, we consider the Attention-MLP model. The scores in (5.1) can be defined in the same way for this case as well. Let {wk}mk=1 denote the rows of Win , where wk ∼ N (0 , Id). For illustration, we work in the large-L regime and adopt the approximation in (5.6). We define the MLP-noise term as the deviation of the scores from their expectation with respect to the randomness in Win :MLP-noise := scores − EWin [scores] .
+
+Under the large-L assumption in (5.6), the scores admit the approximation (see (C.1) for the full form) MLP-noise ≈ x⊤
+
+> in
+
+Z⊤
+
+> in
+
+1
+
+N 2d
+
+> N
+
+X
+
+> i,j =1
+
+FW( Win ; Zin , Xi, Xj ) xi, 1 − 1 
+
+> V
+
+1V
+
+Z⊤
+
+> out
+
+Zout 
+
+ xj, 1 − 1 
+
+> V
+
+1V
+
+.
+
+Here FW( Win ; Zin , Xi, Xj ) denotes the noise induced by the finite width of Win , defined as FW( Win ; Zin , Xi, Xj ) := 1
+
+m
+
+> m
+
+X
+
+> k=1
+
+wkϕ′ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin Xi1L
+
+
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin Xj 1L
+
+
+
+− E
+
+h
+
+wkϕ′ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin Xi1L
+
+
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin Xj 1L
+
+i 
+
+. (5.7) For large L, standard concentration arguments imply that 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin Xi1L 2 ≈ L−1/2 → 0. Hence 
+
+ϕ′ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin Xi1L
+
+
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin Xj 1L
+
+
+
+→ ϕ(0) ϕ′(0) 
+
+| {z }
+
+> nonzero constant
+
+,
+
+where Assumption 4 ensures ϕ(0) ϕ′(0) ̸ = 0. Since E[wk] = 0, replacing the ϕ-dependent factors by this constant yields, we have FW( Win ; Zin , Xi, Xj ) → ϕ(0) ϕ′(0) 
+
+m
+
+> m
+
+X
+
+> k=1
+
+wk.
+
+Substituting this into the expression above gives MLP noise ≈ ϕ(0) ϕ′(0) 
+
+dm 
+
+> m
+
+X
+
+> k=1
+
+x⊤
+
+> input
+
+Z⊤ 
+
+> in
+
+wk
+
+| {z } 
+
+> ≍˜O
+
+ 1
+
+> d√m
+
+
+
+Zout 
+
+1
+
+N
+
+> N
+
+X
+
+> i=1
+
+ xi, 1 − 1 
+
+> V
+
+1V
+
+ 22
+
+| {z } 
+
+> ≍˜O
+
+ 1
+
+> N
+
+
+
+.
+
+Here, the terms can be bounded as in the displayed equation using standard concentration arguments, which yield the scaling of the MLP noise term in (3.1). The detailed derivations are provided in Section D.3. 13 6 Conclusion 
+
+In this paper, we derived precise asymptotic rates for learning with gradient descent on transformers trained on a simple recall task with random embeddings and finite samples. Our analysis and experiments reveal a rich picture of multiplicative scalings between various problem parameters, showing that parameter count is not the only important factor controlling capacity when learning with finite samples on large noisy sequences. Our results suggest that finer control of the data distribution may be necessary for learning efficiently at optimal capacity, for instance by ensuring sequences are less noisy and more informative, hoping that the discovered mechanisms are robust to harder settings. This is reminiscent of the procedures used for long context extension in LLMs, where most of training happens on shorter sequences, but the final models are extended to work with very long sequences, and empirically do well on retrieval tasks such as “needle-in-a-haystack” [e.g., Gem24], which resembles our theoretical setup. Analyzing similar scalings in more structured data distributions and architectures is thus an interesting avenue for future work. 
+
+## Acknowledgment 
+
+The work of M. Soltanolkotabi was partially supported by AWS credits through an Amazon Faculty Re-search Award, a NAIRR Pilot Award, and generous funding by Coefficient Giving, and the USC-Capital One Center for Responsible AI and Decision Making in Finance (CREDIF) Fellowship. M. Soltanolkotabi is also supported by the Packard Fellowship in Science and Engineering, a Sloan Research Fellowship in Mathematics, NSF CAREER Award #1846369, DARPA FastNICS program, NSF CIF Awards #1813877 and #2008443, and NIH Award DP2LM014564-01. 
+
+# References 
+
+[AGS85] Daniel J Amit, Hanoch Gutfreund, and Haim Sompolinsky. Storing infinite numbers of patterns in a spin-glass model of neural networks. Physical Review Letters , 55(14):1530, 1985. [AZL24] Zeyuan Allen-Zhu and Yuanzhi Li. Physics of language models: Part 3.3, knowledge capacity scaling laws. arXiv preprint arXiv:2404.05405 , 2024. [BCB +23] Alberto Bietti, Vivien Cabannes, Diane Bouchacourt, Herve Jegou, and Leon Bottou. Birth of a transformer: A memory viewpoint. In Advances in Neural Information Processing Systems (NeurIPS) , 2023. [BES +22] Jimmy Ba, Murat A Erdogdu, Taiji Suzuki, Zhichao Wang, Denny Wu, and Greg Yang. High-dimensional asymptotics of feature learning: How one gradient step improves the representation. 
+
+Advances in Neural Information Processing Systems (NeurIPS) , 2022. [BEVW25] G´ erard Ben Arous, Murat A. Erdogdu, Nuri Mert Vural, and Denny Wu. Learning quadratic neural networks in high dimensions: Sgd dynamics and scaling laws, 2025. [CBB25] Lei Chen, Joan Bruna, and Alberto Bietti. Distributional associations vs in-context reasoning: A study of feed-forward and attention layers. In Proceedings of the International Conference on Learning Representations (ICLR) , 2025. [CDB24] Vivien Cabannes, Elvis Dohmatob, and Alberto Bietti. Scaling laws for associative memories. In International Conference on Learning Representations (ICLR) , 2024. [CIJ +22] Nicholas Carlini, Daphne Ippolito, Matthew Jagielski, Katherine Lee, Florian Tramer, and Chiyuan Zhang. Quantifying memorization across neural language models. In The Eleventh International Conference on Learning Representations , 2022. 14 [CSB24] Vivien Cabannes, Berfin Simsek, and Alberto Bietti. Learning associative memories with gra-dient descent. In Proceedings of the International Conference on Machine Learning (ICML) ,2024. [CSWY24] Siyu Chen, Heejune Sheen, Tianhao Wang, and Zhuoran Yang. Unveiling induction heads: Provable training dynamics and feature learning in transformers. Advances in Neural Informa-tion Processing Systems , 37:66479–66567, 2024. [DHL +17] Mete Demircigil, Judith Heusel, Matthias L¨ owe, Sven Upgang, and Franck Vermet. On a model of associative memory with huge storage capacity. Journal of Statistical Physics , 168:288–299, 2017. [DKL +23] Yatin Dandi, Florent Krzakala, Bruno Loureiro, Luca Pesce, and Ludovic Stephan. Learning two-layer neural networks, one (giant) step at a time. arXiv preprint arXiv:2305.18270 , 2023. [DLS22] Alexandru Damian, Jason Lee, and Mahdi Soltanolkotabi. Neural networks can learn repre-sentations with gradient descent. In Conference on Learning Theory , pages 5413–5452. PMLR, 2022. [DMB +26] O. Duranthon, Pierre Marion, Claire Boyer, Bruno Loureiro, and Lenka Zdeborov´ a. Statis-tical advantage of softmax attention: Insights from single-location regression. arXiv preprint arXiv:2509.21936 , 2026. [EHO +22] Nelson Elhage, Tristan Hume, Catherine Olsson, Nicholas Schiefer, Tom Henighan, Shauna Kravec, Zac Hatfield-Dodds, Robert Lasenby, Dawn Drain, Carol Chen, et al. Toy models of superposition. arXiv preprint arXiv:2209.10652 , 2022. [Gem24] Gemini Team. Gemini 1.5: Unlocking multimodal understanding across millions of tokens of context. arXiv preprint arXiv:2403.05530 , 2024. [GHR24] Gaurav Ghosal, Tatsunori Hashimoto, and Aditi Raghunathan. Understanding finetuning for factual knowledge extraction. arXiv preprint arXiv:2406.14785 , 2024. [GSBL20] Mor Geva, Roei Schuster, Jonathan Berant, and Omer Levy. Transformer feed-forward layers are key-value memories. arXiv preprint arXiv:2012.14913 , 2020. [Hop82] John J Hopfield. Neural networks and physical systems with emergent collective computational abilities. Proceedings of the national academy of sciences , 79(8):2554–2558, 1982. [HZG +25] Yixiao Huang, Hanlin Zhu, Tianyu Guo, Jiantao Jiao, Somayeh Sojoudi, Michael I Jordan, Stuart Russell, and Song Mei. Generalization or hallucination? understanding out-of-context reasoning in transformers. arXiv preprint arXiv:2506.10887 , 2025. [JXAN20] Zhengbao Jiang, Frank F Xu, Jun Araki, and Graham Neubig. How can we know what language models know? Transactions of the Association for Computational Linguistics , 8:423–438, 2020. [KAK +25] Harish Kamath, Emmanuel Ameisen, Isaac Kauvar, Rodrigo Luger, Wes Gurnee, Adam Pearce, Sam Zimmerman, Joshua Batson, Thomas Conerly, Chris Olah, and Jack Lindsey. Tracing attention computation through feature interactions. Transformer Circuits Thread , 2025. [KB15] Diederik P. Kingma and Jimmy Ba. Adam: A method for stochastic optimization. In Yoshua Bengio and Yann LeCun, editors, 3rd International Conference on Learning Representations, ICLR , 2015. [KH16] Dmitry Krotov and John J Hopfield. Dense associative memory for pattern recognition. Ad-vances in neural information processing systems , 29, 2016. [LLR23] Yuchen Li, Yuanzhi Li, and Andrej Risteski. How do transformers learn topic structure: To-wards a mechanistic understanding. In Proceedings of the International Conference on Machine Learning (ICML) , 2023. 15 [MBBB25] Pierre Marion, Raphael Berthier, Gerard Biau, and Claire Boyer. Attention layers provably solve single-location regression. In Proceedings of the International Conference on Learning Representations (ICLR) , 2025. [MPRV88] Robert J McEliece, Edward C Posner, Eugene R Rodemich, and Santosh S Venkatesh. The ca-pacity of the hopfield associative memory. IEEE transactions on Information Theory , 33(4):461– 482, 1988. [MSG +25] John X Morris, Chawin Sitawarin, Chuan Guo, Narine Kokhlikyan, G Edward Suh, Alexan-der M Rush, Kamalika Chaudhuri, and Saeed Mahloujifar. How much do language models memorize? arXiv preprint arXiv:2505.24832 , 2025. [NDL24] Eshaan Nichani, Alex Damian, and Jason D Lee. How transformers learn causal structure with gradient descent. In Proceedings of the International Conference on Machine Learning (ICML) ,2024. [NLB25] Eshaan Nichani, Jason D Lee, and Alberto Bietti. Understanding factual recall in transformers via associative memories. In Proceedings of the International Conference on Learning Repre-sentations (ICLR) , 2025. [ORST23] Samet Oymak, Ankit Singh Rawat, Mahdi Soltanolkotabi, and Christos Thrampoulidis. On the role of attention in prompt-tuning. In International Conference on Machine Learning , 2023. [PRL +19] Fabio Petroni, Tim Rockt¨ aschel, Patrick Lewis, Anton Bakhtin, Yuxiang Wu, Alexander H Miller, and Sebastian Riedel. Language models as knowledge bases? arXiv preprint arXiv:1909.01066 , 2019. [PXZ25] Yang Peng, Yuchen Xin, and Zhihua Zhang. Matrix rosenthal and concentration inequalities for markov chains with applications in statistical learning. arXiv preprint arXiv:2508.04327 ,2025. [RRS20] Adam Roberts, Colin Raffel, and Noam Shazeer. How much knowledge can you pack into the parameters of a language model? arXiv preprint arXiv:2002.08910 , 2020. [RSL +20] Hubert Ramsauer, Bernhard Sch¨ afl, Johannes Lehner, Philipp Seidl, Michael Widrich, Thomas Adler, Lukas Gruber, Markus Holzleitner, Milena Pavlovi´ c, Geir Kjetil Sandve, et al. Hopfield networks is all you need. arXiv preprint arXiv:2008.02217 , 2020. [SC19] Jonathan Scarlett and Volkan Cevher. An introductory guide to fano’s inequality with appli-cations in statistical estimation. arXiv preprint arXiv:1901.00555 , 2019. [SIS21] Imanol Schlag, Kazuki Irie, and J¨ urgen Schmidhuber. Linear transformers are secretly fast weight programmers. In Proceedings of the International Conference on Machine Learning (ICML) , 2021. [TWCD23] Yuandong Tian, Yiping Wang, Beidi Chen, and Simon S Du. Scan and snap: Understanding training dynamics and token composition in 1-layer transformer. Advances in Neural Informa-tion Processing Systems (NeurIPS) , 2023. [TWZ +23] Yuandong Tian, Yiping Wang, Zhenyu Zhang, Beidi Chen, and Simon Du. Joma: De-mystifying multilayer transformers via joint dynamics of mlp and attention. arXiv preprint arXiv:2310.00535 , 2023. [VE24] Nuri Mert Vural and Murat A. Erdogdu. Pruning is optimal for learning sparse features in high-dimensions. In Annual Conference Computational Learning Theory , 2024. [VONR +23] Johannes Von Oswald, Eyvind Niklasson, Ettore Randazzo, Jo˜ ao Sacramento, Alexander Mord-vintsev, Andrey Zhmoginov, and Max Vladymyrov. Transformers learn in-context by gradient descent. In International Conference on Machine Learning , pages 35151–35174. PMLR, 2023. 16 [WNB +25] Zixuan Wang, Eshaan Nichani, Alberto Bietti, Alex Damian, Daniel Hsu, Jason D Lee, and Denny Wu. Learning compositional functions with transformers from easy-to-hard data. In 
+
+Conference on Learning Theory (COLT) , 2025. [ZBC +25] Nicolas Zucchet, J¨ org Bornschein, Stephanie Chan, Andrew Lampinen, Razvan Pascanu, and Soham De. How do language models learn facts? dynamics, curricula and hallucinations. arXiv preprint arXiv:2503.21676 , 2025. [ZFB24] Ruiqi Zhang, Spencer Frei, and Peter L Bartlett. Trained transformers learn linear models in-context. Journal of Machine Learning Research , 25(49):1–55, 2024. 17 Contents 
+
+1 Introduction 1
+
+1.1 Our Contributions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21.2 Related Work . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2
+
+2 Problem Setting 33 Main Results 5
+
+3.1 Technical Assumptions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 53.2 Learnability Statement . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 63.3 Statistical Lower Bound . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+
+4 Implications and Empirical Verifications 7
+
+4.1 Attention-only Model . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 74.2 Attention-MLP Model . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 94.3 Beyond Early Phase of Training . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+
+5 Proof Overview 11 
+
+5.1 Empirical Dynamics with Non-Orthogonal Embeddings . . . . . . . . . . . . . . . . . . . . . 12 5.1.1 Decomposition of the value matrix . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12 5.1.2 Characterization of noise terms . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12 
+
+6 Conclusion 14 A Additional Experiments 20 B Preliminaries for Appendix 20 
+
+B.1 Preliminary Results: Characterization of Good Events . . . . . . . . . . . . . . . . . . . . . . 21 
+
+C Proof of Theorem 1 31 
+
+C.1 Attention scores and their asymptotic scaling . . . . . . . . . . . . . . . . . . . . . . . . . . . 31 
+
+D Proof of Theorem 3 32 
+
+D.1 Concentration bound for s1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32 D.1.1 Concentration bound for ϑ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33 D.1.2 Concentration bound for φ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 44 D.2 Concentration bound for s2 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 48 D.2.1 Concentration for κ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 48 D.3 Concentration bound for s3 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 54 D.3.1 Concentration bound for ν . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 54 
+
+E Lower Bound 59 
+
+18 F Auxiliary Statements 62 
+
+F.1 Gaussian matrices and related statements . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 62 F.2 Multinomial distribution and related statements . . . . . . . . . . . . . . . . . . . . . . . . . 64 
+
+G Miscellaneous 73 
+
+G.1 Rosenthal-Burkholder inequality and corollaries . . . . . . . . . . . . . . . . . . . . . . . . . . 74 19 A Additional Experiments B Preliminaries for Appendix 
+
+Additional Notation. For a vector x ∈ RV , we use diag( x) ∈ RV ×V denotes the diagonal matrix which has the same diagonal entries with x, while for a matrix A, diag( A) ∈ RV denotes the column vector whose elements coincide with the diagonal entries of A. For a random variable w, Ew[·] denotes taking expectation with respect to w and keeping the remaining independent terms fixed. Similarly, we use E[·| w]for conditional expectation, conditioned on w. We use 1Event as an indicator function, which takes values 
+
+{0, 1} depending on the event holds or not. We use C to denote any constant in the upper-bound, which might depend on ϕ. We use poly p,q (N, d, V, L ) denotes a polynomial function of ( N, d, V, L ) whose degree depends on ( p, q ) polynomially. For vectors w, ˆw and a scaler variable η > 0, we use ˆw = ˆw + O(η) to denote ∥ ˆw − w∥∞ = O(η). Since we do not use positional encoding in the model, without loss of generality we can fix the informative index ℓ = 1. We define the sequence of non-informative tokens as Ni := [ xi, 2, · · · , xi,L ]⊤. We will denote the rows of Win with {wk}mk=1 . For compact representation the attention with the trigger, we define 
+
+Zin =: Zin ztrig 
+
+ and Xi =: 
+
+x⊤ 
+
+> i, 1
+
+1
+
+Ni 0
+
+
+
+∈ RL×(V +1) 
+
+With this notation, we can write the iterates in three-step GD. Let ˆpt,i := ˆ p(Xi; V (t), W (0) KQ ), and α0,i := σ
+
+
+
+XiZ⊤
+
+> in
+
+W (0) KQ zEOS 
+
+
+
+.
+
+We have 
+
+V (1) = Zout 
+
+ ηN
+
+> N
+
+X
+
+> i=1
+
+(pi − ˆp0,i )ϕ α⊤
+
+> 0,i
+
+XiZ⊤ 
+
+> in
+
+W ⊤
+
+> in
+
+
+
+W (1) KQ = Zin 
+
+γN
+
+> N
+
+X
+
+> i=1
+
+X⊤
+
+> i
+
+ diag( α0,i )−α0,i α⊤
+
+> 0,i
+
+XiZ⊤ 
+
+> in
+
+W ⊤ 
+
+> in
+
+diag 
+
+
+
+ϕ′ Win Zin X⊤ 
+
+> i
+
+α0,i 
+
+
+
+(V (1) )⊤Zout (pi − ˆpi, 1)z⊤
+
+> EOS
+
+.
+
+(B.1) For notational convenience, we define the noise due to finite width as (which we defined equivalently in (5.7)) FW( Win ; Zin , Xi, Xj ) := 1
+
+m
+
+
+
+W ⊤ 
+
+> in
+
+diag 
+
+
+
+ϕ′  1 
+
+> L
+
+Win Zin X⊤ 
+
+> i
+
+1L
+
+
+
+ϕ
+
+ 1 
+
+> L
+
+Win Zin X⊤ 
+
+> j
+
+1L
+
+
+
+− EWin 
+
+h
+
+W ⊤ 
+
+> in
+
+diag 
+
+
+
+ϕ′  1 
+
+> L
+
+Win Zin X⊤ 
+
+> i
+
+1L
+
+
+
+ϕ
+
+ 1 
+
+> L
+
+Win Zin X⊤ 
+
+> j
+
+1L
+
+i 
+
+. (B.2) For the terms arising in the expected value term in (B.2), we define 
+
+• αij := Ew
+
+h
+
+ϕ′  1 
+
+> L
+
+w⊤Zin X⊤ 
+
+> i
+
+1L
+
+ϕ′  1 
+
+> L
+
+w⊤Zin X⊤ 
+
+> j
+
+1L
+
+i
+
+,
+
+• βij := Ew
+
+h
+
+ϕ′′   1 
+
+> L
+
+w⊤Zin X⊤ 
+
+> i
+
+1L
+
+ϕ  1 
+
+> L
+
+w⊤Zin X⊤ 
+
+> j
+
+1L
+
+i
+
+.
+
+Moreover, we make the following definitions to simplify the notation in the following: 
+
+A1,ir := Zin 
+
+ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+αij (xj − 1 
+
+> V
+
+1V )( xj − 1 
+
+> V
+
+1V )⊤ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+αrj (xj − 1 
+
+> V
+
+1V )( xj − 1 
+
+> V
+
+1V )⊤
+
+Z⊤ 
+
+> in
+
+(B.3) 
+
+A2,ir := Zin 
+
+ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+αij (N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−1(xj − 1 
+
+> V
+
+1V )⊤
+
+20 ×
+
+ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+αrj (xj − 1 
+
+> V
+
+1V )1⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤
+
+Z⊤ 
+
+> in
+
+(B.4) 
+
+A3,ir := 1
+
+L2V 2
+
+ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+αij (xj − 1 
+
+> V
+
+1V )
+
+⊤ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+αrj (xj − 1 
+
+> V
+
+1V )
+
+
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤
+
+> in
+
+and 
+
+S1 := 
+
+ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )( xj − 1 
+
+> V
+
+1V )⊤ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )( xj − 1 
+
+> V
+
+1V )⊤
+
+(B.5) 
+
+S2 := 
+
+ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−1(xj − 1 
+
+> V
+
+1V )⊤ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )1⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤
+
+(B.6) 
+
+S3 := 1
+
+L2V 2
+
+ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )
+
+⊤ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )
+
+
+
+1V 1⊤ 
+
+> V
+
+. (B.7) 
+
+## B.1 Preliminary Results: Characterization of Good Events 
+
+We start with characterizing “good events” which we will use in the proof of Theorem 1. 
+
+Lemma 1. We consider l ∈ N, and V 3 ≫ N ≫ V ≫ L and L ≍ V ϵ1 , and d ≍ V ϵ2 for some ϵ1, ϵ 2 ∈ (0 , 1) .For the following we define, mij := (1 − 1/V )δij + LV . We define the following events: (E1) Let zk := Zin ek and zk := ( zk + 1l=1 ztrig ). We have (E1.1) 1 
+
+> V
+
+∥Zin Z⊤ 
+
+> in
+
+∥2 ≤ 2 
+
+> d
+
+and max k≤V ∥zk∥2 ∨ ∥ ztrig ∥2 ≤ 2 and max j̸ =k|⟨ zj , zk⟩| ≤ log V√d .(E1.2) 1√V ∥Zin 1V ∥2 ≤ 2 and 1√V ∥Z⊤ 
+
+> in
+
+Zin 1V ∥∞ ≤ log V√d
+
+(E1.3) z⊤ 
+
+> k
+
+Zin 1V ≤ 2 log V
+
+q Vd and z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin 1V ≤ CK log V   Vd
+
+ 32 and z⊤ 
+
+> k
+
+Zin diag  Z⊤ 
+
+> in
+
+Zin 
+
+ ≤ CK log V
+
+q Vd
+
+(E1.4) For all i ∈ [N ], |z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L| ≤ e⊤ 
+
+> k
+
+X⊤ 
+
+> i
+
+1L + CK log V ∥X⊤ 
+
+> i1L∥2
+> √d
+
+(E1.5) For all i ∈ [N ], |1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L| ≤ L + CK log V ∥X⊤ 
+
+> i
+
+1L∥2
+
+q Vd .(E1.6) For all i ∈ [N ], z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L ≤ 2Vd
+
+ e⊤ 
+
+> k
+
+X⊤ 
+
+> i
+
+1L + CK log V ∥X⊤ 
+
+> i1L∥2
+> √d
+
+.(E1.7) For all i, j ∈ [N ], | 1 
+
+> L
+
+1⊤ 
+
+> L
+
+Xj Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L − mij | ≤ | 1 
+
+> L
+
+1LX⊤ 
+
+> j
+
+X⊤ 
+
+> i
+
+1L − mij | + CK   
+
+> ∥X⊤
+> i1L∥2∥X⊤
+> j1L∥2
+> L
+> log V√d
+
+(E1.8) For all i ∈ [N ], ∥Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+zk∥2 ≤ CK
+
+ e⊤ 
+
+> k
+
+N ⊤ 
+
+> i
+
+1L−1 + Ld + log 6 V ∥N ⊤ 
+
+> i1L−1∥2
+> √d
+
+.(E2) We have (E2.1) For all i, j ∈ [N ], | 1 
+
+> L
+
+1⊤ 
+
+> L
+
+Xj X⊤ 
+
+> i
+
+1L − mij | ≤ CK log 2 V√V ∧L ,(E2.2) For all i ∈ [N ], ∥X⊤ 
+
+> i
+
+1L∥∞ ≤ log L and ∥X⊤ 
+
+> i
+
+1L∥0 ≥ L
+
+> 2
+
+(E2.3) ∥ 1
+
+> N
+
+PNi=1 xi∥2 − 1 
+
+> N
+
+− 1 
+
+> V
+
+≤ CK log 2 NN √V and ∥ 1
+
+> N
+
+PNi=1 xi − 1 
+
+> V
+
+1V ∥2 − 1 
+
+> N
+
+≤ CK log 2 NN √V and ∥ 1
+
+> N
+
+PNi=1 xi − 
+
+> 1
+> V
+
+1V ∥∞ ≤ (e+1) 
+
+> V
+
+(E2.4) PNi,j =1 |1xi=xj − 1 
+
+> V
+
+| ≤ 4N 2 
+
+> V
+
+and PNi,j =1 (1xi=xj − 1 
+
+> V
+
+) ≤ 4N 2 
+
+> V
+
+and for any k ∈ [V ], PNi,j =1 |1xj =ek − 
+
+> 1
+> V
+
+|(1xi=ek − 1 
+
+> V
+
+) ≤ CN 2  
+
+> V2
+
+.
+
+21 (E2.5) ∥S1∥2 ≤ eL2V 2 and |tr( S1) − (1 − 1 
+
+> V
+
+) 1
+
+> L2
+
+  1 
+
+> N
+
++ 1
+
+> V
+
+| ≤ CK log 2 VL2N √V
+
+(E2.6) ∥S2∥2 ≤ CK log 2 VN LV and |tr( S2) − (1 − 1 
+
+> V
+
+)2 L−1 
+
+> L2N
+
+| ≤ CK log 3 VN √LV 
+
+(E2.7) −CK log 2 VN √V  
+
+> 1
+> V2L2
+
+1V 1⊤ 
+
+> V
+
+⪯ S3 − 1  
+
+> N
+> 1
+> V2L2
+
+1V 1⊤ 
+
+> V
+
+⪯ CK log 2 VN √V  
+
+> 1
+> V2L2
+
+1V 1⊤
+
+> V
+
+(E2.8) 1
+
+> N L
+
+PNj=1 (N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1L−1)1L−11⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1L−1)⊤
+
+> 2
+
+= 1 
+
+> V
+
+± + CK log 2 V√N V .For any K > 0, there exists a universal constant CK > 0 depending only on K such that 
+
+P[( E1) |{ Xi}Ni=1 ] ≥ 1 − 1
+
+V K and P[( E2)] ≥ 1 − 1
+
+V K .
+
+Proof. For (E1): 
+
+• By Proposition 4, we have ∥ 1 
+
+> V
+
+Zin Z⊤ 
+
+> in
+
+− 1 
+
+> d
+
+Id∥2 ≤ 2 log V√V d and by Proposition 6, we have max k≤V ∥zk∥2 ∨∥ztrig ∥2 ≤ 2 with probability at least 1 − CV d exp( −c log 2 V ).
+
+• By Proposition 6, 1√V ∥Zin 1V ∥2 ≤ 2 and 1√V ∥Z⊤ 
+
+> in
+
+Zin 1V ∥∞ ≤ 2 log V√d with probability at least 1 −
+
+CV d exp( −c log 2 V ).
+
+• By Propositions 6 and 7, we have 1√V z⊤ 
+
+> k
+
+Zin 1V ≤ 2 log V√d and z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin 1V ≤ CK log V   Vd
+
+ 32 with probability at least 1 − CV d exp( −c log 2 V ). Moreover 1
+
+V z⊤ 
+
+> k
+
+Zin diag  Z⊤ 
+
+> in
+
+Zin 
+
+ = 1
+
+V
+
+> V
+
+X
+
+> i=1
+> i̸=k
+
+∥zi∥22⟨zi, zk⟩ + 1l=1 
+
+V
+
+> V
+
+X
+
+> i=1
+> i̸=k
+
+∥zi∥22⟨zi, ztrig ⟩ + 1
+
+V z⊤ 
+
+> k
+
+zk
+
+| {z }    
+
+> ∈1
+> V[−CK,C K]
+
+,
+
+where we used previous items to bound the last term. For i̸ = k, by using Lemma 3, we have for p ≤ d 
+
+> 6
+
+,
+
+E[∥zi∥4p 
+
+> 2
+
+|⟨ zi, zk⟩| 2p] ≤ d−p E[∥zi∥6p 
+
+> 2
+
+](2 p)p ≤ d−p2ppp d(d + 2) · · · (d + 6 p − 2) 
+
+d3p ≤ d−p24ppp.
+
+Therefore, 
+
+E[∥zi∥4p 
+
+> 2
+
+|⟨ zi, zk⟩| 2p] 12p ≤ 4d−1/2√p. 
+
+By Proposition 15, we have for 2 ≤ p ≤ d 
+
+> 6
+
+,
+
+E
+
+h 1
+
+V z⊤ 
+
+> k
+
+Zin diag  Z⊤ 
+
+> in
+
+Zin 
+
+ 2pi 12p
+
+≤ Cd −1/2hr pV + V 1 
+
+> p
+
+p3/2
+
+V
+
+i
+
+By using p = log V , we have the bound in the statement with probability 1 − 1  
+
+> VK
+
+.
+
+• By Proposition 6 with probability at least 1 − 1 
+
+> VK
+
+|z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L| ≤ | e⊤ 
+
+> k
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L| + 1l=1 |z⊤
+
+> trig
+
+Zin X⊤ 
+
+> i
+
+1L|≤ e⊤ 
+
+> k
+
+X⊤ 
+
+> i
+
+1L + CK log V ∥X⊤ 
+
+> i
+
+1L∥2
+
+√d .
+
+By the union bound, the item follows. 
+
+• By Proposition 6 with probability at least 1 − 1  
+
+> VK
+
+,
+
+|1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L| ≤ 1⊤ 
+
+> V
+
+X⊤ 
+
+> i
+
+1L + CK log V ∥X⊤ 
+
+> i
+
+1L∥2
+
+r Vd
+
+= L + CK log V ∥X⊤ 
+
+> i
+
+1L∥2
+
+r Vd .
+
+22 • By Proposition 7, with probability at least 1 − CN exp( −c log 2 V ), we have z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L ≤
+
+> 2Vd
+
+ e⊤ 
+
+> k
+
+X⊤ 
+
+> i
+
+1L + CK log V ∥X⊤ 
+
+> i1L∥2
+> √d
+
+ for all i ∈ [N ]. 
+
+• By Proposition 6, with probability at least 1 − 1 
+
+> VK
+
+1
+
+L 1⊤ 
+
+> L
+
+Xj Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L − mij = 1
+
+L 1⊤ 
+
+> L
+
+Xj X⊤ 
+
+> i
+
+1L − mij ± CK
+
+∥X⊤ 
+
+> j
+
+1L∥2∥X⊤ 
+
+> i
+
+1L∥2
+
+L
+
+log V
+
+√d .
+
+• For the last item, let nk := 1⊤
+
+> L−1
+
+Niek. We have 
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+zk = nk(∥zk∥22 + 1l=1 z⊤ 
+
+> k
+
+ztrig − 1
+
+d )zk + Ld zk +
+
+> V
+
+X 
+
+> j=1
+> j̸=k
+
+nj
+
+ zj z⊤ 
+
+> j
+
+− 1
+
+d Id
+
+zk.
+
+By Proposition 12, we have 
+
+E
+
+h VX 
+
+> j=1
+> j̸=k
+
+nj
+
+ zj z⊤ 
+
+> j
+
+− 1
+
+d Id
+
+zk
+
+> 2p
+> 2
+
+i 1
+
+> p
+
+≤ C(p − 1) 6 E
+
+h VX 
+
+> j=1
+> j̸=k
+
+nj
+
+ zj z⊤ 
+
+> j
+
+− 1
+
+d Id
+
+zk
+
+> 22
+
+i
+
+≤ Cd (p − 1) 6∥N ⊤ 
+
+> i
+
+1L−1∥22.
+
+Therefore, with probability 1 − 1  
+
+> VK
+
+, we have 
+
+∥Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+zk∥2 ≤ CK
+
+
+
+nk + Ld + log 6 V ∥N ⊤ 
+
+> i
+
+1L−1∥2
+
+√d
+
+
+
+.
+
+For (E2): 
+
+• By Proposition 9, we have the first item with probability 1 − N 2  
+
+> VK
+
+.
+
+• By Corollary 3, we have max i∈[N ]∥X⊤ 
+
+> i
+
+1L∥∞ ≤ log L with probability 1 − NV K for large enough L. For the second part, we define nk := 1⊤ 
+
+> L
+
+Xiek. We observe that 
+
+E[∥X⊤ 
+
+> i
+
+1L∥0] = 
+
+> V
+
+X
+
+> k=1
+
+P[nk > 0] = V
+
+
+
+1 − (1 − 1
+
+V )L
+
+= L
+
+
+
+1 − L
+
+2V + o(L/V )
+
+
+
+.
+
+By McDiarmid inequality, we have 
+
+P
+
+h
+
+∥X⊤ 
+
+> i
+
+1L∥0 − L
+
+
+
+1 − L
+
+2V + o(L/V )
+
+
+
+> √L log V
+
+i
+
+≤ 2 exp( −2 log 2 V ),
+
+which gives the result. 
+
+• Let n := PNi=1 xi, where E[n] = NV 1V . By Proposition 9 with probability 1 − 1  
+
+> VK
+
+, we have 
+
+1
+
+N n − 1
+
+V 1V 
+
+> 22
+
+− (1 − 1
+
+V ) 1
+
+N = 1
+
+N n 22 − (1 − 1
+
+V ) 1
+
+N − 1
+
+V ≤ CK
+
+log 2 VN √V .
+
+Lastly, by Corollary 3, we have ∥ 1 
+
+> N
+
+n − 1 
+
+> V
+
+1V ∥∞ ≤ (e+1)  
+
+> V
+
+.
+
+• We have 
+
+> N
+
+X
+
+> i,j =1
+
+|1xi=xj − 1
+
+V | =
+
+ NX
+
+> i,j =1
+
+|1xi=xj − 1
+
+V | − 2
+
+V (1 − 1
+
+V )
+
+
+
++ 2N 2
+
+V (1 − 1
+
+V )23 = (1 − 2
+
+V )
+
+> N
+
+X
+
+> i,j =1
+
+(1xi=xj − 1
+
+V ) + 2N 2
+
+V (1 − 1
+
+V )= (1 − 2
+
+V )
+
+> N
+
+X
+
+> i=1
+
+(xi − 1
+
+V 1V ) 22
+
++ 2N 2
+
+V (1 − 1
+
+V )By the previous item, the statement follows. Moreover, 
+
+> N
+
+X
+
+> i,j =1
+
+ |1xj =ek − 1 
+
+> V
+
+| ± 2 
+
+> V
+
+(1 − 1 
+
+> V
+
+)(1xi=ek − 1 
+
+> V
+
+)= (1 − 2
+
+V )
+
+ NX
+
+> i=1
+
+(1xi=ek − 1 
+
+> V
+
+)
+
+2
+
++ 2NV (1 − 1
+
+V )
+
+> N
+
+X
+
+> i=1
+
+(1xi=ek − 1 
+
+> V
+
+)= N 2(1 − 2
+
+V )
+
+D
+
+ek, 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )
+
+E2
+
++ 2N 2
+
+V (1 − 1
+
+V )
+
+D
+
+ek, 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )
+
+E
+
+≤ CN 2
+
+V 2 .
+
+• The events for S1, S2 and S3 follows Proposition 10. 
+
+• (E2.8) follows the second item in Proposition 9. 
+
+Proposition 1. We consider the parameter regime in Lemma 1. Let ¯ϕ := sup k1,k 2≥1|ϕ(k1)(0) ϕ(k2)(0) |. The intersection of (E1) and (E2) implies the following events: (R1) For all i, j ∈ [N ], | 1 
+
+> L
+
+1LX⊤ 
+
+> j
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L − mij | ≤ CK
+
+  log V√d + log 2 V√V ∧L
+
+ ,(R2) sup i,j |αij − ϕ′(0) 2| ∨ | βij − ϕ′′ (0) ϕ(0) | ≤ ¯ϕL
+
+ mij + CK log V√d + CK log 2 V√V ∧L
+
+
+
+(R3) Let ∆∗,ir := A∗,ir − ϕ′(0) 4Zin S∗Z⊤ 
+
+> in
+
+for ∗ ∈ { 1, 2, 3}. We have - sup i,r ∈[N ]∥∆1,ir ∥2 ≤ CK ϕ′(0) 2
+
+ 1 
+
+> N dL 3
+
++ 1 
+
+> V dL 2
+> 1
+> V∧L2∧L√d
+
+
+
+.- sup i,r ∈[N ]∥∆2,ir ∥2 ≤ CK
+
+> √Vd√N L
+
+ 1 
+
+> N L 32
+
++ 1  
+
+> V√L
+> 1
+> V∧L2∧L√d
+
+
+
+.- We have ∆3,ir = ¯∆3,ir   
+
+> V2L2
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+such that 
+
+sup  
+
+> i,r ∈[N]
+
+| ¯∆3,ir | ≤ CK ϕ′(0) 2
+
+N
+
+ 1
+
+N L + 1
+
+√N
+
+1
+
+V ∧ L2 ∧ L√d
+
+
+
++
+
+ 1
+
+N L + 1
+
+√N
+
+1
+
+V ∧ L2 ∧ L√d
+
+2
+
+.
+
+(R4) For all i, r ∈ [N ],- We have 
+
+A1,ir − ϕ′(0) 4
+
+d
+
+  1
+
+N + (1 − 1
+
+V ) 1
+
+V
+
+Id 2
+
+≤ CK ϕ′(0) 2 1
+
+N dL 3 + 1
+
+V dL 2
+
+1
+
+V ∧ L2 ∧ L√d
+
+
+
++ CK ϕ′(0) 4 log VL2V 3/2√d + log 2 VL2N √V d 
+
+
+
+.
+
+- We have 
+
+A2,ir − ϕ′(0) 4
+
+d (1 − 1
+
+V )2 L − 1
+
+L2N Id 2
+
+≤ CK
+
+√Vd√N L 
+
+ 1
+
+N L 32
+
++ 1
+
+V √L
+
+1
+
+V ∧ L2 ∧ L√d
+
+
+
++ CK ϕ′(0) 4 log VN L √V d + log 3 VN √LV d 
+
+
+
+.
+
+24 - We have A3,ir − ϕ′(0) 4  
+
+> N
+> 1
+> V2L2
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+=: ˜∆3,ir   
+
+> V2L2
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+such that 
+
+| ˜∆3,ir | ≤ CK ϕ′(0) 4 log 2 VN √V
+
++ CK ϕ′(0) 2
+
+N
+
+ 1
+
+N L + 1
+
+√N
+
+1
+
+V ∧ L2 ∧ L√d
+
+
+
++
+
+ 1
+
+N L + 1
+
+√N
+
+1
+
+V ∧ L2 ∧ L√d
+
+2
+
+.
+
+Proof. We have the following arguments. 
+
+• By (E1.7) and (E2.1), we have (R1). 
+
+• For (R2), we assume (R1) hold. Let wi := 1 
+
+> L
+
+w⊤Zin X⊤ 
+
+> i
+
+1L/∥ 1 
+
+> L
+
+Zin X⊤ 
+
+> i
+
+1L∥2. We write 
+
+Ew
+
+ϕ′ ∥ 1 
+
+> L
+
+Zin X⊤ 
+
+> i
+
+1L∥2wi
+
+ϕ′ ∥ 1 
+
+> L
+
+Zin X⊤ 
+
+> i
+
+1L∥2wj
+
+ − ϕ′(0) 2
+
+> (a)
+
+=
+
+> p⋆
+
+X
+
+> u,v =1
+
+∥ 1 
+
+> L
+
+Zin X⊤ 
+
+> i
+
+1L∥u 
+
+> 2
+
+∥ 1 
+
+> L
+
+Zin X⊤ 
+
+> j
+
+1L∥v
+
+> 2
+
+Ew
+
+wui wvj
+
+
+
+u!v! ϕ(u+1) (0) ϕ(v+1) (0) 
+
+> (b)
+
+= 1 
+
+> L2
+
+1⊤ 
+
+> L
+
+Xj Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1Lϕ(2) (0) ϕ(2) (0) +
+
+> p⋆
+
+X   
+
+> u,v =1
+> u+vis even
+> u+v> 2
+
+∥ 1 
+
+> L
+
+Zin X⊤ 
+
+> i
+
+1L∥u 
+
+> 2
+
+∥ 1 
+
+> L
+
+Zin X⊤ 
+
+> j
+
+1L∥v
+
+> 2
+
+Ew
+
+wui wvj
+
+
+
+u!v! ϕ(u+1) (0) ϕ(v+1) (0) 
+
+> (c)
+
+≤ ¯ϕL
+
+ mij + CK
+
+log V
+
+√d + CK
+
+log 2 V
+
+√V ∧ L
+
+ + O
+
+ 1
+
+L2
+
+
+
+,
+
+where we used Taylor expansion of ϕ and Ew
+
+w⊤Zin X⊤ 
+
+> i
+
+1L
+
+ = 0 in (a), E[Zu 
+
+> 1
+
+Zv 
+
+> 2
+
+] = 0 if u + v is odd for jointly Gaussian ( Z1, Z 2) in (b), and (R1) in (c). Similarly, 
+
+E ϕ′′  ∥ 1 
+
+> L
+
+Zin X⊤ 
+
+> i
+
+1L∥2wi
+
+ϕ ∥ 1 
+
+> L
+
+Zin X⊤ 
+
+> i
+
+1L∥2wj
+
+ − ϕ(0) ϕ(2) (0) 
+
+=
+
+> k2
+
+X
+
+> u,v =1
+
+∥ 1
+
+L Zin X⊤ 
+
+> i
+
+1L∥u 
+
+> 2
+
+∥ 1
+
+L Zin X⊤ 
+
+> j
+
+1L∥v
+
+> 2
+
+E wui wvj
+
+
+
+u!v! ϕ(u+2) (0) ϕ(v)(0) 
+
+= 1
+
+L2 1⊤ 
+
+> L
+
+Xj Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1Lϕ(0) ϕ(2) (0) +
+
+> k2
+
+X   
+
+> u,v =1
+> u+vis even
+> u+v> 2
+
+∥ 1
+
+L Zin X⊤ 
+
+> i
+
+1L∥u 
+
+> 2
+
+∥ 1
+
+L Zin X⊤ 
+
+> j
+
+1L∥v
+
+> 2
+
+E wui wvj
+
+
+
+u!v! ϕ(u+2) (0) ϕ(v)(0) 
+
+≤ ¯ϕL
+
+ mij + CK log V
+
+√d + CK log 2 V
+
+√V ∧ L
+
+ + O
+
+ 1
+
+L2
+
+
+
+.
+
+• For (R3), we define ¯∆1,ir := 
+
+ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+(αij − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )( xj − 1 
+
+> V
+
+1V )⊤ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+ϕ′(0) 2(xj − 1 
+
+> V
+
+1V )( xj − 1 
+
+> V
+
+1V )⊤
+
++
+
+ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+ϕ′(0) 2(xj − 1 
+
+> V
+
+1V )( xj − 1 
+
+> V
+
+1V )⊤ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+(αrj − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )( xj − 1 
+
+> V
+
+1V )⊤
+
++
+
+ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+(αij − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )( xj − 1 
+
+> V
+
+1V )⊤ 1
+
+LN 
+
+> N
+
+X
+
+> j=1
+
+(αrj − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )( xj − 1 
+
+> V
+
+1V )⊤
+
+.
+
+25 We have 
+
+∥ ¯∆1,ir ∥2 ≤ Cϕ ′(0) 2 sup i|αii − ϕ′(0) 2|
+
+LN ∥S1∥ 12 
+
+> 2
+
++ ϕ′(0) 2 sup 
+
+> i̸=j
+
+|αij − ϕ′(0) 2|∥ S1∥2(d)
+
+≤ Cϕ ′(0) 2 1
+
+N V L 3 + 1
+
+V 2L2
+
+1
+
+V ∧ L2 ∧ L√d
+
+
+
+,
+
+where we used (R2) and (E2.5) in (d). By (E1.1), we have 
+
+∥∆1,ir ∥2 = ∥Zin ¯∆1,ir Z⊤ 
+
+> in
+
+∥2 ≤ Cϕ ′(0) 2 1
+
+N dL 3 + 1
+
+V dL 2
+
+1
+
+V ∧ L2 ∧ L√d
+
+
+
+.
+
+Moreover, we define ¯∆2,ir := 
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+(αij − ϕ′(0) 2)( N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−1(xj − 1 
+
+> V
+
+1V )⊤
+
+×
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+ϕ′(0) 2(xj − 1 
+
+> V
+
+1V )1⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤
+
++
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+ϕ′(0) 2(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−1(xj − 1 
+
+> V
+
+1V )⊤
+
+×
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+(αrj − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )1⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤
+
++
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+(αij − ϕ′(0) 2)( N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−1(xj − 1 
+
+> V
+
+1V )⊤
+
+×
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+(αrj − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )1⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤
+
+.
+
+We have 
+
+∥ ¯∆2,ir ∥2 ≤ ϕ′(0) 2∥S2∥ 12
+
+> 2
+
+1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+(αrj − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )1⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤
+
+> 2
+
++ ϕ′(0) 2∥S2∥ 12
+
+> 2
+
+1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+(αij − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )1⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤
+
+> 2
+
++ 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+(αrj − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )1⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤
+
+> 2
+
+× 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+(αij − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )1⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤
+
+> 2
+
+.
+
+We observe that 
+
+1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+(αij − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )1⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤
+
+> 2
+
+≤ 1
+
+N L (αii − ϕ′(0) 2)( xi − 1 
+
+> V
+
+1V )1⊤
+
+> L−1
+
+(N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤
+
+> 2
+
++ 1
+
+N L 
+
+> N
+
+X 
+
+> j=1
+> j̸=i
+
+(αij − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )1⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤
+
+> 2
+
+26 (e)
+
+≤ CN L √L + sup i̸=j |αij − ϕ′(0) 2|√L
+
+1
+
+N
+
+> N
+
+X 
+
+> j=1
+> j̸=i
+
+(xj − 1 
+
+> V
+
+1V )( xj − 1 
+
+> V
+
+1V )⊤
+
+> 2
+
++ sup i̸=j |αij − ϕ′(0) 2|√L
+
+1
+
+N L 
+
+> N
+
+X 
+
+> j=1
+> j̸=i
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1L−1)1L−11⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1L−1)⊤ 
+
+> 2(f)
+
+≤ CN L √L + CV √L
+
+1
+
+V ∧ L2 ∧ L√d .
+
+where we used (R2) and (E2.1) in (e), and (R2), (E2.5) and (E2.8) in (f). Then, by (E2.6), we have 
+
+∥ ¯∆2,ir ∥2 ≤ C
+
+√N V L 
+
+ 1
+
+N L 32
+
++ 1
+
+V √L
+
+1
+
+V ∧ L2 ∧ L√d
+
+
+
++ C2 1
+
+N L 32
+
++ 1
+
+V √L
+
+1
+
+V ∧ L2 ∧ L√d
+
+2
+
+.
+
+Therefore, by (E1.1) 
+
+∥∆2,ir ∥2 = ∥Zin ¯∆2,ir Z⊤ 
+
+> in
+
+∥2 ≤ C√Vd√N L 
+
+ 1
+
+N L 32
+
++ 1
+
+V √L
+
+1
+
+V ∧ L2 ∧ L√d
+
+
+
+.
+
+Lastly, we define ¯∆3,ir := 
+
+ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(αij − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )
+
+⊤ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+ϕ′(0) 2(xj − 1 
+
+> V
+
+1V )
+
+
+
++
+
+ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+ϕ′(0) 2(xj − 1 
+
+> V
+
+1V )
+
+⊤ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(αrj − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )
+
+
+
++
+
+ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(αij − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )
+
+⊤ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(αrj − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V )
+
+
+
+We have 
+
+| ¯∆3,ir | ≤ ϕ′(0) 2 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V ) 2
+
+1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(αij − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V ) 2
+
++ ϕ′(0) 2 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V ) 2
+
+1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(αrj − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V ) 2
+
++ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(αij − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V ) 2
+
+1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(αrj − ϕ′(0) 2)( xj − 1 
+
+> V
+
+1V ) 2
+
+| {z }    
+
+> ≤CN L +C√N
+> 1
+> V∧L2∧L√d
+
+≤ Cϕ ′(0) 2
+
+N
+
+ 1
+
+N L + 1
+
+√N
+
+1
+
+V ∧ L2 ∧ L√d
+
+
+
++
+
+ 1
+
+N L + 1
+
+√N
+
+1
+
+V ∧ L2 ∧ L√d
+
+2
+
+. (B.8) We observe that ∆ 3,ir = ¯∆3,ir   
+
+> V2L2
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+, and by (B.8), the last result follows. 
+
+• For (R4), we assume (E1.1), (E1.2), (E2.3), and (E2.5)-(E2.7). We write 
+
+A1,ir − ϕ′(0) 4
+
+d
+
+(1 − 1 
+
+> V
+
+)
+
+L2
+
+  1
+
+N + 1
+
+V
+
+Id
+
+= ∆ 1,ir + ϕ′(0) 4
+
+Zin S1Zin ± tr( S1)
+
+d Id − 1
+
+d
+
+(1 − 1 
+
+> V
+
+)
+
+L2
+
+  1
+
+N + 1
+
+V
+
+Id
+
+
+
+.
+
+27 We have 
+
+A1,ir − ϕ′(0) 4
+
+d
+
+(1 − 1 
+
+> V
+
+)
+
+L2
+
+  1
+
+N + 1
+
+V
+
+Id 2
+
+≤ ∥ ∆1,ir ∥2 + 2 ϕ′(0) 4 log V ∥S1∥F
+
+√d + |tr( S1) − (1 − 1 
+
+> V)
+> L2
+
+  1 
+
+> N
+
++ 1
+
+> V
+
+|
+
+d
+
+≤ CK ϕ′(0) 2 1
+
+N dL 3 + 1
+
+V dL 2
+
+1
+
+V ∧ L2 ∧ L√d
+
+
+
++ CK ϕ′(0) 4 log VL2V 3/2√d + log 2 VL2N √V d 
+
+
+
+.
+
+Similarly, 
+
+A2,ir − ϕ′(0) 4
+
+d (1 − 1
+
+V )2 L − 1
+
+L2N Id 2
+
+≤ ∥ ∆2,ir ∥2 + 2 ϕ′(0) 4 log V ∥S2∥F
+
+√d + |tr( S2) − (1 − 1 
+
+> V
+
+)2 L−1 
+
+> L2N
+
+|
+
+d
+
+≤ CK
+
+√Vd√N L 
+
+ 1
+
+N L 32
+
++ 1
+
+V √L
+
+1
+
+V ∧ L2 ∧ L√d
+
+
+
++ CK ϕ′(0) 4 log VN L √V d + log 3 VN √LV d 
+
+
+
+.
+
+Lastly, 
+
+A3,ir − ϕ′(0) 4
+
+N
+
+1
+
+V 2L2 Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+= ∆ 3,ir + ϕ′(0) 4 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1
+
+V 1V ) 22
+
+− 1
+
+N
+
+ 1
+
+V 2L2 Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+.
+
+By (E2.3), we have 
+
+CK 2 log 2 VN √V
+
+1
+
+V 2L2 Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+⪯
+
+ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1
+
+V 1V ) 22
+
+− 1
+
+N
+
+ 1
+
+V 2L2 Zin 1V 1⊤ 
+
+> V
+
+Z⊤
+
+> in
+
+⪯ CK 2 log 2 VN √V
+
+1
+
+V 2L2 Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+.
+
+By (R3), the result follows. 
+
+Proposition 2. We recall that zk = zk + 1k=1 ztrig . Given that (E1) holds, the following statements hold: (P1) We have for i̸ = j and any k ∈ [V ],
+
+E (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+zk|Zin 
+
+ ≤ CV d .
+
+(P2) For any k ∈ [V ],
+
+E[∥Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+zk∥22|Zin 
+
+ ≤ C
+
+ Ld + L2
+
+d2
+
+
+
+.
+
+(P3) We have for i̸ = j and any k ∈ [V ],
+
+E (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> r
+
+Xr Z⊤ 
+
+> in
+
+zk|Zin 
+
+i
+
+≤ C log 2 Vd2 .
+
+(P4) For any k ∈ [V ],
+
+E   1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+zk
+
+2|Zin 
+
+i
+
+≤ C V log 2 Vd
+
+ Ld + L2
+
+d2
+
+
+
+.
+
+28 (P5) For notational convenience, let 
+
+ς := z⊤ 
+
+> k
+
+Zin 
+
+
+
+X⊤ 
+
+> i
+
+Xi − LV IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ X⊤ 
+
+> i
+
+− 1
+
+V 1V 1⊤
+
+> L
+
+1L.
+
+For any i, k ∈ [V ],
+
+|E[ς|Zin ]| ≤ CL log V
+
+√V d and E[ς2|Zin ] ≤ C log 2 V
+
+ Ld + L2
+
+d2
+
+
+
+.
+
+Proof. For the first item, we have 
+
+E (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+zk|Zin 
+
+
+
+> (a)
+
+= E (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin xj x⊤ 
+
+> j
+
+Z⊤ 
+
+> in
+
+zk|Zin 
+
+
+
+= 1
+
+V E z⊤ 
+
+> k
+
+Zin xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+zk|Zin 
+
+ − 1
+
+V 3 z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+zk
+
+≤ CV d ,
+
+where we used the independence of the rows of X in (a). For the second item, we write 
+
+E[z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+zk|Zin ] = LV z⊤ 
+
+> k
+
+Zin diag( Z⊤ 
+
+> in
+
+Zin )Z⊤ 
+
+> in
+
+zk
+
++ L(L − 1) 
+
+V 2 z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+z⊤
+
+> k
+
+≤ C
+
+ Ld + L2
+
+d2
+
+
+
+.
+
+For the third item, we have 
+
+E (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+zk|Zin 
+
+
+
+= E (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin xj x⊤ 
+
+> j
+
+Z⊤ 
+
+> in
+
+zk|Zin 
+
+
+
+= 1
+
+V E z⊤ 
+
+> k
+
+Zin xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+zk|Zin 
+
+
+
+− 1
+
+V 3 z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+zk
+
+≤ C log 2 Vd2 .
+
+For the fourth item, we have 
+
+E z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+zk|Zin 
+
+i
+
+= L E z⊤ 
+
+> k
+
+Zin xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+zk|Zin 
+
+i
+
++ L(L − 1) 
+
+V 2 z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+zk
+
+≤ C
+
+ LV log 2 Vd2 + L2V log 2 Vd3
+
+
+
+.
+
+For the fifth item, we have 
+
+E
+
+h
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+X⊤ 
+
+> i
+
+Xi− LV IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L|Zin 
+
+i
+
+= E
+
+h
+
+z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+Xi|Zin 
+
+i
+
+1V − L2
+
+V 2 z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin 1V
+
+29 = Lz⊤ 
+
+> k
+
+Zin E
+
+h
+
+xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin xix⊤ 
+
+> i
+
+|Zin 
+
+i
+
+1V − L2
+
+V 2 z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin 1V . (B.9) By (E1), we have 
+
+|(B.9) | ≤ CL log V
+
+√V d .
+
+For the second part, let nj := e⊤ 
+
+> j
+
+Xi1L. We have 
+
+z⊤ 
+
+> k
+
+Zin 
+
+ X⊤ 
+
+> i
+
+Xi − LV IV
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ X⊤ 
+
+> i
+
+− 1
+
+V 1V 1⊤
+
+> L
+
+1L
+
+=
+
+> V
+
+X
+
+> j=1
+
+(nj − LV )z⊤ 
+
+> k
+
+zj z⊤
+
+> j
+
+ VX
+
+> l=1
+
+(nl − LV )zl)
+
+
+
+=
+
+> V
+
+X
+
+> j=1
+> V
+
+X
+
+> l=1
+
+(nj − LV )( nl − LV )z⊤ 
+
+> k
+
+ziz⊤ 
+
+> i
+
+zj . (B.10) Let S = ( sjl )jl ∈[V ] such that sjl := 12
+
+ z⊤ 
+
+> k
+
+zj z⊤ 
+
+> j
+
+zl + z⊤ 
+
+> k
+
+zlz⊤ 
+
+> l
+
+zj
+
+. We will use the third item in Proposition 8 to bound second moment of (B.10). We bound each term separately below. 
+
+• We have 
+
+tr    IV − 1
+
+V 1V 1⊤
+
+> V
+
+S = tr( S) − 1
+
+V 1⊤ 
+
+> V
+
+S1V
+
+= V z⊤ 
+
+> k
+
+Zin E[x1x⊤ 
+
+> 1
+
+Z⊤ 
+
+> in
+
+Zin x1] − 1
+
+V z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin 1V
+
+≤ C log V √V
+
+√d .
+
+• Moreover, tr    IV − 1
+
+V 1V 1⊤
+
+> V
+
+S IV − 1
+
+V 1V 1⊤
+
+> V
+
+S = tr( S2) − 2
+
+V ∥S1V ∥22 + 1
+
+V 2
+
+ 1⊤ 
+
+> V
+
+S1V
+
+2.
+
+We have tr( S2) ≤ CV 2 log 2 Vd2 and 
+
+e⊤ 
+
+> i
+
+S1V = 12
+
+> V
+
+X
+
+> l=1
+
+z⊤ 
+
+> k
+
+zj z⊤ 
+
+> j
+
+zl + 12
+
+> V
+
+X
+
+> l=1
+
+z⊤ 
+
+> k
+
+zlz⊤ 
+
+> l
+
+zj = z⊤ 
+
+> k
+
+zj z⊤ 
+
+> j
+
+Zin 1V + z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+zj .
+
+Therefore, 
+
+tr    IV − 1
+
+V 1V 1⊤
+
+> V
+
+S IV − 1
+
+V 1V 1⊤
+
+> V
+
+S ≤ CV 2 log 2 Vd2 .
+
+• Moreover, ∥diag( S)∥22 ≤ CV log 2 Vd .
+
+Therefore, by Proposition 8, we have 
+
+E
+
+h 
+
+z⊤ 
+
+> k
+
+Zin 
+
+ X⊤ 
+
+> i
+
+Xi − LV IV
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ X⊤ 
+
+> i
+
+− 1
+
+V 1V 1⊤
+
+> L
+
+1L
+
+2
+
+Zin 
+
+i
+
+≤ C log 2 V
+
+ Ld + L2
+
+d2
+
+
+
+.
+
+30 C Proof of Theorem 1 
+
+We consider the following technical assumptions for the subsequent proof. 
+
+Assumption 4 (Technical conditions) . We work under the following conditions: 
+
+• Permutation. Without loss of generality, assume Π = IV .
+
+• Learning rates. Take η = oV (1) , chosen sufficiently small so that we can write ˆp1 = 1 
+
+> V
+
+1V + O(η).
+
+• Activation. We consider a polynomial activation ϕ with a degree of p⋆ satisfying: 
+
+– ϕ(0) , ϕ ′(0) , ϕ ′′ (0) ̸ = 0 
+
+– The smallest non-zero Hermite component of ϕ has index q⋆, i.e, q⋆ := min {k > 0| E[ϕ(Z)Hek (Z)] ̸ = 0 },for Z ∼ N (0 , 1) .
+
+Since the learning algorithm does not assume any structure in the ground-truth permutation, we may, without loss of generality, take it to be the identity. This simplifies the notation in the analysis below. The learning rate η is chosen sufficiently small so that the network output remains close to its initialization 1 
+
+> V
+
+1V ,which simplifies the analysis of the three-step gradient descent algorithm. The assumption on the activation function is technical and is needed for the analysis of the three-step gradient descent dynamics; however, we believe that such an assumption would not be necessary for general multi-step training. 
+
+## C.1 Attention scores and their asymptotic scaling 
+
+Let X be an independent copy of input sequence. By using the technical condition above, we decompose the attention scores in to three terms s1, s2, s3 ∈ RL:
+
+XZ ⊤
+
+> in
+
+W (1) KQ 
+
+= ηγ N 2L2 XZ ⊤
+
+> in
+
+Zin 
+
+> N
+
+X
+
+> i,j =1
+
+αij X⊤
+
+> i
+
+ IL − 1 
+
+> L
+
+1L1⊤
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xi − 1 
+
+> V
+
+1V )+ ηγ N 2L2 XZ ⊤
+
+> in
+
+Zin 
+
+> N
+
+X
+
+> i,j =1
+
+βij X⊤
+
+> i
+
+ IL − 1 
+
+> L
+
+1L1⊤
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L(xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xi − 1 
+
+> V
+
+1V )+ ηγ N 2L XZ ⊤
+
+> in
+
+Zin 
+
+> N
+
+X
+
+> i,j =1
+
+X⊤
+
+> i
+
+ IL − 1 
+
+> L
+
+1L1⊤
+
+> L
+
+XiZ⊤ 
+
+> in
+
+FW( Win ; Zin , Xi, Xj )( xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xi − 1 
+
+> V
+
+1V ) (C.1) + O(η2γpoly( d, N )) =: ηγ  s1 + s2 + s3
+
+ + O(η2γpoly( d, N )) .
+
+The following theorem characterizes the scaling of each term. We recall that {e1, · · · , eL} denotes the standard basis vectors in RL.
+
+Theorem 3. With probability at least 1 − oV (1) , we have the following: 
+
+• For all l ∈ [L], ⟨el, s1⟩ − 1l=1 
+
+V L 2 ≲ 1l=1 
+
+√N V L 3/2d + 1
+
+N √Ld (d ∧ L2)1/2(d ∧ L)1/2 ,
+
+• ∥ s2∥∞ ≲ 1
+
+N √Ld (L ∧ d) + 1
+
+N Ld (L ∧ d)1/2
+
+• ∥ s3∥∞ ≲ 1
+
+N d √m .
+
+31 We first make an observation that we will frequently rely on in the following: 
+
+Proposition 3. For any p ∈ N, we have 
+
+E[∥A1,ir ∥p
+
+> 2
+
+] ∨ E[∥A2,ir ∥p
+
+> 2
+
+] ∨ E[∥A3,ir ∥p
+
+> 2
+
+] ≤ poly p,p ⋆ (d, V, L ).
+
+Proof. By Proposition 13, we observe that αij ≤ poly p⋆ (d, V, L ). Therefore, we have 
+
+∥A1,ir ∥2 ∨ ∥ A2,ir ∥2 ∨ ∥ A3,ir ∥2 ≤ poly p⋆ (d, V, L )∥Zin Z⊤
+
+> in
+
+∥2,
+
+from which the result follows. 
+
+# D Proof of Theorem 3 
+
+We observe that 
+
+XZ ⊤
+
+> in
+
+Zin X⊤ 
+
+> i
+
+=
+
+
+
+Zin X⊤ + Zin eV +1 e⊤
+
+> 1
+
+⊤
+
+Zin X⊤ 
+
+> i
+
++ Zin eV +1 e⊤
+
+> 1
+
+
+
+= XZ ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
++ e1z⊤
+
+> trig
+
+Zin X⊤ 
+
+> i
+
++ XZ ⊤ 
+
+> in
+
+ztrig e⊤ 
+
+> 1
+
++ ∥ztrig ∥22e1e⊤ 
+
+> 1
+
+. (D.1) In the following, we will consider xl = ek, for a fixed k ∈ [V ]. We will write 
+
+ ztrig e⊤ 
+
+> 1
+
++ Zin X⊤el = zk + 1l=1 ztrig = zk, (D.2) and 
+
+ e1z⊤
+
+> trig
+
+Zin X⊤ + ∥ztrig ∥22e1e⊤
+
+> 1
+
+el = ⟨zk, ztrig ⟩
+
+| {z }
+
+> =: μkl
+
+e1 = μkl e1. (D.3) In the following, we will consider the event. 
+
+Event := ( E1) ∩ (E2) .
+
+## D.1 Concentration bound for s 1
+
+By (D.1)-(D.2)-(D.3), we can write that 
+
+⟨el, s1⟩ = 1
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+αij z⊤ 
+
+> k
+
+Zin X⊤
+
+> i
+
+ IL − 1
+
+L 1L1⊤
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xi − 1 
+
+> V
+
+1V )+ μkl 
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+αij 
+
+ e1 − 1
+
+L 1L
+
+⊤XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xi − 1 
+
+> V
+
+1V )=: ϑ + φ. 
+
+We will analyze ϑ and φ separately. We define 
+
+Bi := Bi, 1 + Bi, 2 + Bi, 3,
+
+where 
+
+Bi, 1 := 
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+αij (xj − 1 
+
+> V
+
+1V )( xj − 1 
+
+> V
+
+1V )⊤
+
+Bi, 2 := 
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+αij 
+
+ N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1(xj − 1 
+
+> V
+
+1V )⊤
+
+Bi, 3 := 1
+
+V 1V
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+αij (xj − 1 
+
+> V
+
+1V )⊤
+
+.
+
+32 D.1.1 Concentration bound for ϑ
+
+We define 
+
+Ci := 1
+
+L (xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin X⊤
+
+> i
+
+ IL − 1
+
+L 1L1⊤
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin 
+
+= 1
+
+L (xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin 
+
+| {z }
+
+> := Ci, 1
+
+− 1
+
+L2 (xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin 
+
+| {z }
+
+> := Ci, 2
+
+By Chebyshev’s inequality, with probability 1 − oV (1), 
+
+ϑ = 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+tr( BiZ⊤
+
+> out
+
+Zout Ci) = tr 
+
+
+
+Zout 
+
+1
+
+N
+
+> N
+
+X
+
+> i=1
+
+CiBiZ⊤
+
+> out
+
+
+
+= tr 
+
+ 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+CiBi
+
+| {z }
+
+> ϑ1
+
+± 1
+
+√d
+
+log VN
+
+> N
+
+X
+
+> i=1
+
+CiBi F
+
+| {z }
+
+> ϑ2
+
+.
+
+Bounding ϑ2: We start with bounding ϑ2 term. We have 
+
+ϑ2 ≤ 1
+
+√d
+
+1
+
+N
+
+> N
+
+X
+
+> i=1
+
+CiBi, 1 F
+
++ 1
+
+√d
+
+1
+
+N
+
+> N
+
+X
+
+> i=1
+
+CiBi, 2 F
+
++ 1
+
+√d
+
+1
+
+N
+
+> N
+
+X
+
+> i=1
+
+CiBi, 3 F
+
+.
+
+We have 
+
+• 1
+
+> N
+
+PNi=1 CiBi, 1
+
+> 2
+> F
+
+≤ 2 
+
+> N2
+
+ PNi,r =1 tr( Ci, 1Bi, 1B⊤
+
+> r, 1
+
+C⊤
+
+> r, 1
+
+) + tr( Ci, 2Bi, 1B⊤
+
+> r, 1
+
+C⊤
+
+> r, 2
+
+)
+
+
+
+.
+
+• 1
+
+> N
+
+PNi=1 CiBi, 2
+
+> 2
+> F
+
+≤ 2 
+
+> N2
+
+ PNi,r =1 tr( Ci, 2Bi, 2B⊤
+
+> r, 2
+
+C⊤
+
+> r, 2
+
+) + tr( Ci, 2Bi, 2B⊤
+
+> r, 2
+
+C⊤
+
+> r, 2
+
+)
+
+
+
+.
+
+• 1
+
+> N
+
+PNi=1 CiBi, 3
+
+> 2
+> F
+
+≤ 2 
+
+> N2
+
+ PNi,r =1 tr( Ci, 1Bi, 3V ⊤
+
+> r, 3
+
+C⊤
+
+> r, 1
+
+) + tr( Ci, 2Bi, 3B⊤
+
+> r, 3
+
+C⊤
+
+> r, 2
+
+)
+
+
+
+.We define the scalars 
+
+t1 := ϕ′(0) 4
+
+d
+
+(1 − 1 
+
+> V
+
+)
+
+L2
+
+  1
+
+N + 1
+
+V
+
+, t2 := ϕ′(0) 4
+
+d (1 − 1
+
+V )2 L − 1
+
+L2N , t3 := ϕ′(0) 4
+
+N V 2L2 .
+
+First, we will bound the first two terms. Let ∗ ∈ { 1, 2}.
+
+Bounding first two terms. For i̸ = r, by using the definition in A1,ir and A2,ir in (B.3)-(B.4), we have tr( Ci, 1Bi, ∗B⊤
+
+> r, ∗
+
+C⊤
+
+> r, 1
+
+) = 1
+
+L2 (1xi=xr − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+A∗,ir Zin X⊤ 
+
+> r
+
+Xr Z⊤ 
+
+> in
+
+zk
+
+= t∗
+
+L2 (1xi=xr − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> r
+
+Xr Z⊤ 
+
+> in
+
+zk
+
++ 1
+
+L2 (1xi=xr − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+(A∗,ir − t∗Id)Zin X⊤ 
+
+> r
+
+Xr Z⊤ 
+
+> in
+
+zk
+
+≤ t∗
+
+L2 (1xi=xr − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> r
+
+Xr Z⊤ 
+
+> in
+
+zk
+
++ 1
+
+L2 (1xi=xr − 1 
+
+> V
+
+)∥A∗,ir − t∗Id∥2∥Zin X⊤ 
+
+> r
+
+Xr Z⊤ 
+
+> in
+
+zk∥2∥Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+zk∥2.
+
+By (P1) in Proposition 2, (E1) implies 
+
+t∗
+
+L2 E
+
+h
+
+(1xi=xr − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> r
+
+Xr Z⊤ 
+
+> in
+
+zk Zin 
+
+i
+
+≤ Ct ∗
+
+L2
+
+1
+
+V d . (D.4) 33 Moreover, by using (R4) and (P2), we have 1
+
+L2 E
+
+h
+
+(1xi=xr − 1
+
+V )∥A∗,ir − t∗Id∥2∥Zin X⊤
+
+r Xr Z⊤
+
+in zk∥2∥Zin X⊤
+
+i XiZ⊤
+
+in zk∥2 Zin 
+
+i
+
+≤ CV d (L ∧ d)
+
+
+
+ϕ′(0) 2
+
+ 1
+
+N dL 3 + 1
+
+V dL 2
+
+1
+
+V ∧L2∧L√d
+
+
+
++ ϕ′(0) 4
+
+ log VL2V 3/2√d + log 2 VL2N √V d 
+
+
+
+, ∗ = 1 
+
+√Vd√N L 
+
+ 1
+
+N L 32
+
++ 1
+
+V √L
+
+1
+
+V ∧L2∧L√d
+
+
+
++ ϕ′(0) 4
+
+ log VN L √V d + log 3 VN √LV d 
+
+
+
+, ∗ = 2 
+
+≤ CN 3/2√V d 2L2
+
+1
+
+L ∧ d + CV 3/2√N Ld 2
+
+1
+
+L ∧ d
+
+1
+
+V ∧ L2 ∧ L√d + C log 3 VN V 3/2L1/2d3/2
+
+1(L ∧ d)3/2 . (D.5) On the other hand, tr( Ci, 2Bi, ∗B⊤
+
+r, ∗C⊤
+
+r, 2)= 1
+
+L4 (1xi=xr − 1
+
+V )z⊤
+
+k Zin X⊤
+
+i 1L1⊤
+
+L XiZ⊤
+
+in A∗,ir Zin X⊤
+
+r 1L1⊤
+
+L Xr Z⊤
+
+in zk
+
+= t∗
+
+L4 (1xi=xr − 1
+
+V )z⊤
+
+k Zin X⊤
+
+i 1L1⊤
+
+L XiZ⊤
+
+in Zin X⊤
+
+r 1L1⊤
+
+L Xr Z⊤
+
+in zk
+
++ 1
+
+L4 (1xi=xr − 1
+
+V )z⊤
+
+k Zin X⊤
+
+i 1L1⊤
+
+L XiZ⊤
+
+in (A∗,ir − t∗Id)Zin X⊤
+
+r 1L1⊤
+
+L Xr Z⊤
+
+in zk
+
+≤ t∗
+
+L4 (1xi=xr − 1
+
+V )z⊤
+
+k Zin X⊤
+
+i 1L1⊤
+
+L XiZ⊤
+
+in Zin X⊤
+
+r 1L1⊤
+
+L Xr Z⊤
+
+in zk
+
++ 1
+
+L4 (1xi=xr − 1
+
+V )∥A∗,ir − t∗Id∥2∥Zin X⊤
+
+r 1L1⊤
+
+L Xr Z⊤
+
+in zk∥2∥Zin X⊤
+
+i 1L1⊤
+
+L XiZ⊤
+
+in zk∥2.
+
+By using (E1.4), (E2.2), and (R1), we have 
+
+t∗
+
+L4 E
+
+h
+
+(1xi=xr − 1
+
+V )z⊤
+
+k Zin X⊤
+
+i 1L1⊤
+
+L XiZ⊤
+
+in Zin X⊤
+
+r 1L1⊤
+
+L Xr Z⊤
+
+in zk|Zin 
+
+i
+
+≤ Ct ∗
+
+V L 
+
+log 2 VV ∧ L2 ∧ L√d
+
+1
+
+L ∧ d .
+
+Moreover, by using (E1.4), (E2.2), (R1), and (R4) 1
+
+L4 E
+
+h
+
+(1xi=xr − 1
+
+V )∥A∗,ir −t∗Id∥2∥Zin X⊤
+
+r 1L1⊤
+
+LXr Z⊤
+
+in zk∥2∥Zin X⊤
+
+i 1L1⊤
+
+LXiZ⊤
+
+in zk∥2 Zin 
+
+i
+
+≤ CV L 2(L ∧ d)
+
+
+
+ϕ′(0) 2
+
+ 1
+
+N dL 3 + 1
+
+V dL 2
+
+1
+
+V ∧L2∧L√d
+
+
+
++ϕ′(0) 4
+
+ log VL2V 3/2√d + log 2 VL2N √V d 
+
+
+
+, ∗ = 1 
+
+√Vd√N L 
+
+ 1
+
+N L 32
+
++ 1
+
+V √L
+
+1
+
+V ∧L2∧L√d
+
+
+
++ϕ′(0) 4
+
+ log VN L √V d + log 3 VN √LV d 
+
+
+
+, ∗ = 2 
+
+≤ CN 3/2√V dL 4
+
+1
+
+L ∧ d + CV 3/2√N L 3d
+
+1
+
+L ∧ d
+
+1
+
+V ∧ L2 ∧ L√d + C log 3 VN V 3/2L5/2√d
+
+1(L ∧ d)3/2 . (D.6) On the other hand, for i = r, by (R4), tr( Ci, 1Bi, ∗B⊤
+
+i, ∗C⊤
+
+i, 1) + tr( Ci, 2Bi, ∗B⊤
+
+i, ∗C⊤
+
+i, 2)= 1
+
+L2 (1 − 1
+
+V )z⊤
+
+k Zin X⊤
+
+i XiZ⊤
+
+in A∗,ii Zin X⊤
+
+i XiZ⊤
+
+in zk
+
++ (1 − 1
+
+V )
+
+L4 z⊤
+
+k Zin X⊤
+
+i 1L1⊤
+
+L XiZ⊤
+
+in A∗,ii Zin X⊤
+
+i 1L1⊤
+
+L XiZ⊤
+
+in zk
+
+≤ t∗
+
+L2 (1 − 1
+
+V )∥Zin X⊤
+
+i XiZ⊤
+
+in zk∥22 + t∗
+
+L4 ∥Zin X⊤
+
+i 1L1⊤
+
+L XiZ⊤
+
+in zk∥22.
+
+34 By using (E1.4), (E2.2), (R1), and (P2) 
+
+t∗
+
+L2 E
+
+h
+
+∥Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+zk∥22 Zin 
+
+i
+
++ t∗
+
+L4 E
+
+h
+
+∥Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+zk∥22 Zin 
+
+i
+
+≤ Ct ∗
+
+L2
+
+ Ld + L2
+
+d2
+
+
+
++ Ct ∗
+
+L2
+
+1
+
+L ∧ d . (D.7) Therefore, we have by (D.4),(D.5),(D.6),(D.7) and using N ≪ V L and L ≪ V , we have 
+
+E
+
+h 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+CiBi, 1
+
+> 2
+> F
+
+Zin 
+
+i
+
++ E
+
+h 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+CiBi, 2
+
+> 2
+> F
+
+Zin 
+
+i
+
+≤ CN 2dL (d ∧ L2)( d ∧ L) + CN 3/2√V dL 2(d ∧ L2)( L ∧ d)+ CV 3/2√N Ld (d ∧ L2)( L ∧ d)1
+
+V ∧ L2 ∧ L√d + C log 3 VN V 3/2√Ld (d ∧ L2)( L ∧ d)3/2
+
+≤ CN 2dL (d ∧ L2)( d ∧ L) + C log 3 VN V 3/2√Ld (d ∧ L2)( L ∧ d)3/2 . (D.8) 
+
+Bounding the third term. We have 
+
+1
+
+N
+
+> N
+
+X
+
+> i=1
+
+CiBi, 3
+
+> 2
+> F
+
+≤ 2
+
+N 2
+
+ NX
+
+> i,r =1
+
+tr( Ci, 1Bi, 3B⊤
+
+> r, 3
+
+C⊤
+
+> r, 1
+
+) + tr( Ci, 2Bi, 3B⊤
+
+> r, 3
+
+C⊤
+
+> r, 2
+
+)
+
+
+
+.
+
+We recall the definition ˜∆3,ir in (R4): ˜∆3,ir =
+
+ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+αij (xj − 1 
+
+> V
+
+1V )
+
+⊤ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+αrj (xj − 1 
+
+> V
+
+1V )
+
+
+
+− ϕ′(0) 4
+
+N .
+
+We have for i̸ = r,tr( Ci, 1Bi, 3B⊤
+
+> r, 3
+
+C⊤
+
+> r, 1
+
+) + tr( Ci, 2Bi, 3B⊤
+
+> r, 3
+
+C⊤
+
+> r, 2
+
+)= 1
+
+L2 (1xi=xr − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+A3,ir Zin X⊤ 
+
+> r
+
+Xr Z⊤ 
+
+> in
+
+zk
+
++ 1
+
+L4 (1xi=xr − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+A3,ir Zin X⊤ 
+
+> r
+
+1L1⊤ 
+
+> L
+
+Xr Z⊤ 
+
+> in
+
+zk
+
+≤ t3
+
+L2 (1xi=xr − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> r
+
+Xr Z⊤ 
+
+> in
+
+zk
+
++ t3
+
+L4 (1xi=xr − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> r
+
+1L1⊤ 
+
+> L
+
+Xr Z⊤ 
+
+> in
+
+zk
+
++ ˜∆3,ir 
+
+V 2L4 (1xi=xr − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+1V 1⊤ 
+
+> V
+
+Zin X⊤ 
+
+> r
+
+Xr Z⊤ 
+
+> in
+
+zk
+
++ ˜∆3,ir 
+
+V 2L6 (1xi=xr − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+1V 1⊤ 
+
+> V
+
+Zin X⊤ 
+
+> r
+
+1L1⊤ 
+
+> L
+
+Xr Z⊤ 
+
+> in
+
+zk
+
+For the first term, by (P3), 
+
+t3
+
+L2 E
+
+h
+
+(1xi=xr − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> r
+
+Xr Z⊤ 
+
+> in
+
+zk|Zin 
+
+i
+
+≤ Cϕ ′(0) 4
+
+N V 2L4
+
+log 2 Vd2 .
+
+For the second term, by using (E1.4), (E1.5) and (E2.2) 
+
+t3
+
+L4 E
+
+h
+
+(1xi=xr − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> r
+
+1L1⊤ 
+
+> L
+
+Xr Z⊤ 
+
+> in
+
+zk|Zin 
+
+i
+
+≤ ϕ′(0) 4
+
+N V 3L4
+
+1
+
+L ∧ d
+
+
+
+L ∨ Vd
+
+
+
+.
+
+35 For the last two terms, by using (E1.1), (E1.4), (E2.2), (R1), (R4), and (P2), 1
+
+V 2L4 E
+
+h
+
+(1xi=xr − 1 
+
+> V
+
+)| ˜∆3,ir |∥ Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+zk∥2∥Zin X⊤ 
+
+> r
+
+Xr Z⊤ 
+
+> in
+
+zk∥2|Zin 
+
+i
+
++1
+
+V 2L6 E
+
+h
+
+(1xi=xr − 1 
+
+> V
+
+)| ˜∆3,ir |∥ Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+zk∥2∥Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> r
+
+1L1⊤ 
+
+> L
+
+Xr Z⊤ 
+
+> in
+
+zk∥2|Zin 
+
+i
+
+≤ CV 3L4
+
+ Ld + L2
+
+d2 + Vd2 + VLd 
+
+ ϕ′(0) 4 log 2 VN √V + ϕ′(0) 2
+
+N
+
+ 1
+
+N L + 1
+
+√N
+
+1
+
+V ∧ L2 ∧ L√d
+
+!
+
++ CV 3L4
+
+ Ld + L2
+
+d2 + Vd2 + VLd 
+
+ 1
+
+N L + 1
+
+√N
+
+1
+
+V ∧ L2 ∧ L√d
+
+2
+
+≤ CN V 3L2d(L ∧ d)
+
+ϕ′(0) 4 log 2 V
+
+√V ∧ L4 ∧ L2d + CN V 2L4d2
+
+ϕ′(0) 4 log 2 V
+
+√V ∧ L4 ∧ L2d . (D.9) For i = r, by using (R4), tr( Ci, 1Bi, 3B⊤
+
+> i, 3
+
+C⊤
+
+> i, 1
+
+) + tr( Ci, 2Bi, 3B⊤
+
+> i, 3
+
+C⊤
+
+> i, 2
+
+)= 1
+
+L2 (1 − 1
+
+V )z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+A3,ir Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+zk
+
++ 1
+
+L4 (1 − 1
+
+V )z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+A3,ir Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+zk
+
+≤ 2t3
+
+L2 |1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+zk|2 + 2t3
+
+L4 |1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+zk|2.
+
+Then, by (P4), (E1.4), (E2.2), and (E1.5), we have 
+
+t3
+
+L2 E
+
+h
+
+(1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+zk)2|Zin 
+
+i
+
++ t3
+
+L4 E
+
+h
+
+(1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+zk)2|Zin 
+
+i
+
+≤ Cϕ ′(0) 4 log 2 VN V d 2L2
+
+1
+
+L ∧ d
+
+
+
+1 + dL2 + d2
+
+V L 
+
+
+
+. (D.10) Therefore, by using (D.9)-(D.10) and using L ≪ V and N ≪ V L , we have 
+
+E
+
+h 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+CiBi, 3
+
+> 2
+> F
+
+|Zin 
+
+i
+
+≪ 1
+
+N 2dL (d ∧ L2)( d ∧ L) . (D.11) Therefore, by (D.8)-(D.11), we have 
+
+ϑ2 ≤ C log VN √Ld (d ∧ L2)1/2(d ∧ L)1/2 + C log 5/2 V
+
+√N (V d )3/4L1/4(d ∧ L2)1/2(L ∧ d)3/4 .
+
+Bounding ϑ1: We have 
+
+ϑ1 = tr 
+
+ 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+CiBi, 1
+
+
+
++ tr 
+
+ 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+CiBi, 2
+
+| {z }
+
+> := ϑ11
+
++ tr 
+
+ 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+CiBi, 3
+
+| {z }
+
+> := ϑ12
+
+.
+
+We have 
+
+ϑ11 = 1
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+αij (1xi=xj − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin X⊤
+
+> i
+
+ IL − 1
+
+L 1L1⊤
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L
+
+= ϕ′(0) 2
+
+N 2L2
+
+> N
+
+X
+
+> j=1
+
+z⊤ 
+
+> k
+
+Zin 
+
+ NX
+
+> i=1
+> i̸=j
+
+(1xi=xj − 1 
+
+> V
+
+1V )X⊤
+
+> i
+
+ IL − 1 
+
+> L
+
+1L1⊤
+
+> L
+
+Xi
+
+
+
+Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L
+
+36 + (1 − 1 
+
+> V
+
+)
+
+N 2L2
+
+> N
+
+X
+
+> j=1
+
+αjj z⊤ 
+
+> k
+
+Zin X⊤
+
+> j
+
+ IL − 1
+
+L 1L1⊤
+
+> L
+
+Xj Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L
+
++ 1
+
+N 2L2
+
+> N
+
+X
+
+> j=1
+> N
+
+X
+
+> i=1
+> i̸=j
+
+(αij − ϕ′(0) 2)( 1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤
+
+> i
+
+ IL − 1 
+
+> L
+
+1L1⊤
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L
+
+=: ϑ11 a + ϑ11 b + ϑ11 c.
+
+We start with the last term. By using H¨ older’s inequality, 
+
+|ϑ11 c| ≤ 
+
+ 1
+
+N 2L2
+
+> N
+
+X
+
+> j=1
+> N
+
+X
+
+> i=1
+> i̸=j
+
+|1xi=xj − 1 
+
+> V
+
+|
+
+
+
+sup  
+
+> i̸=j∈[N]
+
+|αij − ϕ′(0) 2|× sup  
+
+> i̸=j∈[N]
+
+|z⊤ 
+
+> k
+
+Zin X⊤
+
+> i
+
+ IL − 1 
+
+> L
+
+1L1⊤
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L|≤ C log VV L √d√L ∧ d
+
+1
+
+V ∧ L2 ∧ L√d . (D.12) where we used (E1.8), (E2.4), (E2.8), and (R2) in (D.12). Next, we consider ϑ11 b:
+
+|ϑ11 b| = (1 − 1 
+
+> V
+
+)
+
+N 2L2
+
+> N
+
+X
+
+> j=1
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+αjj X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L − E αjj X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L Zin 
+
+
+
++ (1 − 1 
+
+> V
+
+)
+
+N L 2 z⊤ 
+
+> k
+
+Zin E α11 X⊤ 
+
+> 1
+
+X1Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> 1
+
+1L Zin 
+
+
+
+− (1 − 1 
+
+> V
+
+)
+
+N 2LV 
+
+> N
+
+X
+
+> j=1
+
+αjj z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+Zin 1V
+
+− (1 − 1 
+
+> V
+
+)
+
+N 2L3
+
+> N
+
+X
+
+> j=1
+
+αjj z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L1⊤ 
+
+> L
+
+Xj Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L.
+
+• For the first summand, 
+
+E
+
+"( (1 − 1 
+
+> V
+
+)
+
+N 2L2
+
+> N
+
+X
+
+> j=1
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+αjj X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L − E αjj X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L Zin 
+
+)2
+
+Zin 
+
+#
+
+≤ (1 − 1 
+
+> V
+
+)2
+
+N 3L4 E
+
+h
+
+α2
+
+> jj
+
+
+
+z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> 1
+
+X1Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> 1
+
+1L
+
+2
+
+Zin 
+
+i
+
+≤ Cϕ ′(0) 4
+
+N 3L3 E
+
+h
+
+z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> 1
+
+X1Z⊤ 
+
+> in
+> 22
+
+Zin 
+
+i
+
+(D.13) where we used (R1) in (D.13). By Chebyshev’s inequality and (P2), with probability 1 − oV (1), we have 
+
+z⊤ 
+
+> k
+
+Zin 
+
+(1 − 1 
+
+> V
+
+)
+
+N 2L2
+
+> N
+
+X
+
+> j=1
+
+
+
+αjj X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L − E αjj X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L|Zin 
+
+
+
+≤ Cϕ ′(0) 2 log VN 32
+
+√Ld √L ∧ d .
+
+• For the second summand, (1 − 1 
+
+> V
+
+)
+
+N L 2 z⊤ 
+
+> k
+
+Zin E α11 X⊤ 
+
+> 1
+
+X1Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> 1
+
+1L Zin 
+
+
+
+= (1 − 1 
+
+> V
+
+)ϕ′(0) 2
+
+N L 2 z⊤ 
+
+> k
+
+Zin E X⊤ 
+
+> 1
+
+X1Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> 1
+
+X1 Zin 
+
+1V
+
+37 + (1 − 1 
+
+> V
+
+)
+
+N L 2 z⊤ 
+
+> k
+
+Zin E   α11 − ϕ′(0) 2X⊤ 
+
+> 1
+
+X1Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> 1
+
+X1 Zin 
+
+1V
+
+= (1 − 1 
+
+> V
+
+)ϕ′(0) 2
+
+N L z⊤ 
+
+> k
+
+Zin E x1x⊤ 
+
+> 1
+
+Z⊤ 
+
+> in
+
+Zin x1x⊤ 
+
+> 1
+
+Zin 
+
+1V + (1 − 1 
+
+> V
+
+)ϕ′(0) 2
+
+N V 2 z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin 1V (D.14) + (1 − 1 
+
+> V
+
+)
+
+N LV z⊤ 
+
+> k
+
+Zin E   α11 − ϕ′(0) 2Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> 1
+
+1L Zin 
+
+ (D.15) + (1 − 1 
+
+> V
+
+)
+
+N L 2 z⊤ 
+
+> k
+
+Zin E   α11 − ϕ′(0) 2  X⊤ 
+
+> 1
+
+X1 − LV IV
+
+Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> 1
+
+− 1
+
+V 1V 1⊤ 
+
+> L
+
+)1L Zin 
+
+ (D.16) + (1 − 1 
+
+> V
+
+)
+
+N LV z⊤ 
+
+> k
+
+Zin E   α11 − ϕ′(0) 2  X⊤ 
+
+> 1
+
+X1 − LV IV
+
+Z⊤ 
+
+> in
+
+Zin 1V Zin 
+
+ (D.17) 
+
+≤ C log V
+
+ 1
+
+N √V d (L ∧ d) + 1
+
+N L 3/2√d(L ∧ d)
+
+
+
+.
+
+where we use (E1.3) to bound (D.14); (E1.6), (R2) for (D.15); (P5), (R2) for (D.16); and (E1.8), (R2) for (D.17). 
+
+• For the third summand, 1
+
+N 2LV 
+
+> N
+
+X
+
+> j=1
+
+αjj z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+Zin 1V = ϕ′(0) 2
+
+N V 2 z⊤ 
+
+> k
+
+Zin Zin Z⊤ 
+
+> in
+
+1V
+
++ ϕ′(0) 2
+
+N 2LV 
+
+> N
+
+X
+
+> j=1
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+X⊤ 
+
+> j
+
+Xj − LV IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 1V
+
++ 1
+
+N 2LV 
+
+> N
+
+X
+
+> j=1
+
+(αjj − ϕ′(0) 2)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+Zin 1V .
+
+The first term: 
+
+ϕ′(0) 2
+
+N V 2 z⊤ 
+
+> k
+
+Zin Zin Z⊤ 
+
+> in
+
+1V ≤ C log VN √V d 32
+
+.
+
+The second term: By using 
+
+E
+
+h NX
+
+> j=1
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+X⊤ 
+
+> j
+
+Xj − LV IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 1V
+
+2
+
+|Zin 
+
+i
+
+=
+
+> N
+
+X
+
+> j=1
+
+E
+
+h 
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+X⊤ 
+
+> j
+
+Xj − LV IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 1V
+
+2
+
+|Zin 
+
+i
+
+= LV N d2 .
+
+Therefore, by Chebyshev’s inequality, we have 
+
+ϕ′(0) 2
+
+N 2LV 
+
+> N
+
+X
+
+> j=1
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+X⊤ 
+
+> j
+
+Xj − LV IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 1V ≤ ϕ′(0) 2
+
+N 3/2√V Ld .
+
+Finally, 
+
+1
+
+N 2LV 
+
+> N
+
+X
+
+> j=1
+
+(αjj − ϕ′(0) 2)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+Zin 1V ≤ CN √V
+
+1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+(αjj − ϕ′(0) 2)Zin X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in 2
+
+≤ CN √V Ld ,
+
+where we use (E2.8) and (E1.1) and (R2). Therefore, 
+
+1
+
+N 2LV 
+
+> N
+
+X
+
+> j=1
+
+αjj z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+Xj Z⊤ 
+
+> in
+
+Zin 1V ≤ C log V
+
+ 1
+
+N √V d 32
+
++ 1
+
+N √V Ld 
+
+
+
+.
+
+38 • For the last summand, (1 − 1 
+
+> V
+
+)
+
+N 2L3
+
+> N
+
+X
+
+> j=1
+
+αjj z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L1⊤ 
+
+> L
+
+Xj Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L
+
+= (1 − 1 
+
+> V
+
+)
+
+N 2L3
+
+> N
+
+X
+
+> j=1
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+αjj X⊤ 
+
+> j
+
+1L1⊤ 
+
+> L
+
+Xj Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L
+
+− E αjj X⊤ 
+
+> j
+
+1L1⊤ 
+
+> L
+
+Xj Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L Zin 
+
+
+
++ (1 − 1 
+
+> V
+
+)ϕ′(0) 2
+
+N L 3 z⊤ 
+
+> k
+
+Zin E X⊤ 
+
+> 1
+
+1L1⊤ 
+
+> L
+
+X1Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> 1
+
+− 1
+
+V 1V 1⊤ 
+
+> L
+
+)1L Zin 
+
+
+
++ (1 − 1 
+
+> V
+
+)
+
+N L 3 z⊤ 
+
+> k
+
+Zin E (α11 − ϕ′(0) 2)X⊤ 
+
+> 1
+
+1L1⊤ 
+
+> L
+
+X1Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> 1
+
+− 1
+
+V 1V 1⊤ 
+
+> L
+
+)1L Zin 
+
+. (D.18) We have 
+
+z⊤ 
+
+> k
+
+Zin E
+
+h 
+
+αjj X⊤ 
+
+> 1
+
+1L1⊤ 
+
+> L
+
+X1Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> 1
+
+− 1
+
+V 1V 1⊤ 
+
+> L
+
+)1L
+
+2
+
+Zin 
+
+i
+
+Z⊤ 
+
+> in
+
+zk ≤ CL 2z⊤ 
+
+> k
+
+Zin E
+
+h
+
+X⊤ 
+
+> 1
+
+1L1⊤ 
+
+> L
+
+X1
+
+i
+
+Z⊤ 
+
+> in
+
+zk
+
+≤ CL 2 Ld + L2
+
+V d 
+
+
+
+.
+
+Moreover, by using Proposition 8 
+
+E X⊤ 
+
+> 1
+
+1L1⊤ 
+
+> L
+
+X1Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> 1
+
+− 1
+
+V 1V 1⊤ 
+
+> L
+
+)1L Zin 
+
+
+
+= E X⊤ 
+
+> 1
+
+1L1⊤ 
+
+> L
+
+X1Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> 1
+
+1L Zin 
+
+− LV E X⊤ 
+
+> 1
+
+1L1⊤ 
+
+> L
+
+X1Z⊤ 
+
+> in
+
+Zin 1V Zin 
+
+
+
+= L E x1x⊤ 
+
+> 1
+
+Z⊤ 
+
+> in
+
+Zin x1 Zin 
+
++
+
+ L(L − 1) 
+
+V 2 tr( Z⊤ 
+
+> in
+
+Zin )− 2L(L − 1) 
+
+V 3 1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin 1V
+
+
+
+1V + L(L − 2) 
+
+V 2 Z⊤ 
+
+> in
+
+Zin 1V .
+
+Lastly, 
+
+1
+
+N L 3 z⊤ 
+
+> k
+
+Zin E (α11 − ϕ′(0) 2)X⊤ 
+
+> 1
+
+1L1⊤ 
+
+> L
+
+X1Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> 1
+
+− 1
+
+V 1V 1⊤ 
+
+> L
+
+)1L Zin 
+
+
+
+≤ 1
+
+N L 3 E
+
+h
+
+|α11 − ϕ′(0) 2|| z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> 1
+
+1L| | 1⊤ 
+
+> L
+
+X1Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> 1
+
+− 1
+
+V 1V 1⊤ 
+
+> L
+
+)1L| Zin 
+
+i
+
+≤ C log VN L 5/2√d ,
+
+where we used (R1),(R2), (E1.4), (E1.5) for the last inequality. Therefore, by Chebyshev’s inequality, with probability 1 − oV (1), we have (D.18) ≤ C log V
+
+ 1
+
+N L 2√L ∧ d + 1
+
+N L √V d 
+
+
+
+Therefore, we have 
+
+|ϑ11 b| ≤ C log V
+
+ 1
+
+N √V (L ∧ d)√d + 1
+
+N L 2√L ∧ d
+
+
+
+. (D.19) Finally, we consider ϑ11 a:
+
+ϑ11 a = (1 − 1 
+
+> L
+
+) ϕ′(0) 2
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+z⊤ 
+
+> k
+
+Zin 
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+> i̸=j
+
+(1xi=xj − 1 
+
+> V
+
+)xix⊤
+
+> i
+
+
+
+Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L
+
+− ϕ′(0) 2
+
+N L 2
+
+> N
+
+X
+
+> j=1
+
+z⊤ 
+
+> k
+
+Zin 
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+> i̸=j
+
+(1xi=xj − 1 
+
+> V
+
+)( xi1⊤ 
+
+> L
+
+Xi +X⊤ 
+
+> i
+
+1Lx⊤
+
+> i
+
+
+
+Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L
+
+39 + ϕ′(0) 2
+
+N L 
+
+NX
+
+j=1 
+
+z⊤
+
+k Zin 
+
+ 1
+
+N L 
+
+NX
+
+i=1 
+
+i̸=j
+
+(1xi=xj − 1
+
+V )N ⊤
+
+i Ni
+
+
+
+Z⊤
+
+in Zin (xj − 1
+
+V 1V )+ ϕ′(0) 2
+
+N L 
+
+NX
+
+j=1 
+
+z⊤
+
+k Zin 
+
+ 1
+
+N L 
+
+NX
+
+i=1 
+
+i̸=j
+
+(1xi=xj − 1
+
+V )N ⊤
+
+i Ni
+
+
+
+Z⊤
+
+in Zin (N ⊤
+
+j − 1
+
+V 1V 1⊤
+
+L−1)1L−1
+
+− ϕ′(0) 2
+
+N L 2
+
+NX
+
+j=1 
+
+z⊤
+
+k Zin 
+
+ 1
+
+N L 
+
+NX
+
+i=1 
+
+i̸=j
+
+(1xi=xj − 1
+
+V )N ⊤
+
+i 1L1⊤
+
+L Ni
+
+
+
+Z⊤
+
+in Zin (N ⊤
+
+j − 1
+
+V 1V 1⊤
+
+L−1)1L−1
+
+=: ϑaa + ϑab + ϑac + ϑad + ϑae .
+
+For the first summand, we write 
+
+ϑaa := (1 − 1
+
+L ) ϕ′(0) 2
+
+N L 
+
+NX
+
+j=1 
+
+z⊤
+
+k Zin 
+
+ 1
+
+N L 
+
+NX
+
+i=1 
+
+i̸=j
+
+(1xi=xj − 1
+
+V )xix⊤
+
+i
+
+
+
+Z⊤
+
+in Zin (xj − 1
+
+V 1V )
+
+| {z }
+
+:= ϑaa 1
+
++ (1 − 1
+
+L ) ϕ′(0) 2
+
+N L 
+
+NX
+
+j=1 
+
+z⊤
+
+k Zin 
+
+ 1
+
+N L 
+
+NX
+
+i=1 
+
+i̸=j
+
+(1xi=xj − 1
+
+V )xix⊤
+
+i
+
+
+
+Z⊤
+
+in Zin (N ⊤
+
+j − 1
+
+V 1V 1⊤
+
+L−1)1L−1
+
+| {z }
+
+:= ϑaa 2
+
+.
+
+We have 
+
+|ϑaa 1| ≤ 
+
+ ϕ′(0) 2
+
+N 2L2
+
+NX
+
+j=1 
+
+NX
+
+i=1 
+
+i̸=j
+
+|1xi=xj − 1
+
+V |
+
+
+
+sup 
+
+i̸=j
+
+1xi̸ =ek z⊤
+
+k Zin xix⊤
+
+i Z⊤
+
+in Zin (xj − 1
+
+V 1V )
+
++
+
+ ϕ′(0) 2
+
+N 2L2
+
+NX
+
+j=1 
+
+NX
+
+i=1 
+
+i̸=j
+
+|1xj =ek − 1
+
+V |(1xi=ek − 1
+
+V )
+
+
+
+sup 
+
+j
+
+|z⊤
+
+k Zin eke⊤
+
+k Z⊤
+
+in Zin (xj − 1
+
+V 1V )
+
++
+
+ ϕ′(0) 2
+
+N 2V L 2
+
+NX
+
+j=1 
+
+NX
+
+i=1 
+
+i̸=j
+
+|1xj =ek − 1
+
+V |
+
+
+
+sup 
+
+j
+
+|z⊤
+
+k Zin eke⊤
+
+k Z⊤
+
+in Zin (xj − 1
+
+V 1V )
+
+≤ C log VV L 2√d .
+
+where we use (E1.1) and (E2.4). Moreover, let 
+
+ϑaa 2 =: (1 − 1
+
+L ) ϕ′(0) 2
+
+N L 
+
+NX
+
+j=1 
+
+ϑaa 2,j .
+
+We have E[ϑaa 2,j |Zin ] = 0 and E[ϑaa 2,j ϑaa 2,j ′ |Zin ] = 0 for j̸ = j′, and 
+
+E[ϑ2
+
+aa 2,j |Zin ] ≤ CL d E
+
+h
+
+z⊤
+
+k Zin 
+
+ 1
+
+N L 
+
+NX
+
+i=1 
+
+i̸=j
+
+1xi=xj xix⊤
+
+i
+
+
+
+Z⊤
+
+in Zin 
+
+ 1
+
+N L 
+
+NX
+
+i=1 
+
+i̸=j
+
+1xi=xj xix⊤
+
+i
+
+
+
+Z⊤
+
+in zk|Zin 
+
+i
+
++ CL dV 2 E
+
+h
+
+z⊤
+
+k Zin 
+
+ 1
+
+N L 
+
+NX
+
+i=1 
+
+i̸=j
+
+xix⊤
+
+i
+
+
+
+Z⊤
+
+in Zin 
+
+ 1
+
+N L 
+
+NX
+
+i=1 
+
+i̸=j
+
+xix⊤
+
+i
+
+
+
+Z⊤
+
+in zk|Zin 
+
+i
+
+≤ CV 2Ld 2 ,
+
+40 where we use (E2.8) and (E1.1). Therefore, by Chebyshev’s inequality with probability 1 − oV (1), we have 
+
+|ϑaa 2| ≤ C log V
+
+√N V L 3/2d .
+
+Therefore, 
+
+|ϑaa | ≤ C log VV L 2√d + C log V
+
+√N V L 3/2d .
+
+Moreover, for the second term, we write 
+
+|ϑab | ≤ 
+
+ ϕ′(0) 2
+
+N 2L3
+
+> N
+
+X
+
+> j=1
+> N
+
+X
+
+> i=1
+> i̸=j
+
+|1xi=xj − 1 
+
+> V
+
+|
+
+
+
+sup 
+
+> i̸=j
+
+|1xi̸ =ek z⊤ 
+
+> k
+
+Zin (xi1⊤ 
+
+> L
+
+Xi + X⊤ 
+
+> i
+
+1Lx⊤ 
+
+> i
+
+)Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L|
+
++
+
+ ϕ′(0) 2
+
+N 2L3
+
+> N
+
+X
+
+> j=1
+> N
+
+X
+
+> i=1
+> i̸=j
+
+|1xj =ek − 1 
+
+> V
+
+|(1xi=ek − 1 
+
+> V
+
+)
+
+
+
+sup 
+
+> j
+
+|z⊤ 
+
+> k
+
+Zin (ek1⊤ 
+
+> L
+
+Xi + X⊤ 
+
+> i
+
+1Le⊤
+
+> k
+
+
+
+Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L|
+
++
+
+ ϕ′(0) 2
+
+N 2V L 3
+
+> N
+
+X
+
+> j=1
+> N
+
+X
+
+> i=1
+> i̸=j
+
+|1xj =ek − 1 
+
+> V
+
+|
+
+
+
+sup 
+
+> j
+
+|z⊤ 
+
+> k
+
+Zin (ek1⊤ 
+
+> L
+
+Xi + X⊤ 
+
+> i
+
+1Le⊤
+
+> k
+
+
+
+Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L|≤ C log VV L 2d .
+
+where we used (E1.1), (E1.3), (E2.4) and (R1). For the third term, we write 
+
+ϑac = ϕ′(0) 2
+
+N L 2
+
+> N
+
+X
+
+> i=1
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L − 1
+
+V IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ 1
+
+N
+
+> N
+
+X 
+
+> j=1
+> j̸=i
+
+(1xi=xj − 1 
+
+> V
+
+)( xj − 1 
+
+> V
+
+1V )
+
+
+
++ ϕ′(0) 2(L − 1) 
+
+N L 2V z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin 
+
+ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )( xj − 1 
+
+> V
+
+1V )⊤ NX
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )
+
+− ϕ′(0) 2(1 − 1 
+
+> V
+
+)( L − 1) 
+
+N 2L2V z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )=: ϑac 1 + ϑac 2 + ϑac 3.
+
+By using (E1.1), (E2.3), (E2.5), 
+
+E[ϑ2
+
+> ac 2
+
+|Zin ] ≤ CN 2L2V 3d z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+zk ≤ CN 2L2V d 3 .
+
+Moreover, 
+
+E[ϑ2
+
+> ac 3
+
+|Zin ] ≤ CN 3L2V 2d z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+zk ≤ CN 3L2d3
+
+Therefore, 
+
+|ϑac 2| ≤ C log VN √V Ld 32
+
+, |ϑac 3| ≤ C log VN √N Ld 32
+
+.
+
+Moreover, we have 
+
+E[ϑ2
+
+> ac 1
+
+] ≤ CN 2V 2L4d
+
+> N
+
+X
+
+> i=1
+
+E
+
+h
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L − 1
+
+V IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L − 1
+
+V IV
+
+
+
+Z⊤ 
+
+> in
+
+zk|Zin 
+
+i
+
+41 ≤ CN 2V 2L4dL − 1
+
+V
+
+> N
+
+X
+
+> i=1
+
+E
+
+h
+
+z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+zk|Zin 
+
+i
+
+− CN 2V 2L4dL − 1
+
+V 2
+
+> N
+
+X
+
+> i=1
+
+E
+
+h
+
+z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+zk|Zin 
+
+i
+
+≤ CN V 2L3d2 .
+
+Therefore, by Chebyshev’s inequality, we have 
+
+|ϑac 1| ≤ C log V
+
+√N V L 32 d
+
+For the fourth term, we have E[ϑad |Zin ] = 0 and 
+
+E[ϑ2
+
+> ad
+
+|Zin ] = CN 4L4 E
+
+h NX
+
+> i,j =1
+
+1i̸=j (1xi=xj − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+Zin (N ⊤ 
+
+> j
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1
+
+2
+
+|Zin 
+
+i
+
+= CV N 4L4
+
+> N
+
+X
+
+> i,j =1
+
+E
+
+h 
+
+z⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+Zin (N ⊤ 
+
+> j
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1
+
+2
+
+|Zin 
+
+i
+
+≤ CV N 4L3d
+
+> N
+
+X
+
+> i,j =1
+
+E
+
+h
+
+z⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+zk|Zin 
+
+i
+
+≤ CV N 2Ld 2(L ∧ d)where we used (P2) in the last step. Therefore, by Chebyshev’s inequality with probability 1 − oV (1), we have 
+
+|ϑad | ≤ C log VN √V Ld √L ∧ d
+
+For the last term, we have E[ϑae |Zin ] = 0 and 
+
+E[ϑ2
+
+> ae
+
+|Zin ] ≤ CN 4L6 E
+
+h NX
+
+> i,j =1
+
+1i̸=j (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+NiZ⊤ 
+
+> in
+
+Zin (N ⊤ 
+
+> j
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1
+
+2
+
+|Zin 
+
+i
+
+≤ CV N 4L6
+
+> N
+
+X
+
+> i,j =1
+
+E
+
+h 
+
+z⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+NiZ⊤ 
+
+> in
+
+Zin (N ⊤ 
+
+> j
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1
+
+2
+
+|Zin 
+
+i
+
+≤ CN 4L4dV 
+
+> N
+
+X
+
+> i,j =1
+
+E
+
+h
+
+z⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+1L−11⊤
+
+> L−1
+
+NiZ⊤ 
+
+> in
+
+zk|Zin 
+
+i
+
+≤ CN 2L4dV 
+
+
+
+1 + Ld
+
+
+
+where we use (E1.4) in the last step. Therefore, by Chebyshev’s inequality with probability 1 − oV (1), we have 
+
+|ϑae | ≤ C log VN √V L 3/2√d(L ∧ d)1/2 .
+
+Overall, we have 
+
+|ϑ11 a| ≤ C log V
+
+ 1
+
+V L 2√d + 1
+
+√N V √Ld (L ∧ d)
+
+
+
+. (D.20) 42 Therefore, by (D.12)-(D.19)-(D.20) and using N ≪ V L and L ≪ V , we have 
+
+|ϑ11 | ≤ C log V
+
+ 1
+
+V L 2√d + 1
+
+√N V √Ld (L ∧ d)
+
+
+
++ C log V
+
+ 1
+
+N √V (L ∧ d)√d + 1
+
+N L 2√L ∧ d
+
+
+
++ C log VV L √d√L ∧ d
+
+1
+
+V ∧ L2 ∧ L√d
+
+≤ C log V
+
+ 1
+
+N √V (L ∧ d)√d + 1
+
+V L 2(L ∧ d)1/2
+
+
+
+. (D.21) Finally, 
+
+ϑ12 = 1
+
+N 2L2V
+
+> N
+
+X
+
+> i,j =1
+
+αij (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤
+
+> i
+
+ IL − 1 
+
+> L
+
+1L1⊤
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin 1V
+
+= 1
+
+N 2L2V
+
+> N
+
+X
+
+> i,j =1
+
+αij (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin 
+
+
+
+X⊤ 
+
+> i
+
+Xi − LV IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 1V
+
++ 1
+
+N 2LV 2
+
+> N
+
+X
+
+> i,j =1
+
+αij (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin 1V
+
+− 1
+
+N 2L3V
+
+> N
+
+X
+
+> i,j =1
+
+αij (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin 1V
+
+• For the first term, 1
+
+N 2L2V
+
+> N
+
+X
+
+> i,j =1
+
+αij (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin 
+
+ X⊤ 
+
+> i
+
+Xi − LV IV
+
+Z⊤ 
+
+> in
+
+Zin 1V
+
+≤ 1
+
+N 2L2V
+
+ NX
+
+> i,j =1
+
+|1xi=xj − 1 
+
+> V
+
+|
+
+
+
+sup 
+
+> i,j
+
+(αij − ϕ′(0) 2)z⊤ 
+
+> k
+
+Zin 
+
+ X⊤ 
+
+> i
+
+Xi − LV IV
+
+Z⊤ 
+
+> in
+
+Zin 1V
+
++ ϕ′(0) 2
+
+N 2L2V
+
+ NX
+
+> i=1
+> N
+
+X
+
+> j=1
+
+(1xi=xj − 1 
+
+> V
+
+)
+
+
+
+sup 
+
+> i
+
+(z⊤ 
+
+> k
+
+Zin 
+
+ X⊤ 
+
+> i
+
+Xi − LV IV
+
+Z⊤ 
+
+> in
+
+Zin 1V
+
+≤ 1
+
+N 2L2V
+
+ NX
+
+> i,j =1
+
+|1xi=xj − 1 
+
+> V
+
+|
+
+
+
+sup 
+
+> i,j
+
+(αij − ϕ′(0) 2)z⊤ 
+
+> k
+
+Zin 
+
+ X⊤ 
+
+> i
+
+Xi − LV IV
+
+Z⊤ 
+
+> in
+
+Zin 1V
+
++ ϕ′(0) 2
+
+N L 2V
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V ) ∞
+
+sup 
+
+> i
+
+z⊤ 
+
+> k
+
+Zin 
+
+ X⊤ 
+
+> i
+
+Xi − LV IV
+
+Z⊤ 
+
+> in
+
+Zin 1V
+
+≲ 1
+
+V L 2√V (L ∧ d) ,
+
+where we (E1.2), (E1.8), (E2.3), and (R2). 
+
+• For the second term 1
+
+N 2LV 2
+
+> N
+
+X
+
+> i=1
+> N
+
+X
+
+> j=1
+
+αij (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin 1V
+
+≤ 1
+
+N 2LV 2
+
+ NX
+
+> i=1
+> N
+
+X
+
+> j=1
+
+|1xi=xj − 1 
+
+> V
+
+|
+
+
+
+sup 
+
+> i,j
+
+|αij z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin 1V | ≤ C log VV 3/2Ld 3/2 ,
+
+where we used (E1.3), (E2.4), and (R2). 43 • For the third term, 1
+
+N 2L3V
+
+> N
+
+X
+
+> i,j =1
+
+αij (1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin 1V
+
+≤ 1
+
+N 2L3V
+
+ NX
+
+> i,j =1
+
+|1xi=xj − 1 
+
+> V
+
+1V |
+
+
+
+sup 
+
+> i,j
+
+|αij z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin 1V |≤ 1
+
+V 2L2
+
+√L +
+
+q Vd
+
+
+
+√L ∧ d
+
+where we used (E1.4), (E1.5), (E2.4), and (R2). Therefore, by Chebyshev’s inequality with probability 1 − oV (1), we have 
+
+|ϑ12 | ≤ C log 3 VN L 3V d 2 + C log 2 VV L √V d 3/2 . (D.22) By (D.21)-(D.22), overall we have 
+
+ϑ1 ≤ C log V
+
+ 1
+
+V L 2√d + 1
+
+√N V L 3/2d + 1
+
+N √V Ld √L ∧ d + 1
+
+N Ld √V (L ∧ √V )
+
+
+
++ C log V
+
+ 1
+
+N √V (L ∧ d)√d + 1
+
+N √V d 32
+
++ 1
+
+N L 2√L ∧ d
+
+
+
++ C log VV √Ld (L ∧ d)1
+
+V ∧ L2 ∧ L√d
+
+≤ C log V
+
+ 1
+
+N √V (L ∧ d)√d + 1
+
+√N V L 3/2d + 1
+
+V L 3/2d(L ∧ d) + 1
+
+V 2√Ld (L ∧ d)
+
+
+
++ C log VV L 2(L ∧ d)1/2 .
+
+D.1.2 Concentration bound for φ
+
+We recall that 
+
+φ = μkl 
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+αij 
+
+ e1 − 1 
+
+> L
+
+1L
+
+⊤XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xi − 1 
+
+> V
+
+1V )In this part, we will focus on the term 1
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+αij 
+
+ e1 − 1 
+
+> L
+
+1L
+
+⊤XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xi − 1 
+
+> V
+
+1V )= 1
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+αij tr 
+
+
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xi − 1 
+
+> V
+
+1V )x⊤
+
+> i
+
+
+
+− 1
+
+N 2L3
+
+> N
+
+X
+
+> i,j =1
+
+αij tr 
+
+
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xi − 1 
+
+> V
+
+1V )1⊤ 
+
+> L
+
+Xi
+
+
+
+=: φ1 + φ2.
+
+For the first term, we write 
+
+φ1 = ϕ′(0) 2
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+tr 
+
+
+
+Zout (xi − 1 
+
+> V
+
+1V )x⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+
+
+44 + 1
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+tr 
+
+
+
+Zout (αij − ϕ′(0) 2)( xi − 1
+
+V 1V )x⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1
+
+V 1V )⊤Z⊤
+
+> out
+
+
+
+=: φ11 + φ12 
+
+We start with the second term. By Proposition 5, we have 
+
+φ12 = 1
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+(αij − ϕ′(0) 2)( 1xi=xj − 1
+
+V )x⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L
+
+± log 2 VN 2L2√d
+
+> N
+
+X
+
+> i,j =1
+
+(αij − ϕ′(0) 2)( xi − 1
+
+V 1V )x⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1
+
+V 1V )⊤
+
+> F
+
+Let M := (αij − ϕ′(0) 2)x⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L) i,j ∈[N ]. We have 
+
+> N
+
+X
+
+> i,j =1
+
+(αij − ϕ′(0) 2)( xi − 1 
+
+> V
+
+1V )x⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤
+
+> F
+
+≤ ∥ M ∥F
+
+> N
+
+X
+
+> i=1
+
+(xi − 1
+
+V 1V )( xi − 1
+
+V 1V )⊤
+
+> 2
+
+≤ NV ∥M ∥F ,
+
+where we used (E2.5). Moroever, 
+
+∥S∥2 
+
+> F
+
+=
+
+> N
+
+X
+
+> i,j =1
+
+(αij − ϕ′(0) 2)2(x⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L)2
+
+≤
+
+ NX
+
+> i̸=j=1
+
+|αij − ϕ′(0) 2|2 +
+
+> N
+
+X
+
+> i=1
+
+|αii − ϕ′(0) 2|2
+
+sup 
+
+> i,j
+
+|x⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L|
+
+≲
+
+ N 2
+
+(V ∧ L2 ∧ L√d)2 + NL2
+
+ 
+
+1 + Ld
+
+
+
+,
+
+where we used (E1.4) and (E2.4). Therefore, 1
+
+N 2L2√d
+
+> N
+
+X
+
+> i,j =1
+
+(αij − ϕ′(0) 2)( xi − 1
+
+V 1V )x⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1
+
+V 1V )⊤
+
+> F
+
+≤ 1
+
+N V L 3/2√d(L ∧ d)1/2
+
+ NV ∧ L2 ∧ L√d +
+
+√NL
+
+
+
+≲ 1
+
+V L 2√L ∧ d .
+
+Moreover, 1
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+(αij − ϕ′(0) 2)( 1xi=xj − 1 
+
+> V
+
+)x⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L
+
+≤ 1
+
+N 2L2
+
+ NX
+
+> i,j =1
+
+|1xi=xj − 1 
+
+> V
+
+|
+
+
+
+sup  
+
+> i,j ∈[N]
+
+|(αij − ϕ′(0) 2)x⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L| ≲ 1
+
+V L 2√L ∧ d ,
+
+where we used (E1.4), (E2.4), (R2). Therefore, |φ12 | ≲ 1 
+
+> V L 2√L∧d
+
+.Next, we consider |φ2|. By Proposition 5, 
+
+φ2 = ϕ′(0) 2
+
+N 2L3
+
+> N
+
+X
+
+> i,j =1
+
+(1xi=xj − 1 
+
+> V
+
+)1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L
+
+45 ± ϕ′(0) 2
+
+√d
+
+1
+
+N 2L3
+
+> N
+
+X
+
+> i,j =1
+
+(xi − 1 
+
+> V
+
+1V )1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤
+
+> F
+
++ 1
+
+N 2L3
+
+> N
+
+X
+
+> i,j =1
+
+(αij − ϕ′(0) 2)( 1xi=xj − 1 
+
+> V
+
+)1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L
+
+± 1
+
+√d
+
+1
+
+N 2L3
+
+> N
+
+X
+
+> i,j =1
+
+(αij − ϕ′(0) 2)( xi − 1 
+
+> V
+
+1V )1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤
+
+> F
+
+=: φ21 + φ22 + φ23 + φ24 .
+
+For φ24 , we define M := (αij − ϕ′(0) 2)1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L i,j ∈[N ]. Similar to above, we have 
+
+φ24 ≤ 1
+
+N V L 3√d ∥M ∥F .
+
+We have 
+
+∥M ∥2 
+
+> F
+
+=
+
+> N
+
+X
+
+> i,j =1
+
+(αij − ϕ′(0) 2)2(X⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L)2
+
+≤
+
+ NX
+
+> i̸=j=1
+
+|αij −ϕ′(0) 2|2
+
+sup 
+
+> i̸=j
+
+|1⊤ 
+
+> L
+
+X⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L| +
+
+ NX
+
+> i=1
+
+|αii −ϕ′(0) 2|2
+
+sup 
+
+> i
+
+|1⊤ 
+
+> L
+
+X⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L|
+
+≲ L
+
+ N 2
+
+(V ∧ L2 ∧ L√d)3 + NL2
+
+
+
+,
+
+where we used (R1), (R2). Therefore, 
+
+|φ24 | ≤ 1
+
+N V L 2√d
+
+ N
+
+(V ∧ L2 ∧ L√d)3/2 +
+
+√NL
+
+
+
+≲ 1
+
+V L 2√L ∧ d .
+
+For φ23 , we have 
+
+|φ23 | ≤ 1
+
+N 2L3
+
+ NX
+
+> i̸=j=1
+
+|1xi=xj − 1
+
+V |
+
+
+
+| sup 
+
+> i̸=j
+
+|(αij − ϕ′(0) 2)1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> j
+
+1L|
+
++ 1
+
+N L 3 sup 
+
+> i
+
+|(αii − ϕ′(0) 2)1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L|
+
+≲ 1
+
+V L 2√L ∧ d ,
+
+where we used (E2.4), (R1), (R2). For the first two terms, we define 
+
+V0 := 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+X⊤ 
+
+> j
+
+1L(xj − 1
+
+V 1V )⊤, V0,1 := 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+xi(xi − 1
+
+V 1V )⊤
+
+V0,2 := 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+ N ⊤ 
+
+> j
+
+− 1
+
+V 1⊤
+
+> L−1
+
+1L−1(xi − 1
+
+V 1V )⊤, V0,3 := 1
+
+V 1V
+
+1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1
+
+V 1V )⊤.
+
+We have by (E2.5)-(E2.7), 
+
+|φ22 | ≤ ϕ′(0) 2
+
+√d
+
+1
+
+L Zin V0V ⊤ 
+
+> 0
+
+Z⊤ 
+
+> in F
+
+≤ ϕ′(0) 2
+
+N V L 2√d Zin Z⊤ 
+
+> in F
+
+≤ 2ϕ′(0) 2
+
+LdLN ≲ 1
+
+V L 2d .
+
+46 Lastly, 
+
+|φ21 | = ϕ′(0) 2
+
+L tr 
+
+
+
+Zin V0V ⊤ 
+
+> 0
+
+Z⊤
+
+> in
+
+
+
+≤ ϕ′(0) 2
+
+N V L 2√d tr 
+
+
+
+Zin Z⊤
+
+> in
+
+
+
+≤ 2ϕ′(0) 2
+
+N L 2√d ≲ 1
+
+V L 2√d .
+
+Therefore, |φ21 | ≲ 1 
+
+> V L 2√L∧d
+
+.Lastly, we consider φ11 . By Proposition 5, we have 
+
+|φ11 |
+
+= ϕ′(0) 2tr( V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,1) + ϕ′(0) 2tr( V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,2) + ϕ′(0) 2Ltr( V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,3)
+
+± 1
+
+√d V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,1 F
+
+± 1
+
+√d V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,2 F
+
+± L
+
+√d V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,3 F
+
+.
+
+• For the first term, by (E2.5), we have tr( V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,1) = tr( Zin V0,1V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+) ≍ 1
+
+V L 2
+
+• For the second term, tr( V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,2) = 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )⊤V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin (N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1⊤
+
+> L−1
+
+1L−1
+
+We have 
+
+E
+
+h (xj − 1 
+
+> V
+
+1V )⊤V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin (N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1⊤
+
+> L−1
+
+1L−1
+
+2 Zin 
+
+i
+
+≲ 1
+
+V 2Ld 
+
+By Chebyshev’s inequality, 
+
+tr( V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,2) ≲ 1
+
+√N V L 3/2√d .
+
+• The third summand: We have (L − 1)tr( V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,3) ≤ L∥Zin V0,1∥2∥Zin V0,3∥2
+
+where we used that Zin V0,3 is 1-rank. By (E2.5)-(E2.7) 
+
+L∥V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+∥2∥Zin V0,3∥2 ≲ L
+
+√V L √d
+
+1
+
+√V LN ≤ 1
+
+N V L √d .
+
+• The fourth summand: We have by (E2.5)-(E2.7) 1
+
+√d V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,1 F
+
+= 1
+
+√d Zin V0,1V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in F
+
+≤ CV L 2d
+
+• The fifth summand: We have by (E2.5)-(E2.7) 
+
+V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,2
+
+> 2
+> F
+
+≤ tr 
+
+
+
+V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,2V ⊤
+
+> 0,2
+
+Z⊤ 
+
+> in
+
+Zin V0,1
+
+
+
+≤ 1
+
+N Ld tr( Zin V0,1V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+) ≤ VN Ld 
+
+1
+
+V 2L2 = 1
+
+N V L 3d .
+
+Therefore, 1
+
+√d V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,2 F
+
+≤ 1
+
+√N V L 3/2d
+
+47 • The sixth summand: (L − 1) 2 V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,3
+
+> 2
+> F
+
+≤ 1
+
+V 2N 1V Z⊤ 
+
+> in
+
+Zin V0,1V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin 1V ≤ 1
+
+V 2N L 2d
+
+Therefore, 
+
+L − 1
+
+√d V ⊤
+
+> 0,1
+
+Z⊤ 
+
+> in
+
+Zin V0,3 F
+
+≤ CV L √N d .
+
+Therefore, we have 
+
+φ = μkl 
+
+ 1 ± oV (1) 
+
+V L 2 ± ˜O(1) 
+
+√N V L 3/2d
+
+
+
+.
+
+## D.2 Concentration bound for s 2
+
+In this section, we will use ¯β := ϕ′′ (0) ϕ(0). We have 
+
+e⊤ 
+
+> l
+
+s2 = 1
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+βij z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L(xi − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xj − 1 
+
+> V
+
+1V )
+
+− 1
+
+N 2L3
+
+> N
+
+X
+
+> i,j =1
+
+βij z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L(xi − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xj − 1 
+
+> V
+
+1V )+ μkl 
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+βij 
+
+ e1 − 1 
+
+> L
+
+1L
+
+⊤XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L(xi − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xj − 1 
+
+> V
+
+1V )=: κ + negligible terma .
+
+D.2.1 Concentration for κ
+
+We will write κ as follows: 
+
+κ = 1
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+(βij − ¯β)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L(xi − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xj − 1 
+
+> V
+
+1V )+ ¯βN 2L2
+
+> N
+
+X
+
+> i,j =1
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ xi + L−1 
+
+> V
+
+1V
+
+(xi − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xj − 1 
+
+> V
+
+1V )+ ¯βN 2L2
+
+> N
+
+X
+
+> i,j =1
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ xi + L−1 
+
+> V
+
+1V
+
+(xi − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xj − 1 
+
+> V
+
+1V )+ ¯βN 2L2
+
+> N
+
+X
+
+> i,j =1
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1(xi − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xj − 1 
+
+> V
+
+1V )+ ¯βN 2L2
+
+> N
+
+X
+
+> i,j =1
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+NiN ⊤ 
+
+> i
+
+− L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+(xi − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xj − 1 
+
+> V
+
+1V )+ ¯βN 2LV 
+
+> N
+
+X
+
+> i,j =1
+
+z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L(xi − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xj − 1 
+
+> V
+
+1V )=: κ1 + κ2 + κ3 + κ4 + κ5 + κ6.
+
+48 By Proposition 5, we have 
+
+κ1 = 1
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+(βij − ¯β)( 1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L
+
+± log 2 VN 2L2√d
+
+> N
+
+X
+
+> i,j =1
+
+(βij − ¯β)( xj − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L(xi − 1 
+
+> V
+
+1V )⊤
+
+> F
+
+=: κ11 + κ12 .
+
+We have 
+
+|κ11 | ≤ 1
+
+N 2L2
+
+> N
+
+X
+
+> i=1
+
+ NX
+
+> j=1
+
+(βij − ¯β)( 1xi=xj − 1 
+
+> V
+
+)
+
+2
+
+! 12 NX
+
+> i=1
+
+(z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L)2 12
+
+= 1
+
+N 2LV 
+
+> N
+
+X
+
+> i=1
+
+ NX
+
+> j=1
+
+(βij − ¯β)( 1xi=xj − 1 
+
+> V
+
+)
+
+2
+
+! 12 NX
+
+> i=1
+
+(z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin 1V )2 12
+
++ 1
+
+N 2L2
+
+> N
+
+X
+
+> i=1
+
+ NX
+
+> j=1
+
+(βij − ¯β)( 1xi=xj − 1 
+
+> V
+
+)
+
+2
+
+! 12 NX
+
+> i=1
+
+(z⊤ 
+
+> k
+
+Zin (X⊤ 
+
+> i
+
+Xi − LV IV )Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L)2 12
+
++ 1
+
+N 2LV 
+
+> N
+
+X
+
+> i=1
+
+ NX
+
+> j=1
+
+(βij − ¯β)( 1xi=xj − 1 
+
+> V
+
+)
+
+2
+
+! 12  NX
+
+> i=1
+
+(z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin (X⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L)2 12
+
+≲ 1
+
+N 3/2LV 
+
+ √NL + N 3/2
+
+V
+
+1
+
+V ∧ L2 ∧ L√d
+
+ Ld
+
+√V
+
+√L ∧ d + V √Ld3/2
+
+
+
++ 1
+
+N 3/2L2
+
+ √NL + N 3/2
+
+V
+
+1
+
+V ∧ L2 ∧ L√d
+
+ L
+
+√d√L ∧ d
+
+≲ 1
+
+V L 2√d(L ∧ d) 12
+
++ 1
+
+N L 3/2d√L ∧ d + 1
+
+V L 1/2d√L ∧ d
+
+1
+
+V ∧ L2 ∧ L√d ,
+
+where we use (P4)- (P5), and (E1.3)-(E1.5). Moreover, 
+
+|κ12 | ≲ 1
+
+N 3/2L2√d
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )( xi − 1 
+
+> V
+
+1V )⊤
+
+> 2
+
+×
+
+ 1
+
+N
+
+> N
+
+X
+
+> i=1
+> N
+
+X
+
+> j=1
+
+(βij − ϕ′(0) 2)2|z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L|2 12
+
+≲ 1
+
+N 3/2L2√dNV
+
+ √NV ∧ L2 ∧ L√d + 1
+
+L
+
+ √L
+
+√d + L3/2
+
+d3/2
+
+
+
+≲ 1
+
+V √Ld (L ∧ d)1
+
+V ∧ L2 ∧ L√d + 1
+
+√N V L 3/2d(L ∧ d) .
+
+Therefore, 
+
+|κ1| ≲ 1
+
+V L 2√d(L ∧ d) 12
+
++ 1
+
+N L 3/2d√L ∧ d + 1
+
+V L 1/2d√L ∧ d
+
+1
+
+V ∧ L2 ∧ L√d .
+
+By Proposition 5, 
+
+κ2 = (1 − 1 
+
+> V
+
+)
+
+N 2L2
+
+ NX
+
+> j=1
+
+xj − 1 
+
+> V
+
+1V
+
+⊤ NX
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin 
+
+
+
+xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ xi + L−1 
+
+> V
+
+1V
+
+
+
+49 ± 1
+
+N 2L2√d
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V ) 2
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin 
+
+
+
+xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ xi + L−1 
+
+> V
+
+1V
+
+
+
+> 2
+
+.
+
+Let ni := |{ j ≤ N |xj = ei}| . We have 1
+
+N 2L2
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V ) 2
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin 
+
+
+
+xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin xi 2
+
++ L − 1
+
+L
+
+1
+
+N 2LV 
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V ) 2
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin 
+
+ xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+Z⊤ 
+
+> in
+
+Zin 1V 2
+
+≲ 1
+
+N L 2
+
+ 1
+
+N
+
+> V
+
+X
+
+> i=1
+
+n2 
+
+> i
+
+z⊤ 
+
+> k
+
+Zin 
+
+ eie⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+Z⊤ 
+
+> in
+
+Zin ei
+
+> 2
+
+ 12
+
++ 1
+
+N 2LV 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin 
+
+ xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+Z⊤ 
+
+> in
+
+Zin 1V 2
+
+≲ 1
+
+V L 2√d + 1
+
+N 2LV 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin 
+
+ xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+Z⊤ 
+
+> in
+
+Zin 1V 2
+
+,
+
+where we used (E1.1) and (E2.3). Moreover, 
+
+E
+
+h 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin 
+
+ xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+Z⊤ 
+
+> in
+
+Zin 1V
+
+> 22
+
+|Zin 
+
+i
+
+≤ 1
+
+N E
+
+h
+
+z⊤ 
+
+> k
+
+Zin 
+
+ xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+Z⊤
+
+> in
+
+Zin 1V 1⊤ 
+
+> V
+
+Z⊤
+
+> in
+
+Zin 
+
+ xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+Z⊤
+
+> in
+
+zk|Zin 
+
+i
+
++ 1
+
+N 2
+
+> N
+
+X
+
+> i̸=j=1
+
+E
+
+h
+
+(1xi=xj− 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin 
+
+ xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+Z⊤ 
+
+> in
+
+Zin 1V1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ xj x⊤ 
+
+> j
+
+− 1 
+
+> V
+
+IV
+
+Z⊤ 
+
+> in
+
+zk|Zin 
+
+i
+
+≤   1
+
+N + N − 1
+
+N V 
+
+ E
+
+h
+
+z⊤ 
+
+> k
+
+Zin 
+
+ xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+Z⊤ 
+
+> in
+
+Zin 1V1⊤ 
+
+> V
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ xj x⊤ 
+
+> j
+
+− 1 
+
+> V
+
+IV
+
+Z⊤ 
+
+> in
+
+zk|Zin 
+
+i
+
+≲   1
+
+N + N − 1
+
+N V 
+
+ Vd2 ,
+
+where we (E1.1)-(E1.3). Therefore, by Chebyshev’s inequality, we have 
+
+|κ2| ≲ 1
+
+V L 2√d + 1
+
+N LV d 
+
+Moreover, by using Chebyshev’s inequality 
+
+κ3 = 1
+
+N 2L2
+
+ NX
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )
+
+⊤ NX
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin 
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ xi + L−1 
+
+> V
+
+1V
+
+
+
+± 1
+
+N 2L2√d
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V ) 2
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin 
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ xi + L−1 
+
+> V
+
+1V
+
+
+
+> 2
+
+.
+
+We have 
+
+E
+
+" NX
+
+> i,j =1
+
+(1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin 
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ xi + L−1 
+
+> V
+
+1V
+
+2
+
+Zin 
+
+#
+
+=
+
+> N
+
+X
+
+> i=1
+
+E
+
+" NX
+
+> j=1
+
+(1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin 
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ xi + L−1 
+
+> V
+
+1V
+
+2
+
+Zin 
+
+#
+
+50 ≲ N 2
+
+V E
+
+"
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+N ⊤ 
+
+> 1
+
+N1 − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ x1 + L−1 
+
+> V
+
+1V
+
+2
+
+Zin 
+
+#
+
+(D.23) We have 
+
+E
+
+"
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+N ⊤ 
+
+> 1
+
+N1 − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ x1 + L−1 
+
+> V
+
+1V
+
+2
+
+Zin 
+
+#
+
+≤ CL d2
+
+
+
+1 + L2
+
+V
+
+
+
+.
+
+where we used (E1.1)-(E1.3) and (E1.8). Therefore, we have (D.23) ≲ N 2LV d 2 (1 + L2 
+
+> V
+
+) . Also, 
+
+E
+
+h NX
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin 
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ xi + L−1 
+
+> V
+
+1V
+
+ 22
+
+Zin 
+
+i
+
+≤ CL d2
+
+
+
+1 + L2
+
+V
+
+
+
+.
+
+Therefore, we have 
+
+|κ3| ≲
+
+ 1
+
+N √V L 3/2d + 1
+
+N L 3/2d3/2 + 1
+
+N √V √Ld 3/2
+
+
+
+.
+
+Moreover, by Chebyshev’s inequality 
+
+κ4 = 1
+
+N 2L2
+
+ NX
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )
+
+⊤ NX
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin 
+
+ xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1
+
+
+
+± 1
+
+N 2L2√d
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V ) 2
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin 
+
+ xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1 2
+
+.
+
+We have 
+
+E
+
+" NX
+
+> i,j =1
+
+(1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> ν,δ
+
+Zin 
+
+
+
+x⊤ 
+
+> i
+
+xi − 1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1
+
+ 2
+
+Zin 
+
+#
+
+=
+
+> N
+
+X
+
+> i=1
+
+E
+
+" NX
+
+> j=1
+
+(1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin 
+
+
+
+xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1
+
+!2
+
+Zin 
+
+#
+
+≲ N 2
+
+V E
+
+"
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1
+
+ 2
+
+Zin 
+
+#
+
+. (D.24) We have 
+
+E
+
+"
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1
+
+ 2
+
+Zin 
+
+#
+
+≤ CL d z⊤ 
+
+> k
+
+Zin E
+
+h 
+
+xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+
+
+xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+
+
+Zin 
+
+i
+
+Z⊤ 
+
+> in
+
+zk ≤ CL d2 .
+
+where we used Proposition 8. Therefore, (D.24) ≲ N 2LV d 2 . Also, 
+
+E
+
+" NX
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin 
+
+
+
+xix⊤ 
+
+> i
+
+− L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1
+
+> 22
+
+Zin 
+
+#
+
+= CL d
+
+> N
+
+X
+
+> i=1
+
+z⊤ 
+
+> k
+
+Zin E
+
+h 
+
+xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+
+
+xix⊤ 
+
+> i
+
+− 1 
+
+> V
+
+IV
+
+
+
+Zin 
+
+i
+
+Z⊤ 
+
+> in
+
+zk ≤ CN L d2 ,
+
+where we used Proposition 8. Therefore, 
+
+|κ4| ≲
+
+ 1
+
+N √V L 3/2d + 1
+
+N L 3/2d3/2
+
+
+
+.
+
+51 Moreover, let 
+
+γi := z⊤ 
+
+> k
+
+Zin 
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1
+
+− E
+
+h
+
+z⊤ 
+
+> k
+
+Zin 
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1|Zin 
+
+i
+
+.
+
+By Proposition 5, we have 
+
+κ5 = 1
+
+N 2L2
+
+ NX
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )
+
+⊤ NX
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )γi
+
+ log 2 VN 2L2√d
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V ) 2
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )γi 2
+
++ 1
+
+N 2L2
+
+ NX
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )
+
+⊤
+
+×
+
+ NX
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin E
+
+h 
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1|Zin 
+
+i 
+
+± log 2 VN 2L2√d
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V ) 2
+
+×
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin E
+
+h 
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1|Zin 
+
+i
+
+> 2
+
+.
+
+By Proposition 2 
+
+E
+
+" NX
+
+> i,j =1
+
+(1xi=xj − 1 
+
+> V
+
+)γi
+
+2
+
+#
+
+=
+
+> N
+
+X
+
+> i=1
+
+E
+
+" NX
+
+> j=1
+
+(1xi=xj − 1 
+
+> V
+
+)γi
+
+2
+
+#
+
+≤ 2(1 − 1
+
+V )2
+
+> N
+
+X
+
+> i=1
+
+E[γ2 
+
+> i
+
+] + 2(1 − 1 
+
+> V
+
+)
+
+V
+
+> N
+
+X
+
+> i=1
+> N
+
+X 
+
+> j̸=i
+
+E[γ2 
+
+> i
+
+]
+
+≲ N 2
+
+V
+
+ Ld + L2
+
+d2
+
+
+
+.
+
+Then, 
+
+E
+
+h NX
+
+> i=1
+
+(xi − 1
+
+V 1V )γi
+
+> 22
+
+i
+
+≤
+
+> N
+
+X
+
+> i=1
+
+E[γ2 
+
+> i
+
+] ≲ N
+
+ Ld + L2
+
+d2
+
+
+
+.
+
+Moreover, by Proposition 8, (E2.3) and (E2.7), we have 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin E
+
+h 
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+ N ⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+1L−1|Zin 
+
+i
+
+> 2
+
+≲ L√N
+
+√V d .
+
+Therefore, by Chebyshev’s inequality, we have 
+
+|κ5| ≲
+
+ 1
+
+N L √V d (L ∧ d)1/2 + 1
+
+N Ld (L ∧ d)1/2 + 1
+
+N L √V d 
+
+
+
+.
+
+Lastly, by Proposition 5, 
+
+κ6 = ¯βN 2LV 
+
+> N
+
+X
+
+> i,j =1
+
+(1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L
+
+± ¯βN 2LV √d
+
+> N
+
+X
+
+> i,j =1
+
+(xj − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin X⊤ 
+
+> i
+
+1L(xi − 1 
+
+> V
+
+1V )⊤
+
+> F
+
+52 = ¯βN 2LV 
+
+NX
+
+i,j =1 
+
+(1xi=xj − 1
+
+V )z⊤
+
+k Zin Z⊤
+
+in Zin X⊤
+
+i 1L
+
+± ¯βV √d
+
+1
+
+N
+
+NX
+
+j=1 
+
+(xj − 1
+
+V 1V ) 2
+
+1
+
+N L 
+
+NX
+
+i=1 
+
+(xi − 1
+
+V 1V )z⊤
+
+k Zin Z⊤
+
+in Zin X⊤
+
+i 1L 2
+
+We have 
+
+1
+
+N L 
+
+NX
+
+i=1 
+
+z⊤
+
+k Zin Z⊤
+
+in Zin X⊤
+
+i 1L(xi − 1
+
+V 1V )⊤
+
+2
+
+≤ z⊤
+
+k Zin Z⊤
+
+in Zin 
+
+1
+
+N L 
+
+NX
+
+i=1 
+
+(X⊤
+
+i − 1
+
+V 1V 1⊤
+
+L )1L(xi − 1
+
+V 1V )⊤
+
+2
+
++ 1
+
+V |z⊤
+
+k Zin Z⊤
+
+in Zin 1V | 1
+
+N
+
+NX
+
+i=1 
+
+(xi − 1
+
+V 1V )⊤
+
+2
+
+≲ Vd Zin 
+
+1
+
+N L 
+
+NX
+
+i=1 
+
+(X⊤
+
+i − 1
+
+V 1V 1⊤
+
+L )1L(xi − 1
+
+V 1V )⊤
+
+2
+
++
+
+√Vd3/2√N
+
+≲ CV 
+
+√N Ld 3/2 .
+
+Moreover, 
+
+E
+
+h 1
+
+N 2LV 
+
+NX
+
+i,j =1 
+
+(1xi=xj − 1
+
+V )z⊤
+
+k Zin Z⊤
+
+in Zin X⊤
+
+i 1L
+
+2
+
+|Zin 
+
+i
+
+= 1
+
+N 4L2V 2
+
+NX
+
+j=1 
+
+E
+
+h NX
+
+i=1 
+
+(1xi=xj − 1
+
+V )z⊤
+
+k Zin Z⊤
+
+in Zin X⊤
+
+i 1L
+
+2
+
+|Zin 
+
+i
+
+≤ 2
+
+N 4L2V 2
+
+NX
+
+j=1 
+
+E
+
+h 
+
+z⊤
+
+k Zin Z⊤
+
+in Zin X⊤
+
+i 1L
+
+2
+
+|Zin 
+
+i
+
++ 2
+
+N 4L2V 2
+
+NX
+
+j=1 
+
+E
+
+h NX
+
+i=1 
+
+i̸=j
+
+(1xi=xj − 1
+
+V )z⊤
+
+k Zin Z⊤
+
+in Zin X⊤
+
+i 1L
+
+2
+
+|Zin 
+
+i
+
+≤ 2
+
+N 4L2V 2
+
+NX
+
+j=1 
+
+E
+
+h 
+
+z⊤
+
+ν,δ Zin Z⊤
+
+in Zin X⊤
+
+i 1L
+
+2
+
+|Zin 
+
+i
+
++ 2
+
+N 2V 3
+
+NX
+
+j=1 
+
+E
+
+h 1
+
+N L 
+
+NX
+
+i=1 
+
+i̸=j
+
+z⊤
+
+k Zin Z⊤
+
+in Zin X⊤
+
+i 1L(xi − 1
+
+V 1V )⊤ 22
+
+|Zin 
+
+i
+
+≤ 2
+
+N 4L2V 2
+
+NX
+
+j=1 
+
+E
+
+h 
+
+z⊤
+
+k Zin Z⊤
+
+in Zin X⊤
+
+i 1L
+
+2
+
+|Zin 
+
+i
+
++ CN 2V Ld 3 ,
+
+where we used D.2.1 in the last step. We have 1
+
+N 4L2V 2
+
+NX
+
+j=1 
+
+E
+
+h 
+
+z⊤
+
+k Zin Z⊤
+
+in Zin X⊤
+
+i 1L
+
+2
+
+|Zin 
+
+i
+
+≤ 1
+
+N 3L2V 2 z⊤
+
+k Zin Z⊤
+
+in Zin 
+
+ L2
+
+V 2 1V 1⊤
+
+V + LV IV
+
+
+
+Z⊤
+
+in Zin Zin zk ≤ C log 2 VN 3Ld 3
+
+53 Therefore, by Chebyshev’s inequality, we have 
+
+|κ6| ≲ 1
+
+N √Ld 2 .
+
+Overall, by using N ≪ V L ,
+
+|κ| ≤ 
+
+ 1
+
+N √Ld (L ∧ d) + 1
+
+N Ld (L ∧ d)1/2 + 1
+
+N L √V d + 1
+
+√N V Ld + 1
+
+√N V L 2√d
+
+
+
++
+
+ 1
+
+V L 2√d
+
+1
+
+V 2√Ld 3/2
+
+
+
+.
+
+## D.3 Concentration bound for s 3
+
+We have 
+
+e⊤ 
+
+> l
+
+s3 = 1
+
+N 2L
+
+> N
+
+X
+
+> i,j =1
+
+z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤
+
+> in
+
+×
+
+ 1
+
+m
+
+> m
+
+X
+
+> k=1
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+
+
+− E
+
+h
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+i 
+
+(xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xi − 1 
+
+> V
+
+1V )
+
+
+
+− 1
+
+N 2L2
+
+> N
+
+X
+
+> i,j =1
+
+z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L1⊤ 
+
+> L
+
+XiZ⊤
+
+> in
+
+×
+
+ 1
+
+m
+
+> m
+
+X
+
+> k=1
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+
+
+− E
+
+h
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+i 
+
+(xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xi − 1 
+
+> V
+
+1V )
+
+
+
++ μkl 
+
+N 2L
+
+> N
+
+X
+
+> i,j =1
+
+ e1 − 1
+
+L 1L
+
+⊤XiZ⊤
+
+> in
+
+×
+
+ 1
+
+m
+
+> m
+
+X
+
+> k=1
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+
+
+− E
+
+h
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+i 
+
+(xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout (xi − 1 
+
+> V
+
+1V )
+
+
+
+=: ν + negligible terms .
+
+D.3.1 Concentration bound for ν
+
+We define ˜ν := tr 
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+
+
+× 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+
+
+(xj − 1 
+
+> V
+
+1V )⊤Z⊤
+
+> out
+
+Zout 
+
+
+
+= tr 
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+
+
+× 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+
+
+(xj − 1 
+
+> V
+
+1V )⊤
+
+54 ± log 2 V
+
+√d
+
+1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+
+
+> 2
+
+× 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+
+
+(xj − 1 
+
+> V
+
+1V ) 2
+
+=: ˜ ν1 + ˜ ν2,
+
+where we used Proposition 5 for the second step. We define 
+
+ϕ(t) =: ϕ(0) + tψ (t) and ϕ′(t) =: ϕ(0) + tψ 1(t) and ψ(t) =: ψ(0) + tψ 2(t).
+
+and write ˜ν1 = ϕ(0) ϕ′ 0 tr 
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+xiz⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+wk
+
+1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )⊤
+
++ ϕ(0)tr 
+
+ 1
+
+N L 2
+
+> N
+
+X
+
+> i=1
+
+xiz⊤ 
+
+> k
+
+Zin xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+wkw⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1Lψ1
+
+  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )⊤
+
++ ϕ(0)tr 
+
+ 1
+
+N L 2
+
+> N
+
+X
+
+> i=1
+
+xiz⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+wkw⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1Lψ1
+
+  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+ 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )⊤
+
++ tr 
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+
+
+× 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+ψ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+ 1
+
+L w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤
+
+=: ˜ ν11 + ˜ ν12 + ˜ ν13 + ˜ ν14 .
+
+In the following, we bound each term separately. Let nw := |{ i ∈ [N ] : xi = ew}| .
+
+• We have ˜ν11 = 1
+
+L
+
+> V
+
+X
+
+> w=1
+
+( nw
+
+N − 1
+
+V ) nw
+
+N z⊤ 
+
+> k
+
+Zin 
+
+
+
+ewe⊤ 
+
+> w
+
++ L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+wk
+
++ z⊤ 
+
+> k
+
+Zin 
+
+1
+
+N L 
+
+> V
+
+X
+
+> w=1
+
+( nw
+
+N − 1
+
+V ) X  
+
+> i∈{ i1,··· ,i nw }
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+wk
+
+We have by using Lemma 5 and Proposition 8, 
+
+E
+
+h 
+
+z⊤ 
+
+> k
+
+Zin 
+
+1
+
+N L 
+
+> V
+
+X
+
+> w=1
+
+( nw
+
+N − 1
+
+V ) X  
+
+> i∈{ i1,··· ,i nw }
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+wk
+
+2
+
+|Zin 
+
+i
+
+= E
+
+h
+
+z⊤ 
+
+> k
+
+Zin 
+
+1
+
+N L 
+
+> V
+
+X
+
+> w=1
+
+( nw
+
+N − 1
+
+V ) X  
+
+> i∈{ i1,··· ,i nw }
+
+
+
+N ⊤ 
+
+> i
+
+Ni − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤
+
+> in
+> 22
+
+|Zin 
+
+i
+
+= z⊤ 
+
+> k
+
+Zin 
+
+1
+
+N 2L2
+
+> V
+
+X
+
+> w=1
+
+E
+
+h
+
+( nw
+
+N − 1
+
+V )2nw
+
+i
+
+E
+
+h 
+
+N ⊤ 
+
+> 1
+
+N1 − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+
+
+N ⊤ 
+
+> 1
+
+N1 − L−1 
+
+> V
+
+IV
+
+
+
+|Zin 
+
+i
+
+Z⊤ 
+
+> in
+
+zk
+
+≤ CN 2L2V z⊤ 
+
+> k
+
+Zin E
+
+h 
+
+N ⊤ 
+
+> 1
+
+N1 − L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+Zin 
+
+
+
+N ⊤ 
+
+> 1
+
+N1 − L−1 
+
+> V
+
+IV
+
+
+
+|Zin 
+
+i
+
+Z⊤ 
+
+> in
+
+zk
+
+= CN 2V d (L ∧ d) .
+
+55 Moreover, by using (E1.1) and Proposition 8, 
+
+E
+
+h 1
+
+L
+
+> V
+
+X
+
+> w=1
+
+( nw
+
+N − 1
+
+V ) nw
+
+N z⊤ 
+
+> k
+
+Zin 
+
+
+
+ewe⊤ 
+
+> w
+
++ L−1 
+
+> V
+
+IV
+
+
+
+Z⊤ 
+
+> in
+
+wk
+
+2
+
+|Zin 
+
+i
+
+= 1
+
+L2 E
+
+h
+
+z⊤ 
+
+> ν,δ
+
+Zin 
+
+ VX
+
+> w=1
+
+( nw
+
+N − 1
+
+V ) nw
+
+N ewe⊤ 
+
+> w
+
++ ( nw
+
+N − 1
+
+V )2 L−1 
+
+> V
+
+IV
+
+
+
+Z⊤
+
+> in
+> 22
+
+|Zin 
+
+i
+
+≤ V 2
+
+L2d2 E
+
+h VX
+
+> w=1
+
+( nw
+
+N − 1
+
+V ) nw
+
+N ewe⊤ 
+
+> w
+
++ ( nw
+
+N − 1
+
+V )2 L−1 
+
+> V
+
+IV
+
+> 22
+
+|Zin 
+
+i
+
+≤ CV 2
+
+L2d2 E
+
+h
+
+sup  
+
+> w∈[N]
+
+( nw
+
+N − 1
+
+V ) nw
+
+N
+
+> 2
+
+i
+
++ Cd2 E
+
+h VX
+
+> w=1
+
+( nw
+
+N − 1
+
+V )22i
+
+≤ Cd2N 2 .
+
+Therefore, 
+
+E
+
+h
+
+˜ν211 |Zin 
+
+i
+
+≲ 1
+
+d2N 2 .
+
+• Moreover, ˜ν212 ≤ CN
+
+1
+
+N L 2
+
+> N
+
+X
+
+> i=1
+
+xiz⊤ 
+
+> k
+
+Zin xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+wkw⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1Lψ1
+
+  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+ 22
+
+.
+
+We have for any i ∈ [N ], 
+
+z⊤ 
+
+> k
+
+Zin xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+wkw⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1Lψ1
+
+  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+ ≲ √L
+
+
+
+1xi=ek + 1
+
+√d
+
+
+
+Then, 
+
+1
+
+N L 2
+
+> N
+
+X
+
+> i=1
+
+xiz⊤ 
+
+> k
+
+Zin xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+wkw⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1Lψ1
+
+  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+ 22
+
+≲ 1
+
+L3
+
+1
+
+N
+
+> N
+
+X
+
+> i=1
+
+xi
+
+
+
+1xi=ek + 1
+
+√d
+
+ 2
+
+≲ 1
+
+V dL 3
+
+Then, 
+
+E[˜ ν212 |Zin ] ≲ 1
+
+N V dL 3 .
+
+• Moreover, ˜ν213 ≤ CN
+
+1
+
+N L 2
+
+> N
+
+X
+
+> i=1
+
+xiz⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+wkw⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1Lψ1
+
+  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+ 22
+
+.
+
+We have for any i ∈ [N ], 
+
+z⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+wkw⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1Lψ1
+
+  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+
+
+≲ √L∥Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+zk∥2 ≲ √L e⊤ 
+
+> k
+
+N ⊤ 
+
+> i
+
+1L−1 + 1 + Ld
+
+
+
+Then, 
+
+1
+
+N L 2
+
+> N
+
+X
+
+> i=1
+
+xiz⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+wkw⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1Lψ1
+
+  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+ 22
+
+56 ≲ 1
+
+N 2L3
+
+> N
+
+X
+
+> i=1
+
+xi
+
+
+
+1⊤
+
+> L−1
+
+Niek + 1 + Ld
+
+ 22
+
+≲ 1
+
+V Ld (L ∧ d) + 1
+
+N 2L3
+
+> N
+
+X
+
+> i=1
+
+xi1⊤
+
+> L−1
+
+Niek
+
+> 22
+
+We have 1
+
+N 2L3 E
+
+h NX
+
+> i=1
+
+xi1⊤
+
+> L−1
+
+Niek
+
+> 22
+
+i
+
+≲ 1
+
+V 3L + 1
+
+N V L 2 .
+
+Then, 
+
+E[˜ ν213 |Zin ] ≲ 1
+
+N V Ld (L ∧ d) .
+
+• Lastly, we have 
+
+|˜ν14 | ≤ 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+
+
+> 2
+
+× 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+ψ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+ 1
+
+L w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤
+
+> 2
+
+.
+
+By using the derivations in the two previous items, we have 
+
+1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )⊤z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+
+
+> 2
+
+≤ 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+xiz⊤ 
+
+> k
+
+Zin xix⊤ 
+
+> i
+
+Z⊤ 
+
+> in
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+
+
+> 2
+
++ 1
+
+N L 2
+
+> N
+
+X
+
+> i=1
+
+xiz⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+wkw⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1Lψ1
+
+  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+
+
+> 2
+
++ |ϕ′(0) | 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+wk 2
+
+≲ 1
+
+pV Ld (L ∧ d) + ϕ′(0) 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+wk 2
+
+We have 
+
+E
+
+h 1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+wk
+
+> 22
+
+Zin 
+
+i
+
+≤ 1
+
+N 2L2 E
+
+h NX
+
+> i,j =1
+
+(1xi=xj − 1 
+
+> V
+
+)z⊤ 
+
+> k
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+Zin N ⊤ 
+
+> i
+
+NiZ⊤ 
+
+> in
+
+zk Zin 
+
+i
+
+≤ 1
+
+N L 2
+
+LV z⊤ 
+
+> k
+
+Zin diag( Z⊤ 
+
+> in
+
+Zin )Z⊤ 
+
+> in
+
+zk + 1
+
+N L 2
+
+L2
+
+V 2 z⊤ 
+
+> k
+
+Zin Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+zk = 1
+
+N d (L ∧ d) . (D.25) Moreover, 
+
+1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+ψ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤
+
+> 2
+
+= |ψ(0) | 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤
+
+> 2
+
+57 + 1
+
+N L 2
+
+> N
+
+X
+
+> j=1
+
+xj ψ2
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+
+
+(w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L)2
+
+> 2
+
+.
+
+We have 
+
+ψ2
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+
+
+(w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L)2 ≲ L. 
+
+Therefore, 
+
+1
+
+N L 2
+
+> N
+
+X
+
+> j=1
+
+xj ψ2
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+
+
+(w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L)2
+
+> 2
+
+≲ 1
+
+√V L .
+
+Moreover, 
+
+1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V )⊤
+
+> 2
+
+≤ 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+w⊤ 
+
+> k
+
+Zin (X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L(xj − 1 
+
+> V
+
+1V )⊤
+
+> 2
+
++ 1
+
+V |w⊤ 
+
+> k
+
+Zin 1V | 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1 
+
+> V
+
+1V )⊤
+
+> 2
+
+.
+
+We have 
+
+– 1 
+
+> V
+
+|w⊤ 
+
+> k
+
+Zin 1V | 1
+
+> N
+
+PNj=1 (xj − 1 
+
+> V
+
+1V )⊤
+
+> 2
+
+≤ C log 2 V√V N 
+
+– Moreover, 
+
+1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+w⊤ 
+
+> k
+
+Zin (X⊤ 
+
+> j
+
+− 1
+
+V 1V 1⊤ 
+
+> L
+
+)1L(xj − 1
+
+V 1V )⊤ 22
+
+= w⊤ 
+
+> k
+
+Zin 
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+(X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L(xj − 1 
+
+> V
+
+1V )⊤
+
+×
+
+ 1
+
+N L 
+
+> N
+
+X
+
+> j=1
+
+(X⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤ 
+
+> L
+
+)1L(xj − 1 
+
+> V
+
+1V )⊤⊤
+
+Z⊤ 
+
+> in
+
+wk ≲ 1
+
+N L .
+
+Then, for N ≪ V L 
+
+E[¯ ν214 |Zin ] ≲ 1
+
+N 2Ld (L ∧ d)
+
+• On the other hand, we have 
+
+|ν2| ≤ 1
+
+√d
+
+1
+
+N L 
+
+> N
+
+X
+
+> i=1
+
+(xi − 1 
+
+> V
+
+1V )z⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+XiZ⊤ 
+
+> in
+
+wkϕ′  1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> i
+
+1L
+
+
+
+> 2
+
+× 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+
+
+(xj − 1 
+
+> V
+
+1V ) 2
+
+Note that 
+
+1
+
+N
+
+> N
+
+X
+
+> j=1
+
+ϕ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+
+
+(xj − 1 
+
+> V
+
+1V ) 2
+
+= |ϕ(0) | 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1
+
+V 1V ) 2
+
+58 + 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+ψ
+
+ 1 
+
+> L
+
+w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L
+
+ 1
+
+L w⊤ 
+
+> k
+
+Zin X⊤ 
+
+> j
+
+1L(xj − 1 
+
+> V
+
+1V ) 2
+
+≲ 1
+
+√N .
+
+Therefore by (D.25), we have 
+
+E
+
+h
+
+ν22 |Zin 
+
+i
+
+≲ 1
+
+N 2d2(L ∧ d)Therefore, we have 
+
+E[ν|Zin ] = 0 and Variance( ν|Zin ) ≲ 1
+
+N 2d2m .
+
+# E Lower Bound 
+
+To prove a lower bound, we construct a Bayesian setting with the same likelihood distribution in our setting. In particular, the ground truth permutation is chosen from the set of permutation matrices: 
+
+H := {P ∈ { 0, 1}V ×V | Π is a permutation matrix }.
+
+We describe our Bayesian setting as a game between Environment and Learner as follows: 
+
+• At the beginning, Environment samples P∗ ∼ Unif( H), probability vectors without revealing them to the learner. 
+
+• Learner observes L + 1 channel that generates words from the set V = {e1, e2, · · · , eV } sequentially for 
+
+t = 1 , 2, · · · , N with distributions: 
+
+– At every round, Environment randomly picks a channel ℓt
+
+– Label: Channel 0 generates pt ∼iid Unif( V)
+
+– Input: Given ℓt and pt, Channel ℓt generates Xℓt,t = P∗pt
+
+– Noise distribution: Channel j ∈ [L] \ { ℓt} generate Xj,t ∼ Unif( V) independent of Channel 0. 
+
+• Let D := {(Xt, pt)}t≤N be the dataset. We study the Bayes estimator with 0 − 1 loss given the represen-tation of the past: S = f (D, ℓ 1: N ): ˆP = arg max  
+
+> P∈H
+
+P[P = P∗|S, Zin ]. (E.1) In the following we consider the empirical mean and covariance of embedded words as the given data, i.e., 
+
+S := {(μt, Σt, pt)}t≤N , where 
+
+μt := 1
+
+L Zin X⊤ 
+
+> t
+
+1L + σμ
+
+√L gt and Σt := 1
+
+L Zin X⊤ 
+
+> t
+
+XtZ⊤ 
+
+> in
+
++ σΣ
+
+√dL Gt.
+
+where {(gt, Gt)}t≤N are i.i.d. measurement noise with distributions gt ∼ N (0 , 1 
+
+> d
+
+Id) and Gt,ij = Gt,ji 
+
+with Gt,ij ∼ N  0, (1+ δij )
+
+> d
+
+ i.i.d. for i < j .
+
+Theorem 4. The following lower bound holds: 
+
+P[ ˆP̸ = P∗|Zin ] ≥ 1 − oV (1) − Ω( N )
+
+V 1 ∧
+
+ 1
+
+σ2
+
+> μ
+
+dL log V + Cσ2
+
+> Σ
+
+d2
+
+L log V
+
+!
+
+We use an information-theoretic argument to prove Theorem 4. For the proof, let H(A) and H(A|C)denote the entropy and conditional entropy of A given C; let I(A; B) = H(A) − H(A|B) and I(A; B|C) = 
+
+H(A|C) − H(A|B, C ) denote the mutual information between random variables A and B and the conditional mutual given C, respectively. We let DKL denote the Kullback-Leibler (KL) divergence. We start with an auxiliary statement for the proof. 59 Lemma 2. Let A, B, C, D be discrete random variables defined on the same probability space. The following statements hold: 
+
+• In general, H(A|B, C ) ≤ H(A|B). The equality is satisfied if and only if A ⊥⊥ C|B.
+
+• If B ⊥⊥ D | (A, C ), we have I(A, B |C, D ) ≤ I(A, B |C).
+
+• Let S = g(A, C ) be a measurable function of (A, C ). If B ⊥⊥ A|(S, C, D ), then I(A; B|C, D ) = 
+
+I(S; B|C, D ).
+
+• Given, μ, μ′ ∈ Rd, positive definite Σ ∈ Rd×d and supp( A) ⊆ Rd, we have 
+
+DKL (N (μ + A, Σ)||N (μ′ + A, Σ)) ≤ 12 (μ − μ′)⊤Σ−1(μ − μ′).
+
+Proof. We have 
+
+H(A|B) − H(A|B, C ) = E
+
+h
+
+log P(A|B, C )
+
+P(A|B)
+
+i
+
+= E
+
+h
+
+log P(A, C |B)
+
+P(A|B)P(C|B)
+
+i
+
+= I(A, C |B).
+
+Since the mutual information is non-negative, the first item follows. Moreover, since I(A, C |B) = 0 if and only if A ⊥⊥ C|B. For the second item, by using the first item, 
+
+I(A, B |C, D ) = H(B|C, D ) − H(B|A, C, D ) ≤ H(B|C) − H(B|A, C ) = I(A, B |C).
+
+For the third item, since S is a function of ( A, C ), we have 
+
+I(A; B|C, D ) = I(( A, S ); B|C, D ) = H(B|C, D ) − H(B|A, S, C, D )= H(B|C, D ) − H(B|S, C, D ) = I(S; B|C, D ).
+
+Let f denotes the Gaussian pdf with 0 and covariance Σ. For any x ∈ Rd, since t → t log t is convex 
+
+ X
+
+> a∈supp( A)
+
+p(a)f (x − μ − a)
+
+
+
+log 
+
+ P 
+
+> a∈supp( A)
+
+p(a)f (x − μ − a)
+
+ P 
+
+> a∈supp( A)
+
+p(a)f (x − μ′ − a)
+
+
+
+≤ X
+
+> a∈supp( A)
+
+p(a)f (x − μ − a) log f (x − μ − a)
+
+f (x − μ′ − a) .
+
+Therefore, we have 
+
+DKL (N (μ + A, Σ)||N (μ′ + A, Σ)) ≤ X
+
+> a∈supp( A)
+
+p(a)DKL (N (μ + a, Σ)||N (μ′ + a, Σ)) = DKL (N (μ, Σ)||N (μ′, Σ)) ,
+
+where the last inequality follows the invariance of KL divergence in the second line to constant shifts. The final bound follows the known formula for the KL divergence between Gaussian distributions. The proof of Theorem 4 is given in the following: 
+
+Proof of Theorem 4. Since we assume Zin is known by the learner, we will fix it in the following without explicitly conditioning thte terms on it. Note that we consider the Bayes decision rule in (E.1) and use Fano’s inequality [SC19] to lower bound its error probability: 
+
+P[ ˆP̸ = P∗|Zin ] ≥ 1 − I(P∗; S) + log 2 log |H| . (E.2) 60 We have 
+
+I(P∗; S) = I(P∗; {(μt, Σt, pt)}t≤N ) = I(P∗; {pt}t≤N ) + I(P∗; {(μt, Σt)}t≤N |{ pt}t≤N , )
+
+> (a)
+
+= I(P∗; {(μt, Σt)}t≤N |{ pt}t≤N )=
+
+> N
+
+X
+
+> t=1
+
+I(P∗; ( μt, Σt)|{ (μu, Σu)}u<t , {pt}t≤N )Given fixed Zin , we observe that ( μt, Σt) ⊥⊥ { (μu, Σu)}u<t P∗, {pt}t≤N and ( μt, Σt) ⊥⊥ { pu}u̸=t|P∗,.Therefore, by Lemma 2, 
+
+I(P∗; S) ≤
+
+> N
+
+X
+
+> t=1
+
+I(P∗; ( μt, Σt)|{ pt}t≤N ) ≤
+
+> N
+
+X
+
+> t=1
+
+I(P∗; ( μt, Σt)|pt).
+
+Moreover, we have P∗ ⊥⊥ (μt, Σt) | Xℓt,t , pt, where Xℓt,t is a function of ( P∗, pt). Therefore, by Lemma 2, 
+
+I(P∗; S) ≤
+
+> N
+
+X
+
+> t=1
+
+I(Xℓt,t ; ( μt, Σt)|pt).
+
+We have 
+
+I(Xℓt,t ; ( μt, Σt)|pt, Zin ) = 1
+
+V
+
+> V
+
+X
+
+> k=1
+
+DKL (Pk
+
+> (μt,Σt)
+
+|| P0)
+
+> (b)
+
+≤ 1
+
+V 2
+
+> V
+
+X
+
+> j,k =1
+
+DKL (Pk
+
+> (μt,Σt)
+
+|| Pj
+
+> (μt,Σt)
+
+)where Pk 
+
+> (μt,Σt)
+
+denotes the distribution of ( st, Σt)|Xℓt,t = ek, P0 denotes P0 = 1
+
+> V
+
+PVk=1 Pk
+
+> (μt,Σt)
+
+, and (b) follows the convexity of KL divergence in its second argument. For k̸ = j, by the last item of Lemma 2, we have 
+
+DKL (Pk
+
+> (μt,Σt)
+
+|| Pj
+
+> (μt,Σt)
+
+) ≤ Cσ2
+
+> μ
+
+dL ∥zk − zj ∥22 + Cσ2
+
+> Σ
+
+d2
+
+L ∥zkz⊤ 
+
+> k
+
+− zj z⊤ 
+
+> j
+
+∥2 
+
+> F
+
+≤ Cσ2
+
+> μ
+
+dL + Cσ2
+
+> Σ
+
+d2
+
+L .
+
+Therefore, we have 
+
+I(P∗; S) ≤ N
+
+ Cσ2
+
+> μ
+
+dL + Cσ2
+
+> Σ
+
+d2
+
+L
+
+
+
+.
+
+Moreover, we can write 
+
+I(P∗; S) ≤ I(P∗; D, ℓ 1: N ) = I(P∗; {Xt}t≤N |{ pt}t≤N , ℓ 1: N )
+
+≤
+
+> N
+
+X
+
+> t=1
+
+I(P∗; Xℓt,t |{ pt, ℓ t}t≤N )
+
+≤
+
+> N
+
+X
+
+> t=1
+
+I(P∗; Xℓt,t |pt, ℓ t)where the first inequality follows data processing inequality, third and fourth inequalities follow the first and second items in Lemma 2. We have 
+
+I(P∗; Xℓt,t |pt, ℓ t) = H(Xℓt,t |pt, ℓ t)
+
+| {z } 
+
+> log V
+
+− H(Xℓt,t |pt, ℓ t, P∗)
+
+| {z }
+
+> =0
+
+= log V. 
+
+Therefore, we have I(P∗; S) ≤ N log V . Finally, we have 
+
+I(P∗; S) ≤ N log V ∧
+
+ Cσ2
+
+> μ
+
+dL + Cσ2
+
+> Σ
+
+d2
+
+L
+
+!
+
+.
+
+The result follows from (E.2). 61 F Auxiliary Statements 
+
+## F.1 Gaussian matrices and related statements 
+
+Lemma 3. Let z ∼ N (0 , Id). We have E[∥z∥2k 
+
+> 2
+
+] = d(d + 2) · · · (d + 2 k − 2) .Proof. We observe that ∥z∥2 ∼ χ2
+
+> d
+
+. By using the moment formula for chi-squared distribution, we have the result. 
+
+Lemma 4. Let z ∼ N (0 , Id) and S ∈ Rd×d be a symmetric matrix. For u > 0,
+
+P |z⊤Sz − tr( S)| ≥ 2∥S∥F u + 2 ∥S∥2u2 ≤ 2e−u2
+
+.
+
+Proof. We note that z⊤Sz −tr( S) has the same distribution with Pdi=1 λi(S)( Z2 
+
+> i
+
+−1), where Zi ∼iid N (0 , 1). By using the Laurent-Massart lemma, we have the result. 
+
+Proposition 4. Let S ∈ RV ×V be a symmetric positive semidefinite matrix. Let 
+
+M = Zin SZ ⊤ 
+
+> in
+
+.
+
+For poly( d) ≫ V ≫ d, We have 
+
+P
+
+
+
+M − tr( S)
+
+d Id 2
+
+≥ max 
+
+n ∥S∥F
+
+√d log V, ∥S∥2 log 2 V
+
+o
+
+≤ exp( −c log 2 V ).
+
+Proof. Without loss of generality, we can assume that S is diagonal, i.e., S = diag( s1, · · · , s V ). We have 
+
+M − tr( S)
+
+d Id =
+
+> V
+
+X
+
+> i=1
+
+si
+
+ ziz⊤ 
+
+> i
+
+− 1
+
+d Id
+
+.
+
+We have 
+
+E
+
+h VX
+
+> i=1
+
+si
+
+ ziz⊤ 
+
+> i
+
+− 1
+
+d Id
+
+2i
+
+= 1
+
+d (1 + 1
+
+d )∥S∥2 
+
+> F
+
+Id
+
+Moreover, for p ≤ d
+
+> 2
+
+E
+
+h
+
+∥ziz⊤ 
+
+> i
+
+− 1
+
+d Id∥p
+
+> 2
+
+i
+
+≤ E[∥zi∥2p 
+
+> 2
+
+] ≤ 2p.
+
+By Proposition 15, we have 2 ≤ p ≤ d
+
+> 2
+
+E
+
+h
+
+∥M − tr( S)
+
+d ∥p
+
+> 2
+
+i
+
+≤ C
+
+p p ∨ log d ∥S∥F
+
+√d + ( p ∨ log d)V 1 
+
+> p
+
+∥S∥2
+
+
+
+.
+
+For p = 1 
+
+> e2C2
+
+log 2 V , we have the result. 
+
+Proposition 5. Let S ∈ RV ×V be a square matrix and let M = Zin SZ ⊤ 
+
+> in
+
+. For poly( d) ≫ V ≫ d, We have 
+
+P|tr( M ) − tr( S)| ≥ log 2 V ∥S∥F
+
+√d
+
+ ≤ exp( −c log 2 V ).
+
+62 Proof. Without loss of generality, we can assume that S is diagonal, i.e., S = diag( s1, · · · , s V ). We have tr( M ) − tr( S) = 
+
+> V
+
+X
+
+> i=1
+
+si
+
+ ∥zi∥22 − 1.
+
+We have 
+
+E  exp( λs i
+
+ ∥zi∥22 − 1) ≤ exp 
+
+ 4λ2s2
+
+> i
+
+d
+
+
+
+, |λ| ≤ d
+
+4|si| .
+
+Then, 
+
+E  exp( λ tr( M ) − tr( S)) ≤ exp 
+
+ 4λ2∥S∥2
+
+> F
+
+d
+
+
+
+, |λ| ≤ d
+
+4∥S∥2
+
+We have 
+
+P
+
+h
+
+|tr( M ) − tr( S)| ≥ log 2 V ∥S∥F
+
+√d
+
+i
+
+≤ exp( −c log 2 V ).
+
+Proposition 6. Let S ∈ RV ×V be a square matrix. For u, v ∈ Sd−1 and M = Zin SZ ⊤ 
+
+> in
+
+, we have 
+
+P
+
+h  v⊤M u − tr( S)
+
+d v⊤u ≥ ∥u∥2∥v∥2
+
+d max 
+
+n
+
+∥sym( S)∥F t, ∥sym( S)∥2t2oi 
+
+≤ 2 exp( −ct 2).
+
+Proof. Consider g = √dvec( Z), where g ∼ N (0 , IdV ). We have 
+
+v⊤M u = 1
+
+d g⊤(uv ⊤) ⊗ Sg = 1
+
+d g⊤sym( uv ⊤) ⊗ sym( S)g
+
+By using Proposition 11, we have 
+
+E[g⊤sym( uv ⊤) ⊗ sym( S)g] = tr( S)u⊤v.
+
+Moreover, 
+
+
+
+g⊤sym( uv ⊤) ⊗ sym( S)g − tr( S)u⊤v
+
+
+
+=ddV X
+
+> i=1
+
+λi(g2 
+
+> i
+
+− 1) where gi ∼ N (0 , 1). By using the subexponential concentration, we have the result. 
+
+Proposition 7. For u, v ∈ RV , we have 
+
+P
+
+h
+
+v⊤Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+Zin u − u⊤v
+
+
+
+1 + V − 1
+
+d
+
+
+
+≥ C∥u∥2∥v∥2 log V
+
+ √Vd + Vd3/2
+
+i 
+
+≤ 10 exp( −c log 2 V ).
+
+Proof. Without loss of generality, we assume that u and v have a unit norm. Let 
+
+v⊥ := 1
+
+p1 − (u⊤v)2 (IV − vv ⊤)u.
+
+We have 
+
+v⊤Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+Zin u = ( u⊤v)v⊤Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+Zin v +
+
+q
+
+1 − (u⊤v)2v⊤Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+Zin v⊥.
+
+Without loss of generality, we consider v = e1 and v⊥ = e2. For the second term, we write zi := Zin ei and let ˜Z := {zi}Vi=3 and g = √dvec( ˜Z). 
+
+e⊤ 
+
+> 1
+
+Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+Zin e2 = ( ∥z1∥22 + ∥z2∥22)z⊤ 
+
+> 1
+
+z2 + z⊤ 
+
+> 1
+
+˜Z ˜Z⊤z2
+
+= ( ∥z1∥22 + ∥z2∥22)z⊤ 
+
+> 1
+
+z2 + 1
+
+d g⊤sym( z1z⊤ 
+
+> 2
+
+) ⊗ IV −2g.
+
+We have 63 • By Lemma 4, and Proposition 6 
+
+P
+
+h
+
+∥z1∥22 − 1 ≤ 5 log V
+
+√d and ∥z2∥22 − 1 ≤ 5 log V
+
+√d and |z⊤ 
+
+> 1
+
+z2| ≤ log V
+
+√d
+
+i
+
+≤ 1 − 6 exp( −c log 2 V ).
+
+• By Proposition 11, we have 
+
+– ∥sym( z1z⊤ 
+
+> 2
+
+) ⊗ IV −2∥2 ≤ ∥ z1∥2∥z2∥2
+
+– ∥sym( z1z⊤ 
+
+> 2
+
+) ⊗ IV −2∥F ≤ √V ∥z1∥2∥z2∥2
+
+– tr  sym( z1z⊤ 
+
+> 2
+
+) ⊗ IV −2
+
+ = ( V − 2) z⊤ 
+
+> 1
+
+z2.
+
+Therefore, by Lemma 4, we have 
+
+P
+
+h 1
+
+d g⊤sym( z1z⊤ 
+
+> 2
+
+) ⊗ IV −2g− (V −2) 
+
+d z⊤ 
+
+> 1
+
+z2 ≤ 2∥z1∥2∥z2∥2
+
+ log Vd
+
+√V + log 2 Vd
+
+i 
+
+≤ 1−2 exp( −c log 2 V ).
+
+By union bound of the precious two items, we have 
+
+P
+
+h
+
+e⊤ 
+
+> 1
+
+Z⊤ 
+
+> in
+
+Zin Z⊤ 
+
+> in
+
+Zin e2 ≤ 2 log V
+
+ Vd3/2 +
+
+√Vd
+
+i 
+
+≥ 1 − 8 exp( −c log 2 V ). (F.1) Next, we redefine the notation: ˜Z := {zi}Vi=2 . We write 
+
+z⊤ 
+
+> 1
+
+Zin Z⊤ 
+
+> in
+
+z1 − 1 − V − 1
+
+d = ∥z1∥42 − 1 + z⊤
+
+> 1
+
+ ˜Z ˜Z⊤ − V − 1
+
+d Id
+
+
+
+z1 − V − 1
+
+d (∥z1∥22 − 1) By Proposition bla, we have 
+
+P
+
+h
+
+z⊤
+
+> 1
+
+ ˜Z ˜Z⊤ − V − 1
+
+d Id
+
+
+
+z1 ≤ log V ∥z1∥22
+
+√Vd
+
+i
+
+≤ 1 − 2 exp( −c log 2 V )By using the first item above, we have 
+
+P
+
+h
+
+z⊤ 
+
+> 1
+
+Zin Z⊤ 
+
+> in
+
+z1 − 1 − V − 1
+
+d ≥ 6 log V
+
+ √Vd + Vd3/2
+
+i 
+
+≤ 1 − 2 exp( −c log 2 V ). (F.2) The result follows (F.1) and (F.2). 
+
+## F.2 Multinomial distribution and related statements 
+
+Lemma 5. Let (n1, · · · , n V ) ∈ Mult  N ; ( p1, · · · , p V ). For t ∈ RV ,
+
+E
+
+h
+
+exp 
+
+ VX
+
+> i=1
+
+tini
+
+i 
+
+=
+
+ VX
+
+> i=1
+
+pieti
+
+N
+
+.
+
+Then, if pi = 1 
+
+> V
+
+, i ∈ [V ],
+
+• We have - E
+
+hQVi=1 ni(ni − 1) · · · (ni − ki + 1) 
+
+i
+
+= N (N −1) ··· (N −K+1)   
+
+> VK
+
+, where K := PVi=1 ki.
+
+• By the previous item, we can write 
+
+– E n2
+
+> i
+
+ = NV + N (N −1)  
+
+> V2
+
+– E
+
+h  ni 
+
+> N
+
+− 1
+
+> V
+
+2ni
+
+i
+
+= (V −1)( N +V −2)   
+
+> N V 3
+
+.
+
+– E n3
+
+> i
+
+ = NV + 3N (N −1)   
+
+> V2
+
++ N (N −1)( N −2)  
+
+> V3
+
+64 – E n4
+
+> i
+
+ = NV + 7N (N −1)   
+
+> V2
+
++ 6N (N −1)( N −2)   
+
+> V3
+
++ N (N −1)( N −2)( N −3)  
+
+> V4
+
+– For i̸ = i′, E n2 
+
+> i
+
+n2
+
+> i′
+
+ = N (N −1)   
+
+> V2
+
++ 2N (N −1)( N −2)   
+
+> V3
+
++ N (N −1)( N −2)( N −3)   
+
+> V4
+
+.
+
+– E
+
+h  P Vi=1 n2
+
+> i
+
+2i
+
+= N 2 + 2( N +1) N (N −1)  
+
+> V
+
++ (N +1) N (N −1)( N −2)  
+
+> V2
+
+Proof. Let xj sampled from {e1, · · · , eV } with ( p1, · · · , p V ). We have ni = PNj=1 e⊤ 
+
+> i
+
+xi. We have 
+
+E
+
+h
+
+exp 
+
+ VX
+
+> i=1
+
+tini
+
+i 
+
+= E
+
+h
+
+exp 
+
+ NX
+
+> j=1
+
+⟨t, xj ⟩
+
+i 
+
+=
+
+
+
+E
+
+h
+
+exp 
+
+
+
+⟨t, x1⟩
+
+i N
+
+=
+
+ VX
+
+> i=1
+
+pieti
+
+N
+
+.
+
+The later statements can be derived by using zi = eti and taking derivatives of both sides with respect (z1, · · · , z V ). 
+
+Proposition 8. Let n := ( n1, · · · , n V ) ∼ Mult  L, 1 
+
+> V
+
+1V
+
+ and S ∈ RV ×V be a symmetric matrix. The following statements hold: 
+
+• We have - E[diag( n)Sdiag( n)] = L E[x⊤ 
+
+> 1
+
+Sx 1x1x⊤ 
+
+> 1
+
+] + L(L−1)   
+
+> V2
+
+S
+
+- E[diag( n − LV 1V )Sdiag( n − LV 1V )] = L E[x⊤ 
+
+> 1
+
+Sx 1x1x⊤ 
+
+> 1
+
+] − LV 2 S.
+
+• We have - E[nn ⊤Sn ] = 2L(L−1)   
+
+> V2
+
+S1V + L E x1x⊤ 
+
+> 1
+
+Sx 1
+
+ +
+
+ L(L−1)   
+
+> V2
+
+tr( S) + L(L−1)( L−2)   
+
+> V3
+
+1⊤ 
+
+> V
+
+S1V
+
+
+
+1V .
+
+• We have 
+
+E
+
+h  n − LV 1V
+
+⊤S n − LV 1V
+
+2i
+
+= LV diag( S) − 2
+
+V S1V + 1
+
+V 2
+
+ 1⊤ 
+
+> V
+
+S1V
+
+1V
+
+> 22
+
++ L(L − 1) 
+
+V 2 tr 
+
+ IV − 1 
+
+> V
+
+1V 1⊤
+
+> V
+
+S
+
+2
+
++ L(L − 1) 
+
+V 2 tr 
+
+ IV − 1 
+
+> V
+
+1V 1⊤
+
+> V
+
+S IV − 1 
+
+> V
+
+1V 1⊤
+
+> V
+
+S
+
+
+
+Proof. For the first item, we observe that 
+
+e⊤ 
+
+> j
+
+E[diag( n)Sdiag( n)] ei = E[nj ni]Sij =
+
+ LV δij + L(L − 1) 
+
+V 2
+
+
+
+Sij ,
+
+from which the first equation follows. For the second equation, 
+
+e⊤ 
+
+> j
+
+E[diag( n − LV 1V )Sdiag( n − LV 1V )] ei = E[( nj − LV )( ni − LV )] Sij =
+
+ LV δij − LV 2
+
+
+
+Sij .
+
+For the second item, we have (E[nn ⊤Sn ]) i = X
+
+> jk
+
+Sjk E[ninj nk]= L(L − 1)( L − 2) 
+
+V 3 ( X 
+
+> i̸=j̸=k
+
+Sjk ) + 
+
+ L(L − 1)( L − 2) 
+
+V 3 + L(L − 1) 
+
+V 2
+
+
+
+(2 X
+
+> i̸=k
+
+Sik + X
+
+> i̸=k
+
+Skk )+
+
+ LV + 3L(L − 1) 
+
+V 2 + L(L − 1)( L − 2) 
+
+V 3
+
+
+
+Sii 
+
+= LV Sii + L(L − 1) 
+
+V tr( S) + 2L(L − 1) 
+
+V
+
+X
+
+> k
+
+Sik + L(L − 1)( L − 2) 
+
+V 3 (X
+
+> jk
+
+Sjk ).
+
+65 For the third item, we have  n − LV 1V
+
+ = PLi=1 (xi − 1 
+
+> V
+
+1V ) in distribution. For notational convenience, let 
+
+sij := ( xi − 1
+
+V 1V )⊤S(xj − 1
+
+V 1V ).
+
+Then, 
+
+E
+
+h  n − LV 1V
+
+⊤S n − LV 1V
+
+2i
+
+=
+
+> L
+
+X
+
+> i,j,k,l =1
+
+E[sij skl ]By independence, only ( i, j, k, l ) where each index occur even times contribute. The possible cases are: 
+
+• All four indices equal ( i = j = k = l): There are L many terms here with contribution 
+
+E[s2
+
+> ii
+
+] = 1
+
+V diag 
+
+
+
+(IV − 1
+
+V 1V 1⊤ 
+
+> V
+
+)S(IV − 1
+
+V 1V 1⊤ 
+
+> V
+
+)
+
+ 22
+
+= 1
+
+V diag( S) − 2
+
+V S1V + 1
+
+V 2 (1⊤ 
+
+> V
+
+S1V )1V
+
+> 22
+
+.
+
+• Two distinct indices, both pairs diagonal ( i = j and k = l and i̸ = k): There are L(L − 1) many terms here with contribution 
+
+E[sii skk ] = E[sii ]2 = 1
+
+V 2 tr 
+
+
+
+(IV − 1
+
+V 1V 1⊤ 
+
+> V
+
+)S
+
+2
+
+• Two distinct indices, paired off-diagonal: ( i = k and j = l and i̸ = j): There are L(L − 1) many terms here with contribution 
+
+E[s2 
+
+> ij
+
+] = tr 
+
+
+
+E[( x1 − 1
+
+V 1V )( x1 − 1
+
+V 1V )⊤S(x2 − 1
+
+V 1V )( x2 − 1
+
+V 1V )⊤]S
+
+
+
+= 1
+
+V 2 tr 
+
+
+
+(IV − 1
+
+V 1V 1⊤ 
+
+> V
+
+)S(IV − 1
+
+V 1V 1⊤ 
+
+> V
+
+)S
+
+
+
+.
+
+Proposition 9. Let V 3 ≫ L. There exists a universal C > 0 such that the following holds: 
+
+• Let mij := (1 − 1 
+
+> V
+
+)1i=j + LV . For K > 0 and p ≥ log V ,- E
+
+h 1 
+
+> L
+
+1⊤ 
+
+> L
+
+XiX⊤ 
+
+> j
+
+1L − mij 
+
+> p
+
+i 1
+
+> p
+
+≤ C
+
+ p 32 
+
+> √V
+
++ p2
+
+> L
+
+
+
+- P
+
+h 1 
+
+> L
+
+1⊤ 
+
+> L
+
+XiX⊤ 
+
+> j
+
+1L − mij ≥ CK 2 log 2 V√V ∧L
+
+i
+
+≤ 1 
+
+> VK
+
+• For K > 0 and p ≥ log V ,- E
+
+h 1
+
+> N L
+
+PNi=1 
+
+ X⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L
+
+1L1⊤
+
+> L
+
+ X⊤ 
+
+> i
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L
+
+⊤
+
+− 1 
+
+> V
+
+(I − 1 
+
+> V
+
+1V 1⊤ 
+
+> V
+
+) p
+
+> 2
+
+i 1
+
+> p
+
+≤ C p pN V + pN
+
+
+
+1+ p2 
+
+> √V∧L
+
+!
+
+- P
+
+h 1
+
+> N L
+
+PNi=1 
+
+ X⊤ 
+
+> i
+
+−1 
+
+> V
+
+1V 1⊤
+
+> L
+
+1L1⊤
+
+> L
+
+ X⊤ 
+
+> i
+
+−1 
+
+> V
+
+1V 1⊤
+
+> L
+
+⊤
+
+− 1 
+
+> V
+
+(I−1 
+
+> V
+
+1V 1⊤ 
+
+> V
+
+) 2
+
+> CK 
+
+ log 2V√N V +log 2VN (1+ log 2V√V ∧L )
+
+i 
+
+≤ 1  
+
+> VK
+
+.
+
+Proof. Let xil be i.i.d. copies of x1. We note that Xi1L = PLl=1 xil in distribution. For i = j, we have 1
+
+L 1⊤ 
+
+> L
+
+XiX⊤ 
+
+> i
+
+1L = 1 + 2
+
+L
+
+X
+
+> 1≤l<r ≤L
+
+1xir =xil = 1 + (L − 1) 
+
+V + 2
+
+L
+
+> L
+
+X
+
+> l=2
+> l−1
+
+X
+
+> r=1
+
+ 1xir =xil − 1
+
+> V
+
+
+
+66 Define 
+
+Yl := 
+
+> l−1
+
+X
+
+> r=1
+
+ 1xir =xil − 1
+
+> V
+
+ and Fl := σ(Y1, · · · , Y l).
+
+Given that 
+
+> l−1
+
+X
+
+> r=1
+
+1xir =xil |xil ∼ Binomial( l − 1, 1
+
+V ) ⇒ E[|Yk|p] 1 
+
+> p
+
+≤ C(√p
+
+r LV + p), p ≥ log V. (F.3) where we used Corollary 3. As for the quadratic variation 
+
+QL := 
+
+> L
+
+X
+
+> l=1
+
+E[Y 2 
+
+> l
+
+|F l−1] = 
+
+> L
+
+X
+
+> l=1
+
+1
+
+V
+
+ l−1X
+
+> r=1
+
+xir  
+
+> 22
+
+− (l − 1) 2
+
+V
+
+
+
+= 1
+
+V
+
+> L
+
+X
+
+> l=1
+> l−1
+
+X
+
+> r=1
+
+xir − l−1 
+
+> V
+
+1V
+
+> 22
+
+.
+
+For p ≥ log V , by using triangle inequality, 
+
+E[|QL| p 
+
+> 2
+
+] 2 
+
+> p
+
+≤ 1
+
+V
+
+> L
+
+X
+
+> l=1
+
+E
+
+h l−1X
+
+> r=1
+
+xir − l−1 
+
+> V
+
+1V
+
+> p
+> 2
+
+i 2
+
+> p
+> (a)
+
+≤ 1
+
+V
+
+> V
+
+X
+
+> l=1
+
+(l − 1) E
+
+h l−1X
+
+> r=1
+
+xir 
+
+> pp
+
+i 2
+
+> p
+
++
+
+> L
+
+X 
+
+> l=V+1
+
+E
+
+h l−1X
+
+> r=1
+
+xir − l−1 
+
+> V
+
+1V
+
+> pp
+
+i 2
+
+> p
+> (b)
+
+≤ Cp 2 1
+
+V
+
+> L
+
+X
+
+> l=1
+
+l
+
+= Cp 2 L2
+
+V ,
+
+where we used H¨ older’s inequality in (a) and Corollary 3 in (b). By using (F.3) and Proposition 15, for 
+
+p ≥ log V , we have 
+
+E
+
+h LX
+
+> l=1
+
+Yk
+
+> p
+
+i 1
+
+> p
+
+≤ C
+
+
+
+p√p L
+
+√V + p2
+
+.
+
+By using p = log V , we have 
+
+P
+
+"
+
+1
+
+L
+
+> L
+
+X
+
+> l=1
+
+Yk > CeK 2 log 2 V
+
+√V ∧ L
+
+#
+
+≤ 1
+
+V K .
+
+Hence, we have the i = j case. For i̸ = j, we have 1
+
+L 1⊤ 
+
+> L
+
+Xj X⊤ 
+
+> i
+
+1L = LV + 1
+
+L
+
+> L
+
+X
+
+> l=1
+> L
+
+X
+
+> r=1
+
+1xil =xjr − 1
+
+V
+
+We redefine the martingale difference sequence as 
+
+Yl := 
+
+> L
+
+X
+
+> r=1
+
+1xil =xjr − 1
+
+V .
+
+Conditioned on Xj , we have {Y1, · · · , Y L} are i.i.d. and 
+
+E[Yk|Xj ] = 0 and E[Y pk |Xj ] = 1
+
+V ∥(X⊤ 
+
+> j
+
+− 1
+
+V 1V 1⊤ 
+
+> L
+
+)1L∥pp
+
+67 By Proposition 15, for p ≥ log V , we have 
+
+E
+
+h 1
+
+L
+
+> L
+
+X
+
+> l=1
+
+Yl
+
+> p
+
+i 1
+
+> p
+
+≤ C
+
+ √p
+
+√V + p 32
+
+√LV + p2
+
+L
+
+
+
+.
+
+By using p = log V , we have 
+
+P
+
+h 1
+
+L 1⊤ 
+
+> L
+
+Xj X⊤ 
+
+> i
+
+1L − LV ≥ CK 2 log 2 V
+
+√V ∨ L
+
+i
+
+≤ 1
+
+V K .
+
+For the second item, we define 
+
+Yi := 1
+
+L
+
+ X⊤ 
+
+> i
+
+− 1
+
+V 1V 1⊤
+
+> L
+
+1L1⊤
+
+> L
+
+ X⊤ 
+
+> i
+
+− 1
+
+V 1V 1⊤
+
+> L
+
+⊤ − 1
+
+V (IV − 1
+
+V 1V 1⊤ 
+
+> V
+
+)and QN := N E[Y 21 ]. We have 
+
+QN ⪯ N E
+
+h 1
+
+√L
+
+ X⊤ 
+
+> 1
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L
+
+1L
+
+> 22
+
+1
+
+L
+
+ X⊤ 
+
+> 1
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L
+
+1L1⊤
+
+> L
+
+ X⊤ 
+
+> 1
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L
+
+⊤i
+
+= N E
+
+h
+
+(1 − 1
+
+V ) 1
+
+L
+
+ X⊤ 
+
+> 1
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L
+
+1L1⊤
+
+> L
+
+ X⊤ 
+
+> 1
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L
+
+⊤i
+
++ N E
+
+h 1
+
+√L
+
+ X⊤ 
+
+> 1
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L
+
+1L
+
+> 22
+
+− (1 − 1
+
+V )
+
+
+
+×
+
+ 1
+
+L
+
+ X⊤ 
+
+> 1
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L
+
+1L1⊤
+
+> L
+
+ X⊤ 
+
+> 1
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L
+
+⊤ − 1
+
+V (IV − 1
+
+V 1V 1⊤
+
+> V
+
+i 
+
+> (c)
+
+⪯ CN V IV + 12 QN ,
+
+where we use Proposition 14 in (c). Therefore, we have ∥QN ∥2 ≤ CN V . Moreover, we observe that 
+
+∥Yi∥2 ≤ 1
+
+V + 1
+
+√L
+
+ X⊤ 
+
+> i
+
+− 1
+
+V 1V 1⊤
+
+> L
+
+1L
+
+> 22
+
+.
+
+By using the first item, 
+
+E[∥Yi∥p
+
+> 2
+
+] 1 
+
+> p
+
+≤ 1
+
+V + E
+
+h 1
+
+√L
+
+ X⊤ 
+
+> i
+
+− 1
+
+V 1V 1⊤
+
+> L
+
+1L
+
+> 2p
+> 2
+
+i 1
+
+> p
+
+≤ 1 + C
+
+ p 32
+
+√V + p2
+
+L
+
+
+
+.
+
+Therefore, by using Proposition 15, we have 
+
+E
+
+h 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+Yi
+
+> p
+> 2
+
+i
+
+≤ C pp ∨ log V
+
+r 1
+
+N V + ( p ∨ log V )N 1 
+
+> p−1
+
+
+
+1 + p 32
+
+√V + p2
+
+L
+
+!
+
+.
+
+By using p = log V , we have 
+
+P
+
+h 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+Yi 2
+
+> CK log 2 V
+
+ 1
+
+√N V + 1
+
+N
+
+
+
+1 + log 2 V
+
+√V ∧ L
+
+i 
+
+≤ 1
+
+V K .
+
+Proposition 10. We consider S1, S2 and S3 defined in (B.5) , (B.6) and (B.7) in the regime V 3 ≫ N ≫ V
+
+and L ≍ V ε, ε ∈ (0 , 1) . For any K > 0 and V ≥ ΩK,ε (1) , the following holds: 1. We have 
+
+P
+
+
+
+tr( S1) − 1 − 1/V L2
+
+  1
+
+V + (1 − 2
+
+V ) 1
+
+N
+
+ > CK 2 log 2 VL2N √V or ∥S1∥2 > e2
+
+L2V 2
+
+
+
+≤ 2
+
+V K .
+
+68 2. We have 
+
+P
+
+"
+
+tr( S2) − (1 − 1
+
+V )2 L − 1
+
+L2N > C K 32 log 3 VLN V or ∥S2∥2 > C K 32 log 2 VN LV 
+
+#
+
+≤ 4
+
+V K .
+
+3. We have 
+
+P
+
+h −CK 2 log 2 VN √V  
+
+> 1
+> V2L2
+
+1V 1⊤ 
+
+> V
+
+⪯ S3 − 1  
+
+> N
+> 1
+> V2L2
+
+1V 1⊤ 
+
+> V
+
+⪯ CK 2 log 2 VN √V  
+
+> 1
+> V2L2
+
+1V 1⊤
+
+> V
+
+i
+
+≤ 1
+
+V K .
+
+Proof. We define ni := |{ j ≤ N | xj = ei}| . We observe that tr( S1) = (1 − 2
+
+V ) 1
+
+L2N 2
+
+> V
+
+X
+
+> i=1
+
+n2 
+
+> i
+
++ 1
+
+V 2L2 and ∥S1∥2 ≤ sup 
+
+> i≤N
+
+n2
+
+> i
+
+L2N 2 .
+
+By using Proposition 9 and Corollary 3, we have the first item. For the second item, we write 
+
+S2 = (1 − 1 
+
+> V
+
+)
+
+L2N 2
+
+> N
+
+X
+
+> j=1
+
+(N ⊤ 
+
+> j
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−11⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)⊤
+
++ 2
+
+L2N 2
+
+X
+
+> j<k
+
+ 1xj =xk − 1
+
+> V
+
+sym 
+
+
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−11⊤
+
+> L−1
+
+(N ⊤ 
+
+> k
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤
+
+=: S21 + S22 
+
+We will analyze S21 and S22 separately. 
+
+Bounds for S21 : We have tr( S21 ) − (1 − 1
+
+V )2 L − 1
+
+L2N
+
+= (1 − 1
+
+V ) L − 1
+
+L2N 2
+
+> N
+
+X
+
+> j=1
+
+∥ 1√L−1 (N ⊤ 
+
+> j
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1∥22 − (1 − 1
+
+V )
+
+| {z }
+
+> := Y1,j
+
+.
+
+We have E[Y 21,j ] ≤ 2 
+
+> V
+
+and by Proposition 9, 
+
+E[|Y1,j |p] 1 
+
+> p
+
+≤ Cp 2
+
+√V ∧ L .
+
+Therefore, by Proposition 15, 
+
+E
+
+h
+
+tr( S21 ) − (1 − 1
+
+V )2 L − 1
+
+L2N
+
+> p
+
+i 1
+
+> p
+
+≤ CLN 2
+
+r pN V + pN 1 
+
+> p
+
+p2
+
+√V ∧ L
+
+
+
+By using p = log V , we have 
+
+P
+
+h
+
+tr( S21 ) − (1 − 1
+
+V )2 L − 1
+
+L2N > C K log 3 VLN √N V 
+
+i
+
+≤ 1
+
+V K . (F.4) Moreover, by Proposition 9, we have 
+
+P
+
+h
+
+S21 −  1 − 1
+
+V
+
+ L − 1
+
+L2N
+
+1
+
+V (IV − 1V 1⊤ 
+
+> V
+
+) 2
+
+> C K log 2 VLN 
+
+ 1
+
+√N V + 1
+
+N
+
+
+
+1 + log 2 V
+
+√V ∧ L
+
+i 
+
+≤ 1
+
+V K . (F.5) 69 Bounds for S22 : We write tr( S22 ) = 2
+
+L2N 2
+
+> N
+
+X
+
+> k=2
+> k−1
+
+X
+
+> j=1
+
+ 1xj =xk − 1
+
+> V
+
+1⊤
+
+> L−1
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤(N ⊤ 
+
+> k
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−1
+
+=: 
+
+> N
+
+X
+
+> k=2
+
+Y2,k .
+
+Let Fk := σ(N1: k) and Y2,1 = 0. We have 
+
+E[Y 22,k |F k−1] = 4( L − 1) 
+
+L4N 4
+
+1
+
+V E
+
+h k−1X
+
+> j=1
+
+ 1xj =xk − 1
+
+> V
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−1
+
+> 22
+
+Fk−1
+
+i
+
+= (1 − 1
+
+V ) 4( L − 1) 
+
+L4N 4
+
+1
+
+V 2
+
+> k−1
+
+X
+
+> j=1
+
+∥(N ⊤ 
+
+> j
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1∥22
+
+Then, 
+
+QN =
+
+> N
+
+X
+
+> k=1
+
+E[Y 22,k |F k−1] = (1 − 1
+
+V ) 4( L − 1) 
+
+L4N 4V 2
+
+> N
+
+X
+
+> k=2
+> k−1
+
+X
+
+> j=1
+
+∥(N ⊤ 
+
+> j
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1∥22
+
+= (1 − 1
+
+V ) 4( L − 1) 
+
+L4N 4V 2 
+
+> N−1
+
+X
+
+> k=1
+
+(N − k)∥(N ⊤ 
+
+> k
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1∥22.
+
+Then, for p ≥ log V ,
+
+E |QN | p
+
+> 2
+
+ 2 
+
+> p
+
+≤ 5
+
+L3N 3V 2
+
+> N
+
+X
+
+> k=1
+
+E
+
+h
+
+∥N ⊤ 
+
+> k
+
+1L−1∥p
+
+> 2
+
+i 2 
+
+> p(a)
+
+≤ 5L1− 2
+
+> p
+
+L3N 3V 2
+
+> N
+
+X
+
+> k=1
+
+E
+
+h
+
+∥N ⊤ 
+
+> k
+
+1L−1∥pp
+
+i 2
+
+> p
+> (b)
+
+≤ 5p2
+
+L2N 2V 2 , (F.6) where we used H¨ older’s inequality in (a) and Corollary 3 in (b). By using Proposition 15, we show the following: 
+
+• To bound E[|Y2,k |p] 1 
+
+> p
+
+for p ≥ log V , by using the conditional independence of {xj }k−1 
+
+> j=1
+
+, we write 
+
+E[|Y2,k |p|N1: k, xk] 1
+
+> p
+
+≤ CLN 2
+
+√p
+
+√V
+
+ k−1X
+
+> j=1
+
+1
+
+L − 1
+
+D
+
+(N ⊤ 
+
+> k
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1, (N ⊤ 
+
+> j
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1
+
+E 2 12
+
++ Cpk 1
+
+> p
+
+LN 2
+
+ k−1X
+
+> j=1
+
+1
+
+L − 1
+
+D
+
+(N ⊤ 
+
+> k
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1, (N ⊤ 
+
+> j
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1
+
+E p 1
+
+> p
+
+Therefore, 
+
+E[|Y2,k |p] 1 
+
+> p
+
+≤ CLN 2
+
+ √p√k
+
+√V + pk 2
+
+> p
+
+
+
+E
+
+h 1
+
+L − 1
+
+D
+
+(N ⊤ 
+
+> k
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1, (N ⊤ 
+
+> 1
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1
+
+E pi 1
+
+> p
+
+≤ CLN 2
+
+ √p√k
+
+√V + pk 2
+
+> p
+
+
+
+E
+
+h 1
+
+L − 1
+
+D
+
+N ⊤ 
+
+> k
+
+1L−1, N ⊤ 
+
+> 1
+
+1L−1
+
+E
+
+− L−1
+
+> V
+> p
+
+i 1
+
+> p
+> (c)
+
+≤ Cp 2
+
+LN 2
+
+ √p√k
+
+√V + pk 2
+
+> p
+
+ 1
+
+√V ∧ L , (F.7) where we used Proposition 9 in (c). 70 • Then by using (F.6) and (F.7), we have for p = log V
+
+E[|tr( S22 )|p] 1 
+
+> p
+
+≤ C
+
+ p 32
+
+N LV + p4N 1
+
+> p
+
+LN 32
+
+√V
+
+1
+
+√V ∧ L
+
+
+
+≤ Cp 32
+
+N LV .
+
+Then, we have 
+
+P
+
+"
+
+|tr( S22 )| > CK 32 log 32 VN LV 
+
+#
+
+≤ 1
+
+V K . (F.8) To bound ∥S22 ∥2, we define 
+
+Yk := 
+
+k−1X
+
+j=1 
+
+ 1xj =xk − 1
+
+V
+
+sym 
+
+
+
+(N ⊤
+
+j − 1
+
+V 1V 1⊤
+
+L−1)1L−11⊤
+
+L−1(N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)⊤
+
+.
+
+We have 
+
+E[Y 2
+
+k |F k−1] ⪯ 2
+
+V
+
+k−1X
+
+j=1 
+
+E
+
+h
+
+(N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)1L−11⊤
+
+L−1(N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)⊤ (N ⊤
+
+j − 1
+
+V 1V 1⊤
+
+L−1)1L−1
+
+22
+
+Fk−1
+
+i
+
++ 2
+
+V
+
+k−1X
+
+j=1 
+
+E
+
+h
+
+(N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)1L−1
+
+22
+
+(N ⊤
+
+j − 1
+
+V 1V 1⊤
+
+L−1)1L−11⊤
+
+L−1(N ⊤
+
+j − 1
+
+V 1V 1⊤
+
+L−1)⊤ Fk−1
+
+i
+
+⪯ 2LV 2
+
+k−1X
+
+j=1 
+
+(N ⊤
+
+j − 1
+
+V 1V 1⊤
+
+L−1)1L−1
+
+22
+
+IV
+
++ 2LV
+
+k−1X
+
+j=1 
+
+(N ⊤
+
+j − 1
+
+V 1V 1⊤
+
+L−1)1L−11⊤
+
+L−1(N ⊤
+
+j − 1
+
+V 1V 1⊤
+
+L−1)⊤.
+
+Therefore, we have 
+
+QN := 
+
+NX
+
+k=1 
+
+E[Y 2
+
+k |F k−1] ⪯ 2LV 2
+
+N −1X
+
+k=1 
+
+(N − k) (N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)1L−1
+
+22
+
+IV
+
++ 2L2NV
+
+1
+
+LN 
+
+N −1X
+
+k=1 
+
+(N − k)( N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)1L−11⊤
+
+L−1(N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)⊤
+
+⪯ 2N L V 2
+
+N −1X
+
+k=1 
+
+(N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)1L−1
+
+22
+
+IV
+
++ 2L2N 2
+
+V
+
+1
+
+LN 
+
+N −1X
+
+k=1 
+
+(N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)1L−11⊤
+
+L−1(N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)⊤.
+
+Then, 
+
+E[∥QN ∥ p
+
+> 2
+
+2 ] 2 
+
+> p
+
+≤ 2N L V 2 E
+
+h N −1X
+
+k=1 
+
+(N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)1L−1
+
+22
+
+ p 
+
+> 2
+
+i 2
+
+> p
+
++ 2L2N 2
+
+V E
+
+h 1
+
+N (L − 1) 
+
+N −1X
+
+k=1 
+
+(N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)1L−11⊤
+
+L−1(N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)⊤
+
+> p
+> 2
+
+2
+
+i 2
+
+> p
+
+≤ 2N 2L2
+
+V 2 E
+
+h 1
+
+√L − 1 (N ⊤
+
+1 − 1
+
+V 1V 1⊤
+
+L−1)1L−1
+
+p
+
+2
+
+i 2
+
+> p
+
++ 2L2N 2
+
+V E
+
+h 1
+
+N (L − 1) 
+
+N −1X
+
+k=1 
+
+(N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)1L−11⊤
+
+L−1(N ⊤
+
+k − 1
+
+V 1V 1⊤
+
+L−1)⊤
+
+> p
+> 2
+
+2
+
+i 2
+
+> p
+
+71 ≤ CN 2L2
+
+V 2
+
+
+
+1 + p2
+
+√V ∨ L
+
+
+
++ CL 2N 2
+
+V
+
+ 1
+
+V +
+
+r pN V + pN
+
+
+
+1 + p2
+
+√V ∧ L
+
+ 
+
+≤ CN 2L2
+
+V 2
+
+
+
+1 + pN/V + p2
+
+√V ∨ L
+
+
+
+.
+
+To bound E[∥Yk∥p
+
+> 2
+
+] , we observe that 
+
+• We have 
+
+E
+
+h  1xj =xk − 1
+
+> V
+
+sym 
+
+
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−11⊤
+
+> L−1
+
+(N ⊤ 
+
+> k
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤ 2
+
+xk, Nk
+
+i
+
+⪯ LV 2 ∥(N ⊤ 
+
+> k
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1∥22IV + LV (N ⊤ 
+
+> k
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−11⊤
+
+> L−1
+
+(N ⊤ 
+
+> k
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤.
+
+Moreover, 
+
+E
+
+h  1xj =xk − 1
+
+> V
+
+sym 
+
+
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−11⊤
+
+> L−1
+
+(N ⊤ 
+
+> k
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)⊤ p
+
+> 2
+
+xk, Nk
+
+i 1
+
+> p
+
+≤ 2 E
+
+h  1xj =xk − 1
+
+> V
+
+ p
+
+xk
+
+i 1
+
+> p
+
+(N ⊤ 
+
+> k
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−1 2 E
+
+h
+
+(N ⊤ 
+
+> j
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−1
+
+> p
+> 2
+
+i 1
+
+> p
+
+≤ C√L (N ⊤ 
+
+> k
+
+− 1 
+
+> V
+
+1V 1⊤
+
+> L−1
+
+)1L−1 2
+
+r pV + p
+
+ 
+
+1 + p2
+
+√V ∧ L
+
+
+
+.
+
+• By Proposition 15, we have for p = log V ,
+
+E[∥Yk∥p
+
+> 2
+
+|xk, Nk] 1 
+
+> p
+
+≤ C∥(N ⊤ 
+
+> k
+
+− 1
+
+V 1V 1⊤
+
+> L−1
+
+)1L−1∥2
+
+√p
+
+r Lk V + p2√Lk 1
+
+> p
+
+
+
+,
+
+which implies 
+
+E[∥Yk∥p
+
+> 2
+
+] 1 
+
+> p
+
+≤ CLp 
+
+√p
+
+r kV + p2k 1
+
+> p
+
+
+
+.
+
+Therefore, for p = log V , we have 
+
+E[∥S22 ∥p
+
+> 2
+
+] ≤ C
+
+ √pN LV + p5/2
+
+LN √N V + p4
+
+LN 2
+
+
+
+Therefore, we have 
+
+P
+
+h
+
+∥S22 ∥2 > C K3/2 log 3/2 VN LV 
+
+i
+
+≤ 1
+
+V K . (F.9) By (F.4), (F.5), (F.8), and (F.9), we have the second item. For the last item, we have 
+
+S3 − 1
+
+N
+
+1
+
+V 2L2 1V 1⊤ 
+
+> V
+
+= 1
+
+V 2L2 1V 1⊤
+
+> V
+
+1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1
+
+V 1V ) 22
+
+− 1
+
+N
+
+!
+
+By Proposition 9, 
+
+P
+
+h 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(xj − 1
+
+V 1V ) 22
+
+− 1
+
+N > CK 2 log 2 VN √V
+
+i
+
+≤ 1
+
+V K .
+
+The displayed equation implies the third item. 72 G Miscellaneous 
+
+Proposition 11. Let A ∈ Rd×d and B ∈ RV ×V . Let M := A ⊗ B. We have 
+
+∥M ∥2 = ∥A∥2∥B∥2 and ∥M ∥F = ∥A∥F ∥B∥F and tr( M ) = tr( A)tr( B).
+
+Proof. The Frobenius norm and trace are straightforward. For the ℓ2 norm, let A =: Pdi=1 σiuiv⊤ 
+
+> i
+
+and 
+
+B =: PVj=1 ˜σj ˜uj ˜v⊤ 
+
+> j
+
+. We have 
+
+M =
+
+> d
+
+X
+
+> i=1
+> V
+
+X
+
+> j=1
+
+σi ˜σj (uiv⊤ 
+
+> i
+
+) ⊗ ( ˜ uj ˜v⊤ 
+
+> j
+
+) = 
+
+> d
+
+X
+
+> i=1
+> V
+
+X
+
+> j=1
+
+σi ˜σj (ui ⊗ ˜uj )( vi ⊗ ˜vj )⊤.
+
+For any ( i, j )̸ = ( i′, j ′), we have (ui ⊗ ˜uj )⊤(ui′ ⊗ ˜uj′ ) = ( vi ⊗ ˜vj )⊤(vi′ ⊗ ˜vj′ ) = 0 .
+
+Therefore, 
+
+∥M ∥2 = max  
+
+> i,j
+
+σi ˜σj = max  
+
+> i
+
+σi max  
+
+> j
+
+˜σj .
+
+Proposition 12. Let z ∼ N (0 , I d) and Pk : Rd → [0 , ∞) denotes a degree k polynomial which takes nonnegative values. For p ≥ 1, we have 
+
+E[|Pk(z)|p] 1 
+
+> p
+
+≤  8( p − 1)  k 
+
+> 2
+
+E[Pk(z)] .
+
+Proof. By hypercontractivity, it is sufficient to prove that E[|Pk (z)2] 12  
+
+> E[Pk(z)]
+
+≤ 8 k 
+
+> 2
+
+. We have 
+
+E[|Pk(z)2]2 ≤ E[|Pk(z)] E[|Pk(z)3] ≤ 2 3k 
+
+> 2
+
+E[|Pk(z)] E[|Pk(z)2] 32
+
+which proves the result. 
+
+Proposition 13. Let k ∈ N and w ∼ N (0 , Id). For L > 0 and u, v ∈ Sd−1, we have 
+
+E
+
+h
+
+Hek
+
+ 1
+
+√L w⊤u
+
+
+
+Hek
+
+ 1
+
+√L w⊤v
+
+i 
+
+= k!
+
+Lk
+
+> ⌊k/ 2⌋
+
+X
+
+> i=0
+
+(2 i − 1)!! 2i!! 
+
+ k
+
+2i
+
+
+
+(L − 1) 2i ⟨u, v⟩k−2i
+
+Proof. For a ∈ R, we have 
+
+Hek (ax ) = 
+
+> ⌊k/ 2⌋
+
+X
+
+> i=0
+
+k!2ii!( k − 2i)! (a2 − 1) iak−2iHek−2i (x)Therefore, for a = 1 /√L, we have 
+
+E
+
+h
+
+Hek
+
+ 1
+
+√L w⊤u
+
+
+
+Hek
+
+ 1
+
+√L w⊤v
+
+i 
+
+= E
+
+" ⌊k/ 2⌋
+
+X
+
+> i=0
+
+k!2ii!( k − 2i)! (a2 − 1) iak−2iHek−2i (w⊤u)
+
+ ⌊k/ 2⌋
+
+X
+
+> i=0
+
+k!2ii!( k − 2i)! (a2 − 1) iak−2iHek−2i (w⊤v)
+
+#
+
+=
+
+> ⌊k/ 2⌋
+
+X
+
+> i=0
+
+ k!2ii!( k − 2i)! 
+
+2
+
+(a2 − 1) 2ia2( k−2i)(k − 2i)! ⟨u, v⟩k−2i
+
+= k!
+
+Lk
+
+> ⌊k/ 2⌋
+
+X
+
+> i=0
+
+(2 i − 1)!! 2i!! 
+
+ k
+
+2i
+
+
+
+(L − 1) 2i ⟨u, v⟩k−2i .
+
+73 Proposition 14. Let Z be a random variable and X be a d × d symmetric matrix valued random matrix. We have 
+
+− E[Z2] 12 E[X2] 12 ⪯ E[ZX] ⪯ E[Z2] 12 E[X2] 12 .
+
+Proof. We observe that 
+
+ZId
+
+X
+
+ ZId X =
+
+Z2Id ZX
+
+ZX X2
+
+
+
+⪰ 0 ⇒
+
+E[Z2]Id E[ZX]
+
+E[ZX] E[X2]
+
+
+
+⪰ 0. (G.1) By [BEVW25, Proposition 24], we know that (G.1) is equivalent to E[ZX]2 ⪯ E[Z2] E[X2]. Since X → √X
+
+is monotone in matrix order, we have the result. 
+
+## G.1 Rosenthal-Burkholder inequality and corollaries 
+
+We will rely on the following inequality: 
+
+Proposition 15 ([PXZ25, Theorem 2.1]) . Let {Mk}Nk=1 be a d-dimensional symmetric matrix valued mar-tingale adapted to the filtration {F k}Nk=0 . Let Yk := Mk − Mk−1 be its corresponding difference sequence and the quadratic variation is defined as 
+
+QN := 
+
+> N
+
+X
+
+> k=1
+
+E[Y 2 
+
+> k
+
+|F k−1].
+
+For any p ≥ 2, suppose 
+
+E
+
+h
+
+∥QN ∥ p
+
+> 2
+> 2
+
+i 1
+
+> p
+
+< ∞ and sup  
+
+> k∈[N]
+
+E
+
+h
+
+∥Yk∥p
+
+> 2
+
+i 1
+
+> p
+
+< ∞.
+
+Then it holds that 
+
+E
+
+h
+
+∥MN ∥p
+
+> 2
+
+i 1
+
+> p
+
+≤ C
+
+p p ∨ log d E
+
+h
+
+∥QN ∥ p
+
+> 2
+> 2
+
+i 1
+
+> p
+
++ ( p ∨ log d)N 1 
+
+> p
+
+sup  
+
+> k∈[N]
+
+E
+
+h
+
+∥Yk∥p
+
+> 2
+
+i 1 
+
+> p
+
+
+
+.
+
+We have the following corollaries: 
+
+Corollary 3. The following statements holds for general L, V > 0:1. For X ∼ Binomial( L, 1 
+
+> V
+
+), we have 
+
+E[|X − kq |p] 1 
+
+> p
+
+≤ C
+
+√p
+
+r LV + p
+
+ LV
+
+ 1 
+
+> p
+
+
+
+.
+
+2. Let c = ( c1, · · · , c V ) ∼ Multinomial( L, 1 
+
+> V
+
+1V ). For p ≥ 1, we have 
+
+E[∥c∥pp] ≤ CpV
+
+ LV
+
+p
+
++
+
+ pL V
+
+ p
+
+> 2
+
++ pp LV
+
+!
+
+.
+
+3. By following the notation in the second item, 
+
+• If V ≫ L, we have for L ≥ e2e + 1 ,
+
+P [∥c∥∞ ≥ log L] ≤
+
+ 2e
+
+log L − 1
+
+ log L−12  LV
+
+log L−2
+
+74 • If L ≫ V , we have 
+
+P
+
+
+
+∥c∥∞ ≥ eL V
+
+
+
+≤ 2V e −L/V .
+
+Proof. The first two items are direct consequence of Proposition 15. For the third item, using 1cw ≥k ≤    
+
+> cw(cw−1) ··· (cw−k+1)
+> k!
+
+and linearity of expectation 
+
+P[∥c∥∞ ≥ k] ≤
+
+> V
+
+X
+
+> w=1
+
+P[cw ≥ k] ≤
+
+> V
+
+X
+
+> w=1
+
+E[cw(cw − 1) · · · (cw − k + 1)] 
+
+k! = L(L − 1) · · · (L − k + 1) 
+
+k!V k−1 .
+
+For V ≫ L, by choosing k = ⌊log L⌋, the result follows. For L ≫ V , by choosing k = ⌊ eL V ⌋, the result follows. 75

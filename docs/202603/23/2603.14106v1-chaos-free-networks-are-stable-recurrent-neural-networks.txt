@@ -1,0 +1,1626 @@
+Title: Chaos-Free Networks are Stable Recurrent Neural Networks
+
+URL Source: https://arxiv.org/pdf/2603.14106v1
+
+Published Time: Tue, 17 Mar 2026 04:35:46 GMT
+
+Number of Pages: 6
+
+Markdown Content:
+# Chaos-Free Networks are Stable Recurrent Neural Networks 
+
+Stefano De Carli 1, Davide Previtali 1, Mirko Mazzoleni 1 and Fabio Previdi 1
+
+Abstract — Gated Recurrent Neural Networks (RNNs) are widely used for nonlinear system identification due to their high accuracy, although they often exhibit complex, chaotic dy-namics that are difficult to analyze. This paper investigates the system-theoretic properties of the Chaos-Free Network (CFN), an architecture originally proposed to eliminate the chaotic behavior found in standard gated RNNs. First, we formally prove that the CFN satisfies Input-to-State Stability (ISS) by design. However, we demonstrate that ensuring Incremental ISS (δISS) still requires specific parametric constraints on the CFN architecture. Then, to address this, we introduce the Decoupled-Gate Network (DGN), a novel structural variant of the CFN that removes internal state connections in the gating mechanisms. Finally, we prove that the DGN unconditionally satisfies the 
+
+δISS property, providing an incrementally stable architecture for identifying nonlinear dynamical systems without requiring complex network training modifications. Numerical results confirm that the DGN maintains the modeling capabilities of standard architectures while adhering to these rigorous stability guarantees. 
+
+Index Terms — Stability of nonlinear systems, Nonlinear sys-tems identification, Neural networks. 
+
+I. I NTRODUCTION 
+
+Recurrent Neural Networks (RNNs) have become a stan-dard tool for the identification of nonlinear dynamical sys-tems [1]. While gated architectures, such as Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) networks [2, Ch. 15], demonstrate superior accuracy when it comes to modeling real systems [1], their deployment in safety-critical control frameworks is restrained by their complexity. Specifically, standard gated RNNs can exhibit complex, irregular dynamics such as non-divergent but non-vanishing oscillations or chaotic behaviors, which are heavily influenced by the networks’ initial conditions [3]. Further, the lack of intrinsic stability guarantees makes the derivation of theoretically-sound RNN-based control strategies challeng-ing [4]. Consequently, the analysis of RNN stability has received significant attention in recent years [5], [6], [7], [8], particularly regarding Input-to-State Stability (ISS) and 
+
+Incremental Input-to-State Stability (δISS), which are crucial for robust control frameworks and observer designs [4], [9], [10]. Parallel to these control-theoretic developments, the machine learning community has actively investigated the equilibrium properties of neural networks [11], [12] to ensure well-behaved forward propagation. In this context, the Chaos-Free Network (CFN) was proposed in the machine learning literature [3] to avoid the emergence of strange RNN state attractors, which are chaotic fractal structures typical           
+
+> 1The authors are with the Department of Management, Information and Production Engineering, University of Bergamo, 24044 Dalmine, Bergamo, Italy, stefano.decarli@unibg.it, davide.previtali@unibg.it, mirko.mazzoleni@unibg.it, fabio.previdi@unibg.it
+
+of standard gated networks [3], [13, Ch. 9], ensuring instead that the CFN’s state relaxes to a stable equilibrium when no input sequence is applied to it. While originally motivated by qualitative dynamical behavior, the rigorous system-theoretic properties of the CFN remain unexplored. In this work, we analyze the CFN through the lens of control theory. Specifically, we formally prove that the absence of chaos in CFNs translates to the satisfaction of the ISS property by design. Furthermore, we identify that the recurrent gating structure in CFNs is not, by itself, sufficient to ensure δISS by design. Indeed, promoting δISS requires enforcing complex parametric conditions during CFN training, analogous to those established for LSTM and GRU networks [5], [6], [8]. To address this, we propose the 
+
+Decoupled-Gate Network (DGN), a novel variant of the CFN that removes the state-dependent recurrence in the gating dynamics. We show that the DGN is unconditionally δISS by design, providing a similarly flexible architecture for system identification that eliminates the need for constrained network training procedures (e.g., penalty terms in the loss functions [4]) or complex post-training verification. The remainder of this work is structured as follows. Section II introduces the notation, the problem statement and recalls the definitions of ISS and δISS. Section III details the dynamics of the CFN and introduces the proposed DGN architecture. Section IV provides the main theoretical contributions of the paper, deriving the stability proofs for both architectures. Section V presents numerical experiments validating the theoretical findings and comparing the model-ing performance of the CFN and DGN against stable standard baselines. Finally, Section VI draws conclusions and outlines future research directions. II. P RELIMINARIES AND PROBLEM STATEMENT 
+
+A. Notation and preliminaries 
+
+Let R, R≥0, R>0, N, Z+ denote the sets of real, non-negative real, positive real, natural numbers (including zero), and positive integers. Given n, m ∈ Z+, Rn is the set of real column vectors of dimension n, while Rn×m is the set of real matrices of dimension n × m. Vectors are typeset in boldface lowercase, e.g., v = [ v1, . . . , v n]⊤ ∈
+
+Rn. 0 and I denote the zero and identity matrices of appropriate dimensions. |S| is the cardinality of a set S.The Hadamard (element-wise) product is indicated by ◦,and ∥·∥ p represents the p-norm; unless otherwise specified, 
+
+∥·∥ denotes the infinity norm (i.e., p = ∞). We represent scalar discrete-time signals as sk, where k ∈ N is the time step. Correspondingly, an n-dimensional discrete-time signal is defined as xk = [ x1,k , . . . , x n,k ]⊤ ∈ Rn. The sequence 
+
+> arXiv:2603.14106v1 [math.OC] 14 Mar 2026
+
+of values attained by xk between k = k1 and k = k2 is denoted by {xk}k2 
+
+> k=k1
+
+. We use standard activation functions: sigmoid σ(x) = (1 + e−x)−1 ∈ (0 , 1) and hyperbolic tangent ϕ(x) = tanh( x) ∈ (−1, 1) for x ∈ R. For a scalar function f : R → R, its bold counterpart f : Rn → Rn
+
+denotes the component-wise application. Finally, we employ standard definitions for comparison functions of classes K,
+
+K∞, and KL as detailed in [14]. 
+
+B. Problem statement 
+
+We consider the problem of identifying a nonlinear discrete-time Multiple-Input Multiple-Output (MIMO) dy-namical system from data. The objective is to learn the unknown map governing the evolution of the system output 
+
+yk ∈ Rny based on the input uk ∈ Rnu , with ny , n u ∈ Z+.The system is characterized by an internal state xk ∈ Rnx ,where nx ∈ Z+. We assume that the input uk ∈ U ⊂ Rnu
+
+and state xk ∈ X ⊂ Rnx belong to compact sets. The initial state x0 ∈ X is unknown and not subject to estimation. To identify the underlying dynamics, we use a dataset D =
+
+{D (v)}Vv=1 comprising V ∈ Z+ input-output sequences. Each sequence is defined as D(v) := {(u(v) 
+
+> k
+
+, y(v) 
+
+> k
+
+)}N (v)−1 
+
+> k=0
+
+,where N (v) ∈ Z+ represents the length of the v-th sequence, with v ∈ { 1, . . . , V }. Our goal is to identify the underlying dynamics using RNN architectures, focusing on models satisfying ISS and δISS. Stability is defined for a generic system xk+1 = w(xk, uk), with w : Rnx × Rnu → Rnx ,assuming that X is forward invariant with respect to U, i.e., 
+
+w(xk, uk) ∈ X , ∀k ∈ N, for any xk ∈ X and uk ∈ U .
+
+Definition 1 (ISS [15], [5]): A system xk+1 =
+
+w(xk, uk) is ISS in X with respect to U if there exist functions β ∈ KL and γu, γ b ∈ K ∞ such that, for any k ∈ N, any initial state x0 ∈ X , any input sequence 
+
+{uz ∈ U} k−1 
+
+> z=0
+
+, and any bias vector b ∈ Rnx , it holds that: 
+
+∥xk∥ ≤ β(∥x0∥ , k ) + γu
+
+
+
+max  
+
+> 0≤z<k
+
+∥uz ∥
+
+
+
++ γb (∥b∥) . (1) 
+
+Definition 2 ( δISS [16], [5]): A system xk+1 =
+
+w(xk, uk) is δISS in X with respect to U if there exist functions βδ ∈ KL and γδu ∈ K ∞ such that, for any 
+
+k ∈ N, any pair of initial states xa0, xb0 ∈ X , and any pair of input sequences {ua 
+
+> z
+
+∈ U} k−1 
+
+> z=0
+
+and {ub 
+
+> z
+
+∈ U} k−1 
+
+> z=0
+
+, the corresponding state trajectories xa 
+
+> k
+
+and xb 
+
+> k
+
+satisfy: 
+
+xa 
+
+> k
+
+−xb 
+
+> k
+
+≤ βδ
+
+  xa0 −xb0 , k  + γδu 
+
+
+
+max  
+
+> 0≤z<k
+
+ua 
+
+> z
+
+−ub
+
+> z
+
+
+
+.
+
+(2) We remind that δISS is a stronger property than ISS as the class of δISS systems constitutes a strict subset of the class of ISS systems [16, Proposition 1]. 
+
+Remark 1: In this work, ISS and δISS are defined using the infinity norm for convenience, but the properties hold for any other vector norm [15]. III. C HAOS -F REE AND DECOUPLED -G ATE NETWORKS 
+
+While standard LSTM and GRU networks are widely used and offer great modeling ability [1], [2, Ch. 15], they often exhibit chaotic behaviors [3] and lack theoretical stability guarantees by design. To address this, we analyze the chaos-free network architecture [3], which mitigates these issues, and propose a novel CFN variant, the decoupled-gate network, designed to guarantee unconditional δISS. 
+
+A. The Chaos-Free Network (CFN) 
+
+The CFN was introduced in [3] for general machine learning tasks. CFNs are designed to mitigate the chaotic behavior exhibited by standard gated RNNs (LSTM and GRU networks) while still managing the vanishing gradient problem. The network consists of L ∈ Z+ stacked layers. Each layer l ∈ L = {1, . . . , L } is a nonlinear discrete-time MIMO dynamical system in state-space form with hidden state h(l) 
+
+> k
+
+∈ Rn(l) 
+
+> h
+
+. Here, (l) denotes the l-th layer, and 
+
+n(l) 
+
+> h
+
+∈ Z+ is the number of its hidden units. The hidden state evolution of each l-th layer is governed by a forget gate f (l) 
+
+> k
+
+∈ Rn(l) 
+
+> h
+
+, an input gate i(l) 
+
+> k
+
+∈ Rn(l) 
+
+> h
+
+, and a candidate hidden state ˜h(l) 
+
+> k
+
+∈ Rn(l) 
+
+> h
+
+:
+
+h(l) 
+
+> k+1
+
+:= f (l) 
+
+> k
+
+◦ ϕ
+
+
+
+h(l)
+
+> k
+
+
+
++ i(l) 
+
+> k
+
+◦ ˜h(l) 
+
+> k
+
+, (3a) 
+
+f (l) 
+
+> k
+
+:= σ
+
+
+
+W (l) 
+
+> f
+
+˜u(l) 
+
+> k
+
++ R(l) 
+
+> f
+
+h(l) 
+
+> k
+
++ b(l)
+
+> f
+
+
+
+, (3b) 
+
+i(l) 
+
+> k
+
+:= σ
+
+
+
+W (l) 
+
+> i
+
+˜u(l) 
+
+> k
+
++ R(l) 
+
+> i
+
+h(l) 
+
+> k
+
++ b(l)
+
+> i
+
+
+
+, (3c) 
+
+˜h(l) 
+
+> k
+
+:= ϕ
+
+
+
+W (l)˜h ˜u(l) 
+
+> k
+
++ b(l)˜h
+
+
+
+, (3d) 
+
+˜u(l) 
+
+> k
+
+:= 
+
+(
+
+uk if l = 1 , n(l)˜u = nu,
+
+h(l−1)  
+
+> k+1
+
+if l ∈ L \ { 1}, n(l)˜u = n(l−1)  
+
+> h
+
+, (3e) where ˜u(l) 
+
+> k
+
+∈ Rn(l)˜u is the layer input, W (l) 
+
+> f
+
+, W (l) 
+
+> i
+
+, W (l)˜h ∈
+
+Rn(l)  
+
+> h×n(l)˜u
+
+are the input weights, R(l) 
+
+> f
+
+, R (l) 
+
+> i
+
+∈ Rn(l) 
+
+> h×n(l)
+> h
+
+are the recurrent weights, and b(l) 
+
+> f
+
+, b(l) 
+
+> i
+
+, b(l)˜h ∈ Rn(l) 
+
+> h
+
+are the bias vectors. These single-layer CFN dynamics are shown in Fig. 1. A key aspect of CFNs is that, due to the ranges of the activation functions σ(·) ∈ (0 , 1) and ϕ(·) ∈ (−1, 1) , every layer admits a compact forward invariant set. 
+
+Proposition 1 (Forward invariant set of h(l) 
+
+> k
+
+): For any 
+
+l ∈ L , the set H(l)inv := [ −2, 2] n(l) 
+
+> h
+
+is a forward invariant compact set for the layer dynamics in (3a). Thus, for any initial condition h(l)0 ∈ H(l)inv , the hidden state satisfies 
+
+h(l) 
+
+> k
+
+∈ H (l)inv for all k ∈ N and any input ˜u(l) 
+
+> k
+
+∈ Rn(l)˜u .The proof is reported in Appendix I. In practice, h(l)0 is typically initialized as the zero vector [17, Ch. 10], i.e., 
+
+h(l)0 = 0 ∈ H (l)inv , ∀l ∈ L . From Proposition 1, it follows that the complete network state hk = [ h(1) 
+
+> k
+> ⊤
+
+, . . . , h(L)
+
+> k
+> ⊤
+
+]⊤
+
+evolves within the Cartesian product Hinv = ×Ll=1 H(l)inv ⊂
+
+Rnh , where nh = PLl=1 n(l) 
+
+> h
+
+is the total number of hidden units in the network. The network output yk is computed from the hidden state of the final layer L via a fully connected mapping: 
+
+
+
+h(l) 
+
+> k+1
+
+:= f (l) 
+
+> k
+
+◦ ϕ
+
+
+
+h(l)
+
+> k
+
+
+
++ i(l) 
+
+> k
+
+◦ ˜h(l) 
+
+> k
+
+, ∀l ∈ L ,
+
+yk := Wy h(L) 
+
+> k+1
+
++ by ,
+
+(4) ˜u(l)
+
+> k
+
+h(l) 
+
+> k
+
+f (l)
+
+> k
+
+˜h(l)
+
+> k
+
+i(l) 
+
+> k
+
+h(l) 
+
+> k+1
+
+= f (l) 
+
+> k
+
+◦ ϕ
+
+
+
+h(l)
+
+> k
+
+
+
++ i(l) 
+
+> k
+
+◦ ˜h(l) 
+
+> k
+
+h(l)  
+
+> k+1
+> Fig. 1. Single-layer dynamics for the CFN and the DGN at time k. The dashed paths represent the recurrent connections in the gates. The CFN includes these connections, whereas the DGN removes them to guarantee unconditional stability.
+
+where Wy ∈ Rny ×n(L) 
+
+> h
+
+and by ∈ Rny . Finally, the CFN relies on the following set of tunable parameters θ:
+
+θ := {Wy , by } ∪ { θ(l) : l ∈ L} ,θ(l) := {W (l) 
+
+> f
+
+, W (l) 
+
+> i
+
+, W (l)˜h , R (l) 
+
+> f
+
+, R (l) 
+
+> i
+
+, b(l) 
+
+> f
+
+, b(l) 
+
+> i
+
+, b(l)˜h }. (5) A distinctive feature of CFNs, compared to common gated RNNs, is that the candidate state ˜h(l) 
+
+> k
+
+, l ∈ L , depends solely 
+
+on the current layer input ˜u(l) 
+
+> k
+
+and not on the hidden state at the previous time step. However, the CFN retains full recur-rent connectivity due to the presence of the weight matrices 
+
+R(l) 
+
+> f
+
+, R (l) 
+
+> i
+
+. This coupling between the hidden state h(l) 
+
+> k
+
+and the gates introduces a state-dependent modulation that, while enabling rich dynamics, makes it challenging to guarantee strong stability properties (such as δISS) without imposing restrictive constraints on the weights, see Section IV. 
+
+B. The proposed Decoupled-Gate Network (DGN) 
+
+To guarantee unconditional δISS without parametric con-straints, we introduce the decoupled-gate network. Inspired by parallelizable RNN architectures [18], the DGN struc-turally simplifies the CFN by eliminating the recurrent de-pendencies of the gates on the hidden state, setting R(l) 
+
+> f
+
+=
+
+R(l) 
+
+> i
+
+= 0 for all l ∈ L . Consequently, the gates in (3b) and (3c) of a DGN layer depend exclusively on the layer input ˜u(l) 
+
+> k
+
+, removing state-dependent modulations that com-plicate stability analysis. Although this restricts single-layer dynamics, complex temporal processing is recovered through network depth [18] ( L > 1). Since deeper layers are driven by previous states ( ˜u(l) 
+
+> k
+
+= h(l−1)  
+
+> k+1
+
+), their gating mechanisms remain effectively state-dependent. This structural choice preserves model expressivity while rendering the DGN δISS 
+
+by design , as proven in Section IV. IV. S TABILITY PROPERTIES 
+
+In this Section, we provide the stability analysis of the CFN and DGN architectures. All proofs are deferred to Appendix I. We adopt the following Assumption regarding the boundedness of the input signal. 
+
+Assumption 1 (Input boundedness): The inputs uk are bounded such that uk ∈ U := [ −1, 1] nu for all k ∈ N.This is a customary assumption for neural networks, satisfied by input data normalization. Furthermore, considering the layer input ˜u(l) 
+
+> k
+
+in (3e), it follows from Assumption 1 and Proposition 1 that ˜u(l) 
+
+> k
+
+∈ ˜U(l) := [ −2, 2] n(l)˜u for all l ∈ L .Indeed, ˜u(1)  
+
+> k
+
+= uk ∈ U ⊂ ˜U(1) , while for l ∈ L \ { 1},
+
+˜u(l) 
+
+> k
+
+= h(l−1)  
+
+> k+1
+
+∈ H (l−1) inv = ˜U(l).
+
+A. Stability of CFN architectures 
+
+Based on the above assumptions, we derive sufficient parametric conditions for ISS and δISS of CFN layers. 
+
+Theorem 1 (ISS of a CFN layer): Under Assumption 1, the l-th layer, l ∈ L , of the CFN in (3a) is ISS in H(l)inv 
+
+with respect to ˜U(l).
+
+Theorem 2 ( δISS of a CFN layer): Under Assumption 1, the l-th layer, l ∈ L , of the CFN in (3a) is δISS in H(l)inv with respect to ˜U(l) if: 
+
+ρ(l) := ¯ σ(l) 
+
+> f
+
++ 14 R(l) 
+
+> f
+
++ 14 R(l) 
+
+> i
+
+¯ϕ(l)˜h < 1, (6) where: ¯σ(l) 
+
+> f
+
+:= σ
+
+ h 
+
+2W (l) 
+
+> f
+
+2R(l) 
+
+> f
+
+b(l)
+
+> f
+
+i  
+
+, (7a) 
+
+¯ϕ(l)˜h := ϕ
+
+ h 
+
+2W (l)˜h b(l)˜h
+
+i  
+
+. (7b) We now generalize the results to deep networks ( L > 1). 
+
+Theorem 3 (ISS of a CFN): Under Assumption 1, the L-layer CFN in (4) is ISS in Hinv with respect to U.
+
+Theorem 4 ( δISS of a CFN): Under Assumption 1, the L-layer CFN in (4) is δISS in Hinv with respect to U if Condition (6) holds for every layer l ∈ L .
+
+B. Extension to DGN architectures 
+
+The DGN architecture, being a structural simplification of the CFN, inherits similar but stronger stability properties. 
+
+Theorem 5 ( δISS of a DGN): Under Assumption 1, the 
+
+L-layer DGN, defined by (4) with R(l) 
+
+> f
+
+= R(l) 
+
+> i
+
+= 0 for all l ∈ L , is δISS in Hinv with respect to U.V. N UMERICAL RESULTS 
+
+In this Section, we evaluate the modeling capabilities of the CFN and the proposed DGN architectures for system identification tasks, a domain unexplored in prior works, since CFNs were validated only for word-level language modeling [3]. We assess their performance on two standard benchmarks for RNN stability: the pH Neutralization Reac-tor [5] and the Four-Tank system [6]. 
+
+A. Training configuration 
+
+Recall the dataset D introduced in Section II-B. For each benchmark, we partition the set of indices {1, . . . , V } into three disjoint subsets Itr (training), Ival (validation), and 
+
+Itst (test), defining the corresponding datasets Dtr , Dval , and 
+
+Dtst . Inputs and outputs are normalized to the range [−1, 1] 
+
+to satisfy Assumption 1. We follow the standard training procedure for RNNs [17, Ch. 10], also shared with baseline comparisons [5], [6]. The parameters θ in (5) are estimated by minimizing the Mean Squared Error (MSE) on Dtr :
+
+J(θ) := 1
+
+|I tr |
+
+X
+
+> v∈I tr
+
+1
+
+N (v) −Nw 
+
+> N(v)−1
+
+X
+
+> k=Nw
+
+y(v) 
+
+> k
+
+− ˆy(v) 
+
+> k
+
+(θ) 22
+
+,
+
+(8) where ˆyk(θ) is the output predicted by the network with parameters θ for the sequence v ∈ I tr , given the input u(v)
+
+> k
+
+at the time k. We apply a washout period of Nw = 25 steps to the training and validation sequences, ensuring that the prediction error during the initial transient is excluded from the loss calculation [17, Ch. 10]. The models are trained for 2000 epochs using the Adam optimizer with a base learning rate of 0.001 , decaying by 0.9 every 200 epochs to facilitate convergence. The training data is processed in mini-batches of size b ∈ Z+, which is adjusted according to the specific dataset dimensions. To prevent overfitting, we apply a dropout rate of 0.05 . We adopt an early stopping strategy, selecting the parameters θ∗ that yield the minimal MSE on Dval , which is evaluated every epoch. Crucially, for the DGN architecture, no additional constraints are imposed during training , as the model is δISS by design (Theorem 5). In contrast, the stable baselines (LSTM and GRU) used for comparison require minimizing a loss function augmented with a stability penalty term to promote δISS compliance [5], [6]. Lastly, we train the CFN without auxiliary stability penalties. Notably, the resulting CFN models consistently violated the sufficient δISS condition in (6), confirming that the CFN architecture does not intrinsically guarantee δISS. 
+
+B. pH Reactor 
+
+We first utilize the pH neutralization benchmark [5] to compare the CFN and the DGN against the δISS-LSTM network baseline established in the literature [5], which was trained using a stability-promoting augmented loss. The system describes the nonlinear control of the pH level ( y) via an alkaline flow ( u) under acid disturbances, representing a single-input single-output system. D contains V = 20 
+
+sequences generated by a Multilevel Pseudo-Random Signal (MPRS) with sampling time of 10 s. D is partitioned into 
+
+|D tr | = 15 , |D val | = 4 and |D tst | = 1 sequences. We train single-layer CFN and DGN models with n(1)  
+
+> h
+
+= 7 
+
+hidden units, matching the δISS-LSTM model in [5], and use a mini-batch size of b = 5 . Performance is evaluated for a generic sequence v ∈ I tst using the Fit (v) metric: Fit (v) (θ∗) := 100 
+
+1 −
+
+rPN (v)−1
+
+> k=0
+
+
+
+y(v) 
+
+> k
+
+− ˆy(v) 
+
+> k
+
+(θ∗)
+
+2
+
+rPN (v)−1
+
+> k=0
+
+
+
+y(v) 
+
+> k
+
+− ¯y(v)
+
+2
+
+ ,
+
+where ¯y(v) is the sample mean of y along sequence v. The results, summarized in terms of Fit on Dtst , demonstrate the competitive performance of the proposed architectures, as visually confirmed by the time-domain comparison in Fig. 2. The CFN achieves a Fit of 95 .1% , closely matching the 
+
+96 .5% of the δISS-LSTM benchmark in [5]. Notably, the DGN reaches 94 .8% , practically matching the CFN per-formance. Therefore, the DGN maintains high accuracy while providing rigorous unconditional stability, bypassing the complex stability-promoting augmented loss functions required by standard gated RNNs [5], [6]. 
+
+C. Four-Tank System 
+
+We also evaluate the architectures on the Quadruple Tank benchmark, already used for δISS-GRU network validation in [6]. The task is to model the water level of the lower tank ( y) given two input pump flow rates ( u), constituting a multiple-input single-output problem. A 25 ,000 -step MPRS 0 1 2 3 4 5
+
+6
+
+7
+
+8  
+
+> pH level [-]
+> CFN DGN Real
+
+0 5 10 15 20 
+
+0
+
+0.5
+
+1
+
+1.5
+
+Time [h] Water level [m]    
+
+> Fig. 2. Model predictions on the test dataset Dtst for the pH Reactor (top) and the Four-Tank System (bottom). The plots compare the ground truth (dashed black line) against the predictions of the CFN (thick orange line) and the proposed DGN (thin blue line).
+
+trajectory with a sampling time of 15 s was partitioned into 
+
+10 blocks, randomly assigned to training ( 80% ) or validation (20% ) sets. Windowing these blocks into subsequences of length 500 (with 50% overlap) yielded |D tr | = 77 and 
+
+|D val | = 18 subsequences. Then, an independent test tra-jectory ( |D tst | = 1 ) of 5000 steps was generated. To assess performance under realistic conditions, we add white Gaus-sian noise to the output measurements with a signal-to-noise ratio of 100 (i.e., 20 dB). We employ a 3-layer architecture with n(l) 
+
+> h
+
+= 7 units per layer for both the CFN and DGN to match the δISS-GRU model in [6], and use a mini-batch size of b = 25 . The models demonstrate remarkable performance on Dtst for this task as well (see Fig. 2). The CFN attains a Fit of 94 .8% , while the DGN follows closely with 93 .4% ;notably, if we do not consider the first Nw steps of transient in the Fit calculation, we obtain 96 .8% for the CFN and 
+
+95 .1% for the DGN. We compare these against the δISS-GRU baseline reported in [6], obtained with a stability-promoting augmented loss strategy. Although this baseline achieved a Fit of 97 .0% , it is crucial to note that it was trained and tested with different data from the same system. While a physiological degradation in predictive accuracy is observed when moving from fully recurrent gated archi-tectures to the structurally constrained DGN, this represents a highly favorable trade-off. The slight reduction in model expressivity is the necessary and acceptable price to pay for obtaining unconditional δISS by design . This effectively eliminates the need for complex, computationally expensive constrained optimization or stability-promoting augmented losses [5], [6], [8] during the training phase. VI. C ONCLUSION 
+
+In this work, we investigated the stability properties of the CFN and the proposed DGN, a novel architecture designed to ensure unconditional δISS in nonlinear system identification. We proved that the CFN inherently satisfies ISS by design, while the DGN unconditionally satisfies δISS without the restrictive training constraints required by standard gated RNNs used in previous works [5], [6], [8]. This contrasts with standard gated RNNs (e.g., LSTM and GRU net-works), where δISS must be enforced by augmenting the loss function with penalty terms during the network training process [5], [6], [8]. Numerical results confirm that the DGN maintains predictive accuracies comparable to the CFN and stable gated RNN baselines while offering intrinsic strong structural stability guarantees. Future research will focus on exploiting the intrinsic δISS property of the DGN to design robust state observers and integrating these models into safety-critical control frameworks, such as model predictive control [9], [10]. APPENDIX IPROOFS OF THE THEOREMS 
+
+PROOF OF PROPOSITION 1. Consider the hidden state 
+
+h(l) 
+
+> k
+
+= [ h(l)1,k , . . . , h (l) 
+
+> n(l)
+> h,k
+
+]⊤ for l ∈ L . For any component j ∈J (l) := {1, . . . , n (l) 
+
+> h
+
+}, the update (3a) satisfies |h(l)
+
+> j,k +1
+
+| ≤ |f (l)
+
+> j,k
+
+|| ϕ(h(l)
+
+> j,k
+
+)| + |i(l)
+
+> j,k
+
+|| ˜h(l)
+
+> j,k
+
+| by the triangle inequality. Since 
+
+σ(·) ∈ (0 , 1) and ϕ(·) ∈ (−1, 1) , it follows that |h(l)
+
+> j,k +1
+
+| ≤ 2.Thus, ∀k ∈ N, if h(l) 
+
+> k
+
+∈ H (l)inv := [ −2, 2] n(l) 
+
+> h
+
+, then h(l) 
+
+> k+1
+
+∈ H (l)inv 
+
+for any ˜u(l) 
+
+> k
+
+∈ Rn(l)˜u , making H(l)inv a forward invariant set. ■
+
+PROOF OF THEOREM 1. Consider a single layer l ∈ L and omit the index (l) for ease of discussion. For any j ∈ J , we can upper bound the forget gate component fj,k from (3b) by exploiting the monotonic properties of the sigmoid function: 
+
+|fj,k | ≤ max    
+
+> ˜uk∈˜U,hk∈H inv
+
+∥σ (Wf ˜uk + Rf hk + bf )∥≤ σ    2Wf 2Rf bf
+
+  := ¯ σf ∈ (0 , 1) . (9) Thus, ∥f k∥ ≤ ¯σf for all k ∈ N. Taking the norm of the state update in (3a) and applying the triangle inequality yields: 
+
+∥hk+1 ∥ ≤ ∥ f k∥ ∥ ϕ (hk)∥ + ∥ik∥ ˜hk .
+
+Using the 1-Lipschitz continuity of the hyperbolic tangent function and the bounds ∥f k∥ ≤ ¯σf , ∥ik∥ ≤ 1, we obtain: 
+
+∥hk+1 ∥ ≤ ¯σf ∥hk∥ + ˜hk . (10) From (3d), the 1-Lipschitz continuity of the hyperbolic tangent function implies that the candidate hidden state is bounded as ˜hk ≤ W˜h ∥˜uk∥ + b˜h . Substituting this back into (10), we get a recursive inequality: 
+
+∥hk+1 ∥ ≤ ¯σf ∥hk∥ + W˜h ∥˜uk∥ + b˜h .
+
+We propagate this inequality back to the initial state: 
+
+∥hk∥ ≤ ¯σkf ∥h0∥ +
+
+> k−1
+
+X
+
+> z=0
+
+¯σk−1−zf
+
+  W˜h ∥˜uz ∥ + b˜h
+
+
+
+≤ ¯σkf ∥h0∥+
+
+
+
+W˜h max 
+
+> 0≤z<k
+
+∥˜uz ∥+ b˜h
+
+k−1X
+
+> z=0
+
+¯σk−1−zf .
+
+Since ¯σf ∈ (0 , 1) , the geometric series can be bounded as 
+
+Pk−1 
+
+> z=0
+
+¯σk−1−zf ≤ 11−¯σf . We can now deduce the KL function for the ISS condition in (1), i.e., 
+
+β (∥h0∥ , k ) := ¯ σkf ∥h0∥ ,
+
+and the two K∞ functions, i.e., 
+
+γu
+
+
+
+max  
+
+> 0≤z<k
+
+∥˜uz ∥
+
+
+
+:= W˜h
+
+1 − ¯σf
+
+max  
+
+> 0≤z<k
+
+∥˜uz ∥ ,γb
+
+  b˜h
+
+ := 11 − ¯σf
+
+b˜h .
+
+Thus, the l-th CFN layer, l ∈ L , is ISS in H(l)inv with respect to ˜U(l) due to the existence of these functions. ■
+
+PROOF OF THEOREM 2. Consider a single layer l ∈ L 
+
+and omit the index (l) for ease of discussion. For any 
+
+j ∈ J , we first derive the bound of the candidate hidden state component ˜hj,k from (3d). As with ¯σf in (9), since the hyperbolic tangent function is monotonically increasing: 
+
+˜hj,k ≤ max   
+
+> ˜uk∈˜U
+
+ϕ  W˜h ˜uk + b˜h
+
+
+
+≤ ϕ    2W˜h b˜h
+
+  := ¯ϕ˜h ∈ (0 , 1) .
+
+(11) Now, consider two state trajectories ha
+
+> k
+
+, hb 
+
+> k
+
+starting from 
+
+ha0, hb0 ∈ H (l)inv and driven by the input sequences {˜ua 
+
+> z
+
+∈
+
+˜U(l)}k−1 
+
+> z=0
+
+and {˜ub 
+
+> z
+
+∈ ˜U(l)}k−1 
+
+> z=0
+
+. Let ξ∆ 
+
+> k
+
+:= ξa 
+
+> k
+
+− ξb 
+
+> k
+
+denote the incremental dynamics for any variable ξk. We analyze the component-wise evolution of the state difference for any 
+
+j ∈ J , based on the state update equation (3a): 
+
+h∆ 
+
+> j,k +1
+
+=
+
+
+
+f a
+
+> j,k
+
+ϕ(ha
+
+> j,k
+
+) + ia 
+
+> j,k
+
+˜ha
+
+> j,k
+
+
+
+−
+
+
+
+f b
+
+> j,k
+
+ϕ(hb
+
+> j,k
+
+) + ib 
+
+> j,k
+
+˜hb
+
+> j,k
+
+
+
+.
+
+Adding and subtracting the cross-terms f a
+
+> j,k
+
+ϕ(hb
+
+> j,k
+
+) and 
+
+ia 
+
+> j,k
+
+˜hb
+
+> j,k
+
+, we can directly group the terms as follows: 
+
+h∆ 
+
+> j,k +1
+
+= f a
+
+> j,k
+
+ ϕ(ha
+
+> j,k
+
+)−ϕ(hb
+
+> j,k
+
+)| {z }
+
+> τ1
+
++ f a 
+
+> j,k
+
+−f b
+
+> j,k
+
+ϕ(hb
+
+> j,k
+
+)
+
+| {z }
+
+> τ2
+
++ ia
+
+> j,k
+
+˜ha 
+
+> j,k
+
+− ˜hb
+
+> j,k
+
+| {z }
+
+> τ3
+
++  ia 
+
+> j,k
+
+− ib
+
+> j,k
+
+ ˜hb
+
+> j,k
+
+| {z }
+
+> τ4
+
+. (12) We bound each term individually leveraging |ia
+
+> j,k
+
+| ≤ 1,
+
+|ϕ(hb
+
+> j,k
+
+)| ≤ 1, |f a
+
+> j,k
+
+| ≤ ¯σf from (9), and |˜hb
+
+> j,k
+
+| ≤ ¯ϕ˜h
+
+from (11). Applying the 1-Lipschitz continuity property of the hyperbolic tangent function and the 14 -Lipschitz continu-ity property of the sigmoid function to the gates, we bound the absolute values of the incremental components: 
+
+|τ1| ≤ ¯σf h∆ 
+
+> k
+
+,
+
+|τ2| ≤ 14
+
+
+
+∥Wf ∥ ˜u∆ 
+
+> k
+
++ ∥Rf ∥ h∆
+
+> k
+
+
+
+,
+
+|τ3| ≤ W˜h ˜u∆ 
+
+> k
+
+,
+
+|τ4| ≤ 14
+
+
+
+∥Wi∥ ˜u∆ 
+
+> k
+
++ ∥Ri∥ h∆
+
+> k
+
+ ¯ϕ˜h.
+
+Substituting these bounds into (12) and taking the maximum with respect to j ∈ J , we obtain: 
+
+h∆ 
+
+> k+1
+
+≤ ρ h∆ 
+
+> k
+
++ Γ ˜u ˜u∆ 
+
+> k
+
+, (13) where ρ := ¯σf + 14 ∥Rf ∥ + 14 ∥Ri∥ ¯ϕ˜h matches the left-hand side of (6), and Γ˜u := W˜h + 14 ∥Wf ∥ + 14 ∥Wi∥ ¯ϕ˜h.Assuming Condition (6) holds ( ρ < 1) and unwinding the recursion back to the initial state difference, we obtain: h∆ 
+
+> k
+
+≤ ρk h∆0 + Γ ˜uk−1X
+
+> z=0
+
+ρk−1−z ˜u∆
+
+> z
+
+≤ ρk h∆0 + Γ˜u
+
+1 − ρ max  
+
+> 0≤z<k
+
+˜u∆ 
+
+> z
+
+,
+
+where the input sequence is bounded by its maximum and the geometric series is bounded as in the proof of Theorem 1. We can now deduce the KL and the K∞ functions for the 
+
+δISS condition in (2), i.e., 
+
+βδ
+
+
+
+ha0 − hb0 , k 
+
+
+
+:= ρk ha0 − hb0 ,γδu 
+
+
+
+max  
+
+> 0≤z<k
+
+˜ua 
+
+> z
+
+− ˜ub
+
+> z
+
+
+
+:= Γ˜u
+
+1 − ρ max  
+
+> 0≤z<k
+
+˜ua 
+
+> z
+
+− ˜ub 
+
+> z
+
+.
+
+Thus, the l-th CFN layer, l ∈ L , is δISS in H(l)inv with respect to ˜U(l) if Condition (6) holds. ■
+
+PROOF OF THEOREM 3. Every CFN layer is uncondition-ally ISS (Theorem 1). The entire network is a cascade of ISS subsystems. As proven in [15], the cascade of ISS systems is ISS. Thus, the network is ISS. ■
+
+PROOF OF THEOREM 4. Let us consider two state tra-jectories ha
+
+> k
+
+, hb 
+
+> k
+
+for the L-layer CFN driven by the input sequences {ua 
+
+> z
+
+∈ U} k−1 
+
+> z=0
+
+and {ub 
+
+> z
+
+∈ U} k−1 
+
+> z=0
+
+, starting from initial states ha0, hb0 ∈ H inv . As in the proof of Theorem 2, the superscript ∆ denotes the incremental dynamics. Let 
+
+η∆ 
+
+> k
+
+∈ RL 
+
+> ≥0
+
+be the vector collecting the state difference norms, i.e., η∆ 
+
+> k
+
+:= 
+
+h
+
+h(1) ,∆ 
+
+> k
+
+, . . . , h(L),∆
+
+> k
+
+i⊤
+
+. Recall the inter-layer connections ˜u(l),∆ 
+
+> k
+
+= h(l−1) ,∆ 
+
+> k+1
+
+for l ∈L \ { 1} in (3e), while ˜u(1) ,∆ 
+
+> k
+
+= u∆ 
+
+> k
+
+. Recursively unwrapping (13) through the layers [6, Appendix B] yields the interconnected vector dynamics (the ≤ operator is applied element-wise): 
+
+η∆ 
+
+> k
+
+≤ Aδ η∆ 
+
+> k−1
+
++ Bδu u∆ 
+
+> k−1
+
+, (14) where Aδ ∈ RL×L 
+
+> ≥0
+
+is lower triangular with diagonal elements 
+
+ρ(l) and Bδu ∈ RL
+
+> ≥0
+
+. If Condition (6) holds ∀l ∈ L , the eigenvalues of Aδ (its diagonal elements) are strictly within the unit circle, making it Schur stable. Propagating (14) backwards to k = 0 yields: 
+
+η∆ 
+
+> k
+
+≤ Akδ η∆0 +
+
+> k−1
+
+X
+
+> z=0
+
+Ak−1−zδ Bδu max  
+
+> 0≤z<k
+
+u∆ 
+
+> z
+
+.
+
+Since Aδ and Bδu are non-negative, the finite sum is upper-bounded by the infinite series. Further, due to Schur stability, we have P∞ 
+
+> z=0
+
+Azδ = (I − Aδ )−1 [19, Ch. 7]. Then, Pk−1 
+
+> z=0
+
+Ak−1−zδ Bδu max 0≤z<k u∆ 
+
+> z
+
+≤
+
+(I − Aδ )−1 Bδu max 0≤z<k u∆ 
+
+> z
+
+. Applying the infinity norm to both sides and noting η∆ 
+
+> k
+
+= h∆ 
+
+> k
+
+results in: 
+
+h∆ 
+
+> k
+
+≤ Akδ h∆0 + (I − Aδ )−1 Bδu max  
+
+> 0≤z<k
+
+u∆ 
+
+> z
+
+.
+
+Next, we leverage the Jordan form of Aδ to derive an upper bound for Akδ [19, Ch. 7]: 
+
+Akδ ≤ ω
+
+> m−1
+
+X
+
+> z=0
+
+kz
+
+  
+
+max  
+
+> l∈L
+
+ρ(l)
+
+k−z
+
+, (15) for some ω ≥ 1, where m ∈ Z+, m ≤ L, is the size of the largest Jordan block of Aδ . Conventionally, we set  kz
+
+ = 0 
+
+for any z > k . Since ρ(l) ∈ (0 , 1) , the bound in (15) tends to 
+
+0 as k → ∞ . We can thus deduce the KL and K∞ functions for the δISS condition in (2): 
+
+βδ
+
+
+
+∥ha0 − hb0 ∥, k 
+
+
+
+:= ω
+
+> m−1
+
+X
+
+> z=0
+
+kz
+
+ 
+
+max  
+
+> l∈L
+
+ρ(l)
+
+k−z
+
+∥ha0 − hb0 ∥,γδu 
+
+
+
+max 
+
+> 0≤z<k
+
+∥ua 
+
+> z
+
+− ub 
+
+> z
+
+∥
+
+
+
+:= (I − Aδ )−1Bδu max 
+
+> 0≤z<k
+
+∥ua 
+
+> z
+
+− ub 
+
+> z
+
+∥.
+
+Hence, the L-layer CFN is δISS in Hinv with respect to U
+
+if Condition (6) holds for every layer l ∈ L . ■
+
+PROOF OF THEOREM 5. The DGN is a special case of the CFN where R(l) 
+
+> f
+
+= R(l) 
+
+> i
+
+= 0, ∀l ∈ L . Substituting these zero matrices into the δISS sufficient condition in (6), the left-hand side simplifies to ρ(l) = ¯ σ(l) 
+
+> f
+
+. As derived in (9), 
+
+¯σ(l) 
+
+> f
+
+∈ (0 , 1) ; thus, the condition ρ(l) < 1 is satisfied. Since this condition holds for all layers, the L-layer DGN is δISS by Theorem 4. ■
+
+REFERENCES [1] G. Pillonetto, A. Aravkin, D. Gedon, L. Ljung, A. H. Ribeiro, and T. B. Sch¨ on, “Deep networks for system identification,” Automatica ,vol. 171, p. 111907, 2025. [2] K. P. Murphy, Probabilistic Machine Learning . The MIT Press, 2022. [3] T. Laurent and J. von Brecht, “A recurrent neural network without chaos,” 2016. [Online]. Available: https://arxiv.org/abs/1612.06212 [4] F. Bonassi, M. Farina, J. Xie, and R. Scattolini, “On Recurrent Neural Networks for learning-based control,” J. Process Control , vol. 114, pp. 92–104, 2022. [5] E. Terzi, F. Bonassi, M. Farina, and R. Scattolini, “Learning model predictive control with long short-term memory networks,” Int. J. Robust Nonlin. Control , vol. 31, no. 18, pp. 8877–8896, 2021. [6] F. Bonassi, M. Farina, and R. Scattolini, “On the stability properties of Gated Recurrent Units neural networks,” Syst. Control Lett. , vol. 157, p. 105049, 2021. [7] W. D’Amico, A. La Bella, and M. Farina, “An Incremental Input-to-State Stability Condition for a Class of Recurrent Neural Networks,” 
+
+IEEE Trans. Autom. Control , vol. 69, no. 4, pp. 2221–2236, 2024. [8] S. De Carli, D. Previtali, L. Pitturelli, M. Mazzoleni, A. Ferramosca, and F. Previdi, “Infinity-norm-based Input-to-State-Stable Long Short-Term Memory networks,” in 2025 European Control Conference (ECC) , 2025, pp. 911–916. [9] I. Schimperna and L. Magni, “Robust Offset-Free Constrained Model Predictive Control With Long Short-Term Memory Networks,” IEEE Trans. Automat. Contr. , vol. 69, no. 12, pp. 8172–8187, 2024. [10] ——, “Robust constrained nonlinear Model Predictive Control with Gated Recurrent Unit model,” Automatica , vol. 161, p. 111472, 2024. [11] J. Miller and M. Hardt, “Stable Recurrent Models,” 2018. [Online]. Available: https://arxiv.org/abs/1805.10369 [12] S. Bai, J. Z. Kolter, and V. Koltun, “Deep equilibrium models,” in 
+
+Advances in Neural Information Processing Systems (NeurIPS) , 2019. [13] S. Strogatz, Nonlinear Dynamics and Chaos , ser. A Chapman & Hall Book. CRC Press, 2019. [14] C. M. Kellett, “A compendium of comparison function results,” 
+
+Mathematics of Control, Signals, and Systems , vol. 26, no. 3, pp. 339– 374, 2014. [15] Z.-P. Jiang and Y. Wang, “Input-to-state stability for discrete-time nonlinear systems,” Automatica , vol. 37, no. 6, pp. 857–869, 2001. [16] F. Bayer, M. Burger, and F. Allgower, “Discrete-time Incremental ISS,” in 2013 European Control Conference (ECC) . IEEE, 2013, pp. 2068– 2073. [17] I. Goodfellow, Y. Bengio, and A. Courville, Deep Learning . The MIT press, 2016. [18] L. Feng, F. Tung, M. O. Ahmed, Y. Bengio, and H. Hajimirsadegh, “Were RNNs All We Needed?” 2024. [19] C. D. Meyer, Matrix analysis and applied linear algebra . SIAM, 2023.
