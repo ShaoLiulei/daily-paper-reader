@@ -1,0 +1,2592 @@
+Title: Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion
+
+URL Source: https://arxiv.org/pdf/2603.15033v1
+
+Published Time: Tue, 17 Mar 2026 05:51:04 GMT
+
+Number of Pages: 24
+
+Markdown Content:
+# Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+Sonia Laguna 1 Jorge da Silva Gonçalves 1 Moritz Vandenhirtz 1 Alain Ryser 1 Irene Cannistraci * 1 
+
+Julia E. Vogt * 1 
+
+## Abstract 
+
+Machine unlearning is rapidly becoming a prac-tical requirement, driven by privacy regulations, data errors, and the need to remove harmful or corrupted training samples. Despite this, most existing methods tackle the problem purely from a post-hoc perspective. They attempt to erase the influence of targeted training samples through pa-rameter updates that typically require access to the full training data. This creates a mismatch with real deployment scenarios where unlearning requests can be anticipated, revealing a funda-mental limitation of post-hoc approaches. We propose unlearning by design , a novel paradigm in which models are directly trained to support forgetting as an inherent capability. We instanti-ate this idea with Machine UNlearning via KEY deletion (MUNKEY), a memory augmented trans-former that decouples instance-specific memo-rization from model weights. Here, unlearning corresponds to removing the instance-identifying key, enabling direct zero-shot forgetting with-out weight updates or access to the original sam-ples or labels. Across natural image benchmarks, fine-grained recognition, and medical datasets, MUNKEY outperforms all post-hoc baselines. Our results establish that unlearning by design en-ables fast, deployment-oriented unlearning while preserving predictive performance. 
+
+## 1. Introduction 
+
+As machine learning systems are increasingly deployed in high-stakes domains, the ability to unlearn (Cao & Yang, 2015; Bourtoule et al., 2021) specific training samples on demand has become essential. This necessity is driven both by the need to remove harmful, biased, or corrupted data and by the legal imperative to comply with privacy regulations, such as the European Union’s GDPR “right to be forgot-ten” (Mantelero, 2013) and the California Consumer Privacy 
+
+> 1Department of Computer Science, ETH Zurich, Switzerland. Correspondence to: Sonia Laguna <slaguna@ethz.ch>.
+> Preprint. March 17, 2026.
+
+Act (California State Legislature, 2018). Because neural networks are capable of memorizing specific training sam-ples (Arpit et al., 2017), the central challenge of machine unlearning is to surgically excise the influence of targeted data points. This process must effectively eliminate the data, often verified via membership inference attacks (Shokri et al., 2017), without degrading the model’s performance on the remaining “retained” data. Current unlearning approaches generally fall into two cat-egories: exact and approximate. Exact unlearning ensures that all influence of the target data is removed, mostly by retraining the model from scratch, a baseline that is often computationally prohibitive. To address this, approximate unlearning has emerged as a more scalable alternative, seek-ing to diminish the impact of forget-set data to a negligible level by updating the model’s parameters. However, existing approximate methods (Nguyen et al., 2025) are strictly post-hoc : they rely on computationally intensive weight updates at the time of unlearning, such as gradient ascent, distilla-tion, or saliency-based corrections, often requiring access to most of the data samples, and corresponding labels. Beyond computational cost and data availability, the re-liance on post-hoc interventions highlights a fundamental structural flaw in standard architectures: knowledge entan-glement. When a neural network is trained, instance-specific details and generalizable features are fused into a monolithic set of static weights (Arpit et al., 2017), making it challeng-ing and inefficient to remove the influence of a single in-stance a posteriori . We raise the fundamental question: Can the paradigm be shifted towards unlearning by design ? In many real-world applications, such as clinical studies where patients withdraw consent or consumer platforms where users opt out of data, deletion requests are an anticipated part of the model lifecycle. By accounting for these requests 
+
+a priori , we can design models with unlearning in mind, where the forgetting operation is streamlined and efficient. To bridge this gap, we introduce Machine UNlearning via KEY deletion (MUNKEY), a method that externalizes instance-specific information to separate it structurally from static model parameters. By associating each training in-stance with a learnable exemplar token, MUNKEY trans-forms unlearning from a complex optimization problem into 1
+
+> arXiv:2603.15033v1 [cs.LG] 16 Mar 2026 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion
+
+a simple set-theoretic operation: deleting entries from an external memory. This method offers two primary advan-tages: (i) Efficiency, unlearning is “zero-shot” and near-instantaneous, requiring no retraining or weight updates and 
+
+(ii) Privacy-Centric Deployment, deletion requires only in-stance identifiers, eliminating the need to store raw samples and labels at unlearning time. While the use of external or decoupled memories has been studied to improve predictive performance, perception, or few-shot efficiency (Jia et al., 2022; Long et al., 2022; San-dler et al., 2022), MUNKEY leverages this architecture specifically for model adaptation and data deletion. Our work is further motivated by recent findings demonstrating that visual memories can be effectively leveraged at scale, even with billion-scale data (Geirhos et al., 2025). By repur-posing these memory-augmented structures for the “inverse” task of forgetting, we enable a new class of models that are not only high-performing but are also natively compliant with the dynamic requirements of data privacy and integrity. Finally, while a portion of the literature focuses on class-level removal (Zhang et al., 2025; Gandikota et al., 2023), we target the general case of instance-level unlearning as it more directly addresses individual privacy and consent. Across benchmarks spanning natural, fine-grained, and med-ical imagery, MUNKEY consistently outperforms state-of-the-art post-hoc baselines, offering a superior balance of computational efficiency and robustness against member-ship inference attacks without compromising model utility. 
+
+Main Contributions. Our contributions to the field of ma-chine unlearning are threefold: (i) Paradigm Shift: We pro-pose Unlearning by Design , shifting from costly post-hoc corrections to architectural modularity. By anticipating dele-tions during training, we streamline unlearning. (ii) Algorith-mic Framework: We introduce MUNKEY, a novel method that decouples instance-specific data into an external exem-plar memory. This enables “zero-shot” unlearning via a sim-ple key-deletion operation, bypassing the need for parameter updates. (iii) Empirical Validation: Extensive quantitative and qualitative evaluations across natural, large-scale, and real-world applications via medical datasets demonstrate that MUNKEY consistently outperforms state-of-the-art post-hoc baselines in efficiency, utility, and privacy. 
+
+## 2. Related Work 
+
+Machine Unlearning. The goal of machine unlearning is to remove the influence of specific training samples from a trained model (Cao & Yang, 2015). While early work ex-plores exact approaches with strong theoretical guarantees (Bourtoule et al., 2021), the prohibitive computational cost of these methods has shifted recent research to more efficient approximate alternatives (Nguyen et al., 2025). A prominent direction in approximate unlearning leverages fine-tuning to induce catastrophic forgetting (CF) (McCloskey & Cohen, 1989). This concept has motivated more targeted strategies such as CF-k and Exact Unlearning-k (EU-k) (Goel et al., 2022), which restrict unlearning to the final k layers, as well as gradient ascent approaches such as NegGrad and NegGrad+ (Kurmanji et al., 2023), or supervising on held-out sets (Mirlach et al., 2026). To improve model utility, recent works have proposed selectively adjusting specific layers or parameters: ℓ1-sparse unlearning (Jia et al., 2023) promotes sparsity via ℓ1 regularization, while SSD (Foster et al., 2024) and SalUN (Fan et al., 2024) update only important parameters identified through Fisher information and gradient-based saliency, respectively. Meanwhile, other approaches focus on data manipulation and model distil-lation. These include utilizing label perturbation (Graves et al., 2021), adversarial examples (Ebrahimpour-Boroojeny et al., 2025; Cha et al., 2024), and student-teacher methods such as Bad-Teacher (Chundawat et al., 2023) and its later refinement SCRUB (Kurmanji et al., 2023), as well as recent class-level distillation methods (Zhou et al., 2025). Despite their differences, these methods share a common limitation: they operate in a post-hoc setting, requiring ac-cess to the forget set, the retain set, the labels, or a combina-tion thereof to modify an already trained model. We instead advocate for a paradigm shift where unlearning is antici-pated and explicitly enforced during training. Unlike prior work that relies on inducing sparsity as a precursor to facil-itate unlearning (Lin et al., 2023), we propose a memory-augmented method designed specifically for instance-level removal. By externalizing instance-specific information into a dedicated memory, our approach enables targeted removal without destabilizing the core model parameters. 
+
+External Memory. External memory mechanisms have been widely explored to augment neural networks with ex-plicit storage and retrieval capabilities. Architectures such as Neural Turing Machines (Graves et al., 2014), Memory Networks (Weston et al., 2015; Sukhbaatar et al., 2015), and Memorizing Transformers (Wu et al., 2022) tradition-ally rely on decoupling memory storage from the model’s primary parameters. In parallel, a complementary line of research focuses on associative memory, where learnable structures are embedded directly into network components to store patterns or knowledge (Sandler et al., 2022; Jia et al., 2022). However, while both traditionally utilize memory to enhance predictive performance or facilitate few-shot learn-ing, we repurpose the external memory framework for a distinct objective: efficient data removal. By leveraging the inherent decoupling of external storage, we enable instant unlearning that avoids the complexities of modifying inte-grated weights. To the best of our knowledge, this work rep-resents the first application of external memory mechanisms specifically designed for machine unlearning. An extended discussion of related work is presented in Appendix A. 2Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion Training MUNKEY Unlearning                          
+
+> ℳ!=ℳ∖(𝒌 𝒊 ,𝒗 𝒊 )
+> Inference
+> ...
+> 𝒙 𝒒
+> 𝒛 𝒒
+> 𝒗 𝒋
+> %
+> ℎ!(𝒗 ")
+> +𝒚 &
+> ℳ
+> ...
+> 𝒙 𝒊
+> 𝒛 𝒊
+> 𝒗 𝒊
+> %
+> 𝒗 𝟏
+> 𝒗 𝑵 . . .
+> 𝒌 𝟏
+> 𝒌 𝑵 . . .
+> ℎ!(𝒗 ")
+> 𝑓 θ𝒚 𝒊
+> 𝑔 #(𝒙 𝒊 )
+> 𝒛 𝒊𝒏 =[𝒛 𝒊 ,𝒗 𝒊
+> )]
+> KV
+> ℳ!
+> 𝑖
+> KV
+> ℳ!
+> KV
+> 𝑔 #(𝒙 𝒒 )𝒛 𝒊𝒏
+> (𝒋 )=[𝒛 𝒒 ,𝒗 𝒋
+> )]
+> 𝑗 𝜖 𝒩 ,𝒙 𝒒
+> 𝑓 θ(𝒛 𝒊𝒏
+> 𝟏 )
+> . . .  /𝒚 =1𝒋
+> 𝒘 𝒋 /𝒚 𝒋
+> 𝑓 θ(𝒛 𝒊𝒏
+> 𝑲 )
+> Ensembling
+> 𝑓 θ
+
+Figure 1. Overview of MUNKEY. (1) Training: The learnable exemplar token vi from the memory bank M is concatenated to image tokens zi to predict the label yi. (2) Unlearning results in a simple instance-specific key deletion in M. (3) Inference: For a query xq ,the model retrieves K-nearest neighbor tokens from the updated memory Mu and ensembles their predictions to produce the final output. 
+
+## 3. Methods 
+
+3.1. Problem Formalization: Machine Unlearning 
+
+Let fθ : X → Y be a neural network parameterized by 
+
+θ. The model is initially optimized over a training dataset 
+
+D = {(xi, yi)}Ni=1 via Empirical Risk Minimization with a task-specific loss, in our case cross-entropy for the classifica-tion task. Machine unlearning considers a request to remove a subset of data Df ⊂ D , the forget set , while preserving performance on Dr = D \ D f , the retain set . The gold standard is the Retrain model fr , optimized exclusively on 
+
+Dr . The objective of an approximate machine unlearning method is to achieve a behavior such that fθu ≈ fr without the prohibitive cost of full retraining, ensuring both Forget-ting (zero influence of Df ) and Utility (high performance on Dr and on the test set Dt). In this work, we employ the Vision Transformer (ViT) (Dosovitskiy et al., 2021) as our architectural backbone, followed by a linear classification head to form fθ . A ViT partitions an input image x into a sequence of n flattened patches and projects them onto a la-tent space {z1, . . . , zn} through an embedding layer. These patches are then processed via attention layers. In this work, we will refer to fθ as the model after the embedding layer. 
+
+3.2. MUNKEY: Machine UNlearning via KEY Deletion 
+
+Key deletion is key. We propose MUNKEY to reformulate unlearning as a modular data-deletion task within a memory bank M. Unlike traditional post-hoc methods, MUNKEY is designed to be unlearnable by design by conditioning classification on a joint representation of raw image patches and retrieved exemplar tokens, as illustrated in Figure 1. This structural separation ensures that the influence of a specific sample is confined to its corresponding entry in M.
+
+External Exemplar Memory. MUNKEY exploits the permutation-invariant modularity of transformers by aug-menting the standard patch sequence with a decoupled ex-ternal exemplar token. By injecting instance-specific knowl-edge directly into the input sequence rather than the static weights θ, the burden of memorization is shifted to an exter-nalized memory, enabling unlearning via simple deletion of the memory entry. To operationalize this decoupling, an ex-plicit exemplar memory bank M = {(ki, vi)}Ni=1 is defined for all xi ∈ D . For each instance, ki = gϕ(xi) ∈ Rd is a fixed key extracted via a frozen encoder gϕ, while vi ∈ Rm
+
+is a learnable exemplar token, which is treated as a learn-able parameter. Ideally, gϕ has not been pre-trained on the training samples D to decouple the key encoding from the exemplar memorization at unlearning. To ensure compati-bility, an adapter layer hψ projects the exemplar token into the ViT’s latent space, treating it as an auxiliary input token. 
+
+Training with Stochastic Pathway Dropout. To train MUNKEY, the image patch embeddings zi are concatenated with the learnable projected exemplar token v′ 
+
+> i
+
+= hψ (vi) to form the input sequence zin . Subsequently, zin is passed through fθ to predict the class, thereby not requiring any adaptation of the standard ViT architecture. A fundamental challenge in such dual-stream processing is modality domi-nance (Wang et al., 2020; Hussen Abdelaziz et al., 2020), where the model over-relies on the most predictive input. In our case, depending on the dataset nature, the backbone can over-rely on high-capacity exemplar tokens and fail to learn robust features from the raw image patches, or vice versa. To enforce a balanced information flow and prevent pathway dominance, a stochastic pathway dropout is applied to both image patches and exemplar tokens. Let zi be the sequence of image patch embeddings for sample xi, and v′ 
+
+> i
+
+= hψ (vi)
+
+3Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+be the projected exemplar token. A stochastic masking vector m = [ γimg , γ tok ] ∈ { 0, 1}2 follows a categorical distribution, where P (m = [0 , 1]) = pi, P (m = [1 , 0]) = 
+
+pt, P (m = [1 , 1]) = 1 − pi − pt, and P (m = [0 , 0]) = 0 ,with pi and pt being the probabilities for image and token dropout, respectively. Specifically, the dropout operator P
+
+is formulated for each pathway using the sampled mask component γ as: P(u, ∅, γ ) = γu + (1 − γ)∅, for any input token u and a globally learned null token ∅.
+
+Inference via Nearest Neighbors. At inference time, the specific exemplar token vq for an unseen query image xq is unavailable. To resolve this, the query key kq = gϕ(xq ) is first extracted from the frozen encoder. Subsequently, the 
+
+K nearest neighbors NK (xq ) are retrieved from the cur-rent memory bank M based on cosine similarity of kq with the stored keys {ki}Ni=1 . Note that following the efficiency paradigms of large-scale retrieval-augmented models, this operation can be highly scaled through approximate nearest neighbor indexing, i.e. ScaNN (Guo et al., 2020b). The final prediction is an ensemble of the model’s output for each of the neighbors. For each retrieved exemplar token 
+
+{vj }j∈N K (xi), an input sequence z(j) 
+
+> in
+
+as [zq , v′ 
+
+> j
+
+] is con-structed. The final prediction ˆy is computed as a weighted average of the logits: ˆy = P   
+
+> j∈N K(xq)
+
+wj · fθ
+
+ z(j)
+
+> in
+
+, where the weights wj are determined by a softmax over key sim-ilarities: wj = exp( sim (kq ,kj )/τ )P      
+
+> l∈N K(xq)exp( sim (kq,kl)/τ )
+
+. Here, sim (·, ·)
+
+denotes cosine similarity and τ a temperature parameter. 
+
+Retrieval-based Regularization at Training. To ensure the model generalizes to retrieved context at inference, where the specific vq for a test sample is absent, this state is simulated during training. For each training sample (xi, yi),a fixed key ki = gϕ(xi) is extracted using the frozen en-coder. These keys populate the memory M and serve as the basis for neighborhood discovery. To construct the aug-mented input sequence zin , either the instance-specific to-ken v′
+
+> i
+
+, or the neighboring v′ 
+
+> n
+
+are selected. v′ 
+
+> n
+
+is the result of simulating the inference state by retrieving a random varying number of neighbor tokens {vj }j∈N K (xi) from M
+
+and aggregating them via Agg (·) into vn, where Agg (·)
+
+stands for a similarity-weighted average operation. Let 
+
+r ∼ Bernoulli (pr ) be an indicator variable for the retrieval state. Combined with the masking vector, the final input sequence at training time zin is defined as: 
+
+zin = P(zi, ∅img , γ img ) , P (1 − r)v′ 
+
+> i
+
++ rv′
+
+> n
+
+, ∅tok , γ tok 
+
+ .
+
+(1) The model parameters {θ, ψ } and memory M are optimized jointly via: 
+
+θ∗, ψ ∗, {v∗ 
+
+> i
+
+}Ni=1 = arg min 
+
+> θ,ψ, {vi}Ni=1
+
+E(xi,yi)∼D [ℓ(fθ (zin ), yi)] ,
+
+(2) where the gradient ∇vj ℓ is clipped to 0 for all j ∈ N K (xi)
+
+when the retrieval branch is active. This ensures the back-bone learns to aggregate context without the neighboring tokens’ values drifting to accommodate sample gradients. 
+
+Unlearning. Unlike traditional methods that rely on it-erative optimization to erase information, unlearning in MUNKEY is reduced to a simple set-theoretic operation: 
+
+Mu = M\{ (ki, vi) | i ∈ D f }. By removing the forget set entries from the memory bank, the model is rendered inca-pable of retrieving the specific tokens vi associated with the requested data. As the backbone parameters θ and adapter 
+
+ψ are trained to rely only on the externalized memory for instance-specific details, this deletion results in “zero-shot” forgetting. All the steps are summarized in Algorithm 1. 
+
+Algorithm 1 MUNKEY: Machine UNlearning via KEY Deletion 1: Input: Training set D, frozen key encoder gϕ, pi, p t, p r
+
+2: Initialize: Model θ, adapter ψ, and memory bank M =
+
+{(ki, vi)}Ni=1 
+
+3: Phase 1: Training 
+
+4: while not converged do 
+
+5: for each (xi, yi) ∈ D do 
+
+6: zi ← ViTEmbed (xi), ki ← gϕ(xi)
+
+7: Sample m = [ γimg , γ tok ] ∼ Cat (pi, p t, 1 − pi − pt, 0) 
+
+8: Sample r ∼ Bern (pr )
+
+9: if r = 1 then 
+
+10: Sample K′ ∼ U{ 2, 16 }
+
+11: vn ← Agg ({vj | j ∈ N K′ (xi)})
+
+12: Exemplar ← hψ (vn)
+
+13: else 
+
+14: Exemplar ← hψ (vi)
+
+15: end if 
+
+16: zin ← [P(zi, ∅img , γ img ), P(Exemplar , ∅tok , γ tok )] 
+
+17: L ← ℓ(fθ (zin ), yi)
+
+18: Update θ, ψ, vi by minimizing L
+
+19: end for 
+
+20: end while 
+
+21: Phase 2: Zero-Shot Unlearning 
+
+22: Input: Forget set Df
+
+23: Mu ← M \ { (ki, vi) | xi ∈ D f } {Instance key deletion} 24: Phase 3: Inference 
+
+25: Input: Query xq , Updated Memory Mu
+
+26: Retrieve NK (xq ) from Mu based on sim (gϕ(xq ), kj )
+
+27: ˆy ← P   
+
+> j∈N K(xq)
+
+wj · fθ ([ zq , h ψ (vj )]) 
+
+28: return ˆy
+
+Pathway Sensitivity and Model Selection. To prevent 
+
+pathway collapse , where the model either ignores the mem-ory (resulting in poor unlearning) or becomes a simple lookup table (resulting in poor generalization), we introduce the Pathway Sensitivity Score ( Ps). Ps quantifies the bal-ance of information flow by evaluating the model’s perfor-mance when one pathway is replaced by the learned null to-kens ∅. Specifically, we define the modality-specific accura-cies Aimg and Atok by evaluating the model on the ablated input sequences z(img ) 
+
+> in
+
+= [ zi, ∅tok ] and z(tok ) 
+
+> in
+
+= [ ∅img , v′
+
+> i
+
+],4Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+respectively, and Aboth as the standard joint accuracy using the complete sequence zin = [ zi, v′
+
+> i
+
+]. The sensitivity score is then formulated as: 
+
+Ps = |A img − A tok |Aboth + ϵ , (3) where ϵ is a small constant added for numerical stability. By utilizing the global null tokens ∅ learned during train-ing, the sensitivity evaluation remains within the model’s learned distribution. We define ξ as a sensitivity threshold that bounds the disparity between pathway contributions, preventing modality redundancy. Ps enables a multi-stage hyperparameter selection for pi and pt: (i) a “health check” filters configurations where Ps ≥ ξ , and (ii) following the “rewind” procedure proposed in Kurmanji et al. (2023), we prioritize models that minimize the validation utility gap, i.e. the accuracy difference between validation and forget sets. Among candidates with a comparable gap, the one minimiz-ing Ps is selected for an informational equilibrium that is both effective at forgetting and architecturally balanced. We refer to Appendix E for further details. 
+
+## 4. Experimental Setup 
+
+Datasets. We evaluate MUNKEY across a diverse range of benchmarks spanning both natural and medical imag-ing domains. For natural images, we utilize CIFAR-10, CIFAR-100 (Krizhevsky et al., 2009), and large-scale Tiny ImageNet (Deng et al., 2009). For the medical domain, we incorporate three datasets from the high-resolution MedM-NIST v2 (Yang et al., 2023): BloodMNIST (Acevedo et al., 2020), with 17,092 images across 8 classes for fine-grained cellular morphology; PathMNIST (Kather et al., 2019), a large-scale histology dataset with 107,180 images and 9 classes; and DermaMNIST (Tschandl et al., 2018), consist-ing of 10,015 images for 7 class skin disease classification, with significant class imbalance and multi-source noise, mimicking real-world clinical prevalence where common conditions outnumber rare pathologies. Due to its difficulty, DermaMNIST is featured as a primary benchmark alongside CIFAR-10, while evaluations for the remaining datasets are provided in Appendix C and D.1. An in-depth description of all datasets is provided in Appendix B.1. 
+
+Baselines. We compare against a diverse suite of nine baselines whose mechanisms, while originally designed for CNNs, apply directly to Transformers. Recognizing ViTs as the current gold standard for vision, we implement both MUNKEY and all nine baselines using a ViT-Tiny architec-ture to ensure a fair comparison and to bridge the reporting gap in transformer-based unlearning. We include: Retrain from Scratch with Dr , the fundamental oracle for exact unlearning both on the regular ViT-Tiny, referred to as Re-train (T) , and on the MUNKEY-specific model, referred to as Retrain (M) . Catastrophic Forgetting ( CF ), CF-k , and 
+
+EU-k (Goel et al., 2022) rely on fine-tuning the model on 
+
+Dr and either freezing the backbone or also restoring the classifier weights. Similarly, NegGrad+ (Kurmanji et al., 2023) and Amnesiac , implemented as in Foster et al. (2024), utilize gradient ascent and label noise, respectively, to in-duce forgetting. To represent weight-level manipulation, we include ℓ1-sparse as in Jia et al. (2023), which encour-ages parameter sparsity. For distillation-based frameworks, we use SCRUB (Kurmanji et al., 2023), leveraging the KL-divergence to move the student model away from forgotten knowledge. Moreover, optimization-free parameter damp-ening is represented by SSD (Foster et al., 2024), which utilizes the Fisher Information Matrix to identify and damp relevant parameters without iterative training. We also eval-uate AMUN (Di et al., 2025b), which generates adversarial samples to force the model to forget targeted data. Finally, we include a memory-based baseline using KNN (Fix, 1985), as a point of comparison for retrieval-based inference. Fur-ther implementation details and configurations are provided in Appendix B.2. 
+
+Metrics. Following prior work (Patel & Qiu, 2025; Fan et al., 2024; Di et al., 2025b), we evaluate our model using four primary metrics and a final average gap to assess the trade-off between utility and forgetting: Test Accuracy (TA) and Retain Accuracy (RA) for model utility, and Forget Accuracy (FA) and Membership Inference Attack (MIA) to evaluate forgetting. Our MIA uses a logistic regression clas-sifier on the model’s output space, and is trained on the loss, entropy, confidence, and prediction margin to distinguish between train and test samples. An MIA AUROC near 0.5 on Df indicates successful unlearning. We aggregate these results into the Average Gap (Avg Gap), which measures the mean absolute difference between each of these four met-rics and their respective counterparts in the "gold-standard" oracles. For architectural fairness, baselines are compared against a retrained ViT-Tiny, Retrain (T) , while our method is compared against a retrained MUNKEY, Retrain (M) .
+
+Implementation Details. We evaluate MUNKEY under two forgetting regimes: a standard 10% removal of random samples benchmark and a more conservative 2% , which we posit represents a more realistic scenario where data deletion requests are frequent but scarce. To maintain label distribution and prevent the removal of entire classes, mainly in imbalanced datasets or with a high number of classes, we utilize stratified random sampling of the forget sets for all datasets except CIFAR-10. All experiments are conducted over three independent seeds. The training pipeline and dynamics are standardized across all base models and datasets and further details are reported in Appendix B.3. 5Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+Table 1. Comparison of machine unlearning performance across random forget rates (10% and 2%) on DermaMNIST and CIFAR-10. We present the accuracy on the test (TA), retain (RA), and forget (FA) sets, as well as present membership inference attack (MIA) and average gap values. Across all tables in the manuscript, when applicable, we bold the lowest Avg Gap and underline the second lowest.                                                                                                                                                                                                                                                                        
+
+> Random Forget (10%) Random Forget (2%) Method TA RA FA MIA Avg Gap ↓TA RA FA MIA Avg Gap ↓
+> DermaMNIST
+> Retrain (T) 76 .46 ±0.22 100 .0±0.00 74 .86 ±1.77 48 .88 ±0.69 –76 .49 ±0.26 100 .0±0.00 75 .71 ±2.02 49 .98 ±1.60 –Retrain (M) 81 .25 ±0.66 99 .70 ±0.08 80 .29 ±1.41 50 .04 ±1.05 –81 .80 ±0.04 99 .75 ±0.05 81 .43 ±2.10 48 .79 ±1.07 –KNN 74 .60 ±0.24 85 .54 ±0.14 74 .81 ±1.23 49 .94 ±0.90 –75 .01 ±0.07 85 .84 ±0.09 74 .52 ±0.67 50 .32 ±3.30 –CF 75 .28 ±0.98 97 .50 ±1.55 94 .48 ±2.23 64 .41 ±1.96 9.71 ±0.99 76 .38 ±0.28 97 .50 ±1.16 95 .48 ±1.21 62 .20 ±1.80 8.65 ±0.90 CF-k 76 .94 ±0.42 99 .86 ±0.13 99 .90 ±0.13 67 .10 ±3.73 10 .97 ±1.05 76 .96 ±0.43 99 .86 ±0.13 100 .0±0.00 65 .73 ±1.38 10 .16 ±0.74 EU-k 76 .89 ±0.58 99 .60 ±0.23 99 .52 ±0.18 69 .27 ±0.23 11 .47 ±0.51 76 .97 ±0.47 99 .63 ±0.22 99 .76 ±0.34 68 .54 ±1.16 10 .87 ±0.73
+> ℓ1-sparse 75 .81 ±0.45 92 .36 ±1.80 86 .81 ±1.17 57 .69 ±1.13 7.26 ±0.78 75 .61 ±0.67 89 .46 ±3.01 80 .24 ±1.21 54 .62 ±0.48 5.15 ±1.06 NegGrad+ 76 .26 ±0.37 96 .31 ±1.03 83 .48 ±1.25 55 .83 ±1.14 4.87 ±0.69 75 .73 ±0.96 98 .08 ±0.42 74 .05 ±2.99 47 .63 ±1.79 1.67 ±1.12 SCRUB 73 .97 ±1.81 76 .02 ±2.48 74 .68 ±1.23 49 .62 ±0.25 6.85 ±0.96 76 .38 ±0.76 99 .55 ±0.53 86 .94 ±1.70 57 .41 ±1.00 4.81 ±0.85 SSD 75 .07 ±2.08 92 .07 ±10.2 89 .73 ±12.9 63 .29 ±8.28 9.65 ±4.67 72 .58 ±5.56 87 .87 ±16.3 78 .52 ±30.3 60 .98 ±9.33 7.46 ±9.07 AMUN 76 .46 ±0.69 98 .33 ±0.94 95 .05 ±0.64 63 .70 ±0.27 9.17 ±0.59 76 .46 ±0.69 97 .99 ±0.91 98 .57 ±1.01 64 .95 ±1.01 9.97 ±0.79
+> MUNKEY 81 .06 ±0.44 99 .71 ±0.08 84 .00 ±1.22 51 .19 ±1.19 1.27 ±0.64 81 .23 ±0.53 99 .71 ±0.10 85 .48 ±2.76 50 .34 ±0.85 1.55 ±0.94
+> CIFAR-10
+> Retrain (T) 78 .13 ±0.64 91 .62 ±0.55 77 .57 ±0.83 49 .77 ±0.32 –78 .87 ±1.02 91 .83 ±0.61 79 .60 ±0.86 50 .90 ±0.78 –Retrain (M) 92 .38 ±0.06 99 .93 ±0.03 92 .05 ±0.23 49 .90 ±0.34 –92 .59 ±0.20 99 .93 ±0.02 92 .83 ±0.54 50 .79 ±1.73 –KNN 91 .06 ±0.05 94 .56 ±0.06 91 .02 ±0.13 50 .16 ±0.10 –91 .28 ±0.08 94 .58 ±0.02 92 .10 ±0.28 50 .35 ±0.39 –CF 77 .66 ±0.50 91 .74 ±0.48 87 .25 ±1.04 55 .86 ±0.16 4.09 ±0.44 78 .53 ±0.95 91 .97 ±0.91 87 .10 ±0.59 55 .38 ±1.35 3.12 ±0.65 CF-k 79 .60 ±0.63 94 .30 ±0.55 94 .16 ±0.61 58 .93 ±0.40 7.48 ±0.41 79 .53 ±0.60 94 .30 ±0.55 94 .53 ±0.29 59 .41 ±0.71 6.64 ±0.50 EU-k 79 .44 ±0.72 94 .22 ±0.55 94 .00 ±0.65 58 .87 ±0.30 7.36 ±0.42 79 .36 ±0.64 94 .20 ±0.58 94 .63 ±0.12 59 .16 ±0.69 6.54 ±0.50
+> ℓ1-sparse 52 .80 ±0.55 53 .47 ±0.75 52 .97 ±0.86 50 .79 ±0.79 22 .28 ±0.48 52 .70 ±0.73 53 .79 ±0.89 53 .70 ±2.00 50 .50 ±0.77 22 .63 ±0.74 NegGrad+ 77 .29 ±0.27 91 .08 ±0.42 83 .13 ±0.89 53 .65 ±0.32 2.71 ±0.41 77 .03 ±0.48 90 .72 ±0.74 72 .03 ±1.06 47 .62 ±0.75 3.45 ±0.57 Amnesiac 78 .31 ±0.35 92 .17 ±0.75 85 .67 ±1.05 52 .51 ±0.21 2.89 ±0.46 77 .77 ±0.29 91 .11 ±0.68 76 .97 ±1.21 45 .95 ±0.86 2.35 ±0.59 SCRUB 76 .51 ±0.78 85 .31 ±0.71 83 .72 ±0.94 54 .18 ±0.47 4.62 ±0.48 77 .74 ±1.19 89 .83 ±1.11 85 .61 ±0.84 55 .03 ±1.31 3.32 ±0.70 SSD 78 .54 ±1.08 93 .29 ±0.71 92 .84 ±0.96 58 .91 ±0.43 6.62 ±0.52 79 .02 ±1.06 93 .63 ±0.62 94 .00 ±0.22 58 .75 ±0.78 6.05 ±0.55 AMUN 77 .71 ±0.46 91 .25 ±0.56 86 .85 ±3.46 55 .90 ±1.94 4.05 ±1.05 77 .71 ±0.46 90 .89 ±0.94 87 .27 ±3.74 56 .17 ±2.08 3.76 ±1.18
+> MUNKEY 92 .63 ±0.20 99 .94 ±0.01 92 .53 ±0.52 51 .40 ±0.44 0.56 ±0.21 92 .69 ±0.21 99 .94 ±0.01 93 .57 ±0.26 51 .83 ±1.62 0.47 ±0.62
+
+## 5. Results 
+
+To validate the proposed unlearning by design paradigm, we evaluate MUNKEY across diverse visual domains, address-ing three research questions: (i) Decoupled Memorization: 
+
+Can instance-specific tokens enable near-instantaneous, zero-shot unlearning? (ii) Information Encoding: Does the memory capture granular signals beyond class labels in the representation space? (iii) Architectural Interaction: How do pathway aggregation strategies impact performance? 
+
+Decoupled Memorization: Forgetting and Utility Results. 
+
+Table 1 reports unlearning performance in two datasets across two random forget rates, 10% and 2%. Across all evaluations, MUNKEY consistently achieves the lowest Avg Gap, which quantifies the trade-off between model utility and unlearning faithfulness. Results on four addi-tional datasets are provided in Appendix C, confirming that these performance improvements generalize to diverse classification tasks. We include CIFAR-10 and DermaM-NIST in our primary analysis to present two distinct trends. On CIFAR-10, where visual distributions align closely with the ImageNet-based features of our frozen key en-coder, MUNKEY achieves predictive accuracies signifi-cantly higher than all post-hoc baselines. These results demonstrate that when the key encoder captures the un-derlying data manifold effectively, we can leverage these features for superior predictive performance. At the same time, it shows robust “black-box” unlearning through its decoupled forgetting, as evidenced by the MIA scores. We emphasize that the key encoder does not constitute an un-fair advantage as each method’s unlearning performance is evaluated against its respective gold standard, i.e., Retrain (T) or Retrain (M). Shifting to DermaMNIST, where medi-cal morphologies differ significantly from the pre-training data of the key encoder, we still outperform baselines, not only in Avg Gap, but also in predictive performance. This indicates that the method also prevails in settings where the key encoder’s pre-training does not align with the dataset. In both datasets, while the KNN baseline achieves good MIA scores, its predictive performance is lower. This dispar-ity suggests that MUNKEY’s image pathway successfully boosts generalization beyond simple memory retrieval, a critical requirement for real-world applications where both high utility and reliable unlearning are paramount. We ex-plore the effect of different key encoders in Appendix D.2, showing that we remain effective under alternative models such as the self-supervised DINO-v2 (Oquab et al., 2024) or the multimodal CLIP (Radford et al., 2021). Beyond our re-sults, we observe performance variability among baselines. While recent distillation and adversarial-based methods are generally competitive, they are occasionally outperformed by simpler gradient ascent (NegGrad+) or label-noisying strategies. These fluctuations suggest that unlearning tech-niques originally optimized for CNNs may not seamlessly 6Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+transfer to ViTs, highlighting a need for more specialized re-search in unlearning within transformer-based architectures. A core advantage of the unlearning by design paradigm is the elimination of iterative post-hoc optimization. Table 2 provides a comprehensive runtime efficiency report across all evaluated methods. While gradient-based methods like NegGrad+ and SCRUB require significant compute for pa-rameter updates, and methods like SSD require time to calculate the Fisher Information Matrix, MUNKEY’s un-learning time is negligible ( ≈ 0s). Forgetting is reduced to simply dropping the forgotten samples’ key-value pairs from the memory bank, rendering the process near-instantaneous even at scale. We also report the per-epoch training time for both standard ViTs and MUNKEY. The results indicate that the overhead of maintaining and learning the exemplar memory bank is minimal. Given that this specialized train-ing occurs only once in a compute-rich environment, the marginal increase in training time is a negligible cost for the permanent benefit of zero-shot unlearning throughout the model’s deployment lifecycle. 
+
+Table 2. Run-Time Efficiency comparison (seconds) on DermaM-NIST and CIFAR-10. Unlearn is the time to remove data post-training. Train/Ep. is the per-epoch training cost of base models.                                                        
+
+> DermaMNIST CIFAR-10
+> Model Unlearn Train/Ep. Unlearn Train/Ep.
+> KNN ≈0≈0≈0≈0
+> CF 114 .1±1.924 .7±0.2669 .5±1.6174 .6±1.6
+> CF-k 58 .5±2.824 .7±0.2311 .4±1.6174 .6±1.6
+> EU-k 58 .2±0.924 .7±0.2311 .1±1.1174 .6±1.6
+> ℓ1-sparse 114 .3±0.824 .7±0.2694 .2±0.9174 .6±1.6
+> NegGrad+ 124 .3±1.824 .7±0.2761 .7±1.1174 .6±1.6
+> Amnesiac 123 .8±1.324 .7±0.2760 .5±1.4174 .6±1.6
+> SCRUB 154 .4±0.324 .7±0.21478 .2±273 174 .6±1.6
+> SSD 23 .1±4.024 .7±0.2105 .8±13 .6174 .6±1.6
+> AMUN 313 .4±6.824 .7±0.21940 .5±3.7174 .6±1.6
+> MUNKEY ≈025 .9±0.3≈0178 .5±2.7
+
+Information Encoded in the Memory. We investigate whether the learned exemplar tokens capture instance-specific information beyond generic class labels by ana-lyzing the representation space of the memory. Figure 2 contrasts the 2D UMAP (McInnes et al., 2018) projections of the Exemplar Memory Bank {vi}Ni=1 with those of the 
+
+[CLS ] tokens. The [CLS ] tokens are extracted from the model backbone’s output for each training point and serve as features for classification, therefore capturing a class-guided baseline representation. We observe two distinct patterns consistent with our quantitative results: In CIFAR-10, where the key encoder’s pre-trained features are highly relevant to the class, the memory bank exhibits significant class-based clustering, albeit a lot weaker than the [CLS ].Conversely, in DermaMNIST, the memory bank representa-tions are more diffuse, reflecting the distribution shift from the encoder’s pre-training data. As shown in our tempo-ral visualizations across three training stages, the [CLS ]
+
+tokens rapidly form tight class-specific clusters to minimize the objective loss. In contrast, the exemplar tokens evolve more granularly; they do not merely replicate class separa-tion but instead organize into a richer topology mirroring instance-specific features. 
+
+> Training Time
+> Exemplar [CLS] Exemplar [CLS]
+
+Figure 2. UMAP visualization of exemplar tokens and [CLS ]
+
+tokens on (top) DermaMNIST and (bottom) CIFAR-10 shown at epochs 0 (start), 50, and 100 (end) of training. 
+
+To further illustrate the mechanics of unlearning within the memory bank, Figure 3 presents retrieval examples from the DermaMNIST test and forget sets, with K = 4 neigh-bors. By identifying a targeted instance and removing its key-value pair from the memory bank, we observe distinct behaviors: for a test sample xi, e.g. top rows in Figure 3, the key encoder continues to retrieve visually similar im-ages NK (xi), even if belonging to different classes, and MUNKEY retrieves the updated {vj | j ∈ N K (xi)} from its memory without changing the final predicted class. In contrast, for a training sample xi marked for forgetting, e.g. bottom rows in Figure 3, the retrieved neighbor with the strongest weight prior to unlearning is the instance itself, measured through the softmax of cosine similari-ties. However, once unlearning is performed, a new in-stance is retrieved. This shift in neighbors, now without the instance-specific information, effectively alters the content and reweighting of the retrieved {vj | j ∈ N K (xi)} and alters the final class prediction. 
+
+Effect of Aggregation Strategies. As established in Sec-tion 3.2, MUNKEY takes advantage of the synergistic ben-efits of image and memory pathways. While our primary architecture employs a pathway ensemble during inference, 7Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion Melanocytic nevi   
+
+> Melanocytic nevi
+> Melanocytic nevi
+> 0.5044
+> Melanocytic nevi
+> 0.5353
+> Vascular lesions
+> 0.1949
+> Melanocytic nevi
+> 0.1608
+> Melanocytic nevi
+> 0.1516
+> Vascular lesions
+> 0.1582
+> Vascular lesions
+> 0.1491
+> Vascular lesions
+> 0.1456
+> Test  Sample
+> Original Unlearning
+> xiNK(xi)Dermatofibroma
+> Vascular lesions
+> Dermatofibroma
+> 0.8640
+> Vascular lesions
+> 0.3075
+> Vascular lesions
+> 0.0538
+> Dermatofibroma
+> 0.2412
+> Dermatofibroma
+> 0.0422
+> Vascular lesions
+> 0.2289
+> Vascular lesions
+> 0.0400
+> Vascular lesions
+> 0.2224
+> Forget  Sample
+> Original Unlearning
+
+Figure 3. KNN-based retrieval visualizations on DermaMNIST on a test sample (top) and forget sample (bottom). Rows corre-spond to the original and unlearning behavior of each sample and their retrieved counterparts. Color labels indicate retrieval and prediction outcomes: correct matches , wrong-class neighbors , forgotten samples and new neighbors ; prediction boxes are shown in correct predictions and incorrect predictions . 
+
+we investigate several alternative aggregation strategies to determine how instance-specific information is best inte-grated. These architectural variants include Cross Atten-tion, integrated at varying transformer depths; Deep Prompt-ing (Jia et al., 2022), where the exemplar token is re-inserted as a prefix for every transformer block; and Direct Key, which bypasses the learnable memory by directly embed-ding the key encoder’s output. Furthermore, within the stan-dard input-level aggregation framework, we explore several late-fusion techniques of the retrieved neighbors, comparing ensembling, rank-based mixing, and softmax-based weight-ing of exemplar tokens. We view MUNKEY not merely as a fixed model, but as a realization within the proposed paradigm unlearning by design , where different architec-tural choices yield distinct trade-offs and a comprehensive analysis of these strategies is provided in Appendix D.1. We include a subset of the results on DermaMNIST and CIFAR-10 in Table 3, focused on the Pathway Sensitivity Score, Ps, and Avg Gap to represent unlearning and path-way reliance. We see that both direct key and cross attention result in elevated Ps, indicating a pathway imbalance. In the case of cross attention, there are some utility improve-ments on Avg Gap, but those do not outweigh the added model complexity and worse Ps. Similarly, the limitations of the direct key approach empirically motivate the need for MUNKEY’s instance-specific exemplar memory. Con-versely, late-fusion methods and deep prompting maintain consistently lower Ps, signaling a more balanced integra-tion of features. Among these, ensembling is the most robust, with the smallest Avg Gap and a stable Ps across both natural and medical domains. Although we observe some fluctuations across datasets, the results suggest that pathway aggregation serves as a critical structural lever for unlearning, while the specific choice of late-fusion strategy is less impactful. Crucially, in scenarios where the compu-tational overhead of N inference passes makes ensembling challenging, aggregating neighbors at the token level and doing a single inference pass, as in softmax and rank, offers a cost-effective alternative with competitive performance. 
+
+Table 3. Ablation of aggregation strategies on DermaMNIST and CIFAR-10. Ps denotes Pathway Sensitivity (lower is more bal-anced), Avg Gap denotes unlearning faithfulness (lower is better).                                
+
+> DermaMNIST CIFAR-10 Strategy Ps(↓)Avg Gap ( ↓)Ps(↓)Avg Gap ( ↓)Direct Key 0.212 ±.012 8.23 ±.70 0.239 ±.007 3.34 ±.18
+> Deep Prompt 0.172 ±.006 1.79 ±.69 0.188 ±.006 0.92 ±.52
+> Cross Attn. 0.208 ±.005 1.02 ±.46 0.292 ±.005 0.29 ±.13
+> Ensemble 0.169 ±.004 1.52 ±.56 0.184 ±.006 0.58 ±.22
+> Softmax 0.168 ±.006 2.01 ±.89 0.186 ±.006 0.71 ±.23
+> Rank 0.166 ±.006 2.58 ±.78 0.184 ±.006 0.67 ±.21
+
+## 6. Conclusion 
+
+In this work, we advocate for a shift toward the unlearning by design paradigm. Current research focuses largely on post-hoc methods to adapt models that were never intended to forget. We argue that, as data privacy regulations and security concerns intensify, there is a critical need for re-search into architectures that are inherently modular by con-struction. Within this paradigm, we introduce MUNKEY, a framework that externalizes instance-specific knowledge into a decoupled memory bank. By shifting the burden of memorization from static weights to a learnable memory, near-instantaneous, zero-shot forgetting is achieved. The re-sults across diverse domains, including natural imagery and medical datasets, highlight the robustness of this approach, outperforming established baselines. Our analysis also pro-vides insights into the pathway interaction between image features and exemplar tokens, and is complemented by visu-alizations for better understanding of the learned memory. These findings open new doors for exploring the vast design space of modular architectures centered on adaptability. Be-yond unlearning, this structural separation enables a form of interpretability, critical to high-stakes fields like healthcare or public policy. By pinpointing “cornerstone samples”, i.e., the influential neighbors retrieved for a decision, the model provides explicit evidence for its predictions, enabling a transparent case-based reasoning often missing in standard black-box architectures. Ultimately, we believe this work motivates exploration into models that treat the ability to forget not as an afterthought, but as a fundamental architec-tural requirement, through the use of decoupled memories or other instantiations of the unlearning by design paradigm. 8Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+## Acknowledgments 
+
+MV and SL are supported by the Swiss State Secretariat for Education, Research, and Innovation (SERI) under con-tract number MB22.00047. JSG is supported by the grant #2021-911 of the Strategic Focal Area “Personalized Health and Related Technologies (PHRT)” of the ETH Domain (Swiss Federal Institutes of Technology). AR is supported by the StimuLoop grant #1-007811-002 and the Vontobel Foundation. 
+
+## Impact Statement 
+
+This paper presents work whose goal is to advance the field of Machine Learning. There are many potential societal consequences of our work, none which we feel must be specifically highlighted here. 
+
+## References 
+
+Acevedo, A., Merino, A., Alférez, S., Molina, Á., Boldú, L., and Rodellar, J. A dataset of microscopic peripheral blood cell images for development of automatic recognition systems. Data in brief , 30:105474, 2020. 5, 15 Arpit, D., Jastrzebski, S., Ballas, N., Krueger, D., Bengio, E., Kanwal, M. S., Maharaj, T., Fischer, A., Courville, A. C., Bengio, Y., and Lacoste-Julien, S. A closer look at memorization in deep networks. In Precup, D. and Teh, Y. W. (eds.), Proceedings of the 34th International Conference on Machine Learning, ICML 2017, Sydney, NSW, Australia, 6-11 August 2017 , volume 70 of Proceed-ings of Machine Learning Research , pp. 233–242. PMLR, 2017. URL http://proceedings.mlr.press/ v70/arpit17a.html . 1 Biswas, S. D., Roy, A., and Roy, K. Cure: Concept un-learning via orthogonal representation editing in diffu-sion models. In The Thirty-ninth Annual Conference on Neural Information Processing Systems , 2025. 14 Bourtoule, L., Chandrasekaran, V., Choquette-Choo, C. A., Jia, H., Travers, A., Zhang, B., Lie, D., and Papernot, N. Machine unlearning. In 2021 IEEE symposium on security and privacy (SP) , pp. 141–159. IEEE, 2021. 1, 2, 14 Cai, Z., Tan, Y., and Asif, M. S. Targeted unlearning with single layer unlearning gradient. In Forty-second Interna-tional Conference on Machine Learning , 2025. 14 California State Legislature. California consumer privacy act of 2018 (CCPA), 2018. URL https://cppa.ca. gov/regulations/pdf/cppa_act.pdf . 1 Cao, Y. and Yang, J. Towards making systems forget with machine unlearning. In 2015 IEEE symposium on security and privacy , pp. 463–480. IEEE, 2015. 1, 2, 14 Cha, S., Cho, S., Hwang, D., Lee, H., Moon, T., and Lee, M. Learning to unlearn: Instance-wise unlearning for pre-trained classifiers. In Wooldridge, M. J., Dy, J. G., and Natarajan, S. (eds.), Thirty-Eighth AAAI Conference on Artificial Intelligence, AAAI 2024, Thirty-Sixth Con-ference on Innovative Applications of Artificial Intelli-gence, IAAI 2024, Fourteenth Symposium on Educational Advances in Artificial Intelligence, EAAI 2014, Febru-ary 20-27, 2024, Vancouver, Canada , pp. 11186–11194. AAAI Press, 2024. doi: 10.1609/AAAI.V38I10.28996. URL https://doi.org/10.1609/aaai.v38 i10.28996 . 2 Chen, C., Sun, F., Zhang, M., and Ding, B. Recommen-dation unlearning. In Laforest, F., Troncy, R., Simperl, E., Agarwal, D., Gionis, A., Herman, I., and Médini, L. (eds.), WWW ’22: The ACM Web Conference 2022, Virtual Event, Lyon, France, April 25 - 29, 2022 , pp. 2768– 2777. ACM, 2022a. doi: 10.1145/3485447.3511997. URL https://doi.org/10.1145/3485447. 3511997 . 14 Chen, M., Zhang, Z., Wang, T., Backes, M., Humbert, M., and Zhang, Y. Graph unlearning. In Proceedings of the 2022 ACM SIGSAC conference on computer and commu-nications security , pp. 499–513, 2022b. 14 Chundawat, V. S., Tarun, A. K., Mandal, M., and Kankan-halli, M. S. Can bad teaching induce forgetting? un-learning in deep networks using an incompetent teacher. In Williams, B., Chen, Y., and Neville, J. (eds.), Thirty-Seventh AAAI Conference on Artificial Intelligence, AAAI 2023, Thirty-Fifth Conference on Innovative Applica-tions of Artificial Intelligence, IAAI 2023, Thirteenth Symposium on Educational Advances in Artificial In-telligence, EAAI 2023, Washington, DC, USA, Febru-ary 7-14, 2023 , pp. 7210–7217. AAAI Press, 2023. doi: 10.1609/AAAI.V37I6.25879. URL https: //doi.org/10.1609/aaai.v37i6.25879 . 2 Codella, N., Rotemberg, V., Tschandl, P., Celebi, M. E., Dusza, S., Gutman, D., Helba, B., Kalloo, A., Liopyris, K., Marchetti, M., et al. Skin lesion analysis toward melanoma detection 2018: A challenge hosted by the international skin imaging collaboration (isic). ArXiv preprint , abs/1902.03368, 2019. URL https://arxi v.org/abs/1902.03368 . 15 Cywi´ nski, B. and Deja, K. Saeuron: Interpretable concept unlearning in diffusion models with sparse autoencoders. In Forty-second International Conference on Machine Learning , 2025. 14 9Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+Deng, J., Dong, W., Socher, R., Li, L., Li, K., and Li, F. Imagenet: A large-scale hierarchical image database. In 
+
+2009 IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR 2009), 20-25 June 2009, Miami, Florida, USA , pp. 248–255. IEEE Com-puter Society, 2009. doi: 10.1109/CVPR.2009.5206848. URL https://doi.org/10.1109/CVPR.2009. 5206848 . 5, 15 Di, Z., Yu, S., Vorobeychik, Y., and Liu, Y. Adversarial machine unlearning. In The Thirteenth International Conference on Learning Representations , 2025a. 14 Di, Z., Yu, S., Vorobeychik, Y., and Liu, Y. Adversarial machine unlearning. In The Thirteenth International Conference on Learning Representations , 2025b. URL 
+
+https://openreview.net/forum?id=swWF 948IiC . 5, 16 Dong, J., Zhu, H., Zhang, Y., Qu, X., Ong, Y.-S., and Ko-niusz, P. Machine unlearning via task simplex arithmetic. In The Thirty-ninth Annual Conference on Neural Infor-mation Processing Systems , 2025. 14 Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, T., Dehghani, M., Minderer, M., Heigold, G., Gelly, S., Uszkoreit, J., and Houlsby, N. An image is worth 16x16 words: Transformers for image recognition at scale. In 9th International Conference on Learning Representations, ICLR 2021, Virtual Event, Austria, May 3-7, 2021 . OpenReview.net, 2021. URL 
+
+https://openreview.net/forum?id=Yicb FdNTTy . 3 Ebrahimpour-Boroojeny, A., Sundaram, H., and Chan-drasekaran, V. Not all wrong is bad: Using adversarial examples for unlearning. In Forty-second International Conference on Machine Learning , 2025. 2 Fan, C., Liu, J., Zhang, Y., Wong, E., Wei, D., and Liu, S. Salun: Empowering machine unlearning via gradient-based weight saliency in both image classification and generation. In The Twelfth International Conference on Learning Representations, ICLR 2024, Vienna, Austria, May 7-11, 2024 . OpenReview.net, 2024. URL https: //openreview.net/forum?id=gn0mIhQGNM .2, 5 Feng, Q., Tu, J., Kang, M., Zhao, H., Zhang, C., and Qian, H. Fg-oriu: Towards better forgetting via feature-gradient orthogonality for incremental unlearning. In Proceedings of the IEEE/CVF International Conference on Computer Vision , pp. 1957–1967, 2025. 14 Fix, E. Discriminatory analysis: nonparametric discrimina-tion, consistency properties , volume 1. USAF school of Aviation Medicine, 1985. 5, 16 Foster, J., Schoepf, S., and Brintrup, A. Fast machine un-learning without retraining through selective synaptic dampening. In Wooldridge, M. J., Dy, J. G., and Natara-jan, S. (eds.), Thirty-Eighth AAAI Conference on Artificial Intelligence, AAAI 2024, Thirty-Sixth Conference on In-novative Applications of Artificial Intelligence, IAAI 2024, Fourteenth Symposium on Educational Advances in Ar-tificial Intelligence, EAAI 2014, February 20-27, 2024, Vancouver, Canada , pp. 12043–12051. AAAI Press, 2024. doi: 10.1609/AAAI.V38I11.29092. URL https: //doi.org/10.1609/aaai.v38i11.29092 . 2, 5, 16 Gandikota, R., Materzynska, J., Fiotto-Kaufman, J., and Bau, D. Erasing concepts from diffusion models. In 
+
+IEEE/CVF International Conference on Computer Vision, ICCV 2023, Paris, France, October 1-6, 2023 , pp. 2426– 2436. IEEE, 2023. doi: 10.1109/ICCV51070.2023.00230. URL https://doi.org/10.1109/ICCV51070. 2023.00230 . 2, 14 Gao, H., Pang, T., Du, C., Hu, T., Deng, Z., and Lin, M. Meta-unlearning on diffusion models: Preventing relearn-ing unlearned concepts. In Proceedings of the IEEE/CVF International Conference on Computer Vision , pp. 2131– 2141, 2025. 14 Geirhos, R., Jaini, P., Stone, A., Medapati, S., Yi, X., Toderici, G., Ogale, A., and Shlens, J. Towards flex-ible perception with visual memory. In Forty-second International Conference on Machine Learning , 2025. 2 Ginart, A., Guan, M. Y., Valiant, G., and Zou, J. Making AI forget you: Data deletion in machine learning. In Wallach, H. M., Larochelle, H., Beygelzimer, A., d’Alché-Buc, F., Fox, E. B., and Garnett, R. (eds.), Advances in Neural Information Processing Systems 32: Annual Conference on Neural Information Processing Systems 2019, NeurIPS 2019, December 8-14, 2019, Vancouver, BC, Canada , pp. 3513–3526, 2019. URL https://pr oceedings.neurips.cc/paper/2019/hash /cb79f8fa58b91d3af6c9c991f63962d3-Abs tract.html . 14 Goel, S., Prabhu, A., Sanyal, A., Lim, S.-N., Torr, P., and Kumaraguru, P. Towards adversarial evaluations for inex-act machine unlearning. ArXiv preprint , abs/2201.06640, 2022. URL https://arxiv.org/abs/2201.0 6640 . 2, 5, 15 Graves, A., Wayne, G., and Danihelka, I. Neural turing machines. arXiv preprint arXiv:1410.5401 , 2014. 2, 14 Graves, L., Nagisetty, V., and Ganesh, V. Amnesiac machine learning. In Thirty-Fifth AAAI Conference on Artificial Intelligence, AAAI 2021, Thirty-Third Conference on In-novative Applications of Artificial Intelligence, IAAI 2021, 
+
+10 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+The Eleventh Symposium on Educational Advances in Ar-tificial Intelligence, EAAI 2021, Virtual Event, February 2-9, 2021 , pp. 11516–11524. AAAI Press, 2021. URL 
+
+https://ojs.aaai.org/index.php/AAAI/ article/view/17371 . 2 Guo, C., Goldstein, T., Hannun, A. Y., and van der Maaten, L. Certified data removal from machine learning models. In Proceedings of the 37th International Conference on Machine Learning, ICML 2020, 13-18 July 2020, Virtual Event , volume 119 of Proceedings of Machine Learning Research , pp. 3832–3842. PMLR, 2020a. URL http: //proceedings.mlr.press/v119/guo20c. html . 14 Guo, P. H., Syed, A., Sheshadri, A., Ewart, A., and Dzi-ugaite, G. K. Mechanistic unlearning: Robust knowl-edge unlearning and editing via mechanistic localization. In Forty-second International Conference on Machine Learning , 2025. 14 Guo, R., Sun, P., Lindgren, E., Geng, Q., Simcha, D., Chern, F., and Kumar, S. Accelerating large-scale inference with anisotropic vector quantization. In Proceedings of the 37th International Conference on Machine Learning, ICML 2020, 13-18 July 2020, Virtual Event , volume 119 of Proceedings of Machine Learning Research , pp. 3887– 3896. PMLR, 2020b. URL http://proceedings. mlr.press/v119/guo20h.html . 4 Huang, M. H., Foo, L. G., and Liu, J. Learning to unlearn for robust machine unlearning. In European Conference on Computer Vision , pp. 202–219. Springer, 2024. 14 Hussen Abdelaziz, A., Theobald, B.-J., Dixon, P., Knothe, R., Apostoloff, N., and Kajareker, S. Modality dropout for improved performance-driven talking faces. In Proceed-ings of the 2020 International Conference on Multimodal Interaction , pp. 378–386, 2020. 3 Jia, J., Liu, J., Ram, P., Yao, Y., Liu, G., Liu, Y., Sharma, P., and Liu, S. Model sparsity can simplify machine unlearning. In Oh, A., Naumann, T., Globerson, A., Saenko, K., Hardt, M., and Levine, S. (eds.), Advances in Neural Information Processing Systems 36: Annual Conference on Neural Information Processing Systems 2023, NeurIPS 2023, New Orleans, LA, USA, December 10 - 16, 2023 , 2023. URL http://papers.nip s.cc/paper_files/paper/2023/hash/a20 4aa68ab4e970e1ceccfb5b5cdc5e4-Abstrac t-Conference.html . 2, 5, 16 Jia, M., Tang, L., Chen, B.-C., Cardie, C., Belongie, S., Hariharan, B., and Lim, S.-N. Visual prompt tuning. In 
+
+European conference on computer vision , pp. 709–727. Springer, 2022. 2, 8, 14, 19 Kather, J. N., Halama, N., and Marx, A. 100,000 histologi-cal images of human colorectal cancer and healthy tissue. 
+
+(No Title) , 2018. 15 Kather, J. N., Krisam, J., Charoentong, P., Luedde, T., Her-pel, E., Weis, C.-A., Gaiser, T., Marx, A., Valous, N. A., Ferber, D., et al. Predicting survival from colorectal can-cer histology slides using deep learning: A retrospective multicenter study. PLoS medicine , 16(1):e1002730, 2019. 5, 15 Krizhevsky, A., Hinton, G., et al. Learning multiple layers of features from tiny images. 2009. 5, 15 Kurmanji, M., Triantafillou, P., Hayes, J., and Triantafil-lou, E. Towards unbounded machine unlearning. In Oh, A., Naumann, T., Globerson, A., Saenko, K., Hardt, M., and Levine, S. (eds.), Advances in Neural Information Processing Systems 36: Annual Conference on Neural In-formation Processing Systems 2023, NeurIPS 2023, New Orleans, LA, USA, December 10 - 16, 2023 , 2023. URL 
+
+http://papers.nips.cc/paper_files/pap er/2023/hash/062d711fb777322e2152435 459e6e9d9-Abstract-Conference.html . 2, 5, 16, 23 Lample, G., Sablayrolles, A., Ranzato, M., Denoyer, L., and Jégou, H. Large memory layers with product keys. In Wallach, H. M., Larochelle, H., Beygelzimer, A., d’Alché-Buc, F., Fox, E. B., and Garnett, R. (eds.), Advances in Neural Information Processing Systems 32: Annual Conference on Neural Information Processing Systems 2019, NeurIPS 2019, December 8-14, 2019, Vancouver, BC, Canada , pp. 8546–8557, 2019. URL https://pr oceedings.neurips.cc/paper/2019/hash /9d8df73a3cfbf3c5b47bc9b50f214aff-Abs tract.html . 14 Lee, B. W., Foote, A., Infanger, A., Shor, L., Kamath, H., Goldman-Wetzler, J., Woodworth, B., Cloud, A., and Turner, A. M. Distillation robustifies unlearning. Forty-second International Conference on Machine Learning ,2025. 14 Lin, S., Zhang, X., Chen, C., Chen, X., and Susilo, W. ERM-KTP: knowledge-level machine unlearning via knowl-edge transfer. In IEEE/CVF Conference on Computer Vision and Pattern Recognition, CVPR 2023, Vancouver, BC, Canada, June 17-24, 2023 , pp. 20147–20155. IEEE, 2023. doi: 10.1109/CVPR52729.2023.01929. URL 
+
+https://doi.org/10.1109/CVPR52729.20 23.01929 . 2 Long, A., Yin, W., Ajanthan, T., Nguyen, V., Purkait, P., Garg, R., Blair, A., Shen, C., and Van den Hengel, A. Retrieval augmented classification for long-tail visual recognition. In Proceedings of the IEEE/CVF conference 
+
+11 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+on computer vision and pattern recognition , pp. 6959– 6969, 2022. 2, 14 Mantelero, A. The eu proposal for a general data protection regulation and the roots of the ‘right to be forgotten’. 
+
+Computer Law & Security Review , 29(3):229–235, 2013. 1McCloskey, M. and Cohen, N. J. Catastrophic interfer-ence in connectionist networks: The sequential learning problem. In Psychology of learning and motivation , vol-ume 24, pp. 109–165. Elsevier, 1989. 2 McInnes, L., Healy, J., and Melville, J. Umap: Uniform manifold approximation and projection for dimension reduction. ArXiv preprint , abs/1802.03426, 2018. URL 
+
+https://arxiv.org/abs/1802.03426 . 7 Mekala, A. R., Dorna, V., Dubey, S., Lalwani, A., Koleczek, D., Rungta, M., Hasan, S. A., and Lobo, E. A. Alternate preference optimization for unlearning factual knowledge in large language models. In Proceedings of the 31st International Conference on Computational Linguistics ,pp. 3732–3752, 2025. 14 Mirlach, J., Laguna, S., and Vogt, J. E. Reference-guided machine unlearning. In International Conference on Learning Representations Workshop on Agents in the Wild , 2026. 2 Nguyen, T. T., Huynh, T. T., Ren, Z., Nguyen, P. L., Liew, A. W.-C., Yin, H., and Nguyen, Q. V. H. A survey of machine unlearning. ACM Transactions on Intelligent Systems and Technology , 16(5):1–46, 2025. 1, 2, 14 Oquab, M., Darcet, T., Moutakanni, T., Vo, H., Szafraniec, M., Khalidov, V., Fernandez, P., Haziza, D., Massa, F., El-Nouby, A., et al. Dinov2: Learning robust visual features without supervision. Transactions on Machine Learning Research Journal , pp. 1–31, 2024. 6 Patel, G. and Qiu, Q. Learning to unlearn while retaining: Combating gradient conflicts in machine unlearning. In 
+
+Proceedings of the IEEE/CVF International Conference on Computer Vision , pp. 4211–4221, 2025. 5, 14 Radford, A., Kim, J. W., Hallacy, C., Ramesh, A., Goh, G., Agarwal, S., Sastry, G., Askell, A., Mishkin, P., Clark, J., Krueger, G., and Sutskever, I. Learning transferable visual models from natural language supervision. In Meila, M. and Zhang, T. (eds.), Proceedings of the 38th International Conference on Machine Learning, ICML 2021, 18-24 July 2021, Virtual Event , volume 139 of 
+
+Proceedings of Machine Learning Research , pp. 8748– 8763. PMLR, 2021. URL http://proceedings. mlr.press/v139/radford21a.html . 6 Sandler, M., Zhmoginov, A., Vladymyrov, M., and Jackson, A. Fine-tuning image transformers using learnable mem-ory. In IEEE/CVF Conference on Computer Vision and Pattern Recognition, CVPR 2022, New Orleans, LA, USA, June 18-24, 2022 , pp. 12145–12154. IEEE, 2022. doi: 10.1109/CVPR52688.2022.01184. URL https://do i.org/10.1109/CVPR52688.2022.01184 . 2, 14 Santoro, A., Bartunov, S., Botvinick, M., Wierstra, D., and Lillicrap, T. P. Meta-learning with memory-augmented neural networks. In Balcan, M. and Weinberger, K. Q. (eds.), Proceedings of the 33nd International Conference on Machine Learning, ICML 2016, New York City, NY, USA, June 19-24, 2016 , volume 48 of JMLR Workshop and Conference Proceedings , pp. 1842–1850. JMLR.org, 2016. URL http://proceedings.mlr.press/ v48/santoro16.html . 14 Shen, S., Zhang, C., Zhao, Y., Bialkowski, A., Chen, W., and Xu, M. Label-agnostic forgetting: A supervision-free unlearning in deep models. In The Twelfth International Conference on Learning Representations, ICLR 2024, Vienna, Austria, May 7-11, 2024 . OpenReview.net, 2024. URL https://openreview.net/forum?id= SIZWiya7FE . 14 Shokri, R., Stronati, M., Song, C., and Shmatikov, V. Mem-bership inference attacks against machine learning mod-els. In 2017 IEEE symposium on security and privacy (SP) , pp. 3–18. IEEE, 2017. 1 Sukhbaatar, S., Szlam, A., Weston, J., and Fergus, R. End-to-end memory networks. In Cortes, C., Lawrence, N. D., Lee, D. D., Sugiyama, M., and Garnett, R. (eds.), Ad-vances in Neural Information Processing Systems 28: Annual Conference on Neural Information Processing Systems 2015, December 7-12, 2015, Montreal, Que-bec, Canada , pp. 2440–2448, 2015. URL https: //proceedings.neurips.cc/paper/2015/ hash/8fb21ee7a2207526da55a679f0332de 2-Abstract.html . 2, 14 Tschandl, P., Rosendahl, C., and Kittler, H. The ham10000 dataset, a large collection of multi-source dermatoscopic images of common pigmented skin lesions. Scientific data , 5(1):1–9, 2018. 5, 15 Wang, W., Tran, D., and Feiszli, M. What makes train-ing multi-modal classification networks hard? In 
+
+2020 IEEE/CVF Conference on Computer Vision and Pattern Recognition, CVPR 2020, Seattle, WA, USA, June 13-19, 2020 , pp. 12692–12702. IEEE, 2020. doi: 10.1109/CVPR42600.2020.01271. URL https://do i.org/10.1109/CVPR42600.2020.01271 . 3 12 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+Wang, Y., Wei, J., Liu, C. Y., Pang, J., Liu, Q., Shah, A., Bao, Y., Liu, Y., and Wei, W. Llm unlearning via loss adjustment with only forget data. In The Thirteenth Inter-national Conference on Learning Representations , 2025. URL https://openreview.net/forum?id= 6ESRicalFE . 14 Weston, J., Chopra, S., and Bordes, A. Memory networks. In Bengio, Y. and LeCun, Y. (eds.), 3rd International Conference on Learning Representations, ICLR 2015, San Diego, CA, USA, May 7-9, 2015, Conference Track Proceedings , 2015. URL http://arxiv.org/ab s/1410.3916 . 2, 14 Wu, Y., Rabe, M. N., Hutchins, D., and Szegedy, C. Memo-rizing transformers. In The Tenth International Confer-ence on Learning Representations, ICLR 2022, Virtual Event, April 25-29, 2022 . OpenReview.net, 2022. URL 
+
+https://openreview.net/forum?id=Trjb xzRcnf-. 2, 14 Yang, J., Shi, R., Wei, D., Liu, Z., Zhao, L., Ke, B., Pfister, H., and Ni, B. Medmnist v2-a large-scale lightweight benchmark for 2d and 3d biomedical image classification. 
+
+Scientific Data , 10(1):41, 2023. 5, 15 Zhang, Z., Liu, G., Fleming, C., Kompella, R. R., and Xu, C. Targeted forgetting of image subgroups in clip models. In Proceedings of the Computer Vision and Pattern Recognition Conference , pp. 9870–9880, 2025. 2, 14 Zhou, Y., Zheng, D., Mo, Q., Lu, R., Lin, K.-Y., and Zheng, W.-S. Decoupled distillation to erase: A general unlearn-ing method for any class-centric tasks. In Proceedings of the Computer Vision and Pattern Recognition Conference ,pp. 20350–20359, 2025. 2 13 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+## A. Extended Related Work 
+
+Machine Unlearning. In this section, we describe additional work tangential to MUNKEY but relevant to the broader picture of machine unlearning. Beyond approximate methods discussed in Section 2, exact unlearning has also been studied, typically with formal theoretical guarantees (Ginart et al., 2019; Guo et al., 2020a). Retraining from scratch is sometimes considered the only truly exact unlearning method, as it fully guarantees that information from the forget set is not retained in the model (Nguyen et al., 2025); however, this approach is often impractical. To mitigate this, prior work proposes data sharding and slicing strategies, where models are trained on disjoint partitions and ensembled to enable exact unlearning at the shard level (Cao & Yang, 2015; Bourtoule et al., 2021; Guo et al., 2020a). Such approaches have been applied in domains including graph neural networks (Chen et al., 2022b) and recommendation systems (Chen et al., 2022a). Nevertheless, exact unlearning methods often incur substantial computational costs due to retraining on large retain sets, or high storage costs from maintaining multiple models trained on disjoint data subsets. Further lines of research address unlearning from alternative optimization perspectives, aiming to better balance forgetting and retention. This includes formulations based on game theory, i.e., where unlearning is cast as a Stackelberg game between the unlearner and an auditor (Di et al., 2025a). Other works adopt meta-learning perspectives to jointly optimize forgetting and remembering (Huang et al., 2024), or explicitly mitigate gradient conflicts between unlearning and retention objectives through implicit regularization mechanisms (Patel & Qiu, 2025). Incremental unlearning has also been explored in pre-trained vision models via feature subspace decomposition and dynamic subspace adaptation (Feng et al., 2025). Finally, a growing body of work studies unsupervised unlearning using variational inference (Shen et al., 2024); while such methods can achieve performance comparable to supervised approaches, they are generally not superior, and we therefore do not include them in our comparisons. Unlearning approaches can be distinguished by the level of information they aim to remove. While many of the afore-mentioned methods focus on instance- and class-level unlearning, a growing body of work targets concept unlearning, particularly in generative settings. For example, recent work studies concept removal and relearning prevention in diffusion models (Gandikota et al., 2023; Gao et al., 2025; Biswas et al., 2025), and in large foundation models such as CLIP, Stable Diffusion, or VLMs, by identifying and modifying relevant layers with efficient gradient-based localization (Cai et al., 2025; Zhang et al., 2025; Dong et al., 2025). Similarly, a large body of work targets large language models, including approaches based on distillation (Lee et al., 2025), mechanistic localization (Guo et al., 2025), or alternative supervision strategies (Mekala et al., 2025; Wang et al., 2025). From another angle, SAeUron (Cywi´ nski & Deja, 2025) adopts sparse autoencoders from mechanistic interpretability to remove specific concepts in diffusion models. While highly relevant for generative modeling, these approaches address a different unlearning setting from our discriminative task and are therefore beyond the scope of this work. 
+
+Associative and External Memories. To give a broader context to the exemplar memory we propose in MUNKEY, we discuss here associative and external memory mechanisms that have been widely explored to augment neural networks with explicit storage and retrieval capabilities. Associative (internal) memory approaches embed learnable memory structures directly into network components, including product key memory layers (Lample et al., 2019) and fine-tuning methods that introduce learnable memory tokens to provide persistent, task-specific context in Vision Transformer encoders (Sandler et al., 2022). Similarly, Visual Prompt Tuning (Jia et al., 2022) introduces learnable tokens that are embedded into the model to adapt its behavior. In contrast, as described in Section 2, external memory architectures decouple memory from the model pa-rameters (Graves et al., 2014; Weston et al., 2015; Sukhbaatar et al., 2015; Santoro et al., 2016; Wu et al., 2022). More recent work on retrieval-augmented models, such as Retrieval-Augmented Classification (Long et al., 2022), combines a parametric image encoder with a parallel retrieval branch that queries a non-parametric external memory of pre-encoded images and text. 14 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+## B. Detailed Experimental Setting 
+
+B.1. Datasets 
+
+To evaluate the performance and robustness of our proposed method, we conduct experiments across a diverse range of benchmarks, spanning both natural and medical imaging domains. 
+
+Natural Image Benchmarks: We first evaluate our model on the CIFAR-10 and CIFAR-100 datasets (Krizhevsky et al., 2009). Both are established computer vision benchmarks consisting of 60,000 32 × 32 color images, 50,000 in the training set and 10,000 in the validation set. CIFAR-10 contains 10 mutually exclusive classes, whereas CIFAR-100 provides a more complex challenge with 100 fine-grained categories. Additionally, we utilize Tiny ImageNet, a subset 1 of the larger ImageNet database (Deng et al., 2009). This dataset comprises 200 object classes with a total of 100,000 training, 10,000 validation, and 10,000 test unlabeled images. For all three natural image benchmarks, we perform a random split of the original validation data to create a custom validation set (40%) and a test set (60%). All images in these datasets are resized to 224 × 224 resolution. 
+
+Biomedical Image Benchmarks: To assess the method’s efficacy in specialized domains, we incorporate high-resolution (224 × 224 ) tasks from the MedMNIST v2 collection (Yang et al., 2023). We include three datasets of varying clinical nature: First, BloodMNIST (Acevedo et al., 2020) is a collection of 17,092 microscopic images of normal blood cells across 8 balanced classes. It serves as a benchmark for morphological recognition, requiring the model to distinguish subtle structural features like nuclear shape and cytoplasmic granules against controlled backgrounds. We utilize the predefined splits: 11,959 training, 1,712 validation, and 3,421 test samples. Second, PathMNIST (Kather et al., 2019; 2018) comprises 107,180 histology patches for 9-class colorectal cancer tissue classification. This dataset is chosen to represent a large-scale medical imaging task. We follow the standard training split (89,996 samples); however, as the original test set (7,180 samples) is collected from different clinical centers to test out-of-distribution generalization, which is outside the scope of this unlearning study, we utilize the validation set (10,004 samples) for testing to maintain focus on the core methodology. Lastly, DermaMNIST (Tschandl et al., 2018; Codella et al., 2019) contains 10,015 dermatoscopic images, 7007 for training, 1003 for validation, and 2005 for testing, used for 7-class skin disease classification. It mimics real-world clinical prevalence, where common conditions like melanocytic nevi significantly outnumber rarer, critical pathologies such as melanoma .Furthermore, its multi-source nature introduces hardware and photographic noise, making it a challenging benchmark for imbalanced, real-world diagnosis. Given its representative difficulty, DermaMNIST is included in our main manuscript alongside CIFAR-10 as primary benchmarks, while the results for the remaining datasets are provided in Appendices C, D.1. 
+
+B.2. Baselines and Implementation 
+
+To provide a comprehensive evaluation of MUNKEY, we compare against a diverse suite of baselines spanning traditional optimization, weight sparsification, distillation-based unlearning, parameter dumping, and recent adversarial unlearning. We first note that MUNKEY is Transformer-based; however, most post-hoc unlearning methods are primarily reported on CNN or ResNet backbones, despite being applicable to Transformers. Since ViTs are the current gold standard backbone for vision, we implement all baselines using a ViT-Tiny architecture, as in MUNKEY, to ensure a fair comparison and to bridge this reporting gap, bringing results of the state-of-the-art into transformer-based unlearning. For all optimization-based baselines adapted to ViT-Tiny, we replace the commonly used SGD optimizer with AdamW (betas [0 .9, 0.99] , weight decay 
+
+0.05 ). Additionally, we perform a learning-rate grid search using multiplicative factors in [0 .1, 1.0] relative to the original training rate of the base model 1.5 × 10 −4. In this section, we list the baselines considered and their implementation details. 
+
+Retrained oracle. Retrain serves as the fundamental oracle baseline. For all baselines, this corresponds to training a ViT-Tiny from scratch on the retain data Dr . For our method, we additionally report an oracle that matches the MUNKEY ViT-Tiny architecture with its hyperparameters and additional components, also trained uniquely on Dr , providing an upper bound aligned with our design. 
+
+Traditional optimization-based baselines. These include earlier machine unlearning approaches. Catastrophic Forgetting (CF) fine-tunes the model on Dr . CF-k (Goel et al., 2022) uses the same finetuning procedure but freezes the backbone and updates only the classifier weights. Moreover, Exact Unlearning-k (EU-k) (Goel et al., 2022) resets the classifier  
+
+> 1Tiny ImageNet Visual Recognition Challenge: http://cs231n.stanford.edu/tiny-imagenet-200.zip
+
+15 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+parameters before fine-tuning on Dr . NegGrad+ (Kurmanji et al., 2023) is an adaptation of the more primitive NegGrad that performs gradient ascent on the forget set Df while simultaneously performing gradient descent on Dr ; a grid search over the forget/utility trade-off found 0.95 /0.05 to work best as the weight ratio of both loss terms. 
+
+Weight sparsification. ℓ1-sparse (Jia et al., 2023) applies an ℓ1-penalty to the loss, with scaling parameter λ = 0 .01 to the knowledge weights in the backbone to sparsify memorized information, while excluding biases and embeddings for stability. 
+
+Noise-based baseline. Amnesiac unlearning, implemented as in Foster et al. (2024), applies random labels as noise supervision on the forget set Df during finetuning with the rest of the data. Following recent literature (Di et al., 2025b), and our own empirical findings, we run all the above methods for 10 epochs to achieve the best trade-off between forgetting and utility. 
+
+Teacher-Student distillation baseline. SCRUB (Kurmanji et al., 2023) is a common representative of the distillation-based methods, where a student model is trained to selectively inherit knowledge from the original model (the teacher), specifically by minimizing KL-divergence to stay close to the teacher on Dr while maximizing that divergence to move away from it on Df . We follow the original codebase and optimization steps, unlearning for 10 epochs, and using their 
+
+rewinding procedure to select the checkpoint with the smallest validation utility gap. 
+
+Optimization-free parameter dampening. This category of methods includes SSD (Selective Synaptic Dampening) (Fos-ter et al., 2024). Unlike fine-tuning approaches, and similar to MUNKEY, these methods do not require iterative optimization at unlearning time; instead, they identify and dampen the weights most responsible for the forget set. In particular, SSD relies on computing the Fisher Information Matrix (FIM) to identify relevant parameters. While this allows for near-instant unlearning, the FIM calculation introduces a computational overhead prior to the unlearning phase. 
+
+Adversarial-based unlearning. AMUN (Adversarial Machine Unlearning) (Di et al., 2025b) represents a new line of recent work. It generates an adversarial set of images for the forget samples and then fine-tunes the model on Dr together with these adversarial samples to induce forgetting. We remained faithful to their adversarial set generation pipeline by using an untargeted PGD-50 attack under an ℓ2-constraint, starting with step size 0.1ε and increasing ε until misclassification. 
+
+Memory-based baseline. Finally, KNN (Fix, 1985) provides a simple retrieval baseline motivated by the memory component of MUNKEY. We use the same key-encoded embeddings as the search space and predict class probabilities by counting labels among the nearest neighbors. This provides a point of comparison for the simplest form of memory-based inference. 
+
+B.3. Implementation Details 
+
+The training pipeline and dynamics are standardized across all base models and datasets. We employ a ViT-Tiny (ViT-T/16) backbone with a patch size of 16 and a hidden dimension of 192 for both MUNKEY and the baseline architectures, and we fit a linear classifier on the final [CLS ] token. At training time, images are augmented using random resize cropping to 224 × 224 pixels. All models are trained for 100 epochs using the AdamW optimizer with β1 = 0 .9, β 2 = 0 .99 , a weight decay of 0.05, and a learning rate that follows a cosine annealing schedule starting at 1.5 × 10 −4 until the end of training. Regarding MUNKEY-specific hyperparameters, the regularizing pr is 0.2, the memory bank utilizes a token dimension of 128, and we include a linear layer adapter to map it to the 192 ViT-T/16 latent space. We retrieve K = 4 
+
+nearest neighbors during inference in the experiments in the main text, and show results on the effect of different numbers of 
+
+K in Appendix D.3. Regarding the aggregation of neighbors in the experiments, when applicable, we set the temperature parameter τ to 0.07 in the softmax operations. Moreover, the key encoder used for retrieval is a ViT-B/16 pretrained on ImageNet (sourced from HuggingFace 2), and again we provide further ablations regarding the choice of key encoder in Appendix D.2. The dropout probabilities for each dataset, selected based on Appendix E, are pi = 0 .1, p t = 0 .3 for CIFAR-10/100; pi = 0 .1, p t = 0 .1 for PathMNIST and Tiny ImageNet; and pi = 0 .3, p t = 0 .1 for DermaMNIST and BloodMNIST. All experiments were performed on an NVIDIA GeForce RTX 3080 GPU. 
+
+> 2https://huggingface.co/google/vit-base-patch16-224
+
+16 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+## C. Results on Additional Datasets 
+
+In this section, we provide detailed results for the remaining benchmarks, CIFAR-100, BloodMNIST, and Tiny ImageNet, using the suite of metrics defined in Section 4, comprising Test Accuracy, Retain Accuracy, Forget Accuracy, MIA, and Average Gap to evaluate performance, utility, and forgetting. We note that MUNKEY consistently outperforms all baselines across these datasets, with the exception of PathMNIST in Table 5, where it remains highly competitive and on par with baselines within a standard deviation, as most methods perform highly on this task. BloodMNIST, seen in Table 4, mirrors the performance trends observed for DermaMNIST in the main text, where MUNKEY outperforms baselines in both accuracy and MIA. This is particularly interesting as another example of non-natural image data that differs significantly from the distribution used for the key encoder. 
+
+Table 4. Comparison of machine unlearning performance on a random forget set of 10% of the training data on Bloodmnist. 
+
+Model TA RA FA MIA Avg Gap ↓
+
+Retrain (V) 96 .88 ±0.16 99 .99 ±0.00 96 .43 ±0.42 49 .60 ±0.28 –Retrain (M) 97 .43 ±0.19 99 .83 ±0.06 97 .15 ±0.18 49 .43 ±0.55 –KNN 93 .05 ±0.05 95 .23 ±0.04 92 .25 ±0.58 49 .80 ±0.61 –CF 96 .65 ±0.21 99 .74 ±0.12 99 .50 ±0.41 54 .10 ±0.12 2.01 ±0.18 
+
+CF-k 96 .93 ±0.25 99 .96 ±0.04 100 .00 ±0.00 52 .50 ±0.47 1.64 ±0.19 
+
+EU-k 96 .94 ±0.26 99 .94 ±0.07 99 .97 ±0.04 52 .90 ±0.42 1.74 ±0.18 
+
+ℓ1-sparse 90 .92 ±1.65 92 .14 ±1.87 91 .55 ±1.48 50 .99 ±0.62 5.02 ±0.75 
+
+NegGrad+ 96 .48 ±0.25 99 .77 ±0.05 97 .80 ±0.04 51 .45 ±0.56 0.96 ±0.20 
+
+Amnesiac 96 .27 ±0.47 99 .63 ±0.42 97 .49 ±0.43 40 .85 ±1.57 2.70 ±0.46 
+
+SCRUB 95 .44 ±0.52 97 .27 ±0.88 96 .52 ±0.76 51 .01 ±0.25 1.42 ±0.35 
+
+SSD 96 .84 ±0.28 99 .88 ±0.16 99 .90 ±0.10 51 .72 ±0.25 1.44 ±0.17 
+
+AMUN 96 .34 ±0.08 99 .61 ±0.19 98 .94 ±0.34 51 .92 ±0.55 1.44 ±0.22 
+
+MUNKEY 97 .51 ±0.13 99 .85 ±0.07 99 .27 ±0.20 50 .90 ±0.66 0.92 ±0.23 
+
+Table 5. Comparison of machine unlearning performance on a random forget set of 10% of the training data on PathMNIST. 
+
+Model TA RA FA MIA Avg Gap ↓
+
+Retrain (V) 98 .96 ±0.07 100 .00 ±0.00 98 .78 ±0.17 50 .09 ±0.24 –Retrain (M) 97 .55 ±0.15 99 .49 ±0.13 97 .21 ±0.22 49 .60 ±0.41 –KNN 92 .84 ±4.49 98 .40 ±0.01 97 .31 ±0.12 54 .13 ±4.02 –CF 96 .65 ±0.21 99 .74 ±0.12 99 .50 ±0.41 54 .10 ±0.12 0.77 ±0.09 
+
+CF-k 96 .93 ±0.25 99 .96 ±0.04 100 .00 ±0.00 52 .50 ±0.47 0.88 ±0.07 
+
+EU-k 96 .94 ±0.26 99 .94 ±0.07 99 .97 ±0.04 52 .90 ±0.42 0.89 ±0.08 
+
+ℓ1-sparse 90 .92 ±1.65 92 .14 ±1.87 91 .55 ±1.48 50 .99 ±0.62 5.20 ±0.30 
+
+NegGrad+ 96 .48 ±0.25 99 .77 ±0.05 97 .80 ±0.04 51 .45 ±0.56 0.50 ±0.10 
+
+Amnesiac 96 .27 ±0.47 99 .63 ±0.42 97 .49 ±0.43 40 .85 ±1.57 5.67 ±0.39 
+
+SCRUB 95 .44 ±0.52 97 .27 ±0.88 96 .52 ±0.76 51 .01 ±0.25 2.91 ±0.06 
+
+SSD 96 .84 ±0.28 99 .88 ±0.16 99 .90 ±0.10 51 .72 ±0.25 0.84 ±0.11 
+
+AMUN 96 .34 ±0.08 99 .61 ±0.19 98 .94 ±0.34 51 .92 ±0.55 0.75 ±0.06 
+
+MUNKEY 98 .75 ±0.12 100 .00 ±0.00 99 .95 ±0.02 50 .77 ±0.08 0.52 ±0.08 
+
+Results on CIFAR-100 and Tiny ImageNet, shown in Table 6 and Table 7, respectively, highlight our performance on fine-grained data with a high number of classes, a generally more challenging setting where MUNKEY maintains a superior base performance and utility boost (in task accuracy) thanks to its memory-augmented architecture. While we evaluate final unlearning based on the Average Gap, a fair metric with respect to the baselines since their Retrain (V) oracle also lacks the external memory, it is notable that the memory bank further enhances absolute accuracies. Tiny ImageNet serves as an extreme case example where the data has been seen, in a different resolution, by the pre-trained key encoder; we show that MUNKEY is able to outperform in this setting as well. The relatively low baseline accuracies here are due to the lack of extensive data augmentation, as our primary objective is evaluating unlearning capabilities rather than maximizing task accuracy. Notably, MUNKEY still performs better than the KNN baseline on Tiny ImageNet, demonstrating that the backbone encoding effectively improves performance and makes MUNKEY behave as “the best of both worlds”. To ensure clarity regarding our unlearning claims in this last dataset, we emphasize that it occurs at the output level and distinguish 17 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+between two levels of membership: pre-training membership, where the key encoder may have seen an image during its initial training, is considered out of scope for our algorithm; however, task-specific membership, which refers to whether an image was used to train the current model for its specific task, is exactly what we target for unlearning. This distinction is critical as we assume a practical deployment setting where a black-box adversary only has access to the model’s output space; by utilizing the black-box membership inference attack at the output level as claimed throughout this work, we verify that task-specific influence is successfully neutralized. 
+
+Table 6. Comparison of machine unlearning performance on a random forget set of 10% of the training data on CIFAR-100. 
+
+Model TA RA FA MIA Avg Gap ↓
+
+Retrain (V) 47 .17 ±0.61 87 .37 ±0.41 47 .00 ±0.39 49 .88 ±0.26 –Retrain (M) 74 .76 ±0.13 99 .90 ±0.03 74 .73 ±0.22 49 .98 ±0.29 –KNN 71 .86 ±0.31 81 .67 ±0.07 71 .65 ±0.36 49 .88 ±0.35 –CF 46 .69 ±1.04 90 .68 ±0.67 76 .94 ±0.95 68 .79 ±0.17 13 .16 ±0.45 
+
+CF-k 49 .03 ±0.48 94 .71 ±0.19 94 .51 ±0.44 77 .88 ±0.45 21 .18 ±0.30 
+
+EU-k 49 .04 ±0.56 92 .75 ±0.26 92 .61 ±0.41 77 .58 ±0.42 20 .14 ±0.30 
+
+ℓ1-sparse 33 .40 ±0.58 35 .49 ±0.77 33 .48 ±1.22 50 .12 ±0.79 19 .85 ±0.49 
+
+NegGrad+ 46 .70 ±0.57 89 .80 ±0.13 61 .94 ±0.71 60 .50 ±0.45 7.12 ±0.34 
+
+Amnesiac 46 .28 ±0.64 90 .99 ±0.43 67 .50 ±0.81 62 .64 ±0.53 9.44 ±0.38 
+
+SCRUB 47 .47 ±0.64 84 .93 ±0.15 76 .73 ±0.79 68 .70 ±0.45 12 .82 ±0.36 
+
+SSD 46 .60 ±1.69 89 .58 ±34.10 87 .55 ±39.30 76 .23 ±1.52 17 .42 ±1.44 
+
+AMUN 46 .82 ±1.26 90 .04 ±1.22 75 .09 ±1.06 67 .38 ±0.45 12 .15 ±0.57 
+
+MUNKEY 74 .75 ±0.46 99 .90 ±0.03 78 .07 ±0.19 53 .51 ±0.23 1.72 ±0.17 
+
+Table 7. Comparison of machine unlearning performance on a random forget set of 10% of the training data on Tiny ImageNet. 
+
+Model TA RA FA MIA Avg Gap ↓
+
+Retrain (V) 36 .74 ±0.76 76 .78 ±0.29 36 .30 ±0.49 49 .87 ±0.23 –Retrain (M) 68 .51 ±0.45 99 .55 ±0.15 68 .95 ±0.40 50 .96 ±0.37 –KNN 66 .56 ±0.31 77 .46 ±0.08 66 .78 ±0.52 49 .99 ±0.24 –CF 35 .46 ±0.37 88 .20 ±0.57 68 .24 ±0.97 72 .71 ±0.25 16 .87 ±0.39 
+
+CF-k 36 .98 ±0.55 92 .58 ±0.32 92 .26 ±0.54 83 .12 ±0.36 26 .31 ±0.33 
+
+EU-k 36 .84 ±0.40 88 .64 ±0.33 88 .01 ±0.60 81 .54 ±0.09 23 .84 ±0.32 
+
+ℓ1-sparse 21 .19 ±0.63 22 .26 ±0.53 21 .23 ±0.46 50 .37 ±0.15 21 .41 ±0.34 
+
+NegGrad+ 34 .73 ±0.25 86 .54 ±0.61 49 .34 ±0.21 62 .31 ±0.05 19 .31 ±0.30 
+
+Amnesiac 34 .94 ±0.45 88 .36 ±0.34 58 .47 ±0.31 68 .11 ±0.21 13 .45 ±0.30 
+
+SCRUB 36 .28 ±0.37 86 .10 ±1.03 73 .64 ±0.69 74 .94 ±0.33 18 .05 ±0.41 
+
+SSD 36 .48 ±0.60 91 .01 ±0.41 90 .59 ±0.49 82 .86 ±0.35 25 .44 ±0.34 
+
+AMUN 35 .32 ±1.17 86 .86 ±1.22 65 .30 ±1.40 70 .80 ±0.20 15 .36 ±0.60 
+
+MUNKEY 68 .58 ±0.19 99 .20 ±0.24 69 .04 ±0.38 51 .06 ±0.31 0.15 ±0.23 
+
+18 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+## D. Evaluation of Model Variants 
+
+D.1. Effect of Pathway Aggregation 
+
+As discussed in Section 5, the modular nature of the ViT architecture allows for multiple ways to integrate information from the exemplar tokens and the image patches. In this section, we provide a detailed investigation into the architectural paradigms for combining the image sequence zi with the exemplar token v′
+
+> i
+
+, as well as the late-fusion strategies of neighbors employed at inference time. We primarily investigate four approaches: (1) Input-level Aggregation , our default strategy where v′ 
+
+> i
+
+is simply prepended to the input sequence as zin = [ zi, v′
+
+> i
+
+]; (2) Deep Prompt (Jia et al., 2022), where the token is re-inserted as a prefix before every transformer block to allow for multi-scale conditioning; (3) Cross Attention , which involves inserting a dedicated layer after the self-attention blocks in the beginning, middle, and last layers to derive keys and values from v′ 
+
+> i
+
+while using zi as the query; and (4) Direct Key , a baseline where the fixed key from the frozen encoder is directly projected into the input space. During inference, when multiple neighbors NK (xi) are retrieved from the memory bank, we must determine how to aggregate their information. One approach is softmax-weighted average , where we compute a softmax over the cosine similarity scores of the retrieved keys to form a single weighted average token. Alternatively, rank-based weighting 
+
+derives these weights purely from the ranking of the neighbors to provide a more stable distribution independent of absolute similarity values. Finally, ensemble voting serves as a more robust but computationally intensive method, requiring K
+
+separate inference passes to aggregate the resulting logits. An evaluation across the six studied datasets in Tables 8 to 13 shows that while trends remain largely similar, the choice of strategy significantly impacts the modularity of the model’s information flow measured in Ps, introduced in Section 3. We highlight Ps and Avg Gap as they are the center of focus in this discussion. We observe that cross attention generally achieves a low Avg Gap but suffers from high Ps, indicating an unhealthy over-reliance on specific pathways despite the added architectural complexity. Moreover, the direct key approach often leads not only to high Ps but also to larger Avg Gaps, which empirically motivates the necessity of the learnable exemplar token in our framework. While deep prompting shows promise, it occasionally exhibits high Ps on datasets like ImageNet and generally yields slightly lower utility than late-fusion methods. Consequently, we adopt the simpler input-level aggregation as our primary method, as it offers the best trade-off between unlearning, simplicity, and balanced feature integration. Finally, regarding late-fusion, they perform generally similarly, with Ensembling providing the smallest Avg Gap and most stable pathway balance. However, if inference time is a constraint, we argue that the Softmax-weighted average performs closely to ensembling and remains superior to standard baselines while being more computationally efficient. 
+
+Table 8. Results on the effect of pathway aggregation and late-fusion of neighbors on DermaMNIST. 
+
+Category Model Variant TA RA FA MIA Ps Avg Gap ↓
+
+> Retrained
+
+Direct Key 81 .83 ±0.68 99 .25 ±0.22 80 .05 ±1.10 48 .30 ±0.98 – –Deep Prompt 79 .57 ±0.43 93 .85 ±1.30 79 .10 ±0.44 50 .34 ±0.84 – –Cross Attention 80 .62 ±0.13 97 .23 ±0.05 80 .33 ±1.17 50 .31 ±0.65 – –Ensembling 80 .80 ±0.54 97 .47 ±0.15 80 .10 ±0.99 50 .53 ±0.89 – –Softmax 79 .70 ±0.82 93 .37 ±1.75 78 .95 ±0.18 50 .44 ±0.77 – –Rank 79 .32 ±0.58 88 .34 ±1.37 78 .57 ±0.35 48 .90 ±0.93 – –MUNKEY  Direct Key 81 .70 ±0.74 99 .30 ±0.45 99 .33 ±0.64 61 .76 ±2.00 0.2118 ±0.0120 8.23 ±0.70 
+
+Deep Prompt 79 .60 ±0.60 93 .32 ±1.87 83 .57 ±0.53 52 .47 ±0.88 0.1724 ±0.0058 1.79 ±0.69 
+
+Cross Attention 80 .47 ±0.28 97 .17 ±0.17 83 .43 ±0.95 51 .08 ±0.75 0.2076 ±0.0047 1.02 ±0.46 
+
+Ensembling 81 .06 ±0.41 97 .64 ±0.22 84 .10 ±1.58 52 .16 ±0.53 0.1690 ±0.0037 1.52 ±0.56 
+
+Softmax 79 .83 ±1.33 93 .14 ±2.44 84 .29 ±0.47 52 .76 ±0.58 0.1681 ±0.0055 2.01 ±0.89 
+
+Rank 79 .65 ±0.86 88 .42 ±2.10 84 .38 ±0.99 53 .00 ±0.56 0.1657 ±0.0062 2.58 ±0.78 
+
+19 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+Table 9. Results on the effect of pathway aggregation and late-fusion of neighbors on CIFAR-10. 
+
+Category Model Variant TA RA FA MIA Ps Avg Gap ↓
+
+> Retrained
+
+Direct Key 92 .41 ±0.16 99 .56 ±0.07 92 .46 ±0.10 50 .11 ±0.58 – –Deep Prompt 91 .56 ±1.02 99 .76 ±0.14 91 .32 ±1.05 50 .22 ±0.53 – –Cross Attention 92 .79 ±0.02 100 .0±0.00 92 .71 ±0.19 50 .13 ±0.19 – –Ensembling 92 .93 ±0.16 99 .93 ±0.02 92 .76 ±0.45 49 .97 ±0.25 – –Softmax 92 .53 ±0.14 99 .85 ±0.05 92 .29 ±0.46 49 .95 ±0.20 – –Rank 92 .36 ±0.03 95 .69 ±0.07 92 .12 ±0.33 49 .86 ±0.14 – –Key Encoder  Direct Key 92 .08 ±0.10 99 .47 ±0.12 99 .35 ±0.18 56 .16 ±0.32 0.2385 ±0.0068 3.34 ±0.18 
+
+Deep Prompt 92 .09 ±0.83 99 .80 ±0.13 92 .99 ±1.04 51 .64 ±0.19 0.1880 ±0.0063 0.92 ±0.52 
+
+Cross Attention 92 .93 ±0.01 99 .99 ±0.00 93 .15 ±0.26 50 .69 ±0.38 0.2921 ±0.0052 0.29 ±0.13 
+
+Ensembling 93 .12 ±0.08 99 .94 ±0.01 93 .41 ±0.58 51 .45 ±0.39 0.1842 ±0.0060 0.58 ±0.22 
+
+Softmax 92 .48 ±0.19 99 .80 ±0.06 93 .46 ±0.64 51 .51 ±0.40 0.1857 ±0.0056 0.71 ±0.23 
+
+Rank 92 .38 ±0.43 95 .76 ±0.23 93 .22 ±0.42 51 .33 ±0.40 0.1838 ±0.0060 0.67 ±0.21 
+
+Table 10. Results on the effect of pathway aggregation and late-fusion of neighbors on BloodMNIST. 
+
+Category Model Variant TA RA FA MIA Ps Avg Gap ↓
+
+> Retrained
+
+Direct Key 97 .97 ±0.12 99 .93 ±0.03 98 .38 ±0.48 49 .25 ±0.66 – –Deep Prompt 97 .52 ±0.27 99 .55 ±0.18 97 .10 ±0.26 49 .29 ±1.04 – –Cross Attention 97 .36 ±0.04 98 .57 ±0.12 97 .27 ±0.42 49 .73 ±0.25 – –Ensembling 97 .55 ±0.15 99 .49 ±0.13 97 .21 ±0.22 49 .60 ±0.41 – –Softmax 97 .62 ±0.21 99 .51 ±0.19 97 .49 ±0.24 49 .63 ±0.72 – –Rank 97 .56 ±0.10 99 .62 ±0.15 97 .27 ±0.10 49 .53 ±0.49 – –Key Encoder  Direct Key 98 .13 ±0.15 99 .94 ±0.02 99 .97 ±0.04 51 .43 ±0.89 0.0273 ±0.0080 0.99 ±0.31 
+
+Deep Prompt 97 .50 ±0.42 99 .71 ±0.09 99 .55 ±0.28 51 .21 ±0.70 0.0388 ±0.0110 1.14 ±0.35 
+
+Cross Attention 97 .66 ±0.06 98 .61 ±0.05 97 .94 ±0.28 50 .26 ±0.17 0.0432 ±0.0044 0.39 ±0.15 
+
+Ensembling 97 .72 ±0.08 99 .63 ±0.12 99 .50 ±0.18 50 .66 ±0.50 0.0435 ±0.0067 0.92 ±0.19 
+
+Softmax 97 .60 ±0.13 99 .73 ±0.07 99 .55 ±0.04 51 .11 ±0.51 0.0243 ±0.0109 0.95 ±0.24 
+
+Rank 97 .73 ±0.29 99 .70 ±0.09 99 .47 ±0.16 50 .99 ±0.66 0.0441 ±0.0133 0.98 ±0.23 
+
+Table 11. Results on the effect of pathway aggregation and late-fusion of neighbors on PathMNIST. 
+
+Category Model Variant TA RA FA MIA Ps Avg Gap ↓
+
+> Retrained
+
+Direct Key 98 .98 ±0.04 100 .0±0.00 98 .94 ±0.11 49 .88 ±0.30 – –Deep Prompt 99 .04 ±0.03 100 .0±0.00 98 .90 ±0.11 49 .98 ±0.25 – –Cross Attention 98 .68 ±0.07 99 .97 ±0.01 98 .55 ±0.12 49 .98 ±0.07 – –Ensembling 98 .96 ±0.07 100 .00 ±0.00 98 .78 ±0.17 50 .09 ±0.24 – –Softmax 99 .24 ±0.08 100 .0±0.00 99 .23 ±0.05 49 .74 ±0.11 – –Rank 99 .05 ±0.04 100 .0±0.00 98 .91 ±0.10 49 .86 ±0.22 – –Key Encoder  Direct Key 98 .99 ±0.05 100 .0±0.00 100 .0±0.01 51 .22 ±0.22 0.0206 ±0.0265 0.60 ±0.10 
+
+Deep Prompt 99 .03 ±0.05 100 .0±0.00 100 .0±0.01 51 .17 ±0.30 0.0636 ±0.0201 0.58 ±0.10 
+
+Cross Attention 98 .76 ±0.01 99 .97 ±0.01 99 .97 ±0.02 50 .81 ±0.14 0.0040 ±0.0006 0.58 ±0.05 
+
+Ensembling 98 .75 ±0.12 100 .00 ±0.00 99 .95 ±0.02 50 .77 ±0.08 0.0743 ±0.0050 0.52 ±0.08 
+
+Softmax 99 .30 ±0.03 100 .0±0.00 100 .0±0.00 50 .74 ±0.24 0.0049 ±0.0010 0.46 ±0.07 
+
+Rank 99 .08 ±0.05 100 .0±0.00 100 .0±0.01 51 .43 ±0.13 0.0737 ±0.0180 0.67 ±0.07 
+
+20 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+Table 12. Results on the effect of pathway aggregation and late-fusion of neighbors on CIFAR-100. 
+
+Category Model Variant TA RA FA MIA Ps Avg Gap ↓
+
+> Retrained
+
+Direct Key 75 .40 ±0.47 99 .48 ±0.33 74 .77 ±0.53 49 .44 ±0.66 – –Deep Prompt 73 .31 ±0.78 99 .77 ±0.05 73 .44 ±0.69 49 .91 ±0.27 – –Cross Attention 76 .23 ±0.35 99 .92 ±0.01 76 .17 ±0.30 50 .02 ±0.27 – –Ensembling 76 .19 ±0.48 99 .84 ±0.05 76 .05 ±0.17 49 .91 ±0.30 – –Softmax 73 .28 ±0.55 99 .76 ±0.07 73 .24 ±0.43 49 .88 ±0.03 – –Rank 72 .94 ±0.50 87 .11 ±0.46 72 .58 ±0.40 49 .85 ±0.21 – –Key Encoder  Direct Key 75 .92 ±0.46 99 .46 ±0.51 99 .48 ±0.50 69 .04 ±0.49 0.4162 ±0.0285 11 .21 ±0.35 
+
+Deep Prompt 73 .49 ±0.69 99 .74 ±0.05 81 .99 ±0.20 55 .04 ±0.52 0.3084 ±0.0008 3.47 ±0.35 
+
+Cross Attention 76 .42 ±0.45 99 .91 ±0.01 78 .86 ±0.26 51 .63 ±0.22 0.5019 ±0.0055 1.13 ±0.19 
+
+Ensembling 76 .62 ±0.51 99 .85 ±0.03 80 .80 ±0.36 53 .31 ±0.11 0.2993 ±0.0053 2.15 ±0.22 
+
+Softmax 73 .32 ±1.2 93 .19 ±4.63 79 .77 ±1.69 54 .20 ±0.43 0.2966 ±0.0001 4.37 ±1.29 
+
+Rank 73 .49 ±0.82 87 .63 ±0.27 81 .74 ±0.37 55 .46 ±0.59 0.3058 ±0.0028 3.96 ±0.34 
+
+Table 13. Results on the effect of pathway aggregation and late-fusion of neighbors on Tiny ImageNet. 
+
+Category Model Variant TA RA FA MIA Ps Avg Gap ↓
+
+> Retrained
+
+Direct Key 68 .98 ±0.29 99 .98 ±0.00 68 .34 ±0.70 49 .93 ±0.51 – –Deep Prompt 67 .75 ±0.53 99 .84 ±0.02 67 .68 ±0.59 49 .83 ±0.20 – –Cross Attention 70 .41 ±0.16 99 .94 ±0.00 69 .95 ±0.47 49 .93 ±0.20 – –Ensembling 70 .63 ±0.52 99 .94 ±0.00 70 .62 ±0.43 50 .10 ±0.42 – –Softmax 67 .70 ±0.37 99 .83 ±0.01 67 .68 ±0.60 49 .82 ±0.16 – –Rank 67 .46 ±0.47 78 .75 ±0.37 67 .35 ±0.67 49 .81 ±0.55 – –Key Encoder  Direct Key 69 .02 ±0.24 99 .98 ±0.00 99 .99 ±0.01 77 .30 ±0.39 0.7265 ±0.0066 14 .77 ±0.26 
+
+Deep Prompt 67 .36 ±0.39 99 .77 ±0.05 72 .19 ±0.37 52 .64 ±0.28 0.5917 ±0.0125 1.95 ±0.25 
+
+Cross Attention 70 .48 ±0.16 99 .94 ±0.01 72 .05 ±0.40 50 .78 ±0.14 0.7014 ±0.0079 0.76 ±0.18 
+
+Ensembling 70 .86 ±0.42 99 .94 ±0.00 71 .73 ±0.51 51 .19 ±0.30 0.2377 ±0.1053 0.61 ±0.27 
+
+Softmax 67 .35 ±0.19 99 .80 ±0.01 72 .44 ±0.45 52 .74 ±0.31 0.2276 ±0.1685 2.02 ±0.23 
+
+Rank 66 .79 ±0.13 78 .31 ±0.24 71 .84 ±0.40 53 .30 ±0.12 0.5898 ±0.0126 2.27 ±0.29 
+
+D.2. Effect of the Key Encoder 
+
+We evaluate the impact of the frozen key encoder gϕ by comparing the standard ViT-Tiny pretrained on ImageNet, used throughout the manuscript, against two alternative encoders: DINO-v2 3, self-supervised, and trained on curated datasets like Google Landmarks; and CLIP 4, multimodal and trained on broad internet-crawled image-caption pairs. This ablation demonstrates that MUNKEY does not require label-informed keys to effectively decouple and delete instance-specific information. In Table 14 we see how across both natural and medical datasets, all three pre-training objectives of the key encoder yield robust and comparable results, consistently outperforming post-hoc baselines in both utility and forgetting. 
+
+D.3. Effect of Neighborhood Size 
+
+As discussed in Appendix D.1, the inference process involves fusing information from the K retrieved neighbors NK (xq ). In this section, we investigate the impact of varying the neighborhood size, K, on model utility and unlearning efficacy. Figure 4 illustrates the relationship between the number of neighbors and two key metrics across the DermaMNIST and CIFAR-10 datasets: test accuracy, which represents the model’s ability to perform standard classification, and Avg Gap, which serves as a proxy for unlearning performance. In both datasets, we observe that test accuracy increases slightly with the number of neighbors before reaching a plateau. This effect is notably more pronounced on DermaMNIST, likely due to the inherent complexity and fine-grained nature of medical image classification. A similar pattern is seen in Avg Gap, growing slightly before plateauing, all while remaining within small magnitudes. We attribute this to an edge case in model behavior where lower overall accuracy artificially reduces the gap. Consequently, we select K = 4 for the results of this work, as it provides a robust balance between high classification performance and effective unlearning. 
+
+> 3
+
+https://huggingface.co/facebook/dinov2-base 
+
+> 4
+
+https://huggingface.co/openai/clip-vit-base-patch32 
+
+21 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+Table 14. Comparison of the performance of MUNKEY under varying key encoders gϕ for the memory bank. Results on CIFAR-10 and DermaMNIST. 
+
+Dataset Model Variant TA RA FA MIA Avg Gap ↓
+
+> CIFAR-10
+
+Retrained (CLIP) 92 .61 ±0.04 98 .23 ±0.02 93 .19 ±0.15 50 .82 ±0.04 –Retrained (DINO-v2) 95 .32 ±0.02 99 .96 ±0.01 95 .68 ±0.22 50 .71 ±0.34 –Retrained (ViT) 92 .93 ±0.16 99 .93 ±0.02 92 .76 ±0.45 49 .97 ±0.25 –Key Encoder CLIP 92 .69 ±0.08 98 .25 ±0.09 93 .84 ±0.16 51 .85 ±0.06 0.45 ±0.07 
+
+Key Encoder DINO-v2 95 .34 ±0.08 99 .95 ±0.02 96 .04 ±0.34 51 .98 ±0.12 0.42 ±0.14 
+
+Key Encoder Pretrained-ViT/B 93 .12 ±0.08 99 .94 ±0.01 93 .41 ±0.58 51 .45 ±0.39 0.58 ±0.22 
+
+> DermaMNIST
+
+Retrained (CLIP) 81 .08 ±0.02 91 .59 ±0.76 79 .62 ±1.41 49 .58 ±0.89 –Retrained (DINO-v2) 81 .90 ±0.29 95 .66 ±0.56 80 .10 ±0.64 50 .17 ±0.91 –Retrained (ViT) 80 .80 ±0.54 97 .47 ±0.15 80 .10 ±0.99 50 .53 ±0.89 –Key Encoder CLIP 81 .43 ±0.20 91 .79 ±0.43 84 .05 ±1.87 52 .09 ±1.28 1.87 ±0.74 
+
+Key Encoder DINO-v2 82 .16 ±0.08 96 .10 ±0.16 84 .52 ±1.12 52 .17 ±1.16 1.78 ±0.52 
+
+Key Encoder Pretrained-ViT/B 81 .06 ±0.41 97 .64 ±0.22 84 .10 ±1.58 52 .16 ±0.53 1.52 ±0.56 1 2 3 4 5 6 8 10 12 14 16 
+
+78 
+
+80 
+
+82 
+
+84 
+
+86 
+
+88 
+
+90 
+
+92 
+
+1 2 3 4 5 6 8 10 12 14 16 
+
+0.0 
+
+0.5 
+
+1.0 
+
+1.5 
+
+2.0 
+
+CIFAR-10 
+
+DermaMNIST 
+
+## # neighbors # neighbors 
+
+> Test  Accuracy( ↑)
+> Avg Gap( ↓)
+
+Figure 4. Performance sensitivity to the number of neighbors on DermaMNIST and CIFAR-10. We report Test Accuracy (%) (left) and Avg Gap (right) across different neighborhood sizes. 
+
+22 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion 
+
+## E. Sensitivity Score and Model Selection 
+
+As detailed in Section 3, we introduce the Pathway Sensitivity Score ( Ps) as a quantitative measure to assess the informational balance between the image and token pathways in MUNKEY. This metric is used in our model selection process, particularly to determine the stochastic dropout probabilities pi and pt used in training, which are tuned to account for dataset-specific characteristics. In certain datasets, the model may tend to “shortcut” information by over-relying on either the raw image patches or the exemplar tokens, a behavior that risks pathway collapse and can hinder unlearning and generalization. With this regularization strategy, we aim to push the decoupling of global image features from instance-specific memories. To ensure a robust configuration, we first implement a stability constraint by filtering out models where Ps ≥ ξ, with ξ = 0 .3
+
+serving as a global threshold to prevent disproportionate reliance on a single modality. This accounts for the inherent asymmetry between image patches and optimized tokens while ensuring that neither pathway becomes a “dead branch” during training. After this filtering, we apply a selection strategy following the “rewind” procedure in Kurmanji et al. (2023), prioritizing models with the smallest validation utility gap, i.e., the difference between validation accuracy and forget accuracy. In the event of comparable utility gaps, we select the model with the lower Ps score to favor configurations that maintain a more balanced modality equilibrium. Figure 5 and Figure 6 illustrate these dynamics across various parameter sets in CIFAR-10 and DermaMNIST, with their corresponding utility gaps and Ps in the legend. In CIFAR-10, lower token dropout generally leads to higher pathway divergence, as the model defaults to over-relying on the token pathway. Moreover, the two best parameter configurations have comparable gaps, and we rely on Ps to select the optimal set. Conversely, DermaMNIST displays a wider diversity of dropout patterns, where the best configuration is identified directly through the utility gap. In both benchmarks, the best-performing parameter set is marked with a dashed black line, while the baseline corner case ( pi = 0 , p t = 0 ) is shown in gray. These results highlight that without the introduced pi > 0 and pt > 0,pathway sensitivity is strongly degraded and utility gaps remain sub-optimal, motivating the necessity of our pathway dropout approach. Validation Acc 
+
+> Retain Acc
+> Forget Acc MIA
+> Pathway Sensitivity
+
+Pathway Dropping % (Sorted 
+
+pi 0.1, pt 0.3 | Gap: 0 
+
+pi 0.4, pt 0.2 | Gap: 0 
+
+pi 0.3, pt 0.1 | Gap: 0 
+
+pi 0.2, pt 0.2 | Gap: 0 
+
+pi 0.2, pt 0.4 | Gap: 0 
+
+pi 0.1, pt 0.1 | Gap: 0 
+
+pi 0.1, pt 0.5 | Gap: 0 
+
+pi 0.0, pt 0.0 | Gap: 0 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.43 
+
+0.46 
+
+0.49 
+
+0.52 
+
+0.55 
+
+0.13 
+
+0.26 
+
+0.39 
+
+0.52 
+
+0.65 
+
+> Validation Acc
+> Retain Acc
+> Forget Acc MIA
+> Pathway Sensitivity
+
+Pathway Dropping % (Sorted by 
+
+pi 0.3, pt 0.1 | Gap: 0.02 
+
+pi 0.4, pt 0.2 | Gap: 0.05 
+
+pi 0.1, pt 0.1 | Gap: 0.07 
+
+pi 0.3, pt 0.2 | Gap: 0.08 
+
+pi 0.2, pt 0.2 | Gap: 0.09 
+
+pi 0.0, pt 0.0 | Gap: 0.10 
+
+pi 0.1, pt 0.3 | Gap: 0.15 
+
+pi 0.2, pt 0.4 | Gap: 0.20 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+> Validation Acc
+> Retain Acc
+> Forget Acc MIA
+> Pathway Sensitivity
+
+Pathway Dropping % (Sorted 
+
+pi 0.3, pt 0.1 | Gap: 0. 
+
+pi 0.4, pt 0.2 | Gap: 0. 
+
+pi 0.1, pt 0.1 | Gap: 0. 
+
+pi 0.3, pt 0.2 | Gap: 0. 
+
+pi 0.2, pt 0.2 | Gap: 0. 
+
+pi 0.0, pt 0.0 | Gap: 0. 
+
+pi 0.1, pt 0.3 | Gap: 0. 
+
+pi 0.2, pt 0.4 | Gap: 0. 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+> Validation Acc
+> Retain Acc
+> Forget Acc MIA
+> Pathway Sensitivity
+
+Pathway Dropping % (Sor 
+
+pi 0.3, pt 0.1 | Ga 
+
+pi 0.4, pt 0.2 | Ga 
+
+pi 0.1, pt 0.1 | Ga 
+
+pi 0.3, pt 0.2 | Ga 
+
+pi 0.2, pt 0.2 | Ga 
+
+pi 0.0, pt 0.0 | Ga 
+
+pi 0.1, pt 0.3 | Ga 
+
+pi 0.2, pt 0.4 | Ga 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+> Validation Acc
+> Retain Acc
+> Forget Acc MIA
+> Pathway Sensitivity
+
+Pathway Dropping % (Sorted by 
+
+pi 0.3, pt 0.1 | Gap: 0.0254 
+
+pi 0.4, pt 0.2 | Gap: 0.0504 
+
+pi 0.1, pt 0.1 | Gap: 0.0733 
+
+pi 0.3, pt 0.2 | Gap: 0.0809 
+
+pi 0.2, pt 0.2 | Gap: 0.0907 
+
+pi 0.0, pt 0.0 | Gap: 0.1071 
+
+pi 0.1, pt 0.3 | Gap: 0.1542 
+
+pi 0.2, pt 0.4 | Gap: 0.2070 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorte 
+
+pi 0.1, pt 0.3 | Gap: 
+
+pi 0.4, pt 0.2 | Gap: 
+
+pi 0.3, pt 0.1 | Gap: 
+
+pi 0.2, pt 0.2 | Gap: 
+
+pi 0.2, pt 0.4 | Gap: 
+
+pi 0.1, pt 0.1 | Gap: 
+
+pi 0.1, pt 0.5 | Gap: 
+
+pi 0.0, pt 0.0 | Gap: 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.43 
+
+0.46 
+
+0.49 
+
+0.52 
+
+0.55 
+
+0.13 
+
+0.26 
+
+0.39 
+
+0.52 
+
+0.65 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted b 
+
+pi 0.3, pt 0.1 | Gap: 0.0 
+
+pi 0.4, pt 0.2 | Gap: 0.0 
+
+pi 0.1, pt 0.1 | Gap: 0.0 
+
+pi 0.3, pt 0.2 | Gap: 0.0 
+
+pi 0.2, pt 0.2 | Gap: 0.0 
+
+pi 0.0, pt 0.0 | Gap: 0.1 
+
+pi 0.1, pt 0.3 | Gap: 0.1 
+
+pi 0.2, pt 0.4 | Gap: 0.2 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted 
+
+pi 0.3, pt 0.1 | Gap: 
+
+pi 0.4, pt 0.2 | Gap: 
+
+pi 0.1, pt 0.1 | Gap: 
+
+pi 0.3, pt 0.2 | Gap: 
+
+pi 0.2, pt 0.2 | Gap: 
+
+pi 0.0, pt 0.0 | Gap: 
+
+pi 0.1, pt 0.3 | Gap: 
+
+pi 0.2, pt 0.4 | Gap: 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (So 
+
+pi 0.3, pt 0.1 | G
+
+pi 0.4, pt 0.2 | G
+
+pi 0.1, pt 0.1 | G
+
+pi 0.3, pt 0.2 | G
+
+pi 0.2, pt 0.2 | G
+
+pi 0.0, pt 0.0 | G
+
+pi 0.1, pt 0.3 | G
+
+pi 0.2, pt 0.4 | G
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted by 
+
+pi 0.3, pt 0.1 | Gap: 0.025 
+
+pi 0.4, pt 0.2 | Gap: 0.050 
+
+pi 0.1, pt 0.1 | Gap: 0.073 
+
+pi 0.3, pt 0.2 | Gap: 0.080 
+
+pi 0.2, pt 0.2 | Gap: 0.090 
+
+pi 0.0, pt 0.0 | Gap: 0.107 
+
+pi 0.1, pt 0.3 | Gap: 0.154 
+
+pi 0.2, pt 0.4 | Gap: 0.207 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40                                                             
+
+> Validation Acc
+> Retain Acc
+> Forget Acc MIA
+> Pathway Sensitivity
+> Pathway Dropping % (Sorted by Utility Gap)
+> pi0.1, pt0.3 |Gap: 0.0009 |Ps: 0.2029
+> pi0.4, pt0.2 |Gap: 0.0009 |Ps: 0.2622
+> pi0.3, pt0.1 |Gap: 0.0020 |Ps: 0.3318
+> pi0.2, pt0.2 |Gap: 0.0026 |Ps: 0.2448
+> pi0.2, pt0.4 |Gap: 0.0052 |Ps: 0.1683
+> pi0.1, pt0.1 |Gap: 0.0066 |Ps: 0.2822
+> pi0.1, pt0.5 |Gap: 0.0075 |Ps: 0.1278
+> pi0.0, pt0.0 |Gap: 0.0082 |Ps: 0.6352
+> 0.68
+> 0.76
+> 0.84
+> 0.92
+> 1.00
+> 0.68 0.76 0.84 0.92 1.00
+> 0.68
+> 0.76
+> 0.84
+> 0.92
+> 1.00
+> 0.43
+> 0.46
+> 0.49
+> 0.52
+> 0.55
+> 0.13
+> 0.26
+> 0.39
+> 0.52
+> 0.65
+
+Figure 5. Overview of the performance metrics under varying image and token dropout probabilities in MUNKEY training in CIFAR-10 for visualization of model selection. 
+
+23 Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted 
+
+pi 0.3, pt 0.1 | Gap: 
+
+pi 0.4, pt 0.2 | Gap: 
+
+pi 0.1, pt 0.1 | Gap: 
+
+pi 0.3, pt 0.2 | Gap: 
+
+pi 0.2, pt 0.2 | Gap: 
+
+pi 0.0, pt 0.0 | Gap: 
+
+pi 0.1, pt 0.3 | Gap: 
+
+pi 0.2, pt 0.4 | Gap: 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40                                                             
+
+> Validation Acc
+> Retain Acc
+> Forget Acc MIA
+> Pathway Sensitivity
+> Pathway Dropping % (Sorted by Utility Gap)
+> pi0.3, pt0.1 |Gap: 0.0254 |Ps: 0.1731
+> pi0.4, pt0.2 |Gap: 0.0504 |Ps: 0.1403
+> pi0.1, pt0.1 |Gap: 0.0733 |Ps: 0.1023
+> pi0.3, pt0.2 |Gap: 0.0809 |Ps: 0.0973
+> pi0.2, pt0.2 |Gap: 0.0907 |Ps: 0.0854
+> pi0.0, pt0.0 |Gap: 0.1071 |Ps: 0.3757
+> pi0.1, pt0.3 |Gap: 0.1542 |Ps: 0.1046
+> pi0.2, pt0.4 |Gap: 0.2070 |Ps: 0.0600
+> 0.68
+> 0.76
+> 0.84
+> 0.92
+> 1.00
+> 0.68 0.76 0.84 0.92 1.00
+> 0.68
+> 0.76
+> 0.84
+> 0.92
+> 1.00
+> 0.46
+> 0.52
+> 0.58
+> 0.64
+> 0.70
+> 0.08
+> 0.16
+> 0.24
+> 0.32
+> 0.40
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted b 
+
+pi 0.3, pt 0.1 | Gap: 0.02 
+
+pi 0.4, pt 0.2 | Gap: 0.05 
+
+pi 0.1, pt 0.1 | Gap: 0.07 
+
+pi 0.3, pt 0.2 | Gap: 0.08 
+
+pi 0.2, pt 0.2 | Gap: 0.09 
+
+pi 0.0, pt 0.0 | Gap: 0.10 
+
+pi 0.1, pt 0.3 | Gap: 0.15 
+
+pi 0.2, pt 0.4 | Gap: 0.20 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted 
+
+pi 0.3, pt 0.1 | Gap: 0 
+
+pi 0.4, pt 0.2 | Gap: 0 
+
+pi 0.1, pt 0.1 | Gap: 0 
+
+pi 0.3, pt 0.2 | Gap: 0 
+
+pi 0.2, pt 0.2 | Gap: 0 
+
+pi 0.0, pt 0.0 | Gap: 0 
+
+pi 0.1, pt 0.3 | Gap: 0 
+
+pi 0.2, pt 0.4 | Gap: 0 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sor 
+
+pi 0.3, pt 0.1 | Ga 
+
+pi 0.4, pt 0.2 | Ga 
+
+pi 0.1, pt 0.1 | Ga 
+
+pi 0.3, pt 0.2 | Ga 
+
+pi 0.2, pt 0.2 | Ga 
+
+pi 0.0, pt 0.0 | Ga 
+
+pi 0.1, pt 0.3 | Ga 
+
+pi 0.2, pt 0.4 | Ga 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted by 
+
+pi 0.3, pt 0.1 | Gap: 0.0254 
+
+pi 0.4, pt 0.2 | Gap: 0.0504 
+
+pi 0.1, pt 0.1 | Gap: 0.0733 
+
+pi 0.3, pt 0.2 | Gap: 0.0809 
+
+pi 0.2, pt 0.2 | Gap: 0.0907 
+
+pi 0.0, pt 0.0 | Gap: 0.1071 
+
+pi 0.1, pt 0.3 | Gap: 0.1542 
+
+pi 0.2, pt 0.4 | Gap: 0.2070 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted by 
+
+pi 0.3, pt 0.1 | Gap: 0.02 
+
+pi 0.4, pt 0.2 | Gap: 0.05 
+
+pi 0.1, pt 0.1 | Gap: 0.07 
+
+pi 0.3, pt 0.2 | Gap: 0.08 
+
+pi 0.2, pt 0.2 | Gap: 0.09 
+
+pi 0.0, pt 0.0 | Gap: 0.10 
+
+pi 0.1, pt 0.3 | Gap: 0.15 
+
+pi 0.2, pt 0.4 | Gap: 0.20 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted 
+
+pi 0.3, pt 0.1 | Gap: 0. 
+
+pi 0.4, pt 0.2 | Gap: 0. 
+
+pi 0.1, pt 0.1 | Gap: 0. 
+
+pi 0.3, pt 0.2 | Gap: 0. 
+
+pi 0.2, pt 0.2 | Gap: 0. 
+
+pi 0.0, pt 0.0 | Gap: 0. 
+
+pi 0.1, pt 0.3 | Gap: 0. 
+
+pi 0.2, pt 0.4 | Gap: 0. 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sor 
+
+pi 0.3, pt 0.1 | Ga 
+
+pi 0.4, pt 0.2 | Ga 
+
+pi 0.1, pt 0.1 | Ga 
+
+pi 0.3, pt 0.2 | Ga 
+
+pi 0.2, pt 0.2 | Ga 
+
+pi 0.0, pt 0.0 | Ga 
+
+pi 0.1, pt 0.3 | Ga 
+
+pi 0.2, pt 0.4 | Ga 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted by 
+
+pi 0.3, pt 0.1 | Gap: 0.0254 
+
+pi 0.4, pt 0.2 | Gap: 0.0504 
+
+pi 0.1, pt 0.1 | Gap: 0.0733 
+
+pi 0.3, pt 0.2 | Gap: 0.0809 
+
+pi 0.2, pt 0.2 | Gap: 0.0907 
+
+pi 0.0, pt 0.0 | Gap: 0.1071 
+
+pi 0.1, pt 0.3 | Gap: 0.1542 
+
+pi 0.2, pt 0.4 | Gap: 0.2070 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted 
+
+pi 0.3, pt 0.1 | Gap: 0 
+
+pi 0.4, pt 0.2 | Gap: 0 
+
+pi 0.1, pt 0.1 | Gap: 0 
+
+pi 0.3, pt 0.2 | Gap: 0 
+
+pi 0.2, pt 0.2 | Gap: 0 
+
+pi 0.0, pt 0.0 | Gap: 0 
+
+pi 0.1, pt 0.3 | Gap: 0 
+
+pi 0.2, pt 0.4 | Gap: 0 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40                                                             
+
+> Validation Acc
+> Retain Acc
+> Forget Acc MIA
+> Pathway Sensitivity
+> Pathway Dropping % (Sorted by Utility Gap)
+> pi0.3, pt0.1 |Gap: 0.0254 |Ps: 0.1731
+> pi0.4, pt0.2 |Gap: 0.0504 |Ps: 0.1403
+> pi0.1, pt0.1 |Gap: 0.0733 |Ps: 0.1023
+> pi0.3, pt0.2 |Gap: 0.0809 |Ps: 0.0973
+> pi0.2, pt0.2 |Gap: 0.0907 |Ps: 0.0854
+> pi0.0, pt0.0 |Gap: 0.1071 |Ps: 0.3757
+> pi0.1, pt0.3 |Gap: 0.1542 |Ps: 0.1046
+> pi0.2, pt0.4 |Gap: 0.2070 |Ps: 0.0600
+> 0.68
+> 0.76
+> 0.84
+> 0.92
+> 1.00
+> 0.68 0.76 0.84 0.92 1.00
+> 0.68
+> 0.76
+> 0.84
+> 0.92
+> 1.00
+> 0.46
+> 0.52
+> 0.58
+> 0.64
+> 0.70
+> 0.08
+> 0.16
+> 0.24
+> 0.32
+> 0.40
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted by 
+
+pi 0.3, pt 0.1 | Gap: 0.02 
+
+pi 0.4, pt 0.2 | Gap: 0.05 
+
+pi 0.1, pt 0.1 | Gap: 0.07 
+
+pi 0.3, pt 0.2 | Gap: 0.08 
+
+pi 0.2, pt 0.2 | Gap: 0.09 
+
+pi 0.0, pt 0.0 | Gap: 0.10 
+
+pi 0.1, pt 0.3 | Gap: 0.15 
+
+pi 0.2, pt 0.4 | Gap: 0.20 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted 
+
+pi 0.3, pt 0.1 | Gap: 0. 
+
+pi 0.4, pt 0.2 | Gap: 0. 
+
+pi 0.1, pt 0.1 | Gap: 0. 
+
+pi 0.3, pt 0.2 | Gap: 0. 
+
+pi 0.2, pt 0.2 | Gap: 0. 
+
+pi 0.0, pt 0.0 | Gap: 0. 
+
+pi 0.1, pt 0.3 | Gap: 0. 
+
+pi 0.2, pt 0.4 | Gap: 0. 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sor 
+
+pi 0.3, pt 0.1 | Ga 
+
+pi 0.4, pt 0.2 | Ga 
+
+pi 0.1, pt 0.1 | Ga 
+
+pi 0.3, pt 0.2 | Ga 
+
+pi 0.2, pt 0.2 | Ga 
+
+pi 0.0, pt 0.0 | Ga 
+
+pi 0.1, pt 0.3 | Ga 
+
+pi 0.2, pt 0.4 | Ga 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Validation Acc 
+
+Retain Acc 
+
+Forget Acc MIA 
+
+Pathway Sensitivity 
+
+Pathway Dropping % (Sorted by 
+
+pi 0.3, pt 0.1 | Gap: 0.0254 
+
+pi 0.4, pt 0.2 | Gap: 0.0504 
+
+pi 0.1, pt 0.1 | Gap: 0.0733 
+
+pi 0.3, pt 0.2 | Gap: 0.0809 
+
+pi 0.2, pt 0.2 | Gap: 0.0907 
+
+pi 0.0, pt 0.0 | Gap: 0.1071 
+
+pi 0.1, pt 0.3 | Gap: 0.1542 
+
+pi 0.2, pt 0.4 | Gap: 0.2070 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.68 0.76 0.84 0.92 1.00 
+
+0.68 
+
+0.76 
+
+0.84 
+
+0.92 
+
+1.00 
+
+0.46 
+
+0.52 
+
+0.58 
+
+0.64 
+
+0.70 
+
+0.08 
+
+0.16 
+
+0.24 
+
+0.32 
+
+0.40 
+
+Figure 6. Overview of the resulting performance metrics under varying image and token dropout probabilities in MUNKEY training in DermaMNIST for visualization of model selection. 
+
+24

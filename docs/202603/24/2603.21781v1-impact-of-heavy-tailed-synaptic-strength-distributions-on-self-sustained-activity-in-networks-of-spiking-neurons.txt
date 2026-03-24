@@ -1,0 +1,741 @@
+Title: Impact of heavy-tailed synaptic strength distributions on self-sustained activity in networks of spiking neurons
+
+URL Source: https://arxiv.org/pdf/2603.21781v1
+
+Published Time: Tue, 24 Mar 2026 02:06:10 GMT
+
+Number of Pages: 17
+
+Markdown Content:
+# Impact of heavy-tailed synaptic strength distributions on self-sustained activity in networks of spiking neurons. 
+
+## Ralf T¨ onjes 1* , Chunming Zheng 2, Wenping Cui 3, Benjamin Lindner 1,4 
+
+> 1*
+
+Institute of Physics, Humboldt University, Berlin, Germany. 
+
+> 2
+
+School of Physics and Astronomy, Yunnan University, Kunming, China. 
+
+> 3
+
+Princeton University, Princeton, USA. 
+
+> 4
+
+BCCN, Humboldt University, Berlin, Germany. *Corresponding author(s). E-mail(s): ralf.toenjes@hu-berlin.de; 
+
+Abstract 
+
+We analyze states of stationary activity in randomly coupled quadratic integrate-and-fire neurons using stochastic mean-field theory. Specifically, we consider the two cases of Gaussian random coupling and Cauchy random coupling, which are representative of systems with light- or with heavy-tailed synaptic strength distributions. For both, Gaussian and Cauchy coupling, bistability between a low activity and a high activity state of self-sustained firing is possible in excitable neurons. In the system with Cauchy coupling we find analytically a directed percolation threshold, i.e., above a critical value of the synaptic strength, activity percolates through the whole network starting from a few spiking units only. The existence of the directed percolation threshold is in agreement with previous numerical results in the literature for integrate-and-fire neurons with heavy-tailed synaptic strength distribution. However, we have found that the transition can be continuous or discontinuous, depending on the excitatory-inhibitory imbalance in the network. Networks with Gaussian coupling and networks with Cauchy coupling and additional additive noise lack the percolation transition in the thermodynamic limit. 
+
+Keywords: spiking neural networks, asynchronous incoherent state, stochastic mean-field theory 
+
+# 1 Introduction 
+
+Neural activity in living biological tissue is ahighly complex, stochastic, non-equilibrium and non-linear process. However, due to the large num-ber of constituents, i.e., the interacting spiking neurons, it is possible to use methods from sta-tistical physics to describe such systems in terms of mean-field observables. In [1] Brunel devel-oped a standard model for homogeneous random networks of spiking neurons. The Brunel model became widely used to numerically reproduce and analytically predict different states of activ-ity in biological neural networks, specifically the experimentally omnipresent asynchronous irregu-lar state [2]. In order to arrive at a feasible mathemati-cal description, Brunel made several simplifying key assumptions, like independence of the dif-ferent input signals to a neuron and, following from that and the central limit theorem, the Gaussian approximation for the summed inputs arriving at a specific neuron within the network. Convergence of the sum of independent inputs 1
+
+> arXiv:2603.21781v1 [cond-mat.dis-nn] 23 Mar 2026
+
+in mean and distribution to a Gaussian requires inputs of bounded variance. However, experimen-tal data show that synaptic strengths in neural networks can be broadly distributed [3–5] with possible implications for neural information pro-cessing [6]. In this case, a Gaussian description is no longer accurate as the convergence of the input sum is poor in the tails of the distribution and a description in terms of a Gaussian mean-field theory becomes questionable. It has recently been suggested [7], that heavy-tailed synaptic weight distributions can change the neural dynamics and, in particular, support a continuous directed per-colation transition with order parameter exponent 
+
+β = 1 /2 at the critical point 1. In marked contrast, such a continuous transition has not been observed in dense networks with light-tailed (e.g. Gaus-sian) distributions [7]. Here, in order to deeper understand the impact of heavy-tailed synaptic distributions on the neural activity in recurrent networks of spiking neurons, we compare the mean firing rate in systems of randomly coupled quadratic integrate-and-fire (QIF) neurons with either Gaussian or with Cauchy random synaptic weights. Excitable neurons in random networks are known to exhibit self-sustained activity [8]. Anonzero mean of the presynaptic input, impinging on the individual neurons, can shift the work-ing point of excitable neurons into a regime of regular firing. Moreover, the many inputs arriv-ing through the randomly weighted excitatory and inhibitory synaptic connections constitute a dynamic network noise which can also lead to a self-consistent random spiking of the driven neurons, even when the mean is zero. Stochas-tic mean-field theory aims at deriving equations for the self-consistent mean values and correlation statistics of the neural spike trains [9–13]. Under certain conditions, in random networks a state of self-sustained high activity co-exists with a state of low activity. Either of these states can become unstable upon changes in a system parameter or under external stimulus, and the system may jump discontinuously to the respective other state.           
+
+> 1The critical exponent βdescribes the leading order scaling of the order parameter close to the bifurcation point or phase transition. It is β= 1 for transcritical bifurcations, β= 1 /2for saddle-node and pitchfork bifurcations and β= 1 /3 at the cusp point of a cusp bifurcation. At a transcritical bifurcation two fixed points cross under finite slope and exchange stability, hence β= 1.
+
+First-order, i.e.,discontinuous, phase transitions are of great interest in applications, because of hysteresis. That is, the system persists in the new state and does not directly revert to the original state when the external stimulus or the change of the system parameter is performed in the reverse order. In a second-order phase transition, which in [7] was predicted for neural networks with heavy-tailed synaptic weights, the order parameter is continuous but has a discontinuous and possibly infinite derivative. Near such a phase transition low-dimensional mean-field theory is no longer an accurate description of the system, because fluctu-ations and their temporal correlations can become scale free, i.e., macroscopic. The role of critical-ity in generating complexity in biological neural networks has been suggested by statistical physi-cists [14, 15] and has since also been studied experimentally [16–18]. Bistability and more complicated collective dynamics, such as synchronized oscillations or irregular fluctuations of synchronized activity on slow time-scales have been found and analyzed in random networks of coupled integrate-and-fire neurons with light-tailed positive (excitatory) and negative (inhibitory) coupling [1, 19–21]. All-to-all coupling with independent, identically distributed random weights is an idealization of such random networks, which is often used in statistical, solid-state physics, e.g.,for spin models in disordered media [22, 23]. Here we use this kind of coupling with inde-pendent random positive and negative weights as a model for unstructured networks of excitatory and inhibitory spiking neurons focusing on the non-equilibrium steady states of irregular asyn-chronous spiking. We explore the influence of the coupling statistics, excitatory-inhibitory bal-ance and additional noise on these steady states in networks of excitable QIF neurons. Using the commonly applied white-noise approximation for the self-generated dynamic noise in the network, we can derive and solve self-consistent mean-field equations for the firing rate. For excitable QIF neurons with Cauchy ran-dom coupling, we confirm the existence of a direct percolation transition in the absence of external noise. However, a slight imbalance in favor of excitatory synapses provides a positive feedback, rendering the transition discontinuous, and induc-ing bistability as in the case of Gaussian random 2coupling. In networks with stronger inhibition bistability persists with Gaussian random synap-tic weights whereas the percolation transition in the Cauchy case becomes continuous. Our paper is organized as follows: In Sec. 2, we introduce the QIF neuron model and the differ-ent coupling network statistics used in our study. We discuss the feedback of the neural activity to the self-generated, dynamic noise in the system and how stochastic mean-field theory (SMFT) can be used to derive closed self-consistent analyti-cal descriptions of the stationary dynamics. The details of the numerical simulation of the dynam-ics in the full, high-dimensional neuron network model and measures of the neural activity are also presented there. In Sec. 3 we use the known self-consistency theory to inspect the mean firing rate in networks with Gaussian coupling, taking also into account additional Gaussian white noise acting on each element. In Sec. 4 we study the mean-field dynamics in the model with Cauchy random coupling under a novel Cauchy white-noise approximation. Our analytical results are confirmed by simulations of recurrent networks of spiking QIF neurons. We conclude in Sec. 5 with a summary of the main results. 
+
+# 2 Models, measures, and simulations 
+
+In balanced networks of spiking neurons the sequence of excitatory and inhibitory inputs from presynaptic neurons constitutes a dynamic noise, which strongly affects the output spike trains of the postsynaptic neurons. We refer to the noise generated by the neurons as dynamic, because its statistics, in particular its strength and mean depend uniquely on the activity itself, i.e., on the average firing rate, and on higher-order statistics of all neurons in the network. The properties of the dynamic noise are part of the dynamics. Stochas-tic mean-field theory incorporates the statistics of single-neuron spike trains into the character-istics of the noise generated in the network in a self-consistent way. Here we limit our analysis to a self-consistent firing-rate which feeds back into the properties of the network noise in a white noise approximation. The exact power spectrum of the spike trains, or the effects of interspike interval variability, e.g.,the coefficient of variation, are not considered. We furthermore disregard the secondary effect of het-erogeneity in the stationary firing rates [24]. We have found that the stationary network activ-ity and the network noise are well approximated under these simplifying assumptions over a wide range of system parameters. In the following, we present the models analyzed in this paper. 
+
+## 2.1 Models 
+
+We consider QIF neurons with instantaneous, current-based pulse coupling. The membrane potentials vℓ(t), of the ℓ = 1 . . . N neurons, follow QIF model dynamics in nondimensional time and voltage variables [25] ˙vℓ = v2 
+
+> ℓ
+
++ a0 + zℓ(t). (1) Here a0 is the excitation parameter and zℓ(t)is a nondimensional input current. Regarding the time-independent drift of the uncoupled QIF dynamics, v2 
+
+> ℓ
+
++ a0, we note that in the excitable regime when a0 < 0, the membrane potential has a resting point and a saddle, respectively at ±√−a0,whereas it is spiking tonically for a0 > 0. In addition to the dynamic network noise 
+
+zN W ℓ (t) from presynaptic neurons, noise zadd ℓ (t)from other, independent neural populations or from intrinsic channel fluctuations can also be included as zℓ(t) = zN W ℓ (t) + zadd ℓ (t). Upon cross-ing of a threshold potential vth at times tmk , and reset to a value vr , an action potential, here rep-resented by a δ-kick, is generated and distributed as part of the spike-trains 
+
+xm(t) = 
+
+> ∞
+
+X
+
+> k=−∞
+
+δ(t − tmk ) (2) to the inputs zN W ℓ (t) of all postsynaptic neurons 
+
+zN W ℓ (t) = 
+
+> N
+
+X
+
+> m=1
+
+Jℓm xm(t). (3) The coupling coefficients, or synaptic weights, 
+
+Jℓm are randomly drawn, independently for each connection, either from a Gaussian 
+
+Jℓm ∼ N (μ/N, σ 2/N ) = μN + σ
+
+√N N (0 , 1) (4) 3or a Cauchy distribution 
+
+Jℓm ∼ C (μ/N, σ/N ) = μN + σN C(0 , 1) (5) with Gaussian 
+
+pN (J) =  2πσ 2/N − 12 exp 
+
+
+
+− (J − μ/N )2
+
+2σ2/N 
+
+
+
+and Cauchy probability density 
+
+pC (J) = 1
+
+πσ/N 
+
+(J − μ/N )2 + σ2/N 2 ,
+
+respectively. The scaling in the Gaussian case is such that the standard deviation of the synap-tic weights is much larger than its mean value for large network sizes N , which corresponds to the often discussed case of a balanced network [2, 26]. We refer to σ, which quantifies the width of the distribution, as coupling heterogeneity, and to μ, which quantifies a prevalence for positive or negative synaptic weights, as excitatory-inhibitory imbalance. The scaling of the imbalance and the heterogeneity in the synaptic weight distributions with the system size makes μ and σ system-size independent (intensive) parameters, so that the mean-field dynamics in systems of finite size are comparable to the dynamics in a well-defined thermodynamic limit N → ∞ .Interpreting v(t) as a state variable rather than a physical voltage, it is possible to formally take the simultaneous limits of vth , v r → ±∞ , because once v(t) exceeds the saddle value it increases according to Eq. (1) super-exponentially to infin-ity in a finite time and returns from vr = −∞ 
+
+to the neighborhood of the resting potential. For 
+
+a0 > 0, there is no resting potential, and the QIF neuron is spiking periodically with period 
+
+T = π/ √a0. The QIF model is equivalent to a theta neuron model ˙ϑℓ = (1 − cos ϑℓ) + (1 + cos ϑℓ)( a0 + zℓ(t)) (6) under the non-linear transformation v = tan( ϑ/ 2). The theta neuron dynamics (6) has been derived independently from a normal form analysis of a saddle-node bifurcation on an invariant circle (SNIC) [27, 28]. The neuron generates a spike when ϑ crosses π continuously. This transforma-tion requires the chain rule of differentiation. If the inputs zℓ(t) have a white-noise component or contain delta pulses, we obtain a so-called mul-tiplicative noise (see [29, 30]) in the transformed dynamics Eq. (6) that needs an interpretation (see the discussion of this issue for the QIF model driven by Gaussian white noise in Ref. [31]). Here we want to interpret Eq. (6) as equivalent to Eq. (1), i.e., not in the sense of Ito [32]. Networks of QIF and theta neurons allow for an exact, low-dimensional mean-field description under certain conditions. For instance, if all neu-rons receive the same input signal zℓ(t) = z(t), Watanabe-Strogatz theory [33] applies to a finite ensemble of N identical theta neurons and the exact evolution of the system is obtained from the solution of a three dimensional, non-autonomous differential equation [34]. Furthermore, the Ott-Antonsen ansatz [35] can be applied to obtain an exact differential equation for the mean field in the so called thermodynamic limit of N → ∞ for theta neurons and other phase dynamics with quenched heterogeneity or subject to white Cauchy noise [36–38]. These analytical results for coupled phase oscillators have successfully been used to derive exact mean-field equations for the mean mem-brane potential and the mean firing rate in ensem-bles of QIF neurons subject to non-Gaussian noise [39–41]. In this work we assume that the dynamic noise 
+
+zN W ℓ (t) is approximately independent for differ-ent neurons and white (temporally uncorrelated) Gaussian- or Cauchy noise, depending on the dis-tribution of synaptic weights. The noise strength depends through Eq. (3) on the firing rates of all neurons, and the firing rates in turn depend on the noise strength. This input-output rela-tion defines stationary firing rates in the network self-consistently. Self-consistency analysis is com-monly applied together with the Gaussian white noise approximation [1, 21]. For QIF neurons with Cauchy distributed synaptic weights, under the approximation of independent, white Cauchy noise, we modify the mean-field equations derived in [41] to reflect the feedback of the dynamic network noise, allowing in principle for a full non-linear analysis of the transient dynamics and the stationary state. In order to visualize the qualitative difference between the dynamic noise in networks with Gaus-sian and with Cauchy random synaptic weights 40 2 4 6 8 10 t 
+
+> −101
+> ∆τ [zN W  (t)]
+> 025
+
+p(∆ τ )(a) 0 2 4 6 8 10 12 t
+
+> −10 010
+
+v(t)
+
+(b) 0 2 4 6 8 10 t 
+
+> −101
+> ∆τ [zN W  (t)]
+> 025
+
+p(∆ τ )
+
+(c) 0 2 4 6 8 10 12 t
+
+> −10 010
+
+v(t)
+
+(d)                                                       
+
+> Fig. 1Qualitative comparison between the net-work noise with Gaussian and with Cauchy random synaptic weights. Short-time, sliding window filtered inputs ∆ τ[zN W ℓ(t)] (Eqs. (7) and (15), window width τ=10 ∆ t= 0 .01), each for a single excitable neuron ( a0=
+> −0.5). Taken from direct simulation of N=1000 QIF neurons (a) with Gaussian coupling disorder and (c) with Cauchy coupling disorder. The distribution of these val-ues are shown as horizontal, normalized histograms to the right. Imbalance and heterogeneity of the synaptic weights in both examples are μ=4 and σ=4 and we have not included additional noise to the neuron dynamics (see Figs.4b and 6b). The red curves superimposed on the his-tograms are the theoretical distributions N(μrτ, σ 2rτ ) and
+> C(μrτ, σrτ ) in the Gaussian and in the Cauchy case, using the measured average firing rates in the networks r= 0 .41 and r= 0 .36, respectively. In (b) and (d), below the time series of the linearly filtered noise, we have aligned the corresponding time series of the single neuron membrane potentials vℓ(t) with jumps clearly visible for Cauchy dis-tributed synaptic strengths. The dashed horizontal lines mark the resting potential and the saddle at ±√−a0,respectively. The working point of the neuron has shifted in both cases to positive values a0+μr >0, i.e.,the self-sustained activity is mean-driven in this example.
+
+we show in Fig.1 a short-time sliding window fil-ter of the input zN W ℓ (t) to a single neuron and the corresponding stochastic membrane potential 
+
+vℓ(t) in regimes with comparable network activi-ties. The network noise with Cauchy distributed synaptic weights appears to be much sparser. In contrast, noise with Gaussian statistics is much stronger over small time scales, e.g.,the width of the distribution of the integrated noise grows as a square root of the window size, while the distribu-tion of the integrated noise in the case of Cauchy coupling is narrower in the center, with a width that grows linearly in the window size, but has scale-free heavy-tails. In this case, frequent small spikes and rare spikes through strong synapses contribute equally to the stochastic dynamics. 
+
+## 2.2 Simulations and firing rate estimation 
+
+We perform simulations with networks of N =1000 randomly coupled, excitable QIF neurons. The stationary mean firing rates in these simu-lations are determined as follows. The stationary firing rate rℓ of a neuron is the average number of spikes per time unit. This average is performed by counting the number of spikes, Nℓ(T ), in a long time window T for a network with frozen connec-tivity, and taking rℓ = lim T →∞ Nℓ(T )/T . Further-more, we average over all neurons to obtain the mean activity of the network, i.e., r = (1 /N ) P 
+
+> ℓ
+
+rℓ
+
+and also record the average and the variance of the activity over several network realizations. The mean activity r is compared to the self-consistent SMFT solutions of the firing rate in the white-noise approximation. For each value of the imbalance parameter μ, we use a single coupling-matrix realization and perform a forward and a backward sweep of the heterogeneity σ (the val-ues of Jℓm are only adjusted and not redrawn after changing σ). For each value of σ we integrate the system over a transient of Ttrans = 10 and afterwards measure the firing rates over a longer time window of T = 100 time units in steps of ∆t = 0 .001 and determine their ensemble average 
+
+r, the network activity, from all neurons. To avoid any complication due to the multi-plicative nature of the noise in the theta neuron dynamics but still benefit from the continuous (non-diverging) dynamics in the phase variable we carry out a mixed integration scheme switching 5back and forth between the integration of v and 
+
+ϑ. In each integration step we first perform the deterministic update of ϑℓ according to Eq. (6) with zℓ = 0 using Euler steps and record the neurons that cross π. We then add the external noise ∆ w ∼ √2Dadd ∆t N (0 , 1) and the instanta-neous shifts Jℓm due to delta kicks from the firing presynaptic neurons m to the membrane voltages 
+
+vℓ.At the beginning of a forward sweep in σ
+
+we reset all neurons to the equilibrium poten-tial, ensuring an initial state of low, externally excited activity, while we start with uniformly ran-dom initial phases ϑℓ in the backward sweeps, preparing the system in the basin of attraction of the self-sustained, high activity state. Fluctu-ations in the activity for a single network real-ization, and heterogeneity over several network realizations exist due to the relatively small sys-tem size. The parameter sweeps are repeated ten times with different coupling-matrix realizations and averaged. In bistable regimes some averages will fall between the two self-consistent SMFT solutions at parameters where the transition time, due to finite-size fluctuations, is comparable to the measuring period of T = 100. In excitable neurons with Cauchy random coupling and without additional noise, the quies-cent state, where all neurons are resting at the fixed point, can become unstable in the mean-field description but remain stable in the forward simulations (see Fig.6b). In the considered high-dimensional dynamical system, this state is stable against finite perturbations of individual mem-brane voltages, but as a fixed point of the mean-field dynamics it is unstable against a vanishingly small fraction of neurons that are initially excited, i.e., poised beyond the saddle point. 
+
+# 3 Gaussian coupling 
+
+## 3.1 Gaussian-white-noise approximation 
+
+We first use a Gaussian random coupling matrix Eq. (4) with independent, identically distributed entries. Over a time interval τ a neuron receives on average N rτ input spikes from its presynap-tic neighbors, where r is the average firing rate in the system. Because the sum of independent identically distributed Gaussian variables is also 0.00 0.05 0.10 0.15 r   
+
+> −0.02
+> −0.01 0.00 0.01 0.02
+> f (r) − r
+> Dadd = 0 .1
+> Dadd = 0 .08
+> Dadd = 0 .04
+
+(a) 0.0 0.1 0.2 0.3r    
+
+> −0.04
+> −0.02 0.00 0.02 0.04 0.06
+> f (r) − r
+> σ= 4 .8
+> σ= 3 .5
+> σ= 3 .2
+
+(b)                  
+
+> Fig. 2 Input-output relation of pre- and postsy-naptic firing rates. Input-output relations Eq.(13) for the rates of excitable QIF neurons with μ= 0, (a) het-erogeneity σ= 3 .5 and different values of additive noise strength Dadd and (b) Dadd =0.08 and different val-ues of σ. Shown is the difference between the post- and the presynaptic firing rates, in the Gaussian white-noise approximation, when the postsynaptic neurons are driven by independent Poissonian presynaptic spike trains with firing rates rpre . Stable self-consistent rates are located where the difference crosses zero with a negative slope smaller than two. There, a small deviation of rpre from that solution will result in a rpost closer to the solution.
+
+Gaussian, with additive mean and variance, the total synaptic input, arriving in a small enough time interval τ is normally distributed. The time interval τ should be much smaller than 1 /r to ensure independence of the spikes but long enough to apply the central limit theorem, i.e., N rτ > 1. Due to our chosen scaling with the system size in Eq. (4) we obtain a system-size independent increment statistics ∆τ [zN W (t)] = 
+
+Z τ
+
+> 0
+
+zN W (t + s) ds ∼ N (μrτ, σ 2rτ )(7) shown in Fig.1a for a single neuron. If we fur-thermore neglect the temporal correlations in the presynaptic spike trains over larger time inter-vals τ , we can regard Eq. (7) as the integral of a Gaussian white noise, with bias aN W = μr 
+
+and noise intensity DN W = σ2r/ 2. This is the Gaussian white noise approximation, also known as the diffusion approximation that we employ in the following. Deviations from predictions under the diffusion approximation can arise from tem-poral correlations in the noise [9, 10], violating the assumption of uncorrelated fluctuations, and from finite synaptic strengths [42–44], violating the Gaussian assumption and making the incre-ments (7) discontinuous. We stress that in our Gaussian network model the diffusion approxima-tion is accurate in the limit N → ∞ , and in our 6simulations with N = 1000, but in general it must be checked carefully [44]. Given that each neuron has the excitation parameter a0 and receives additional white noise 
+
+zadd (t) of intensity Dadd , i.e., ⟨zadd ℓ (t)zadd m (t′)⟩ =2Dadd δ(t − t′)δℓm , the effective excitation param-eter a = a0 + aN W and the effective noise strength each neuron receives D = Dadd + DN W are mod-ified due to the recurrent input. These two rate-dependent shifts in the system parameters essen-tially describe the feedback of the self-generated network noise on the dynamics of the neurons. 
+
+## 3.2 Self-consistent determination of the firing rate 
+
+The firing rates of QIF neurons with excitation parameter a = a0 + aN W and Gaussian white noise input of intensity D = Dadd + DN W can be calculated as 
+
+r = ϕ(a, D ) = 
+
+ 3D
+
+2
+
+ 13 1
+
+G(s) (8) with 
+
+s = −a
+
+ 12 
+
+D2
+
+ 13
+
+(9) from a convergent power series [31, 45], here presented in rearranged form 
+
+G(s) = 
+
+r π
+
+3
+
+> ∞
+
+X
+
+> n=0
+
+sn
+
+n! Γ
+
+ 2n + 1 6
+
+
+
+. (10) The function ϕ(a + I, D ) is the single neuron gain function [46] for an input I at noise level D.The function G(s) was expressed in [21] analyti-cally in terms of Bessel functions with fractional index. In the low noise limit |s| → ∞ , the series (10) converges poorly but the rate (8) has simple asymptotics [31], the Kramer’s rate 
+
+r ≈
+
+p|a|
+
+π e− 4 
+
+> √|a|33D
+
+(11) for excitable QIF neurons with a < 0, |s| ≫ 1 and 
+
+r ≈√aπ (12) for tonically spiking QIF neurons with a > 0 and 
+
+s ≫ 1. Since a and D depend dynamically on the firing rate rpre of the presynaptic neurons, the firing rate rpost of the post synaptic neuron is a function of rpre 
+
+rpost = f (rpre ) = ϕ  a0 + μr pre , D add + σ2rpre /2 .
+
+(13) Self consistency requires the firing rate in the network in a stationary state of asynchronous, irregular firing to be a fixed point rpost = rpre = r
+
+of this map. In Fig.2 we illustrate this mapping by plotting f (r) − r as a function of r for excitable QIF neurons with a0 = −0.5 and for various system parameters. At self-consistent rates, this difference is zero. Stability of the map under iter-ation requires f ′(r) < 1 which corresponds to a zero crossing of f (r) − r at a negative slope and coincides in all network simulation with the observed stability of the self-consistent stationary firing rates. The self-consistency equation 
+
+r = ϕ  a0 + μr, D add + σ2r/ 2 (14) implicitly defines the mean firing rate, i.e., the stationary activity in the network, as a function of all other system parameters. This equation of state can be solved parametrically, i.e., for (σ(s), r (s)) or ( Dadd (s), r (s)) (see Appendix A), or by numerical root-finding and continuation. 
+
+## 3.3 Emergence of bistability in neural activity 
+
+The simple theory developed above, only requires self-consistency in the mean firing rate. Other, spatio-temporal correlations in the network noise are neglected in the diffusion approximation. Nevertheless the predictions of stationary, self-sustained, asynchronous irregular firing regimes correspond quite well to the observed activities in full network simulations shown in Fig.4b,d. For excitable neurons ( a0 < 0 as is the case for all curves in Fig. 3), regions of bistability can be observed in parts of the parameter space. Draw-ing the self-consistent solutions, where the graphs of the input-output relation cross zero in Fig.2, we obtain the bifurcation diagrams in Figs.3a and 4. The region of bistability in parameter space, where a state of low activity, excited by weak additive noise, co-exists with a high-activity state of self-sustained firing, is defined by saddle-node bifurcations of stable and unstable self-consistent 70.00 0.05 0.10 0.15 Dadd 
+
+> 0.00 0.05 0.10 0.15
+
+r(a) 2.5 3.0 3.5 4.0 4.5 5.0σ
+
+> 0.00 0.05 0.10 0.15
+
+Dadd  
+
+> bistability smooth cross-over low activity high activity
+
+(b) 
+
+Fig. 3 Bistability region. We construct bifurcation dia-grams by solving the self-consistency equation Eq. (14) parametrically (see Appendix A). Shown in (a) is the self-consistent firing rate as a function of the additive noise strength for excitable neurons a0 = −0.5, coupling hetero-geneity σ = 3 .5 and zero imbalance μ = 0. A stable state of high self-sustained activity co-exists with a stable state of low activity (solid lines), sustained by the additive noise over an interval of bistability. These two solutions are con-nected by an unstable solution branch (dashed line) and are created or annihilated in saddle-node bifurcations at the knees of the solution curve. With two control param-eters, here shown in (b) for the heterogeneity σ and the additive noise strength Dadd , the surface of self-consistent firing rates has the form of a fold. Bistability exists between the saddle-node bifurcation lines (blue) which connect in a cusp point. The crosses correspond to points in the param-eter space where we show the input-output relation for the pre- and postsynaptic firing rate in Fig.2. The dotted ver-tical line marks a cut at σ = 3 .5 across the bistability region which we have used in panel (a). The vertical lines in (a) correspond to the crosses in (b) at σ = 3 .5 and additive noise strengths Dadd ∈ { 0.04 , 0.08 , 0.1}, i.e., the input-output relations shown in Fig.2a. 
+
+solutions. In Fig.3b we show for a0 = −0.5 and 
+
+μ = 0 that the lines of the saddle node bifur-cations under variation of σ and Dadd meet in a cusp bifurcation point, where the low- and the high-activity states connect continuously but with diverging slope. Figure 4a shows self-consistent spiking rates without additional noise, i.e., Dadd = 0, and for various values of imbalance μ as functions of the coupling heterogeneity σ. In Fig.4c we show the solutions for the same values of μ but with addi-tive Gaussian white noise of strength Dadd = 0 .1. Without the additive noise and when all neurons are at the resting potential, there is no signal in the system that could cause the neurons to fire. Furthermore, the state of zero activity is stable in the sense of f ′(r = 0) < 1 for arbitrary val-ues of σ in the thermodynamic limit, i.e., a finite fraction of neurons must fire to carry the system across the unstable saddle into the regime of high self-sustained activity. A small amount of additive 0 2 4 6σ
+
+> 0.00.20.40.6
+
+r     
+
+> μ= 4 .5
+> μ= 4 .0
+> μ= 0 .0
+> μ=−4.0
+
+(a) 0 2 4 6σ
+
+> 0.00.20.40.6
+
+r (b) 0 2 4 6σ
+
+> 0.00.20.40.6
+
+r     
+
+> μ= 4 .5
+> μ= 4 .0
+> μ= 0 .0
+> μ=−4.0
+
+(c) 0 2 4 6σ
+
+> 0.00.20.40.6
+
+r (d) 
+
+Fig. 4 Theory and simulations for Gaussian ran-dom coupling. Shown are the self-consistent average firing rates, i.e., the neural activity, as functions of the heterogeneity σ under the Gaussian white-noise approxi-mation. We assume Gaussian random coupling Eq.(4) and different values of mean synaptic strength μ. Dashed lines correspond to unstable, and solid lines to stable solutions. The QIF neurons are excitable with a0 = −0.5. In (a) and (b) the noise is purely self-generated, without addi-tional noise, i.e., Dadd = 0, whereas in (c) and (d) we add additional independent Gaussian white noise of strength 
+
+Dadd = 0 .1 to each neuron. In (b) and (d) we compare the theoretical stationary activity, from the mean-field dynam-ics, with simulations of N = 1000 neurons and excitatory imbalance μ = 4. Shown are averages and one standard deviation errorbars over ten forward (open circles) and backward scans (black circles) with different realizations of 
+
+J (fixed μ and adjusted σ) and over T = 100 time units for each value of σ. Without noise, the inactive state in (b) is always stable in the limit N → ∞ with very small synaptic strength. 
+
+noise will create a low activity state of sparsely spiking neurons which becomes unstable at a cer-tain value of σ or crosses over continuously to a state of high activity. Figs.4b,d compare the theoretical self-consistent firing rates, based on the Gaussian white-noise approximation (solid lines) with full network simulations of QIF neurons (data points with one standard deviation bars over ten network realizations) with excitatory imbalance μ = 4 .0and parameter sweeps of σ across the bistability region. Simulations with increasing σ, starting in the low activity regime, are open circles and 8simulations with decreasing σ, starting in a state of high activity, are indicated by black dots. The mean activity r is quite accurately predicted under the white noise approximation for excitable neurons with a0 = −0.5. We note that when μ
+
+is large enough, no network noise DN W = σ2r/ 2from the coupling disorder is needed ( σ = 0) to sustain a high activity state, e.g., for μ = 4 .5. In this purely excitatory system the bistability is mean-driven by the shift of the excitation param-eter a = a0 + μr to positive values. In contrast, for small or negative μ and low additional noise, bistability is noise-driven. Moreover, we point out, that bistability for arbitrary large values of σ and arbitrary values of μ is only strictly true in the diffusion approximation and that the unstable self-consistent solution approaches zero asymptotically. 
+
+# 4 Cauchy coupling 
+
+## 4.1 Cauchy white noise approximation 
+
+Secondly, we use independent, identically dis-tributed Cauchy random entries Eq. (5) in the coupling matrix. Because the sum of independent identically distributed Cauchy variables is also Cauchy, with additive center and scale parame-ter, the total synaptic input, arriving in a small enough time interval τ is also Cauchy distributed, and because of our chosen scaling with the system size in Eq. (5) we obtain a system-size independent increment statistics ∆τ [zN W (t)] = 
+
+Z τ
+
+> 0
+
+zN W (t + s) ds ∼ C (μrτ, σrτ )(15) shown in Fig.1c for a single neuron. We again approximate the network noise by white noise, but this time with Cauchy statistics, and iden-tify the center value of the network noise with a rate-dependent shift aN W = μr in the excitation parameter, and the scale parameter with a rate-dependent strength Γ N W = σr of the dynamic network noise. Note, that the integral of white Cauchy noise is Cauchy distributed with a scale parameter which grows linearly in τ , whereas the standard deviation of the Gaussian white noise integral in Eq.(7) grows with the square root of 
+
+τ . One could say, that at small time scales, diffu-sion due to Gaussian white noise is much stronger than diffusion due to Cauchy white noise, while Cauchy diffusion is driven by increasingly larger jumps over longer time periods. 
+
+## 4.2 Exact mean-field dynamics 
+
+In [47] exact dynamic equations for the ensemble mean membrane voltage ¯ v(t) and the mean fir-ing rate r(t) were derived for QIF neurons with quenched, Cauchy distributed excitation parame-ters a ∼ C (a0, ∆). In [41] the authors extended the analysis to also include additive white Cauchy noise of strength Γ and showed that the mean-field dynamics depend on the sum ∆ + Γ but otherwise have exactly the same form as in [47]. For the equivalent theta-neuron model and other phase models this equivalence of quenched Cauchy heterogeneity and white Cauchy noise was shown in [38, 48]. With explicitly rate-dependent shift 
+
+a = a0 + μr of the excitation parameter and strength Γ = Γ add + σr of white Cauchy noise, including additive Cauchy noise of strength Γ add ,we modify the mean-field equations derived in [41] (see also Appendix B) as ˙r = 2 r¯v + 1
+
+π
+
+ Γadd + σr  (16) ˙¯v = ¯ v2 + ( a0 + μr ) − π2r2. (17) These equations can be analyzed for equilibria, where the time derivatives on the left hand sides are equal to zero. More general theories without dynamic feedback to the noise, which include tran-sient dynamics toward the attracting Lorentzian family of the membrane voltage distributions or general α-stable noise, have been developed in [39, 40]. First, for Γ add = 0 without additional noise, a trivial pair of stable and unstable equilibria exists for excitable QIF neurons when all neurons are at the resting potential vℓ = ¯ v = −√−a0 or at the saddle vℓ = ¯ v = √−a0, both with zero network activity. For r̸ = 0 the equilibrium mean potential from setting the left hand side in Eq. (16) to zero is ¯v = − σ
+
+2π (18) independent of r, a0 and μ. Putting this solution into Eq. (17) and setting the left hand side to zero, 90.0 0.5 1.0 1.5 2.0σ
+
+> 0.00.10.20.3
+> r
+
+(a) 0 1 2 3 4 5σ 
+
+> 0.00.10.20.3
+> Γadd
+> bistability smooth cross-over low activity high activity
+> σp
+
+(b) 
+
+Fig. 5 Bistability region. In case of Cauchy coupling, we obtain σ = σ(r) in Eqs. (24) and (25) by solving the mean-field equations (16) and (17) for stationary solutions and plot the resulting bifurcation diagram in (a) for a0 =
+
+−0.5, μ = 4 .0 and additive Cauchy noise of strength Γ add =0.21. In (b) we plot σ = σ(r) against Γ add (r) from Eq. (26). This parametric curve marks the saddle-node bifurcation of stable and unstable equilibria, i.e., the boundary of the bistability region. The additive noise strength in (a) was chosen at the height of the cusp point (dashed horizontal line in (b)), so that the low and the high activity states connect continuously with diverging slope (dashed vertical line in (a)) at a critical heterogeneity. 
+
+the firing rate r is found as a non-negative solution of σ2
+
+4π4 = r2 − μπ2 r − a0
+
+π2 , (19) which describes hyperbolas in the ( σ, r ) plane. Only the parts of the hyperbolas in the positive quadrant σ, r ≥ 0 correspond to physical, self-consistent equilibria. For excitable neurons a0 < 0, and when r → 0, all solutions connect to the σ
+
+axis at the critical point 
+
+σp = 2 π√−a0. (20) At this critical heterogeneity there is a directed percolation transition [7]. In particular, for μ = 0 the percolation transition is tricritical [49, 50], i.e., through a point in parameter space where three phases meet, quiescence, monostable and bistable self-sustained activity (see Fig.7). The activity scales as a square root ( β = 1 /2) with the distance (σ − σp) to the transition point 
+
+r = pσ2 − 4π2a0 = pσ − σp
+
+pσ + σp (21) shown as the purple curve in Fig.6a. The directed percolation nature of this tran-sition is demonstrated analytically by calculating the expected number of synapses for each neuron with a strength larger than 2 √−a0, i.e., the differ-ence between the resting potential and the saddle. 0 2 4 6σ
+
+> 0.00.20.40.6
+
+rσp     
+
+> μ= 4 .5
+> μ= 4 .0
+> μ= 0 .0
+> μ=−2.0
+
+(a) 0 2 4 6σ
+
+> 0.00.20.40.6
+
+r (b) 0 2 4 6σ
+
+> 0.00.20.40.6
+
+r     
+
+> μ= 4 .5
+> μ= 4 .0
+> μ= 0 .0
+> μ=−2.0
+
+(c) 0 2 4 6σ
+
+> 0.00.20.40.6
+
+r (d) 
+
+Fig. 6 Theory and simulations for Cauchy random coupling. Shown are the self-consistent average firing rates, i.e., the neural activity, as functions of the hetero-geneity σ under the Cauchy white-noise approximation. We assume Cauchy random coupling Eq. (5) with different cen-ter values μ, i.e., excitatory-inhibitory imbalance. Dashed lines correspond to unstable, and solid lines to stable solu-tions. The QIF neurons are excitable with a0 = −0.5. In (a) and (b) the noise is purely self-generated, without addi-tional noise, i.e., Γ add = 0. In this case all solutions connect to the σ-axis at the percolation threshold σp = 2 π√−a0.In (c) and (d) we add additional independent white Cauchy noise of strength Γ add = 0 .04 to each neuron. In (b) and (d) we compare the theoretical stationary activity, from the mean-field dynamics, with simulations of N = 1000 neurons and excitatory imbalance μ = 4. Shown are aver-ages and one standard deviation errorbars over ten forward (open circles) and backward scans (black markers) with dif-ferent realizations of J (fixed μ and adjusted σ) and over 
+
+T = 100 time units for each value of σ. Without noise, the inactive state in the network simulations in (b) is always stable against local perturbations of the membrane voltages from the resting value, but it is unstable against a vanish-ing fraction of input spikes above the percolation threshold at σp (not shown). 
+
+This expected number is equivalent to the basic reproduction number R0 in epidemic theory, when one spike (infection) in a presynaptic neuron elic-its (infects) on average one spike in a postsynaptic neuron. 
+
+R0 = lim   
+
+> N→∞
+
+N · Prob  Jℓm ≥ 2√−a0
+
+
+
+= lim   
+
+> N→∞
+
+N
+
+Z ∞
+
+> 2√−a0
+
+1
+
+πσ/N 
+
+(J − μ/N )2 + σ2/N 2 dJ 
+
+10 = lim  
+
+> N→∞
+
+Nπ
+
+ π
+
+2 − arctan 
+
+ Nσ
+
+
+
+2√−a0 − μN
+
+ 
+
+= σ
+
+2π√−a0
+
+= 1 for σ = σp (22) where we have used π 
+
+> 2
+
+− arctan   1
+
+> x
+
+ = arctan( x) ≈
+
+x for x → 0. The transition only exists for excitable neurons, i.e., when a0 < 0. Note, that any distribution with support in the positive numbers leads to a percolation transition if the scale parameter is large enough or if the excitation parameter a0 → 0− is small enough. For instance, with a binary distribution p(J) = 
+
+> 12
+
+h
+
+δ(J − σ/ √N ) + δ(J + σ/ √N )
+
+i
+
+activity perco-lates discontinuously, when σ > σ p = 2 √−a0N .Similarly for a Gaussian synaptic weight distri-bution (4) asymptotic analysis also shows σp ∼√−a0N . The existence of a percolation threshold is the direct consequence of delta-pulse coupling and not predicted in the diffusion approximation. Interestingly, a positive feedback of the net-work activity on the excitation parameter aN W =
+
+μr > 0 makes the transition in the Cauchy network also discontinuous. In this case, as for excitable neurons with Gaussian coupling, the activity in the network is bistable. The high activ-ity state and the unstable equilibrium collide in a saddle node bifurcation, which for Cauchy random coupling and without additive noise is located at 
+
+σb = p−μ2 − 4π2a0, rb = μ
+
+2π2 . (23) Or the state of high activity connects to the r-axis at σ = 0, r = ( μ + pμ2 + 4 π2a0)/2π2, when 
+
+μ2 +4 π2a0 > 0 (See Fig.6a for μ = 4 .5). The lower branch of the hyperbola is always an unstable saddle, while the upper branch is always stable. When we include additive Cauchy noise of con-stant strength Γ add > 0 the bifurcation lines are smoothed out and the percolation transition dis-appears. In this case we can draw the bifurcation diagram parametrically ( σ(r), r ) as a function of 
+
+r > 0 (Fig.6c). The second mean-field equation Eq. (17) with ˙¯v = 0 defines the square of the stationary mean membrane potential ¯v2 = π2r2 − μr − a0 (24) and the first mean-field equation Eq. (16) with ˙ r =0 defines the coupling heterogeneity 
+
+σ(r) = − Γadd 
+
+r + 2 π√¯v2. (25) The saddle-node bifurcations of stable-unstable equilibria are located where ∂σ/∂r = 0, at σ(r)given by Eq. (25) and with additive noise strength Γadd (r) = 2π2r − μ
+
+pπ2r2 − μr − a0
+
+− πr 2. (26) The lines of saddle-node bifurcations form the region of bistability in the ( σ, Γadd ) parameter space as shown in Fig. 5b. 
+
+## 4.3 Continuous and discontinuous transitions to self-sustained activity 
+
+We perform the simulations in the same way as for the Gaussian coupling case. However, we use additive, white Cauchy noise instead of Gaussian white noise, i.e., we add independent random increments ∆ w ∼ ∆t Γadd C(0 , 1) to each mem-brane potential in each time step, in addition to the synaptic weights of all firing presynaptic neurons. For low heterogeneity, and when we do not include additive noise, the residual activity is very low or zero. Above the critical heterogeneity σ > σ p
+
+the activity increases and all neurons participate in self-sustained irregular spiking. Depending on the excitatory-inhibitory imbalance μ, this bifur-cation is found to be transcritical continuous for 
+
+μ < 0 and transcritical discontinuous for μ > 0, in both cases with critical exponent β = 1. As already mentioned above, only in the special case 
+
+μ = 0 the critical exponent of the continuous bifurcation is β = 1 /2 (see Eq. (21)). While it is necessary to tune two parameters, e.g., μ and σ
+
+of the synaptic strength distribution, to poise the system at this tricritical point (Fig.7), the two adaptation mechanisms for μ → 0 and σ → σp
+
+could be independent. A slow activity dependent build-up and consumption of a resource can tune the synaptic strengths or the excitation param-eter a0 to the percolation threshold [51], while 11 0.0 2.5 5.0σ
+
+> −2024
+
+μ quiescence bistability (a) −1.0 −0.5 0.0a0
+
+> −2024
+
+μ 
+
+> quies-cence bistability self-sustained activity
+
+(b) 0.0 2.5 5.0σ
+
+> −2024
+
+μ quiescence bistability self-sustained activity tricritical point 
+
+(c) −1.0 −0.5 0.0a0
+
+> −2024
+
+μ 
+
+> tricritical point quiescence bistability self-sustained activity
+
+(d)                      
+
+> Fig. 7 Regions of qiescence, bistability and mono-stable self-sustained activity in networks without additional noise. Shown are the saddle-node bifurcation lines (dashed red lines) where the state of self-sustained activity is created and the percolation transition (solid or dashed blue lines) where the quiescent state loses stabil-ity. Panels (a) and (b) demonstrate the Gaussiann case and (c) and (d) the case of Cauchy distributed synaptic weights, both without additional noise, i.e. Dadd = 0 and Γadd = 0. In (a) and (c) the stability regions are shown in the space of network parameters μand σfor excitable neu-rons with a0=−0.5. In (b) and (d) the stability regions are shown depending on the synaptic bias μand the excitation parameter a0with fixed heterogeneity σ= 2 π√0.5. When
+> a0becomes positive, the neurons fire tonically and the quiescent state disappears. Only for heavy-tailed synap-tic weight distributions the percolation transition exists. It changes from a continuous (solid blue lines) to a discon-tinuous transition (dashed blue lines) at a tricritical point when μ= 0, where it coincides with the saddle-node bifur-cation. Self-organization to the tricritical point could be achieved by independent adaptation mechanisms.
+
+exact balance could be the self-organized result of synaptic plasticity [52, 53]. When additive noise is included, the qui-escent state becomes a state of low firing rate with occasional noise induced spikes, the region of bistability becomes smaller, and continuous phase transitions turn into smooth cross-overs (see Figs. 5 and 6c). In [7] it was reported, analytically for a neuron model of coupled nonlinear maps, and numer-ically for excitable integrate-and-fire neurons, that Cauchy random coupling leads to a con-tinuous phase transition of directed percolation type which is not present for Gaussian random coupling in the infinite system size limit under appropriate scaling. The authors point out that a continuous phase transition is necessary for the mechanism of self-organized criticality to poise the network at the critical point which would explain the power-law scaling of activity reported in biological experiments. In our analytical treatment of QIF neurons subject to independent white Cauchy noise we derive the full bifurcation diagram. We find that the directed percolation transition remains contin-uous for slightly more inhibitory synapses ( μ < 0) but the activity scales with the critical parameter 
+
+β = 1. The emergence of bistability through a change from a continuous to a discontinuous transcrit-ical bifurcation has recently been demonstrated in the mean-field description of a stochastic Wilson-Cowan model in networks with excitatory-inhibitory imbalance [50]. In the studies [7, 50] a generic hyperbolic tangent and a step function were used as nonlinear activation functions and the impact of dynamic network noise was not considered. Unsuprisingly, the transcritical bifurcation dis-appears for any amount of additive noise and is replaced by a fold-bifurcation with qualitatively similar behavior to the case of Gaussian ran-dom coupling, where a state of low, randomly excited activity co-exists with a state of high, self-sustained irregular firing. In both cases the cusp bifurcation point would be another candidate for a self-organized critical state with critical expo-nent β = 1 /3 (see Fig. 5a). However, this requires a more involved coordinated adaptation of two parameters to the critical point. 
+
+# 5 Summary 
+
+We have used the white-noise approximation for synaptic inputs to self-consistently find steady states in networks of randomly coupled spiking quadratic integrate-and-fire neurons. Our main focus was to compare the steady states of the fir-ing rate for Cauchy and for Gaussian coupling statistics, corresponding to synaptic weight distri-butions with or without heavy tails. Qualitatively, 12 both coupling statistics can give rise to a bista-bility of the firing rate, i.e., a coexistence of a state of low randomly excited activity and of a state of high self-sustained activity. Furthermore, in both scenarios, additional external noise makes the range of bistability smaller, and eventually dis-appear in a cusp point. The simultaneous tuning of two system parameters is necessary to poise a network of spiking neurons at this critical cusp point. However, there are also qualitative differences between the two cases. With Gaussian coupling statistics, the region of bistability extends to arbitrarily large coupling heterogeneities σ and both positive and negative values of excitatory-inhibitory imbalance μ. In contrast, in the Cauchy case, bistability is only observed for dominating recurrent excitation ( μ > 0) and below a critical value σ ≤ σp of the coupling heterogeneity. Only in the case of heavy-tailed synaptic weights, inhibitory imbalance ( μ ≤ 0) and no additional noise (Γ add = 0), a continuous directed percolation transition for the firing rate emerges when either the coupling heterogeneity σ or the excitation parameter a0 is varied. If the network is furthermore exactly balanced ( μ = 0) this tran-sition has an order parameter critical exponent 
+
+β = 1 /2, as was demonstrated for a time-discrete neuron model analytically, and numerically for integrate-and-fire neurons in [7]. In networks with Gaussian (light-tailed) synaptic weight distribu-tions bistability is prevalent and a continuous phase transition from quiescence to self-sustained activity is generally not observed. 
+
+Acknowledgements. RT and BL acknowledge funding from DFG grants LI 1046/10-1 and LI 1046/6-2. 
+
+# Declarations 
+
+## Competing interests 
+
+The authors declare no competing interests related to this work, financial or otherwise. 
+
+## Author contribution 
+
+RT contributed the mathematical analysis and numerical simulations of the models. CZ initiated the project and also contributed to the mathemat-ical modeling and to numerical simulations. WC’s insights into dynamic mean-field theory were valu-able contributions to the project. BL directed the research from a neuroscience perspective and wrote the text together with RT. 
+
+# Appendix A 
+
+Parametric self-consistent solutions, Gaus-sian case 
+
+A self-consistency equation like (14) defines ahypersurface in the combined space of system parameters and observables, and thus implicitly the self-consistent firing rate for any given set of system parameters. We cannot simply solve (14) for the firing rate in terms of elementary func-tions. The direct way would be to use numeric root finding to solve this as a one dimensional fixed point problem. However, it is often possible to solve an equation for a different variable and then plot this variable as a function of the rate. Or we define a proxy variable, say s, which com-bines the firing rate and other system parameters and eliminates the rate on the right hand side of (14). We can then solve two equations to obtain a parametric solution e.g. ( σ(s), r (s)). We have to calculate the values of the convergent power series G(s) in Eq. (10) or use its asymptotics when |s| ≫ 1, but no root finding or numerical quadrature of integrals is necessary. We define an auxilliary variable t, use the defini-tion of s, and express r in terms of t and G(s)given as power a series in Eq. (10) 
+
+t =
+
+ 3D
+
+2
+
+ 13
+
+= 3( Dadd + σ2 
+
+> 2
+
+r)2
+
+! 13
+
+, (A1) 
+
+s = −a
+
+ 12 
+
+D2
+
+ 13
+
+= − 3at2 = −3 a0 + μr t2 , (A2) 
+
+r = tG(s) . (A3) Substituting r with (A3) into (A1) and (A2), and taking t in (A1) to the third power we arrive at the two algebraic equations 
+
+st 2G + 3 a0G + 3 μt = 0 (A4) 2t3G − 3Dadd G − 3σ2
+
+2 t = 0 . (A5) 13 Solving the quadratic equation (A4) for t gives at most two branches of parametric solutions. The second equation can then be used to express Dadd 
+
+or σ as a function of s. Or we solve the depressed cubic equation (A5) for t, with at least one and at most three branches, and use the first equation to express a0 or μ as a function of s. Solutions must be real valued and r, σ 2 and t must be non-negative to be physically meaningful. The free parameter s can be positive, negative or change sign depending on the values of a0 and μr .The saddle node bifurcation of the upper state of self-sustained activity and the unstable saddle occur under the additional condition dds σ2 = 0. Dividing (A5) by t and differentiating both equations (A4) and (A5) with respect to s yields 
+
+t2G + 2 st ′tG + st 2G′ + 3 a0G′ + 3 μt ′ = 0 (A6) 4t′tG + 2 t2G′ + 3 Dadd 
+
+ G′
+
+t − Gt ′
+
+t2
+
+
+
+= 0 (A7) where 
+
+G′(s) = 
+
+r π
+
+3
+
+> ∞
+
+X
+
+> n=0
+
+sn
+
+n! Γ
+
+ 2n + 3 6
+
+
+
+. (A8) Eqs. (A4)-(A7) are linear in σ2, D add , a 0, μ, t ′ and nonlinear in t. Using (A3), a solution of these equations uniquely determines the self-consistent rate r(s) at the saddle-node bifurcation point. 
+
+# Appendix B 
+
+Mean-field equations, Cauchy case 
+
+The exact low-dimensional mean-field equations for QIF neurons with independent additive Cauchy noise on the invariant family of Lorentzian membrane voltage distributions have been derived in [41] using the formalism of the fractional Fokker-Planck equation. More general mean-field equations with different noise statistics or away from the Lorentzian distribution family have been derived in [39, 40]. Here we follow the derivation without Cauchy-noise from the non-fractional continuity equation and then motivate how the addition of Cauchy noise changes the mean-field dynamics, skipping the mathematically rigorous derivation. We first show that the scale parameter πr of the family of Cauchy (Lorentzian) distributions 
+
+p(v) = 1
+
+ππr 
+
+(v − ¯v)2 + π2r2 (B9) is indeed proportional to the firing rate r under the deterministic QIF dynamics ˙ v = v2+a0. The firing rate equals r = lim v→∞ ˙vp (v), i.e. the probability current at the firing threshold v → ∞ . We check that 
+
+r = lim 
+
+> v→∞
+
+(v2 + a0) 1
+
+ππr 
+
+(v − ¯v)2 + π2r2 (B10) follows from L’Hospital’s rule. Next, we show that the family of Cauchy distribu-tions is invariant under the continuity equation 
+
+∂tp = −∂v
+
+ (v2 + a0)p (B11) for membrane voltages following the deterministic QIF dynamics if and only if the parameters ¯ v =¯v(t) and r = r(t) follow the mean-field differential equations ˙r = 2 r¯v (B12) ˙¯v = ¯ v2 + a0 − π2r2. (B13) For this, we perform the derivatives in Eq. (B11) 
+
+∂tp = ˙ r∂ r p + ˙ ¯v∂ ¯v p (B14) = ˙ r
+
+" 1(v − ¯v)2 + π2r2
+
+
+
+− 2π2r2
+
+(( v − ¯v)2 + π2r2)2
+
+#
+
++ ˙ ¯v 2( v − ¯v)r
+
+(( v − ¯v)2 + π2r2)2
+
+and 
+
+−∂v
+
+ (v2 + a0)p = −2vp − (v2 + a0)∂v p (B15) = − 2vr 
+
+(v − ¯v)2 + π2r2 + (v2 + a0)2( v − ¯v)r
+
+(( v − ¯v)2 + π2r2)2 .
+
+We multiply both sides of (B11), i.e., (B14) and (B15) with the nonzero denominator 
+
+ (v − ¯v)2 + π2r22, bring all terms to the right hand side, sort by powers of v and obtain 0 = v2 (2 r¯v − ˙r)14 + v  2¯ v ˙r − 2 ˙ ¯vr + 2 ra 0 − 2r¯v2 − 2π2r3 (B16) +  2r¯v ˙¯v + π2r2 ˙r − ˙r¯v2 − 2ra 0 ¯v .
+
+The right hand side is zero independently of the values v if and only if the brackets are zero, which is exactly the case when (B12) and (B13) hold. The family of Cauchy distributions is invariant under the deterministic QIF dynamics if and only if the parameters follow the mean-field dynamics Eqs.(B12) and (B13). Adding biased, white Cauchy noise ∆w ∼
+
+μr ∆t + (Γ add + σr )∆ tC(0 , 1) in each time step, and observing the additivity of the center and scale parameters for sums of independent Cauchy distributed random variables v and ∆ w, one can argue [48], that the time derivatives of the center and the scale parameter must be modified as ˙r = 2 r¯v + 1
+
+π
+
+ Γadd + σr  (B17) ˙¯v = ¯ v2 + ( a0 + μr ) − π2r2. (B18) These are the mean-field equations used in Sec. 4. 
+
+# References 
+
+[1] Brunel, N.: Dynamics of sparsely connected networks of excitatory and inhibitory spiking neurons. J. Comput. Neurosci. 8, 183 (2000) [2] Renart, A., Rocha, J.D.L., Bartho, P., Hol-lender, L., Parga, N., Reyes, A., Harris, K.D.: The Asynchronous State in Cortical Circuits. Science 327 , 587 (2010) [3] Barbour, B., Brunel, N., Hakim, V., Nadal, J.-P.: What can we learn from synaptic weight distributions? TRENDS in Neuro-sciences 30 (12), 622–629 (2007) [4] Song, S., Sj¨ ostr¨ om, P., Reigl, M., Nelson, S., Chklovskii, D.: Highly nonrandom fea-tures of synaptic connectivity in local cortical circuits. Plos Biol. 3, 0507 (2005) [5] Buzs´ aki, G., Mizuseki, K.: The log-dynamic brain: how skewed distributions affect net-work operations. Nature Reviews Neuro-science 15 (4), 264–278 (2014) [6] Teramae, J., Tsubo, Y., Fukai, T.: Opti-mal spike-based communication in excitable networks with strong-sparse and weak-dense links. Sci. rep. 2, 485 (2012) [7] Ku´ smierz, L., Ogawa, S., Toyoizumi, T.: Edge of chaos and avalanches in neural networks with heavy-tailed synaptic weight distribu-tion. Phys. Rev. Lett. 125 (2), 028101 (2020) [8] Renart, A., Moreno-Bote, R., Wang, X.-J., Parga, N.: Mean-driven and fluctuation-driven persistent activity in recurrent net-works. Neural Comput. 19 , 1 (2007) [9] Lerchner, A., Sterner, G.G., Hertz, J., Ahmadi, M.: Mean field theory for a balanced hypercolumn model of orientation selectiv-ity in primary visual cortex. Network: Comp. Neural Sys. 17 , 131 (2006) [10] Dummer, B., Wieland, S., Lindner, B.: Self-consistent determination of the spike-train power spectrum in a neural network with sparse connectivity. Front. Comp. Neurosci. 
+
+8, 104 (2014) [11] Van Meegen, A., Lindner, B.: Self-consistent correlations of randomly coupled rotators in the asynchronous state. Phys. Rev. Lett. 121 ,258302 (2018) [12] Pena, R.F.O., Vellmer, S., Bernardi, D., Roque, A.C., Lindner, B.: Self-consistent scheme for spike-train power spectra in het-erogeneous sparse networks. Front. Comput. Neurosci. 12 , 9 (2018) [13] Vellmer, S., Lindner, B.: Theory of spike-train power spectra for multidimensional integrate-and-fire models. Phys. Rev. Res. 1,023024 (2019) [14] Stassinopoulos, D., Bak, P.: Democratic rein-forcement: A principle for brain function. Phys. Rev. E 51 , 5033–5039 (1995) https: //doi.org/10.1103/PhysRevE.51.5033 [15] Herz, A.V.M., Hopfield, J.J.: Earthquake cycles and neural reverberations: Collective oscillations in systems with pulse-coupled threshold elements. Phys. Rev. Lett. 75 ,15 1222–1225 (1995) https://doi.org/10.1103/ PhysRevLett.75.1222 [16] Beggs, J., Plenz, D.: Neuronal avalanches in neocortical circuits. J. Neurosci. 23 , 11167 (2003) [17] Petermann, T., Thiagarajan, T.C., Lebedev, M.A., Nicolelis, M.A., Chialvo, D.R., Plenz, D.: Spontaneous cortical activity in awake monkeys composed of neuronal avalanches. Proceedings of the National Academy of Sci-ences 106 (37), 15921–15926 (2009) [18] Shew, W.L., Clawson, W.P., Pobst, J., Karimipanah, Y., Wright, N.C., Wessel, R.: Adaptation to sensory input tunes visual cor-tex to criticality. Nat. Phys. online , (2015) [19] Ostojic, S.: Two types of asynchronous activ-ity in networks of excitatory and inhibitory spiking neurons. Nat. Neurosci. 17 , 594 (2014) [20] Wieland, S., Bernardi, D., Schwalger, T., Lindner, B.: Slow fluctuations in recurrent networks of spiking neurons. Phys. Rev. E 92 ,040901 (2015) [21] Di Volo, M., Segneri, M., Goldobin, D.S., Politi, A., Torcini, A.: Coherent oscilla-tions in balanced neural networks driven by endogenous fluctuations. Chaos: An Interdis-ciplinary Journal of Nonlinear Science 32 (2) (2022) [22] Sherrington, D., Kirkpatrick, S.: Solvable model of a spin-glass. Physical review letters 
+
+35 (26), 1792 (1975) [23] Janzen, K., Engel, A., M´ ezard, M.: Ther-modynamics of the l´ evy spin glass. Physical Review E—Statistical, Nonlinear, and Soft Matter Physics 82 (2), 021127 (2010) [24] Roxin, A., Brunel, N., Hansel, D., Mongillo, G., Vreeswijk, C.: On the distribution of fir-ing rates in networks of cortical neurons. J. Neurosci. 31 , 16217 (2011) [25] Izhikevich, E.M.: Dynamical Systems in Neu-roscience: The Geometry of Excitability and Bursting. The MIT Press, Cambridge, Lon-don (2007) [26] Vreeswijk, C., Sompolinsky, H.: Chaos in neu-ronal networks with balanced excitatory and inhibitory activity. Science 274 , 1724 (1996) [27] Ermentrout, G.B., Kopell, N.: Parabolic bursting in an excitable system coupled with a slow oscillation. SIAM journal on applied mathematics 46 (2), 233–253 (1986) [28] Ermentrout, B.: Type I membranes, phase resetting curves, and synchrony. Neural Com-put. 8, 979 (1996) [29] Gardiner, C.W.: Handbook of Stochastic Methods. Springer, Berlin (1985) [30] Sokolov, I.M.: Ito, Stratonovich, H¨ anggi and all the rest: The thermodynamics of interpre-tation. Chem. Phys. 375 , 359 (2010) [31] Lindner, B., Longtin, A., Bulsara, A.: Ana-lytic expressions for rate and cv of a type i neuron driven by white gaussian noise. Neural. Comp. 15 , 1761 (2003) [32] Risken, H.: The Fokker-Planck Equation. Springer, Berlin (1984) [33] Watanabe, S., Strogatz, S.H.: Constants of motion for superconducting Josephson arrays. Physica D 74 , 197–253 (1994) [34] Pikovsky, A., Rosenblum, M.: Partially inte-grable dynamics of hierarchical populations of coupled oscillators. Physical review letters 
+
+101 (26), 264103 (2008) [35] Ott, E., Antonsen, T.M.: Low dimensional behavior of large systems of globally cou-pled oscillators. Chaos: An Interdisciplinary Journal of Nonlinear Science 18 (3) (2008) [36] Luke, T.B., Barreto, E., So, P.: Complete classification of the macroscopic behavior of a heterogeneous network of theta neurons. Neu-ral computation 25 (12), 3207–3234 (2013) [37] Pazo, D., Montbrio, E.: Low-Dimensional Dynamics of Populations of Pulse-Coupled Oscillators. Phys. Rev. X 4, 011009 (2014) 16 [38] T¨ onjes, R., Pikovsky, A.: Low-dimensional description for ensembles of identical phase oscillators subject to Cauchy noise. Phys. Rev. E 102 (5), 052315 (2020) [39] Pietras, B., Cestnik, R., Pikovsky, A.: Exact finite-dimensional description for networks of globally coupled spiking neurons. Phys. Rev. E 107 (2), 024315 (2023) [40] Goldobin, D.S., Permyakova, E.V., Klimenko, L.S.: Macroscopic behavior of populations of quadratic integrate-and-fire neurons sub-ject to non-gaussian white noise. Chaos: An Interdisciplinary Journal of Nonlinear Science 
+
+34 (1) (2024) [41] Clusella, P., Montbri´ o, E.: Exact low-dimensional description for fast neural oscil-lations with low firing rates. Phys. Rev. E 
+
+109 , 014229 (2024) https://doi.org/10.1103/ PhysRevE.109.014229 [42] Richardson, M.J.E., Swarbrick, R.: Firing-rate response of a neuron receiving excitatory and inhibitory synaptic shot noise. Phys. Rev. Lett. 105 , 178102 (2010) [43] Droste, F., Lindner, B.: Exact analytical results for integrate-and-fire neurons driven by excitatory shot noise. J. Comp. Neurosci. 
+
+43 , 81 (2017) [44] Goldobin, D.S., Volo, M., Torcini, A.: Dis-crete synaptic events induce global oscilla-tions in balanced neural networks. Physical Review Letters 133 (23), 238401 (2024) [45] Colet, P., Miguel, M.S., Casademunt, J., San-cho, J.M.: Relaxation from a marginal state in optical bistability. Phys. Rev. A 39 , 149 (1989) [46] Gerstner, W., Kistler, W.M.: Spiking Neuron Models. Cambridge University Press, Cam-bridge (2002) [47] Montbrio, E., Pazo, D., Roxin, A.: Macro-scopic Description for Networks of Spiking Neurons. Phys. Rev. X 5, 021028 (2015) [48] Tanaka, T.: Low-dimensional dynamics of phase oscillators driven by cauchy noise. Physical Review E 102 (4), 042220 (2020) [49] L¨ ubeck, S.: Tricritical directed percolation. Journal of statistical physics 123 (1), 193–221 (2006) [50] Piuvezam, H.C., Marin, B., Copelli, M., Mu˜ noz, M.A.: Unconventional criticality, scaling breakdown, and diverse universality classes in the wilson-cowan model of neural dynamics. Physical Review E 108 (3), 034110 (2023) [51] Levina, A., Herrmann, J.M., Geisel, T.: Dynamical synapses causing self-organized criticality in neural networks. Nat. Phys. 3,857 (2007) [52] Luz, Y., Shamir, M.: Balancing feed-forward excitation and inhibition via hebbian inhibitory synaptic plasticity. PLoS compu-tational biology 8(1), 1002334 (2012) [53] Froemke, R.C.: Plasticity of cortical excitatory-inhibitory balance. Annual review of neuroscience 38 (1), 195–219 (2015) 17

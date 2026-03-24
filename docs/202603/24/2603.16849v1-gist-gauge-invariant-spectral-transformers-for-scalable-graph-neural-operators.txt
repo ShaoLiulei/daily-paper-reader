@@ -1,0 +1,699 @@
+Title: GIST: Gauge-Invariant Spectral Transformers for Scalable Graph Neural Operators
+
+URL Source: https://arxiv.org/pdf/2603.16849v1
+
+Published Time: Wed, 18 Mar 2026 01:42:46 GMT
+
+Number of Pages: 18
+
+Markdown Content:
+# GIST: Gauge-Invariant Spectral Transformers for Scalable Graph Neural Operators 
+
+Mattia Rigotti ∗ 1 Nicholas Thumiger ∗ 1 Thomas Frick ∗ 1
+
+## Abstract 
+
+Adapting transformer positional encoding to meshes and graph-structured data presents sig-nificant computational challenges: exact spectral methods require cubic-complexity eigendecom-position and can inadvertently break gauge in-variance through numerical solver artifacts, while efficient approximate methods sacrifice gauge symmetry by design. Both failure modes cause catastrophic generalization in inductive learning, where models trained with one set of numerical choices fail when encountering different spectral decompositions of similar graphs or discretiza-tions of the same mesh. We propose GIST (Gauge-Invariant Spectral Transformers), a new graph transformer architecture that resolves this chal-lenge by achieving end-to-end O(N ) complex-ity through random projections while algorith-mically preserving gauge invariance via inner-product-based attention on the projected embed-dings. We prove GIST achieves discretization-invariant learning with bounded mismatch error, enabling parameter transfer across arbitrary mesh resolutions for neural operator applications. Em-pirically, GIST matches state-of-the-art on stan-dard graph benchmarks (e.g., achieving 99.50% micro-F1 on PPI) while uniquely scaling to mesh-based Neural Operator benchmarks with up to 750K nodes, achieving state-of-the-art aerody-namic prediction on the challenging DrivAerNet and DrivAerNet++ datasets. 
+
+## 1. Introduction 
+
+Following their incredible success for processing sequen-tial data in Natural Language Processing, Transformers (Vaswani et al., 2017) have been demonstrating a remark-able capacity for handling data of increasing structural com-plexity. Lee et al. (2019a) have proposed a variant of the   
+
+> *Equal contribution 1IBM Research. Correspondence to: Mattia Rigotti <mrg@zurich.ibm.com >.
+> Preprint. March 18, 2026.
+
+transformer block for permutation invariant data with their Set Transformer architecture; Dosovitskiy et al. (2021) have adapted the self-attention mechanism to 2D images with the very influential Vision Transformer architecture; and Berta-sius et al. (2021) have extended transformers to video anal-ysis with their Video Vision Transformer (ViViT), demon-strating how attention mechanisms capture both spatial and temporal dependencies across video frames. This progres-sion from sequential text to increasingly structured data in-dicates a trajectory suggesting that Transformers are poised to tackle even more complex data structures, including ir-regular meshes and graphs. Indeed, recent developments in adapting Transformers to graphs have shown promising results in capturing long-range dependencies that traditional Graph Neural Networks (GNNs) struggle with due to their reliance on localized mes-sage passing (Dwivedi et al., 2022; Zhu et al., 2023). Unlike GNNs that aggregate information from nearest neighboring nodes by iterating through layers, Transformers can directly capture global relationships across the whole graph through self-attention, enabling them to reason about distant node interactions in a single layer. 
+
+Two Barriers to Scalable Graph Transformers. How-ever, adapting transformers to graphs introduces two distinct barriers that have not been simultaneously addressed. First, there is a computational barrier : exact spectral graph em-beddings, while theoretically natural, require eigendecom-position of the graph Laplacian, scaling as O(N 3) for dense graphs or O(N 2) for sparse graphs (where N is the number of nodes), which is prohibitively expensive for large-scale graphs. Second, there is a gauge invariance barrier : both exact and approximate spectral methods may inadvertently break gauge invariance, i.e. the inherent freedom to rotate eigenvectors, flip signs, or choose among degenerate eigen-vectors. Exact methods may break it through numerical solver artifacts (sign choices, eigenspace ordering, degener-acy handling, see Bronstein et al. 2017), while approximate methods commit to a specific basis decomposition through their approximation scheme, sacrificing freedom in spectral choices. This gauge invariance breaking introduces spurious inductive biases tied to arbitrary numerical choices, causing models trained with one set of choices to fail catastrophi-1
+
+> arXiv:2603.16849v1 [cs.LG] 17 Mar 2026 GIST: Gauge-Invariant Spectral Transformers
+
+cally when evaluated with different spectral decompositions or numerical solvers, particularly in inductive learning tasks where models must generalize to unseen graph structures. 
+
+The Gauge Invariance Challenge. Consider a graph whose spectral embeddings are computed via random pro-jection matrix R. A neural network trained on these em-beddings {Rϕ i}i will inevitably learn features correlated with the specific choice of R. Consequently, when eval-uated on different graphs or with a different random pro-jection R′ or different numerical eigensolver choices (sign flips, eigenspace ordering, handling eigenspace degeneracy), learned features become meaningless. This gauge depen-dence fundamentally undermines generalization, a critical failure mode for inductive graph learning where models must transfer to unseen structures. Beyond graphs, gauge invariance is essential to generate 
+
+neural operators with bounded discretization error . Phys-ical problems (e.g., computational fluid dynamics, struc-tural mechanics, shape analysis) are defined on continuous manifolds but discretized into computational meshes cor-responding to graphs. Different mesh resolutions produce different graph Laplacians with different spectral decompo-sitions, each involving arbitrary gauge choices (sign flips, eigenspace rotations, solver artifacts). Without gauge invari-ance, parameters trained on one discretization fail to transfer to another, and the attention kernels computed from spectral embeddings at different resolutions cannot be compared meaningfully. Gauge invariance ensures that the learned operator converges to the same continuum limit regardless of discretization, enabling provably bounded discretization mismatch error that vanishes as resolution increases. Existing approaches address only one barrier at a time: (1) spectral methods like SAN (Kreuzer et al., 2021) maintain gauge invariance but require full eigendecomposition; (2) approximate spectral methods achieve linear complexity but sacrifice gauge invariance; (3) generic linear transformers re-duce attention complexity but ignore graph structure. Recent spectral invariant methods achieve gauge invariance through careful attention design, but still require full eigendecompo-sition ( O(N 3) complexity) or quadratic attention ( O(N 2)), limiting practical scalability. Moreover, they lack discretiza-tion error controls needed for neural operator applications where consistency across mesh resolutions is critical. 
+
+Our Contribution: GIST. We propose Gauge-Invariant Spectral Transformers (GIST) , which overcomes both bar-riers through a key insight: gauge invariance can be pre-served by restricting attention to inner products between spectral embeddings, which remain invariant even under approximate spectral computations. We instantiate this framework using random projections for their computa-tional efficiency and theoretical guarantees. For random projections, inner products between projected embeddings 
+
+⟨Rϕ i, Rϕ j ⟩ = ⟨ϕi, (RT R)ϕj ⟩ ≈ ⟨ ϕi, ϕ j ⟩ remain approxi-mately invariant under gauge transformations. By restricting attention operations to only these inner products and com-bining with linear attention, we achieve end-to-end O(N )
+
+complexity while recovering gauge invariance algorithmi-cally. Unlike prior approaches that address these barriers separately, GIST achieves gauge invariance and linear com-plexity simultaneously. Our contributions in short are: 1. identifying gauge invariance breaking as a fundamen-tal limitation shared by both exact and approximate spectral methods, and characterizing when this breaks generalization and neural operator convergence; 2. proposing GIST, combining gauge-invariant spectral attention with multi-scale linear transformer blocks, achieving theoretical guarantees on complexity and invariance preservation, with competitive results on standard graph benchmarks (e.g. Cora, PubMed, PPI); 3. establishing GIST as a neural operator with provably bounded discretization mismatch error achieving state-of-the-art on large-scale mesh problems. 
+
+## 2. Related Works 
+
+Graph Transformers. Graphormer (Ying et al., 2021) introduces the idea of integrating structural encodings such as shortest path distances and centrality in Transformers. Similarly, Dwivedi et al. (2022) propose LSPE (Learnable Structural and Positional Encodings), an architecture that decouples structural and positional representations. Kreuzer et al. (2021) propose Spectral Attention Network (SAN), which introduces learned positional encodings from the full Laplacian spectrum. Park et al. (2022) develop Graph Relative Positional Encoding (GRPE), which extends rela-tive positional encoding to graphs by considering features representing node-topology and node-edge interactions. Hi-erarchical Graph Transformer (Zhu et al., 2023) addresses scalability to million-node graphs through graph hierarchies and coarsening techniques. SpecFormer (Bo et al., 2023) and PolyFormer (Chen et al., 2025b) are recent spectral Transformers that improve over SAN by leveraging approximate spectral bases or low-rank polynomial Laplacian filters to enhance scalability and ac-curacy on graph tasks. Several recent architectures aim to bridge the gap between local and global reasoning via structural encodings and scal-able attention. GraphGPS (Ramp ´a ˇsek et al., 2022) adopts a hybrid paradigm that decouples local message passing from global attention while integrating spectral positional encodings to capture multi-scale interactions. However, un-like GIST, it lacks a mechanism to algorithmically preserve gauge invariance, leaving the model susceptible to the arbi-trary numerical artifacts and sign flips inherent in spectral 2GIST: Gauge-Invariant Spectral Transformers 
+
+decompositions. While models like Exphormer (Shirzad et al., 2023) attempt to address the resulting complexity by replacing full attention with sparse expander-based mecha-nisms, they still struggle with the high overhead of global coordinate systems. Similarly, tokenized approaches such as TokenGT (Hamilton et al., 2017) and NAGphormer (Chen et al., 2023) treat graphs as sets of tokens with [CLS]-style readouts, yet these models scale poorly due to memory-intensive tokenization and positional encoding costs that grow super-linearly with graph size. Consequently, these frameworks are rarely evaluated on large-scale inductive tasks like Elliptic or ogbn-arxiv , where the computa-tional burden of maintaining structural encodings becomes prohibitive. 
+
+Scalable Attention Architectures. Recent advances tack-led the quadratic scaling of self-attention through various approaches, including cross-attention bottlenecks that map inputs to fixed-size latent representations or concepts (Jae-gle et al., 2021b; Rigotti et al., 2022), kernel-based attention mechanisms using random feature approximations (Choro-manski et al., 2020), feature map decomposition methods that linearize the attention computation (Katharopoulos et al., 2020), and memory-efficient variants with sub-linear complexity (Likhosherstov et al., 2021). As noted by Dao & Gu (2024), many such linear transformer models are directly related to linear recurrent models such as state-space-models (Gu et al., 2021; 2022; Gu & Dao, 2023; Chennuru Vankadara et al., 2024) 
+
+Neural Operators. Further addressing the scalability of these graph-based methods is essential for applying them to complex domains such as geometry meshes and point clouds. In these settings, graphs are induced by the connec-tivity of an underlying continuous object whose discretiza-tion is not unique: it can be sampled at arbitrarily many densities and resolutions. High-density discretizations can render the graph prohibitively large, undermining both ef-ficiency and scalability in existing methods. As a result, efficient mesh downsampling and/or re-discretization onto regular lattices (e.g., via SDF-based volumetric grids), and task-aware coarsening learned by GNNs, were commonly required to make these problems tractable. Recently, neural operators have shown success in learning maps between continuous function spaces rather than fixed-dimensional vectors. Two properties are crucial here: (i) 
+
+discretization invariance , i.e., a single set of parameters applies across discretizations (meshes, resolutions, and sam-pling locations) of the same underlying continuum problem; and (ii) global integration , i.e., the ability to represent non-local interactions via learned integral kernels, rather than being limited to finite-receptive-fields. Formally, a neural operator composes learned integral operators with pointwise nonlinearities, yielding universal approximation results for continuous nonlinear operators and implementations that share weights across resolutions. Our approach preserves these neural operator properties and improves scalability, allowing it to be applied to these cases (Kovachki et al., 2023). 
+
+Foundational operator families. The Fourier Neural Op-erator (FNO) parameterizes kernels in the spectral domain and evaluates them with FFT-based spectral convolutions, sharing weights across resolutions and enabling efficient nonlocal interactions on grids (Li et al., 2021). The Graph Neural Operator (GNO) realizes the kernel via message passing, supporting irregular meshes and geometry varia-tion while keeping the learned map discretization-agnostic (Li et al., 2020). Convolutional Neural Operators (CNOs) define continuous convolutions with learnable kernels and interpolation, specifying the operator in the continuum and discretizing only at runtime (Raoni´ c et al., 2023). Hybrid designs pair geometry-aware encoders with operator layers to handle complex shapes. GINO couples a graph encoder/decoder with a latent FNO on a proxy grid from SDF or point-cloud inputs and shows convergence across large 3D, multi-geometry problems (Li et al., 2023). En-coder–decoder operator learners, such as DeepONet, use a branch network for inputs and a trunk network for coordi-nate queries, directly supporting heterogeneous sampling (Lu et al., 2021); U-NO adds a multi-resolution U-shaped backbone for multiscale effects (Rahman et al., 2022). 
+
+Transformers as neural operators. Self-attention is a learned, data-dependent kernel integral, and with suitable positional features can approximate continuous maps on variable-length sets for discretization-invariant operator learning; cross-attention evaluates outputs at arbitrary coor-dinates (Tsai et al., 2019; Yun et al., 2020; Lee et al., 2019b; Jaegle et al., 2021a). Transolver casts PDE operator learning as attention from query coordinates to context tokens built from input fields, yielding resolution-agnostic inference and strong generalization across meshes (Wu et al., 2024a). Recent operator transformers, e.g., GNOT, add geometric normalization and gating to stabilize training on irregular meshes and multi-condition PDEs (Hao et al., 2023). 
+
+Positioning GIST. Existing graph transformers and scal-able attention methods address complementary but not simultaneous challenges. Spectral methods like SAN (Kreuzer et al., 2021) leverage the full Laplacian spectrum to maintain theoretical expressiveness but incur significant computational costs from full spectral methods. Approxi-mate spectral methods achieve better scalability but com-pletely forsake gauge invariance, exacerbating generaliza-tion failures when arbitrary gauge choice differs between training and testing. Generic linear transformers reduce 3GIST: Gauge-Invariant Spectral Transformers 
+
+attention complexity but typically ignore graph structure entirely. GIST uniquely combines graph awareness through spectral embeddings, computational efficiency through ran-dom projections, gauge invariance through a modified atten-tion mechanism, and linear attention for end-to-end linear scaling. It also preserves the discretization-invariance and global integration properties needed for neural operator ap-plications on mesh regression, unifying graph learning and continuous function approximation in a single framework. 
+
+## 3. Approach 
+
+3.1. Preliminaries Self-attention and positional encoding. Given query, key and value representations qi, ki, vi of N tokens with i =1, . . . , N , self-attention (Vaswani et al., 2017) famously computes outputs as a weighted sum of values with attention weights determined by query-key similarities: 
+
+oi =
+
+> N
+
+X
+
+> j=1
+
+αij vj , where αij = softmax j
+
+ q⊤ 
+
+> i
+
+kj
+
+√d
+
+
+
+. (1) A key insight (Shaw et al., 2018) is that positional infor-mation can be injected through relative positional biases: 
+
+eij = q⊤  
+
+> ikj
+> √d
+
++ bij , where bij reflects distances between po-sitions. For graphs, this can be generalized by replacing bij 
+
+with distance measures reflecting the graph structure. 
+
+Graph Laplacian and spectral embeddings. The (nor-malized) graph Laplacian L = 1 − D− 12 AD − 12 induces a natural metric via the resistance distance : Ω( i, j ) = (ei − ej )⊤L†(ei − ej ), where ei is the ith standard basis vector and L† is the Moore-Penrose pseudoinverse (Klein & Randi´ c, 1993). The resistance distance can be expressed via Laplacian eigenmaps , which satisfy: 
+
+Ω( i, j ) = || ϕi − ϕj || 2 where (ϕi)k = 1
+
+√λk
+
+(uk)i, (2) with λk, u k being the eigenvalues and eigenvectors of L.These eigenmaps are natural positional encodings for graphs because their pairwise distances preserve the graph’s metric structure (Dwivedi & Bresson, 2021). However, exact com-putation requires O(N 3) eigendecomposition, prohibitive for large graphs. 
+
+Approximate spectral embeddings and the gauge in-variance problem. GIST’s gauge-invariant attention re-quires approximate spectral methods that preserve inner products between embeddings. We use FastRP (Chen et al., 2019), which employs random projections R ∈ Rr×N with 
+
+r = O(log( N )/ϵ 2) and k power iterations to compute ap-proximated eigenmaps ˜ϕi = Rϕ i ∈ Rr with O(N log N )
+
+complexity. By the Johnson-Lindenstrauss Lemma, while individual embeddings ˜ϕi depend on the arbitrary choice of R, the inner products ⟨ ˜ϕi, ˜ϕj ⟩ ≈ ⟨ ϕi, ϕ j ⟩ remain approximately invariant. This inner-product preservation is essential for gauge-invariant attention, ensuring attention weights do not depend on arbitrary numerical choices in the projection. Importantly, exact spectral methods can also introduce gauge dependence through eigensolver artifacts (sign choices, eigenspace ordering), making gauge invariance a concern across both exact and approximate approaches (Bronstein et al., 2017). 
+
+Motivation for gauge-invariant operations. While the approximate eigenmaps ˜ϕi are efficient and preserve dis-tances, as mentioned their gauge dependence is problematic: neural networks trained on these embeddings will learn fea-tures correlated with the specific projection matrix R. This creates a generalization failure in inductive settings where different graphs or different numerical solvers produce dif-ferent projections. Our approach addresses this by using approximate eigen-maps as positional encodings, but restricting the Trans-former to operations that depend only on gauge-invariant quantities. 
+
+3.2. Our Approach: GIST. 
+
+The key insight is that while the projection matrix R breaks gauge invariance, the inner products between projected em-beddings remain approximately invariant: (Rϕ i)⊤(Rϕ j ) = 
+
+ϕ⊤ 
+
+> i
+
+(R⊤R)ϕj ≈ ϕ⊤ 
+
+> i
+
+ϕj . By taking care that all operations de-pend on the embeddings only through these inner products we preserve gauge invariance by design while maintaining computational efficiency. 
+
+Gauge-Invariant Spectral Self-Attention. We now in-troduce our main contribution: Gauge-Invariant Spectral Transformer (GIST) . The first ingredient of GIST is Gauge-Invariant Spectral Self-Attention , which operates on approx-imate spectral embeddings ˜ϕi = Rϕ i ∈ Rr but restricts attention computations to inner products between embed-dings. The key observation is that while the embeddings themselves depend on the arbitrary projection matrix R,the inner products (Rϕ i)⊤(Rϕ j ) = ϕ⊤ 
+
+> i
+
+(R⊤R)ϕj ≈ ϕ⊤ 
+
+> i
+
+ϕj
+
+are approximately gauge-invariant because R⊤R ≈ I by Johnson-Lindenstrauss. Thus, attention weights computed from these inner products do not depend on R and general-ize across different projections. Formally, for each node i = 1 , . . . , N , Gauge-Invariant Spectral Self-Attention modifies the standard self-attention 4GIST: Gauge-Invariant Spectral Transformers Product Scaling Sum Softmax Add&Norm Q K VO
+
+> Gauge-Invariant Spectral Self-Attention Multi-Scale Gauge-Invariant Spectral Transformer block
+> residual connection
+> FFN
+> graph positional embeddings node features features branch local branch global branch
+> Linear Self-Attention Linear Self-Attention GraphConv Linear Linear Self-Attention Gauge-Invariant Spectral Self-Attention Gauge-Equivariant Self-Attention C
+
+Figure 1. Gauge-Invariant Spectral Transformer. Left : Gauge-Invariant Spectral Self-Attention operates on graph positional embeddings ˜ϕ as queries and keys, and node features x as val-ues. The output of the self-attention operation is then combined with x through a residual connection. Limiting ˜ϕ to queries and keys preserves gauge invariance across the self-attention block. 
+
+Right : Gauge-Invariant Spectral Self-Attention is embedded in a Multi-Scale Gauge-Invariant Spectral Transformer Block which comprises 3 parallel branches inspired by EfficientViT. 
+
+mechanism as follows: 
+
+qi = ˜ϕi, ki = ˜ϕi, vi = fv (xi).
+
+This ensures attention logits are based on inner products: 
+
+eij = q⊤ 
+
+> i
+
+kj
+
+√d = ˜ϕ⊤ 
+
+> i
+
+˜ϕj
+
+√d = ϕ⊤ 
+
+> i
+
+R⊤Rϕ j
+
+√d ≈ ϕ⊤ 
+
+> i
+
+ϕj
+
+√d ,
+
+which are approximately gauge-invariant (see Fig. 1, left). By limiting the embeddings to the query-key computation and not using them as values, we ensure that downstream layers (which operate on node features) cannot access gauge-dependent information. Algorithm 1 in Section A.2 explains how we compute graph spectral positional embeddings and Algorithm 2 details the implementation. 
+
+Gauge-Equivariant Spectral Self-Attention. The Gauge-Invariant Spectral Self-Attention operation thus preserves gauge invariance, but at the cost of giving up a lot of the flexibility of regular self-attention. In particular, there is no mechanism that allows for a modification of the vectors ˜ϕi through learning. In fact, applying even just a linear operation on ˜ϕi would break again gauge invariance. However, notice that rescaling each ˜ϕi by a scalar possibly depending on the node features s(xi) ∈ R would modify the similarity between graph positional embeddings in the same way across gauge choices, since scalars commute with orthogonal projections, meaning that it is an equiv-ariant operation across gauges: (s(xi) ˜ϕi)⊤(s(xj ) ˜ϕj ) = 
+
+s(xi)s(xj )( ˜ϕ⊤ 
+
+> i
+
+˜ϕj ) = s(xi)s(xj )( ϕ⊤ 
+
+> i
+
+ϕj ).Remarkably, such a gauge-equivariant operation can also be straight-forwardly implemented via a modification of self-attention by modifying equation 1 as follows: 
+
+qi = fq (xi), ki = fk(xi), vi = ˜ϕi,
+
+and the output in equation 1 such that it is constrained to operate on ˜ϕi, i.e. ˜ϕl+1  
+
+> i
+
+= PNj=1 αij vj , where ˜ϕl+1 
+
+> i
+
+indicates the graph positional encoding that will be used in the next layer l + 1 . Algorithm 3 in Section A.2 details how the implementation of Gauge-Equivariant Spectral Self-Attention relates to regular Self-Attention. 
+
+Linear Self-Attention, and Multi-Scale Architecture. 
+
+Gauge-Invariant Spectral Self-Attention ensures that we can compute reliable graph positional encoding with linear time complexity in the number of nodes in the graph N . In order to maintain that linear scaling end-to-end, the very last component of our architecture aims to address the quadratic scaling of Transformers by implementing a linear version of self-attention. In particular, we implement the linear transformer by Katharopoulos et al. (2020). Crucially, as feature map we use φ(x) = ReLU( x), which is a map that induces a kernel k0(·) corresponding to the arc-cosine kernel (Cho & Saul, 2009). More specifically, for random features ˜ϕi, ˜ϕj ∈ Rr , the attention weights 
+
+⟨φ( ˜ϕi), φ ( ˜ϕj )⟩ ≈ k0( ˜ϕ⊤ 
+
+> i
+
+˜ϕj ) converge to a kernel function that depends only on the inner product ˜ϕ⊤ 
+
+> i
+
+˜ϕj . Since ˜ϕ⊤ 
+
+> i
+
+˜ϕj ≈
+
+ϕ⊤ 
+
+> i
+
+ϕj by Johnson-Lindenstrauss (as established earlier), this preserves gauge invariance: attention weights depend only on gauge-invariant inner products between true spectral embeddings. For further considerations on the choice of the feature map φ(·) see the note in Appendix A.2. In order to fully exploit the capabilities of linear attention and mitigate its drawbacks like the reported lack of sharp attention scores compared to softmax attention, we design a parallel architecture inspired from EfficientViT by Cai et al. (2022) who proposed a multi-scale linear attention architec-ture. Just like EfficientViT our Multi-Scale Gauge-Invariant Spectral Transformer Block has 3 parallel branches: a fea-ture branch consisting in a linear transformer block acting on node features x alone, a local branch consisting in a graph-convolution layer also acting on x followed by a lin-ear transformer block, and a global branch consisting in our Gauge-Invariant Spectral Self-Attention layer followed by a Gauge-Equivariant Spectral Self-Attention layer (which as explained act on both node features x and graph posi-tional embeddings ˜ϕ) then followed by a linear transformer. In keeping with the analogy with EfficientViT, the role of the graph-convolution layer (which simply averages node features across adjacent nodes) is to emphasize local in-formation, which would be otherwise diffused by linear attention. Conversely, Gauge-Invariant Spectral attention integrates global information across the graph. This block is represented in the right panel of Fig. 1 and represents a unit layer that is sequentially replicated multiple times. 5GIST: Gauge-Invariant Spectral Transformers 
+
+In Appendix A.5 we report ablation studies empirically showing that all branches meaningfully contribute to the final accuracy of the architecture, specifically for PPI where the full architecture achieves SOTA performance but would not if any of the branches were missing. 
+
+Complexity Scaling Analysis. GIST computational com-plexity is dominated by two components. First, spectral embedding computation via FastRP scales as O(N · r · k)
+
+where r is the embedding dimension and k is the number of power iterations. Second, linear transformer blocks with Gauge-Invariant Spectral Self-Attention on d-dimensional node features scale as O(N · d2). Overall, this gives end-to-end O(N · d2 + N · r · k) scaling, i.e. linear in the number of nodes N . This contrasts with O(N 3) for exact eigende-composition and O(N 2d) for standard quadratic attention. Empirical validation of this linear scaling is provided in Appendix A.4: Figure 3 demonstrates that both VRAM con-sumption and forward pass time grow linearly with graph size up to 500K nodes on DrivAerNet samples, confirming our theoretical analysis and enabling the large-scale neural operator experiments in Section 4. 
+
+## 4. Results 
+
+4.1. Theoretical Guarantees: GIST as Discretization-Invariant Neural Operator 
+
+We now formalize how GIST’s gauge-invariant design en-ables discretization-invariant learning with bounded error, a property essential for neural operator applications. Physical problems (computational fluid dynamics, structural mechan-ics, shape analysis) are defined on continuous manifolds but discretized into computational meshes corresponding to graphs. Different mesh resolutions produce different graph Laplacians with different spectral decompositions, each involving arbitrary gauge choices (sign flips, eigenspace rotations, solver-dependent orderings). Without gauge in-variance, parameters trained on one discretization fail to transfer to another, preventing convergence to a continuum limit. Gauge invariance ensures that attention weights con-verge to a well-defined continuum kernel, enabling provably bounded discretization mismatch error that vanishes as mesh resolution increases. 
+
+Proposition (Informal) . Outputs of GIST applied to dif-ferent discretizations of the same m-dimensional manifold, obtained by random sampling nodes, converge to each other with error O(n−1/(m+4) ) where n is the coarser resolution. This ensures learned parameters transfer across arbitrary mesh resolutions with bounded error that vanishes as reso-lution increases. Proof sketch. The result follows from: (1) spectral con-vergence of graph Laplacians to manifold eigenfunctions (Belkin & Niyogi, 2008; Calder & Garc ´ıa Trillos, 2022); (2) random projections preserve inner products (Johnson-Lindenstrauss); (3) gauge-invariant attention depends only on these inner products, ensuring parameter transfer. Full formulation and proof are found in Appendix A. This result distinguishes GIST from prior spectral meth-ods: while approximate methods achieve computational efficiency, they lack gauge invariance and thus cannot pro-vide discretization error bounds; while exact methods could maintain invariance, their O(N 3) cost prevents scaling to high-resolution meshes where such bounds are most valu-able. GIST uniquely combines gauge invariance with end-to-end linear complexity, achieving both theoretical guarantees and practical scalability for neural operator applications. 
+
+4.2. Discretization Invariance Empirical Verification 
+
+We validate the discretization invariance property predicted by Proposition 4.1 with a controlled experiment isolating the effect of gauge-invariance on cross-resolution transfer. 
+
+Experimental setup. We train two architectures with matched parameters on a single DrivAerNet (Elrefaie et al., 2024) car at 50% decimation ( ∼250K vertices) and test on full resolution ( ∼500K vertices) predicting surface pressure. The gauge-invariant architecture is a GIST block followed by a linear transformer block. The non-gauge-invariant 
+
+baseline uses a linear transformer block with spectral embed-dings summed to node features (treating them as standard positional encodings), which breaks gauge invariance by using the projected embeddings directly as features rather than restricting attention to their inner products. 
+
+Discretization Invariance Results. Table 1 shows both architectures achieve essentially the same training perfor-mance on the coarse mesh, confirming matched model ca-pacity. However, when evaluated on the fine mesh, the gauge-invariant architecture maintains strong performance (0.840 R2, a 15% relative drop), while the non-gauge-invariant baseline fails catastrophically (0.526 R2, a 47% relative drop). This controlled experiment directly demon-strates that gauge invariance is essential for parameter trans-fer across discretizations, validating our theory.             
+
+> Table 1. Discretization invariance verification. Models trained on 50% decimated mesh and tested on full-resolution mesh of the same car geometry. Gauge-invariant architecture transfers suc-cessfully; non-gauge-invariant baseline fails (we show R-squared, averaged over 6 random seeds, confidence intervals are std. error).
+> Architecture Train R2↑Test R2↑
+> (coarse mesh) (fine mesh)
+> GIST (gauge-invariant) 0.989 ±0.005 0.840 ±0.021
+> Non-gauge-invariant 0.991 ±0.004 0.526 ±0.033
+
+6GIST: Gauge-Invariant Spectral Transformers 
+
+4.3. Node Classification Tasks 
+
+To demonstrate the key advantages of GIST, we evaluate it on both transductive and inductive node classification datasets. Transductive tasks are a common graph neural networks paradigm and consist of training and evaluating the model on the same graph, with the goal of predicting at test time node labels that were not provided at training (infilling). Inductive tasks on the other hand, operate on a disjoint set of graphs and aim to predict properties on an entirely new graph. 
+
+Experiment Setup We evaluate our method on transduc-tive graph benchmarks using the official training, validation, and test splits and evaluation protocols. For each method, we select optimal hyperparameters by optimizing over the validation split of each dataset. GIST-specific parameters (FastRP k and r) are optimized through HPO. Appendix A.3 shows final accuracy is ro-bust to variation of these parameters, with performance saturating at relatively low r as predicted by Johnson-Lindenstrauss. For the final result, we train on the combined training and validation set and evaluate the model on the corresponding test set. We train across multiple random seeds and report the mean ± standard deviation of the relevant metric. 4.3.1. T RANSDUCTIVE TASKS 
+
+We evaluate our method on the three standard Planetoid cita-tion benchmarks for the transductive setting where the whole graph is observed at train time: Cora (2,708 nodes, 5,429 edges, 1,433 bag-of-words features, seven classes), CiteSeer (3,327 nodes, 4,732 edges, 3,703 features, six classes), and PubMed (19,717 nodes, 44,338 edges, 500 features, three classes). Train-val-test sets follow the Planetoid public split, and we report node-classification accuracy (Sen et al., 2008; Yang et al., 2016; Kipf & Welling, 2017). Across these benchmarks, GIST is competitive with strong graph convolutional and transformer-style baselines (see Table 2). On Pubmed, GIST attains the best mean accuracy among the reported methods ( 81 .20% ± 0.41 ), narrowly surpassing enhanced GCN variants (e.g., 81 .12% ± 0.52 )and outperforming GAT/GraphSAGE families. On Cora and Citeseer, GIST achieves results comparable to the top results (within ∼1–2 points of GCNII/SGFormer and the enhanced GCN), landing at 84 .00% ± 0.60 and 71 .31% ±
+
+0.50 , respectively. 4.3.2. I NDUCTIVE TASKS 
+
+We evaluate our method on four inductive benchmarks: PPI, Elliptic, Arxiv, and Photo. PPI is a collection of 24 disjoint tissue-specific protein–protein interaction graphs where                                   
+
+> Table 2. Transductive node classification on the Planetoid bench-marks (Cora, Citeseer, Pubmed). We report test accuracy (%) as mean ±std across random seeds using the standard public split (higher is better). Benchmark results are taken from the following references (a – means no reported results): (Kipf & Welling, 2017; Hu et al., 2021; Luo et al., 2024; Veli ˇckovi ´c et al., 2018; Chiang et al., 2019; Hu et al., 2021; Zeng et al., 2020; Chen et al., 2020; Brody et al., 2022; Choi, 2022; Wu et al., 2024b) .
+> Model Cora (accuracy ↑)Citeseer (accuracy ↑)Pubmed (accuracy ↑)
+> GCN (base) 81.60 ±0.40 71.80 ±0.01 79.50 ±0.30
+> GraphSAGE 71.49 ±0.27 71.93 ±0.85 79.41 ±0.53
+> GIN 77.60 ±1.10 ––GAT 83.00 ±0.70 69.30 ±0.80 78.40 ±0.90
+> GCNII 85.50 ±0.50 72.80 ±0.60 79.80 ±0.30
+> GATv2 82.90 71.60 78.70 SGFormer 84.82 ±0.85 72.60 ±0.20 80.30 ±0.60
+> GCN (enhanced) 85.10 ±0.67 73.14 ±0.67 81.12 ±0.52
+> GIST (ours) 84.00 ±0.60 71.31 ±0.50 81.20 ±0.41
+
+nodes (proteins) have 50 features and 121 non–mutually-exclusive GO labels. Following the standard split (20 graphs for training, 2 for validation, and 2 for testing), we report micro-averaged F1 on the unseen test graphs. Elliptic is a time-evolving directed Bitcoin transaction graph with 203,769 transactions (nodes), 234,355 payment-flow edges, and 166 features across 49 snapshots, labeled licit/illicit with many nodes unlabeled due to class imbalance. We train on the first 29 time steps, validate on the next 5, and test on the last 14, reporting micro-F1. For the Arxiv citation graph (269,343 nodes, 1,166,243 edges, 128 features, and 40 classes) and the Amazon Photo co-purchase network (7,650 nodes, 119,081 edges, 745 features, and 8 classes), we evaluate GIST in the inductive node classification setting using official splits (Fey & Lenssen, 2019; Fey et al., 2025). GIST achieves strong performance across all datasets. On PPI, GIST reaches 99 .50% ± 0.03 micro-F1 , matching the best large-scale sampling methods and deep residual GCNs (see Table 3, on par with GCNIII and within noise of the strongest GCNII setting ( 99 .53% )). On the temporally in-ductive Elliptic dataset, GIST attains 94 .70% ± 0.03 micro-F1. While this trails the strongest GraphSAGE configu-ration, GIST maintains stable performance across future time steps. On Arxiv, GIST achieves a mean micro-F1 of 72 .12% ± 0.21 , competitive with recent spectral trans-formers (PolyFormer: 72.42%, SpecFormer: 72.37%, Ex-phormer: 72.44%) while maintaining efficient O(N ) scal-ing through its linear attention formulation. On the smaller but feature-rich Photo graph, GIST attains 94 .42% ± 0.40 
+
+micro-F1, which is also competitive with recent spectral and polynomial Transformer variants. Note that GraphGPS, goes OOM on ArXiv primarily due to poor scalability prop-erties and the lack of the gauge invariance trick. These findings demonstrate GIST’s effectiveness as a competitive 7GIST: Gauge-Invariant Spectral Transformers 
+
+Table 3. Inductive node classification on PPI, Elliptic, Arxiv, and Photo. Re-sults are reported as micro-F1 (higher is better). Benchmark results are taken from the following references (a – means no reported results): (Chen et al., 2020; Weber et al., 2019; Chi-ang et al., 2019; Veli ˇckovi ´c et al., 2018; Zhang et al., 2018; Zeng et al., 2020; Chen et al., 2025b; Brody et al., 2022; Bo et al., 2023; Ramp ´a ˇsek et al., 2022) 
+
+Model PPI (micro-F1 ↑)Elliptic BTC (micro-F1 ↑)ArXiv (micro-F1 ↑)Photo (micro-F1 ↑)
+
+GCN (base) 51.50 ±0.60 96.10 71.74 ±0.29 88.26 ±0.73 
+
+GraphSAGE 61.20 97.70 71.49 ±0.27 –GAT 97.30 ±0.02 96.90 – 90.94 ±0.68 
+
+GATv2 96.30 – 71.87 ±0.25 –GaAN 98.70 – – –Cluster-GCN 99.36 – – –GraphSAINT 99.50 – – –GCNII 99.53 ±0.01 – 72.04 ±0.19 89.94 ±0.31 
+
+GCNIII 99.50 ±0.03 – – –GraphGPS 99.10 – OOM –SGFormer – – 72.63 ±0.13 –SpecFormer 99.50 – 72.37 ±0.18 95.48 ±0.32 
+
+PolyFormer – – 72.42 ±0.19 –Exphormer (LapPE) – – 72.44 91.59 ±0.31 
+
+GIST (ours) 99.50 ±0.03 94.70 ±0.03 72.12 ±0.21 94.42 ±0.40 
+
+graph learning approach, validating the successful trade-off between computational overhead and representational power. 
+
+4.4. Neural Operators 
+
+We now validate GIST’s discretization-invariant properties (Section 4.1) on large-scale mesh-based regression through the use of the DrivAerNet and DrivAerNet++ Dataset (Elre-faie et al., 2024). DrivAerNet is a high-fidelity CFD dataset of parametric car geometries comprising 4,000 designs with approximately 500k surface vertices per car and accompany-ing aerodynamic fields. This is extended by DrivAerNet++, which increases the scale to over 10,000 designs and intro-duces greater geometric diversity across multiple vehicle classes, including SUVs, sedans, and hatchbacks. We model each car as a graph whose nodes are surface vertices and edges follow mesh connectivity. Our task is node-level re-gression of the surface pressure field on previously unseen cars following the published train/validation/test split. Table 4 shows GIST achieves state-of-the-art on both bench-marks: 20.10% relative ℓ2 error on DrivAerNet (vs. 20.35% for the previous best) and 18.60% on DrivAerNet++ (vs. 20.05%). GIST’s linear scaling enables direct processing of these 500K-node meshes without downsampling, while prior methods require lossy projection to regular grids or lower-dimensional latent spaces. GIST’s spectral attention provides global receptive fields in a single layer, which aids performance on this task. 
+
+## 5. Conclusions 
+
+We presented GIST, a gauge-invariant spectral transformer that achieves three properties: gauge invariance for princi-pled generalization across graphs and meshes, O(N ) com-plexity for scalability, and global spectral attention for cap-
+
+Table 4. Surface pressure prediction accuracy on DrivAerNet and DrivAerNet++. Baselines include RegDGCNN (Elrefaie et al., 2024), Transolver (Wu et al., 2024a), FigConvNet (Choy et al., 2025), TripNet (Chen et al., 2025a), and AdaField (Zou et al., 2026). MSE is reported in units of 10 −2; Rel L2 is reported as a percentage (%). Lower is better for both metrics. 
+
+DrivAerNet DrivAerNet++ Model MSE ↓ Rel L2 ↓ MSE ↓ Rel L2 ↓
+
+RegDGCNN 9.01 28.49 8.29 27.72 Transolver 5.37 22.52 7.15 23.87 FigConvNet 4.38 20.98 4.99 20.86 TripNet 4.23 20.35 4.55 20.05 
+
+GIST (ours) 4.16 20.10 3.63 18.60 
+
+turing long-range dependencies. Crucially, while random projections break gauge symmetry in individual embed-dings, inner products between projected embeddings remain approximately invariant. By restricting attention to these gauge-invariant inner products, GIST recovers the symmetry algorithmically while maintaining end-to-end linear scaling. Gauge invariance is essential for neural operator applica-tions: it ensures learned parameters transfer across mesh res-olutions with discretization mismatch error O(n−1/(m+4) )
+
+that vanishes as resolution increases. Prior spectral methods address gauge invariance or efficiency separately. The nov-elty of the GIST architecture that we propose is the careful design that successfully combines these properties. Empirically, GIST achieves competitive results on standard graph benchmarks (Cora, PubMed, PPI) and sets a new state-of-the-art on large-scale mesh regression (DrivAerNet and DrivAerNet++, up to 500K and 750K nodes, respec-tively), processing these graphs directly at full resolution where methods requiring quadratic attention or cubic eigen-decomposition cannot scale. 8GIST: Gauge-Invariant Spectral Transformers 
+
+## Impact Statement 
+
+This paper presents work whose goal is to advance the field of Machine Learning through improved geometric deep learning and neural operator methods. There are many po-tential societal consequences of our work, and the methods presented could be beneficial for scientific computing ap-plications (e.g., computational fluid dynamics) and could advance the state of graph neural networks. 
+
+## References 
+
+Belkin, M. and Niyogi, P. Towards a Theoretical Foundation for Laplacian-Based Manifold Methods. Journal of Com-puter and System Sciences , 74(8):1289–1308, August 2008. ISSN 0022-0000. doi: 10.1016/j.jcss.2008.04.001. Bertasius, G., Wang, H., and Torresani, L. Is Space-Time Attention All You Need for Video Understanding?, June 2021. Bo, D., Shi, C., Wang, L., and Liao, R. Specformer: Spectral graph neural networks meet transformers. In Proceedings of the International Conference on Learning Representa-tions (ICLR) , 2023. Brody, S., Alon, U., and Yahav, E. How Attentive are Graph Attention Networks?, January 2022. Bronstein, M. M., Bruna, J., LeCun, Y., Szlam, A., and Van-dergheynst, P. Geometric deep learning: Going beyond euclidean data. IEEE Signal Processing Magazine , 34(4): 18–42, 2017. Cai, H., Li, J., Hu, M., Gan, C., and Han, S. EfficientViT: Multi-Scale Linear Attention for High-Resolution Dense Prediction, February 2022. Calder, J. and Garc ´ıa Trillos, N. Improved spectral conver-gence rates for graph Laplacians on epsilon-graphs and k-NN graphs. Applied and Computational Harmonic Analy-sis , 60:123–175, 2022. doi: 10.1016/j.acha.2022.04.004. Chen, H., Sultan, S. F., Tian, Y., Chen, M., and Skiena, S. Fast and Accurate Network Embeddings via Very Sparse Random Projection. In Proceedings of the 28th ACM International Conference on Information and Knowl-edge Management , CIKM ’19, pp. 399–408, New York, NY, USA, November 2019. Association for Computing Machinery. ISBN 978-1-4503-6976-3. doi: 10.1145/ 3357384.3357879. Chen, J., Gao, K., Li, G., and He, K. NAGphormer: A Tokenized Graph Transformer for Node Classification in Large Graphs. In Proceedings of the International Conference on Learning Representations (ICLR) , 2023. Chen, M., Wei, Z., Huang, Z., Ding, B., and Li, Y. Simple and Deep Graph Convolutional Networks, July 2020. Chen, Q., Elrefaie, M., Dai, A., and Ahmed, F. TripNet: Learning Large-scale High-fidelity 3D Car Aerodynamics with Triplane Networks, May 2025a. Chen, Y., Yang, W., and Jiang, Z. Wide & Deep Learning for Node Classification, May 2025b. Chennuru Vankadara, L., Xu, J., Haas, M., and Cevher, V. On Feature Learning in Structured State Space Models. 
+
+Advances in Neural Information Processing Systems , 37: 86145–86179, 2024. Chiang, W.-L., Liu, X., Si, S., Li, Y., Bengio, S., and Hsieh, C.-J. Cluster-GCN: An Efficient Algorithm for Train-ing Deep and Large Graph Convolutional Networks. In 
+
+Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining , pp. 257–266, July 2019. doi: 10.1145/3292500.3330925. Cho, Y. and Saul, L. Kernel Methods for Deep Learning. In Advances in Neural Information Processing Systems ,volume 22. Curran Associates, Inc., 2009. Choi, J. Personalized PageRank Graph Attention Networks, August 2022. Choromanski, K., Likhosherstov, V., Dohan, D., Song, X., Gane, A., Sarlos, T., Hawkins, P., Davis, J., Mohiuddin, A., Kaiser, L., Belanger, D., Colwell, L., and Weller, A. Rethinking Attention with Performers. arXiv:2009.14794 [cs, stat] , September 2020. Choy, C., Kamenev, A., Kossaifi, J., Rietmann, M., Kautz, J., and Azizzadenesheli, K. Factorized Implicit Global Con-volution for Automotive Computational Fluid Dynamics Prediction, February 2025. Dao, T. and Gu, A. Transformers are SSMs: General-ized Models and Efficient Algorithms Through Structured State Space Duality, May 2024. Dasgupta, S. and Gupta, A. An elementary proof of a theo-rem of Johnson and Lindenstrauss. Random Structures & Algorithms , 22(1):60–65, January 2003. ISSN 1042-9832, 1098-2418. doi: 10.1002/rsa.10073. Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, T., Dehghani, M., Minderer, M., Heigold, G., Gelly, S., Uszkoreit, J., and Houlsby, N. An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale, June 2021. Dwivedi, V. P. and Bresson, X. A Generalization of Trans-former Networks to Graphs. arXiv:2012.09699 [cs] , Jan-uary 2021. 9GIST: Gauge-Invariant Spectral Transformers 
+
+Dwivedi, V. P., Luu, A. T., Laurent, T., Bengio, Y., and Bresson, X. Graph Neural Networks with Learnable Structural and Positional Representations, February 2022. Elrefaie, M., Dai, A., and Ahmed, F. DrivAerNet: A Para-metric Car Dataset for Data-Driven Aerodynamic Design and Graph-Based Drag Prediction, March 2024. Fey, M. and Lenssen, J. E. Fast graph representation learning with PyTorch Geometric. In ICLR Workshop on Repre-sentation Learning on Graphs and Manifolds , 2019. Fey, M., Sunil, J., Nitta, A., Puri, R., Shah, M., Stojanovi ˇc, B., Bendias, R., Barghi, A., Kocijan, V., Zhang, Z., He, X., Lenssen, J. E., and Leskovec, J. PyG 2.0: Scalable learning on real world graphs. In Temporal Graph Learn-ing Workshop @ KDD , 2025. Gao, W., Xu, R., Deng, Y., and Liu, Y. Discretization-invariance? on the discretization mismatch errors in neu-ral operators. In The Thirteenth International Conference on Learning Representations , 2025. Gu, A. and Dao, T. Mamba: Linear-time sequence modeling with selective state spaces. arXiv preprint arXiv:2312.00752 , 2023. Gu, A., Johnson, I., Goel, K., Saab, K., Dao, T., Rudra, A., and R ´e, C. Combining recurrent, convolutional, and continuous-time models with linear state space layers. 
+
+Advances in neural information processing systems , 34: 572–585, 2021. Gu, A., Goel, K., and R ´e, C. Efficiently Modeling Long Sequences with Structured State Spaces, August 2022. Hamilton, W. L., Ying, R., and Leskovec, J. Inductive representation learning on large graphs. In Advances in Neural Information Processing Systems (NeurIPS) , pp. 1024–1034, 2017. Hao, Z., Wang, Z., Su, H., Ying, C., Dong, Y., Liu, S., Cheng, Z., Song, J., and Zhu, J. GNOT: A general neural operator transformer for operator learn-ing. In Proceedings of the 40th International Con-ference on Machine Learning (ICML) , volume 202 of 
+
+Proceedings of Machine Learning Research . PMLR, 2023. URL https://proceedings.mlr.press/ v202/hao23c.html .Hu, W., Fey, M., Zitnik, M., Dong, Y., Ren, H., Liu, B., Catasta, M., and Leskovec, J. Open Graph Benchmark: Datasets for Machine Learning on Graphs, February 2021. Jaegle, A., Borgeaud, S., Alayrac, J.-B., Doersch, C., Ionescu, C., Ding, D., Koppula, S., Zoran, D., Brock, A., Shelhamer, E., H ´enaff, O. J., Botvinick, M. M., Zisserman, A., Vinyals, O., and Carreira, J. Per-ceiver io: A general architecture for structured inputs & outputs, 2021a. URL https://arxiv.org/abs/ 2107.14795 . ICLR 2022 version. Jaegle, A., Gimeno, F., Brock, A., Vinyals, O., Zisserman, A., and Carreira, J. Perceiver: General perception with it-erative attention. In International Conference on Machine Learning , pp. 4651–4664. PMLR, 2021b. Katharopoulos, A., Vyas, A., Pappas, N., and Fleuret, F. Transformers are RNNs: Fast Autoregressive Transform-ers with Linear Attention. arXiv:2006.16236 [cs, stat] ,June 2020. Kipf, T. N. and Welling, M. Semi-Supervised Classification with Graph Convolutional Networks, February 2017. Klein, D. J. and Randi ´c, M. Resistance distance. Journal of Mathematical Chemistry , 12(1):81–95, December 1993. ISSN 1572-8897. doi: 10.1007/BF01164627. Kovachki, N., Li, Z., Liu, B., Azizzadenesheli, K., Bhat-tacharya, K., Stuart, A., and Anandkumar, A. Neural oper-ator: Learning maps between function spaces with appli-cations to PDEs. Journal of Machine Learning Research ,24:1–97, 2023. URL http://jmlr.org/papers/ v24/21-1524.html .Kreuzer, D., Beaini, D., Hamilton, W. L., L ´etourneau, V., and Tossou, P. Rethinking Graph Transformers with Spectral Attention, October 2021. Lee, J., Lee, Y., Kim, J., Kosiorek, A., Choi, S., and Teh, Y. W. Set Transformer: A Framework for Attention-based Permutation-Invariant Neural Networks. In Interna-tional Conference on Machine Learning , pp. 3744–3753. PMLR, May 2019a. Lee, J., Lee, Y., Kim, J., Kosiorek, A., Choi, S., and Teh, Y. W. Set transformer: A framework for attention-based permutation-invariant neural networks. In Pro-ceedings of the 36th International Conference on Ma-chine Learning (ICML) , volume 97 of Proceedings of Ma-chine Learning Research , pp. 3744–3753. PMLR, 2019b. URL https://proceedings.mlr.press/v97/ lee19d.html .Li, P., Hastie, T. J., and Church, K. W. Very sparse random projections. In Proceedings of the 12th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining , pp. 287–296, Philadelphia PA USA, August 2006. ACM. ISBN 978-1-59593-339-3. doi: 10.1145/ 1150402.1150436. Li, Z., Kovachki, N., Azizzadenesheli, K., Liu, B., Bhat-tacharya, K., Stuart, A., and Anandkumar, A. Neural operator: Graph kernel network for partial differential 10 GIST: Gauge-Invariant Spectral Transformers 
+
+equations, 2020. URL https://arxiv.org/abs/ 2003.03485 .Li, Z., Kovachki, N. B., Azizzadenesheli, K., Liu, B., Bhat-tacharya, K., Stuart, A., and Anandkumar, A. Fourier neu-ral operator for parametric partial differential equations. In International Conference on Learning Representations (ICLR) , 2021. URL https://openreview.net/ forum?id=c8P9NQVtmnO .Li, Z., Kovachki, N. B., Choy, C., Li, B., Kossaifi, J., Otta, S. P., Nabian, M. A., Stadler, M., Hundt, C., Azizzade-nesheli, K., and Anandkumar, A. Geometry-informed neural operator for large-scale 3d PDEs. In Advances in Neural Information Processing Systems (NeurIPS) ,volume 36, 2023. URL https://arxiv.org/abs/ 2309.00583 . See also arXiv:2309.00583. Likhosherstov, V., Choromanski, K. M., Davis, J. Q., Song, X., and Weller, A. Sub-linear memory: How to make per-formers slim. Advances in Neural Information Processing Systems , 34:6707–6719, 2021. Lu, L., Jin, P., Pang, G., Zhang, Z., and Karniadakis, G. E. Learning nonlinear operators via deeponet based on the universal approximation theorem of operators. Nature Machine Intelligence , 3(3):218–229, 2021. doi: 10.1038/ s42256-021-00302-5. Luo, Y., Shi, L., and Wu, X.-M. Classic GNNs are Strong Baselines: Reassessing GNNs for Node Classification, October 2024. Park, W., Chang, W., Lee, D., Kim, J., and Hwang, S.-w. GRPE: Relative Positional Encoding for Graph Trans-former, October 2022. Rahman, M. A., Ross, Z. E., and Azizzadenesheli, K. U-no: U-shaped neural operators, 2022. URL https: //arxiv.org/abs/2204.11127 .Ramp ´a ˇsek, L., Galkin, M., Dwivedi, V. P., Luu, A. T., Wolf, G., and Beaini, D. Recipe for a General, Powerful, Scal-able Graph Transformer. Advances in Neural Information Processing Systems , 35, 2022. Raoni ´c, B., Molinaro, R., De Ryck, T., Rohner, T., Bartolucci, F., Alaifari, R., Mishra, S., and de B ´ezenac, E. Convolutional neural operators for robust and accurate learning of PDEs. In Advances in Neural Information Processing Systems (NeurIPS) , vol-ume 36, 2023. URL https://proceedings. neurips.cc/paper/2023/hash/ f3c1951b34f7f55ffaecada7fde6bd5a-Abstract-Conference. html .Rigotti, M., Miksovic, C., Giurgiu, I., Gschwind, T., and Scotton, P. Attention-based Interpretability with Concept Transformers. In International Conference on Learning Representations (ICLR) , 2022. Sen, P., Namata, G., Bilgic, M., Getoor, L., Galligher, B., and Eliassi-Rad, T. Collective classification in network data. AI Magazine , 29(3):93–106, 2008. Shaw, P., Uszkoreit, J., and Vaswani, A. Self-Attention with Relative Position Representations, April 2018. Shirzad, H., Velingker, A., Venkatachalam, B., Sutherland, D. J., and Sinop, A. K. Exphormer: Sparse Transformers for Graphs. In Proceedings of the 40th International Conference on Machine Learning (ICML) , 2023. Tsai, Y.-H. H., Bai, S., Yamada, M., Morency, L.-P., and Salakhutdinov, R. Transformer dissection: An unified un-derstanding for transformer’s attention via the lens of ker-nel. In Proceedings of EMNLP-IJCNLP , pp. 4344–4353, Hong Kong, China, 2019. Association for Computational Linguistics. doi: 10.18653/v1/D19-1443. Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, L., and Polosukhin, I. Attention Is All You Need. arXiv:1706.03762 [cs] , June 2017. Veli ˇckovi ´c, P., Cucurull, G., Casanova, A., Romero, A., Li `o, P., and Bengio, Y. Graph Attention Networks, February 2018. Weber, M., Domeniconi, G., Chen, J., Weidele, D. K. I., Bellei, C., Robinson, T., and Leiserson, C. E. Anti-money laundering in bitcoin: Experimenting with graph convo-lutional networks for financial forensics. In KDD ’19 Workshop on Anomaly Detection in Finance , 2019. Wu, H., Luo, H., Wang, H., Wang, J., and Long, M. Tran-solver: A fast transformer solver for PDEs on general ge-ometries. In Proceedings of the 41st International Confer-ence on Machine Learning , volume 235 of ICML’24 , pp. 53681–53705, Vienna, Austria, July 2024a. JMLR.org. Wu, Q., Zhao, W., Yang, C., Zhang, H., Nie, F., Jiang, H., Bian, Y., and Yan, J. SGFormer: Simplifying and Em-powering Transformers for Large-Graph Representations, August 2024b. Yang, Z., Cohen, W. W., and Salakhutdinov, R. Revis-iting semi-supervised learning with graph embeddings. In Proceedings of the 33rd International Conference on Machine Learning (ICML) , pp. 40–48, 2016. Ying, C., Cai, T., Luo, S., Zheng, S., Ke, G., He, D., Shen, Y., and Liu, T.-Y. Do Transformers Really Perform Bad for Graph Representation?, November 2021. 11 GIST: Gauge-Invariant Spectral Transformers 
+
+Yun, C., Bhojanapalli, S., Rawat, A. S., Reddi, S. J., and Kumar, S. Are transformers universal approximators of sequence-to-sequence functions? In International Conference on Learning Representations (ICLR) , 2020. arXiv:1912.10077. Zeng, H., Zhou, H., Srivastava, A., Kannan, R., and Prasanna, V. GraphSAINT: Graph Sampling Based In-ductive Learning Method, February 2020. Zhang, J., Shi, X., Xie, J., Ma, H., King, I., and Yeung, D.-Y. GaAN: Gated Attention Networks for Learning on Large and Spatiotemporal Graphs, March 2018. Zhu, W., Wen, T., Song, G., Ma, X., and Wang, L. Hier-archical Transformer for Scalable Graph Learning, May 2023. Zou, J., Qiu, W., Sun, Z., Zhang, X., Zhang, Z., and Zhu, X. Adafield: Generalizable surface pressure modeling with physics-informed pre-training and flow-conditioned adaptation. arXiv preprint arXiv:2601.07139 , 2026. doi: 10.48550/arXiv.2601.07139. 12 GIST: Gauge-Invariant Spectral Transformers 
+
+## A. Proofs and Technical Details 
+
+A.1. Proof of Proposition 4.1: Gauge-Invariant Spectral Self-Attention 
+
+We prove that the Gauge-Invariant Spectral Self-Attention mechanism is discretization-invariant with quantifiable discretiza-tion mismatch error through three stages of analysis. The proof establishes that the positional encodings used in the attention mechanism converge to the continuum Green’s function, allowing us to bound the discretization mismatch error between any two discretizations of the same manifold. For completeness, we restate the full proposition: 
+
+Proposition A.1 (Full Statement) . Gauge-Invariant Spectral Self-Attention is a discretization-invariant Neural Operator with bounded discretization mismatch error. Let M be a compact m-dimensional Riemannian manifold and Gn a sequence of graphs obtained by sampling n nodes from M with n → ∞ . Let ϕni be the Laplacian eigenmaps of Gn (equation 2). Then: (i) The inner products ⟨ϕni , ϕ nj ⟩ converge to the Green’s function GM (xi, x j ) of the Laplace-Beltrami operator at rate 
+
+O(n−1/(m+4) ).(ii) For any two discretizations Gn and Gn′ of the same manifold M with n ≤ n′, the attention kernel values ⟨ ˜ϕni , ˜ϕnj ⟩ at corresponding points xi, x j ∈ M satisfy 
+
+⟨ ˜ϕni , ˜ϕnj ⟩ − ⟨ ˜ϕn′ 
+
+> i
+
+, ˜ϕn′ 
+
+> j
+
+⟩ = O(n−1/(m+4) ),
+
+where ˜ϕni = Rnϕni denotes the projected embeddings. This bounded kernel mismatch ensures learned parameters transfer across discretizations (discretization-invariance). 
+
+The proof proceeds in three stages corresponding to the key technical components. A.1.1. S TAGE 1: S PECTRAL CONVERGENCE AND GREEN ’S FUNCTION 
+
+Proposition A.2. Let Ln be the normalized graph Laplacian of a graph Gn obtained by sampling n nodes from a compact 
+
+m-dimensional Riemannian manifold M . Let λnk , u nk be eigenvalues and eigenvectors of Ln, and μk, ψ k the eigenvalues and eigenfunctions of the Laplace-Beltrami operator ∆M on M . Then: (a) Spectral convergence: |λnk − μk| = O(n−1/(m+4) ) and ∥unk − ψk∥L2 = O(n−1/(m+4) ) (up to log factors). (b) Green’s function convergence: The inner products of Laplacian eigenmaps converge to the Green’s function: 
+
+ϕni , ϕ nj = X 
+
+> λnk>0
+
+1
+
+λnk
+
+(unk )i(unk )j → GM (xi, x j ) + O(n−1/(m+4) ),
+
+where GM is the Green’s function of ∆M on M .Proof. Part (a) follows from the spectral convergence theory for graph Laplacians on manifolds (Calder & Garc ´ıa Trillos, 2022). With appropriate graph construction, both eigenvalues and eigenvectors of Ln converge to those of ∆M at rate 
+
+n−1/(m+4) (up to log factors). See Calder & Garc´ ıa Trillos (2022) for complete error estimates. Part (b) follows from part (a) by the spectral theorem. The discrete Green’s function (pseudoinverse of the graph Laplacian) is given by the eigenfunction expansion: 
+
+⟨ϕni , ϕ nj ⟩ = X 
+
+> λnk>0
+
+1
+
+λnk
+
+(unk )i(unk )j .
+
+Using the convergence result from part (a), this sum converges to the continuum Green’s function GM (xi, x j ) =P∞  
+
+> k=1 1
+> μk
+
+ψk(xi)ψk(xj ) at rate O(n−1/(m+4) ).13 GIST: Gauge-Invariant Spectral Transformers 
+
+A.1.2. S TAGE 2: R ANDOM PROJECTION ERROR 
+
+Proposition A.3. Let R ∈ Rr×N be a random projection with r = O(log( N )/ε 2) constructed via FastRP. For any vectors 
+
+v, w ∈ RN ,
+
+P (|⟨ Rv, Rw ⟩ − ⟨ v, w ⟩| ≤ ε∥v∥∥ w∥) ≥ 1 − 2e−cε 2r .
+
+Proof. This follows from the Johnson-Lindenstrauss Lemma (Dasgupta & Gupta, 2003). The key properties: 1. Random projections with r = O(log( N )/ε 2) distort distances by at most a factor (1 ± ε) with high probability. 2. For inner products, since distances are preserved, we have ⟨Rv, Rw ⟩ = 12 (∥Rv ∥2 + ∥Rw ∥2 − ∥ Rv − Rw ∥2) ≈ 
+
+> 12
+
+(∥v∥2 + ∥w∥2 − ∥ v − w∥2) = ⟨v, w ⟩.3. FastRP specifically uses sparse random matrices that maintain these guarantees while enabling efficient computation (Chen et al., 2019). See Dasgupta & Gupta (2003) and Chen et al. (2019) for details on FastRP. A.1.3. S TAGE 3: G AUGE INVARIANCE 
+
+Proposition A.4. GIST’s learned parameters θ (projection matrix, transformer weights) do not depend on arbitrary gauge choices (sign flips, rotations) in the spectral decomposition because GIST’s computations depend only on gauge-invariant quantities. Proof. GIST’s core attention mechanism is: 
+
+αij = softmax ⟨ ˜ϕi, ˜ϕj ⟩√r
+
+!
+
+, ˜ϕi = Rϕ i,
+
+where R is the random projection matrix. The key insight is that while ˜ϕi depends on R (the arbitrary gauge choice), the inner products ⟨ ˜ϕi, ˜ϕj ⟩ do not (in the limit): 
+
+⟨ ˜ϕi, ˜ϕj ⟩ = ϕ⊤ 
+
+> i
+
+(R⊤R)ϕj ≈ ϕ⊤ 
+
+> i
+
+ϕj ,
+
+by Johnson-Lindenstrauss. Thus αij converges to a gauge-invariant quantity (the continuum Green’s function kernel) independent of the choice of R.Since all downstream computations operate on gauge-invariant quantities, the learned parameters θ do not encode any information about the specific gauge choice in the eigenvector decomposition. A.1.4. D ISCRETIZATION MISMATCH ERROR ANALYSIS 
+
+Combining all three stages, we establish the discretization mismatch error bound stated in Proposition A.1(ii) (Gao et al., 2025). For two discretizations Gn and Gn′ of the same manifold M , the attention kernel mismatch is bounded by triangle inequality: 
+
+⟨ ˜ϕni , ˜ϕnj ⟩ − ⟨ ˜ϕn′ 
+
+> i
+
+, ˜ϕn′ 
+
+> j
+
+⟩ ≤ ⟨ ˜ϕni , ˜ϕnj ⟩ − GM (xi, x j ) + GM (xi, x j ) − ⟨ ˜ϕn′ 
+
+> i
+
+, ˜ϕn′ 
+
+> j
+
+⟩ .
+
+Each term on the right decomposes into spectral convergence error (Stage 1) and random projection error (Stage 2), yielding the total bound O(n−1/(m+4) ) where n is the coarser discretization. For typical manifold dimensions, random projection errors decay faster than spectral convergence errors, so the latter dominate the discretization mismatch. 14 GIST: Gauge-Invariant Spectral Transformers 
+
+Algorithm 1 Spectral Embeddings via FastRP (Chen et al., 2019) 
+
+Require: Graph adjacency matrix A ∈ RN ×N , embedding dimensionality r, iteration power k
+
+Ensure: Matrix of N node graph positional embeddings Φ ∈ RN ×r 
+
+> 1:
+
+Produce very sparse random projection R ∈ RN ×r according to Li et al. (2006)  
+
+> 2:
+
+P ← D−1 · A the random walk transition matrix, where D is the degree matrix  
+
+> 3:
+
+Φ1 ← P · R 
+
+> 4:
+
+for i = 2 to k do  
+
+> 5:
+
+Φi ← P · Φi−1 
+
+> 6:
+
+end for  
+
+> 7:
+
+Φ = Φ1 + Φ2 + · · · + Φk 
+
+> 8:
+
+return Φ
+
+A.2. Pseudo-code 
+
+Note that in the pseudocode we use bold notation for matrices and vectors ( A, Φ, Q) and follow the row-vector convention standard in machine learning: Φ ∈ RN ×r has nodes as rows and embedding dimensions as columns. In the main text, we use non-bold notation for compactness, with ϕi ∈ Rr representing individual column vectors and upper case characters denoting matrices. Below we provide pseudo-code for the core computations of GIST, the Gauge-Invariant Spectral Self-Attention block and the Gauge-Equivariant Spectral Self-Attention block. For illustration purposes, we compare the algorithms to a stripped down implementation of self-attention. Modifications relative to vanilla self-attention are highlighted in red (additions) and strikethrough (removals). 
+
+Algorithm 2 Gauge-Invariant Spectral Self-Attention 
+
+Require: Node feature tokens X ∈ RN ×d , graph positional embeddings Φ ∈ RN ×r
+
+Ensure: Output sequence O ∈ RN ×d to be applied to features X 
+
+> 1:
+
+// Compute attention matrices  
+
+> 2:
+
+Q ← X · WQ where WQ ∈ Rd×d Q ← Φ 
+
+> 3:
+
+K ← X · WK where WK ∈ Rd×d K ← Φ 
+
+> 4:
+
+V ← X · WV where WV ∈ Rd×d 
+
+> 5:
+
+// Compute linear attention with feature map φ(x) = ReLU( x) 
+
+> 6:
+
+˜Q, ˜K ← φ(Q), φ (K) 
+
+> 7:
+
+S ← ˜KT V {Compute key-value matrix: Rr×d} 
+
+> 8:
+
+Z ← 1/( ˜Q( ˜KT 1N ) + ϵ) {Normalization factors: RN } 
+
+> 9:
+
+O ← ( ˜QS ) ⊙ Z {Normalized output: element-wise product } 
+
+> 10:
+
+return O
+
+Note on the choice of Feature Map φ. While in Algorithm 3 we do not need to impose that restriction, in Algorithm 2 we use the feature map φ(x) = ReLU (x). This choice is theoretically motivated: when applied element-wise to random features, ReLU induces the arc-cosine kernel (Cho & Saul, 2009). Specifically, for vectors a, b ∈ Rr , the inner product 
+
+⟨φ(a), φ (b)⟩ converges (as r → ∞ ) to a kernel function k0(a⊤b) that depends only on the inner product a⊤b.This property is crucial for preserving gauge invariance: since the attention weights are computed as ⟨φ( ˜ϕi), φ ( ˜ϕj )⟩ ≈ 
+
+k0( ˜ϕ⊤ 
+
+> i
+
+˜ϕj ) and ˜ϕ⊤ 
+
+> i
+
+˜ϕj ≈ ϕ⊤ 
+
+> i
+
+ϕj by Johnson-Lindenstrauss (as established in Section A), the resulting attention pattern depends only on gauge-invariant inner products between the spectral embeddings. We note that the original linear attention work by Katharopoulos et al. (2020) used φ(x) = elu (x) + 1 . Empirically, this feature map also tends to work well in practice, and it is similar to ReLU in producing non-negative outputs. However, it is not known to correspond to any particular kernel function, and thus the theoretical guarantee of gauge invariance via kernel structure does not apply. Investigating other feature maps corresponding to different kernel functions (e.g., polynomial kernels, random Fourier features for RBF-like kernels) is left for future work. 15 GIST: Gauge-Invariant Spectral Transformers 
+
+Algorithm 3 Gauge-Equivariant Spectral Self-Attention 
+
+Require: Node feature tokens X ∈ RN ×d , graph positional embeddings Φ ∈ RN ×r
+
+Ensure: Output sequence O ∈ RN ×d to be applied to graph positional embeddings Φ 
+
+> 1:
+
+// Compute attention matrices  
+
+> 2:
+
+Q ← X · WQ where WQ ∈ Rd×d 
+
+> 3:
+
+K ← X · WK where WK ∈ Rd×d 
+
+> 4:
+
+V ← X · WV where WV ∈ Rd×d V ← Φ 
+
+> 5:
+
+// Compute linear attention (Katharopoulos et al., 2020)  
+
+> 6:
+
+˜Q, ˜K ← φ(Q), φ (K) 
+
+> 7:
+
+S ← ˜KT V {Compute key-value matrix: Rd×r } 
+
+> 8:
+
+Z ← 1/( ˜Q( ˜KT 1N ) + ϵ) {Normalization factors: RN } 
+
+> 9:
+
+O ← ( ˜QS ) ⊙ Z {Normalized output: element-wise product } 
+
+> 10:
+
+return O
+
+A.3. GIST Hyperparameters robustness 
+
+In order to study the sensitivity of GIST’s performance to variations in its spectral embedding hyperparameters, we train multiple simplified GIST architectures (two-block Gauge-Invariant Spectral Self-Attention linear transformers) on the Cora benchmark while varying the power iteration parameter k and the embedding dimension r in the FastRP approximation. These parameters directly control the quality of spectral embeddings while balancing computational efficiency. As shown in Figure 2, GIST exhibits robust performance across a wide range of both parameters. The left panel sweeps k
+
+with r fixed, a clear but relatively shallow peak in accuracy around the optimal value of k ≈ 32 . This on one hand suggests that even modest iteration counts are sufficient to capture the essential spectral structure, but also indicates that the choice of the power iteration is quite robust. The right panel varies embedding dimension r with k fixed, demonstrating a smooth monotonic improvement as r increases. Crucially, saturation occurs relatively quickly: performance gains beyond r = 256 
+
+are marginal, validating our choice of reasonable embedding dimensions that maintain computational efficiency. These results empirically validate two important properties: (1) GIST does not require extensive hyperparameter tuning around these spectral parameters, suggesting stable generalization; and (2) the linear end-to-end complexity achieved with modest k and r values is both computationally practical and empirically effective. Combined with the gauge-invariance guarantees that prevent dependence on arbitrary spectral choices, these hyperparameters provide a principled way and empirically robust way to control the approximation quality of spectral embeddings without sacrificing scalability. 
+
+A.4. GIST Scalability Study 
+
+From a computational standpoint, the end-to-end cost of GIST is dominated by two components: spectral embedding generation and the subsequent transformer blocks. For the former, we employ a FastRP-style approximation in which the Laplacian spectral information is captured via repeated multiplication of a sparse random walk matrix with a low-dimensional random projection. Each power iteration requires O(|E|r) operations, where |E| is the number of edges and r
+
+is the embedding dimension, and the total cost over k iterations is O(k|E|r). On meshes and graphs with bounded average degree, |E| = O(N ), so the overall spectral embedding stage scales linearly in the number of nodes N . This embedding is computed once per graph and then reused across all GIST layers, so its cost is amortized over the full network depth. The GIST layers themselves preserve this linear scaling. Each block combines: (i) a feature branch based on linear attention, (ii) a local branch using graph convolution followed by linear attention, and (iii) a global branch using Gauge-Invariant and Gauge-Equivariant Spectral Self-Attention followed by linear attention. In all cases, attention is implemented in the form φ(Q)( φ(K)⊤V ) with an element-wise feature map φ(·), which yields O(N d 2) complexity for d-dimensional features instead of the O(N 2d) cost of quadratic attention. Together with the O(N ) spectral embedding stage, this results in an overall complexity of O(N (d2 + rk )) per forward pass, i.e., linear in the number of nodes. The empirical VRAM and wall-clock measurements in Figure 3 corroborate this analysis: both memory usage and forward time grow approximately linearly with the number of graph nodes for all hidden dimensions, up to graphs with hundreds of thousands of nodes sampled from DrivAerNet. 16 GIST: Gauge-Invariant Spectral Transformers 2 32 128 256 384 512       
+
+> Max power iteration, k
+> 0.50
+> 0.55
+> 0.60
+> 0.65
+> Test Accuracy
+> (a) Max Power Iteration Sweep
+> Test Accuracy
+> 8128 384 640 1024
+> Embedding Dimension, r
+> 0.45
+> 0.50
+> 0.55
+> 0.60
+> 0.65
+> 0.70
+> Test Accuracy
+> (b) Embedding Dimension Sweep
+> Test Accuracy
+> Graph Embeddings Parameter Sensitivity (Cora Dataset)
+
+Figure 2. Sensitivity study of GIST spectral embeddings parameters. The plots show the final test accuracy of a two-block Gauge-Invariant Spectral Self-Attention linear transformer trained on Cora while sweeping over the power iteration parameter k with r = 256 (left panel), and sweeping over the embedding dimension r with k = 32 (right panel). Test accuracy is fairly robust around the best value of either parameter. As expected, r is monotonically related to higher performance, as higher r correspond to better approximations of the eigenmaps. Accuracy conveniently saturate relatively fast, justifying the use of reasonably low r. The plots show mean test accuracy averaged across 10 seeds and corresponding standard deviation as error bars. 
+
+A.5. Multi-Scale Architecture Ablation Study 
+
+To validate the design choices in the Multi-Scale GIST architecture, we systematically ablate each of the three parallel branches shown in Figure 1 (right panel) on the PPI dataset, where the full architecture achieves state-of-the-art performance (see Table 3). For each ablation, we train with identical hyperparameters but remove one branch: (1) feature processing, (2) local graph convolution, or (3) global spectral attention. All experiments are repeated across 20 random seeds. Table 5 shows that all three branches contribute meaningfully, with performance drops ranging from 4.29% to 7.90%. The local branch (Branch 2) has the strongest impact ( −7.90% ), validating the EfficientViT-inspired design principle that local operations provide focused information complementing the diffuse patterns from linear attention. The global spectral branch (Branch 3, −4.29% ) confirms that long-range dependencies are essential, while the feature branch (Branch 1, −5.04% )provides complementary signal beyond structural information. Overall, these results demonstrate that the Multi-Scale GIST effectively integrates complementary information sources. 
+
+Table 5. Ablation study on PPI dataset showing the contribution of each branch of the Multi-Scale GIST (see Figure 1, right panel). Test accuracy is reported as percentage of baseline performance. Results averaged over 10 seeds with standard deviations indicated as uncertainty intervals. 
+
+Ablation Test Accuracy (% baseline) ∆ (%) No ablation 100.0 0.0 Branch 1 (feature) 95 .0 ± 2.8 −5.0
+
+Branch 2 (local) 92 .1 ± 1.8 −7.9
+
+Branch 3 (global) 95 .7 ± 3.7 −4.3
+
+17 GIST: Gauge-Invariant Spectral Transformers 0 100000 200000 300000 400000 500000 600000 
+
+Number of Nodes       
+
+> 10
+> 20
+> 30
+> 40
+> 50
+> 60
+> 70
+> 80
+> VRAM Usage (GB)
+> Scalability Curve: GIST VRAM usage vs Number of Graph Nodes
+> 0100000 200000 300000 400000 500000 600000
+
+Number of Nodes   
+
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> 3.5
+> Forward + Backward Pass Time (s)
+> Scalability Curve: GIST Forward + Backward Pass Time vs Number of Graph Nodes
+> hidden_dim=64 hidden_dim=128 hidden_dim=256
+
+Figure 3. Scalability study of GIST. All experiments use a fixed 3-layer model while varying the hidden dimensionality. VRAM consumption was measured as a function of the number of nodes in the input graph. Graph sizes were controlled using random node dropout applied to samples from the Drivaernet dataset, enabling a systematic evaluation of memory scaling behavior. 
+
+18

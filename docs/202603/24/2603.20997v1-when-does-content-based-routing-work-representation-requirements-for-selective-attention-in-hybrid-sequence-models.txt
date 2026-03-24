@@ -1,0 +1,191 @@
+Title: When Does Content-Based Routing Work? Representation Requirements for Selective Attention in Hybrid Sequence Models
+
+URL Source: https://arxiv.org/pdf/2603.20997v1
+
+Published Time: Tue, 24 Mar 2026 01:12:51 GMT
+
+Number of Pages: 11
+
+Markdown Content:
+# When Does Content-Based Routing Work? Representation Requirements for Selective Attention in Hybrid Sequence Models 
+
+## Abhinaba Basu ∗
+
+National Institute of Electronics and Information Technology (NIELIT) 
+
+Abstract 
+
+We identify a routing paradox in hybrid recurrent-attention architectures: content-based routing — deciding which tokens deserve expensive attention — requires exactly the pairwise computation that routing is designed to avoid. The core mechanism is that attention writes pairwise match results into representations through value aggregation, creating structure that no other mechanism provides. Through 20+ controlled experiments across three tasks (a synthetic diagnostic, the Zoology Multi-Query Associative Recall (MQAR) benchmark [22], and HotpotQA [33]), we map the routing landscape exhaustively. One layer of softmax attention creates a latent ∼34-dimensional subspace that enables 98.4% routing precision; zero layers yield 1.2%. This subspace is invisible to cosine similarity, destroyed by random projections (98.4% → 2.6%), and cannot be created by contrastive pretraining. Twelve alternative mechanisms — recurrence (uni/bidirectional), linear attention, memory banks, contextual bandits (LinUCB, Thompson, OFUL), contrastive pretraining, and segment-level routing — all cluster at 15–29%. Non-learned indices (Bloom filter: 90.9%; BM25 on HotpotQA: 82.7%) bypass the bottleneck entirely for exact/keyword matching. The result is a sharp two-regime hierarchy with an empty middle ground. These findings provide the mechanistic explanation for the empirical observation [22] that recurrent models fail at associative recall, and reframe attention as a representation constructor rather than merely a computation mechanism. 
+
+# 1 Introduction 
+
+The Transformer [1] has become the dominant architecture for sequence modeling, largely due to its self-attention mechanism that enables each position to interact with every other position. This pairwise interac-tion is extraordinarily powerful — it underlies the success of models from BERT [2] to GPT-4 [3] — but it comes at a quadratic cost: processing n tokens requires O(n2) operations per layer. As applications demand longer contexts — legal documents spanning hundreds of pages, genomic sequences with millions of bases, multi-turn conversations accumulating thousands of tokens — this quadratic bottleneck has become one of the central challenges in modern deep learning. The search for efficient alternatives has produced two major lines of work. The first reduces the cost of attention itself through sparse patterns [4, 5, 6], hash-based approximations [7], kernel approximations [8, 9], or I/O-aware implementations [10]. The second replaces attention entirely with recurrent mechanisms — state-space models [12, 13], selective SSMs like Mamba [14], gated linear recurrence like RWKV [16], or retention mechanisms [17] — that process sequences in O(n) time. Neither line has fully succeeded. Efficient attention variants typically still scale super-linearly or sacrifice expressiveness [11]. Pure recurrent models achieve compelling efficiency but consistently fail on tasks requir-ing precise retrieval of specific tokens from context [22, 25, 24]. This has led to a third approach: hybrid architectures that combine cheap recurrence with selective attention, applying expensive computation only where it is needed. The appeal of hybrid designs is clear: O(n) recurrence handles most of the sequence, and O(k2) attention handles only k ≪ n selected tokens. Models like Jamba [18], Griffin [19], Zamba [20], and StripedHyena [21]  
+
+> ∗Corresponding author: mail@abhinaba.com
+
+1
+
+> arXiv:2603.20997v1 [cs.LG] 22 Mar 2026
+
+Figure 1: The routing paradox. (a) Hybrid architectures want cheap recurrence for most tokens and expensive attention for a few. A router decides which tokens get attention. (b) The paradox: the router needs attention-quality representations to identify which tokens deserve attention — but generating those representations IS the expensive computation. (c) Our experiments reveal two working regimes (non-learned indices and softmax attention) with a large gap between them. explore this pattern, interleaving recurrent and attention layers in various configurations. The empirical finding is consistent: some attention is necessary , but exactly how much and why has remained unclear. The critical but underexplored component in hybrid designs is the router : the mechanism that decides which tokens deserve expensive attention (Figure 1). A good router can make hybrid architectures dramat-ically efficient; a bad router renders the entire design no better than pure recurrence. Yet the question of what representations the router needs to function has received surprisingly little direct study. In this work, we investigate this question systematically. We build a modular test bed — the FCI (Flow– Council–Investigator) architecture — where we can swap out the representations the router operates on while keeping everything else constant. We test routing across 9 representation types, 4 routing mechanisms, 2 training signals, and 2 granularities, totaling 20+ controlled experiments across three tasks. Our central finding is a routing paradox : content-based routing requires the very computation it exists to avoid. Specifically: 1. One layer of softmax attention is both necessary and sufficient for learned routing (0 layers: 1.2%, 1 layer: 98.4%). 2. The routing signal is a latent ∼34-dimensional subspace invisible to standard similarity metrics and inaccessible without specific learned projections. 3. Twelve alternative mechanisms — spanning recurrence, linear attention, memory banks, bandits, and contrastive learning — all cluster at 15–29%. 4. Non-learned indices (Bloom filter, BM25) achieve 82–91% for exact/keyword matching, bypassing the representation bottleneck entirely. We note that exact token matching is a best-case scenario for learned routing — if a learned router cannot match identical tokens at distance, it cannot succeed at harder semantic matching tasks. Yet even in this most favorable setting, only softmax attention enables routing. These results provide the mechanistic explanation for the widely observed recall gap in sub-quadratic models [22, 25], and reframe attention as a representation constructor — a mechanism that writes relational structure into embedding space — rather than merely a computation device. 
+
+# 2 Background and Related Work 
+
+## 2.1 The Efficiency–Expressiveness Tradeoff 
+
+The tension between computational efficiency and modeling expressiveness has shaped sequence model re-search since the early days of recurrent neural networks. We trace the evolution through three phases. 2Phase 1: Making attention cheaper (2019–2022). Early efforts focused on reducing attention’s quadratic cost while preserving its benefits. Sparse Transformers [4] introduced fixed sparsity patterns. Longformer [5] and BigBird [6] combined local windows with global tokens. Reformer [7] used locality-sensitive hashing to approximate attention. Performer [8] and linear attention [9] replaced the softmax kernel with random feature approximations, reducing cost to O(n). Flash Attention [10] took a different approach, keeping exact attention but optimizing GPU memory access patterns. A common thread: all these methods compute some form of pairwise interaction between positions. The question was whether approximating this interaction could preserve attention’s quality at lower cost. Our results suggest this question has a sharp answer: exact softmax interaction creates qualitatively different representations than its approximations. 
+
+Phase 2: Replacing attention with recurrence (2022–2024). Structured state-space models [12, 13] showed that certain linear recurrences could capture long-range dependencies. Mamba [14] introduced selective (input-dependent) state transitions, achieving competitive performance with Transformers at a fraction of the cost. RWKV [16] revived gated recurrence with novel channel mixing. RetNet [17] proposed retention as a dual of attention. Mamba-2 [15] formalized the mathematical duality between SSMs and attention, proving that structured state spaces are a special case of structured attention. These models achieve excellent efficiency but share a structural limitation: at position t, the recurrent state ht is a fixed-dimensional compressed summary of positions 1 . . . t . Individual token identities are progressively overwritten by new inputs. This compression is precisely what makes recurrence efficient — and, as our experiments show, precisely what makes content-based routing fail. 
+
+Phase 3: Hybrid architectures (2024–present). The empirical observation that pure recurrence de-grades on recall-intensive tasks [22, 25] led to hybrid designs. Jamba [18] interleaves Mamba and Transformer layers at fixed intervals. Griffin [19] combines gated linear recurrence with local attention. Zamba [20] uses a shared attention layer across multiple Mamba blocks. StripedHyena [21] alternates between Hyena (long convolution) and attention layers. All these architectures include attention because they empirically need it. But the question of why 
+
+attention is necessary, and specifically whether a routing mechanism can selectively apply attention where needed, has not been directly addressed. 
+
+## 2.2 The Recall Gap 
+
+Arora et al. [22] introduced the MQAR (Multi-Query Associative Recall) benchmark and provided the clearest characterization of the recall gap: given a sequence of key-value pairs, retrieve the correct value for a query key. Transformers solve this easily; sub-quadratic models (Hyena [24], H3 [25], linear attention [9]) fail dramatically, achieving near-chance accuracy. Follow-up work [23] proposed Based, a hybrid mixing linear and window attention to recover recall. The Zoology results show what fails but not why . Our work provides the mechanistic explanation: recurrent models fail at recall because their representations lack a specific geometric structure — a latent low-rank subspace — that content-based matching requires, and that only pairwise computation (attention) creates. 
+
+## 2.3 Content-Based Routing in Other Contexts 
+
+The routing problem we study has parallels in several areas: 
+
+Mixture of Experts (MoE). MoE architectures [26, 27, 28] route tokens to specialized sub-networks. Switch Transformer [27] uses a learned router to select one expert per token. Mixtral [28] routes to two of eight experts. These routers face the same representation-quality question: can the routing representation distinguish which expert a token needs? In practice, MoE routing often relies on load-balancing auxiliary losses rather than pure content matching, consistent with our finding that content-based routing requires richer representations than naive projections provide. 3Retrieval-augmented generation (RAG). RAG systems [29, 30] separate retrieval from reasoning. Dense Passage Retrieval (DPR) [30] uses learned bi-encoders for retrieval. ColBERT [31] introduces late interaction — computing fine-grained matching after initial retrieval. BM25 [32] remains a strong non-learned baseline. Our findings provide theoretical grounding for why non-learned retrieval (BM25) remains competitive: it operates on raw token overlap rather than learned representations, sidestepping the routing paradox entirely. 
+
+# 3 Experimental Framework 
+
+## 3.1 Tasks 
+
+We evaluate on three tasks spanning synthetic diagnostics, a standard benchmark, and real-world QA: 
+
+Distant Evidence Retrieval (synthetic). Each sequence ( L=512) contains a query key token kq at position q and a matching (key, value) pair placed far away (distance ≥ 200 tokens), with plausible distractor pairs placed nearby. All tokens share the same vocabulary range [1 , 256) to prevent range-based shortcuts. A 4-layer Transformer achieves 100% accuracy when the answer is near but only 1.9% when far (chance = 1.6%), confirming the task isolates long-range content matching. 
+
+MQAR [22]. The standard associative recall benchmark: N =16 key-value pairs placed in a sequence of length 256, followed by a query key. The model must output the corresponding value. This enables direct comparison with Zoology’s results. 
+
+HotpotQA [33]. A real-world multi-hop question answering dataset requiring evidence retrieval across paragraphs. We evaluate sentence-level retrieval precision: does the routing mechanism identify which text segments contain the answer evidence? 
+
+## 3.2 The FCI Architecture 
+
+Our test bed has three interchangeable components: 
+
+Flow (recurrent backbone). A Mamba-style selective SSM with input-dependent state transitions: ht =¯Atht−1 + ¯Btxt, yt = Ctht. Each block includes depthwise convolution, SiLU gating, and selective scan. 
+
+Investigator (router). The core module under study. Multi-head dot-product scoring across all position pairs: 
+
+sij = 1
+
+H
+
+> H
+
+X
+
+> h=1
+
+(W hq xi)⊤(W hk xj )
+
+pd/H (1) Top-k selection with neighbor expansion (selecting j also selects j+1, because the task places value tokens immediately after their keys). An auxiliary routing loss Lroute = CE( sq, :, a ) directly supervises routing. 
+
+Council (sparse attention). Standard multi-head Transformer attention restricted to Investigator-selected positions, followed by a feed-forward network. All experiments share the identical Investigator, Council, prediction head, and training procedure (8000 sequences, batch 32, 40 epochs, AdamW with OneCycleLR, routing loss weight decayed 1 .0 → 0.1). Key results (the phase transition and contrastive failure) were verified across 3 random seeds with <2% variance in routing precision. Only the representations fed to the Investigator differ. When we refer to Wq , W k without head superscripts in the analysis sections, we mean the combined (head-averaged) routing projection. 4Figure 2: Phase transition at one Transformer layer. (a) Routing precision jumps 82 × from 1.2% to 98.4% between 0 and 1 layers; additional layers provide no gain. (b) Over training, the transition occurs in a single epoch (epoch 10), a discrete regime change rather than gradual improvement. 
+
+Worked example. Consider a sequence [..., QUERY, 42, ..., filler, ..., 42, 17, ...] . The query key is token 42 at position 51. The correct answer key-value pair is (42, 17) at positions 350–351, with distractors near the query. The Investigator computes routing scores s51 ,j for all positions j, seeking positions where ( Wq x51 )⊤(Wkxj ) is high. With Transformer preprocessing, position 51’s representation encodes (via value aggregation) that position 350 matched its content. The Investigator’s learned projections extract this signal: s51 ,350 is highest, so position 350 (and its neighbor 351 via neighbor expansion) are selected. The Council then attends to positions 350–351, extracting the value token 17 to produce the correct prediction. Without Transformer preprocessing, x51 contains no information about position 350, so 
+
+s51 ,350 is indistinguishable from noise — routing fails. 
+
+# 4 Results 
+
+## 4.1 The Phase Transition: One Layer Is All You Need 
+
+Figure 2 shows the central result. With zero Transformer layers (raw embeddings, recurrent state, or content-only embeddings), routing precision is ≤ 2.5% regardless of training duration. With one Transformer layer, routing precision reaches 98.4%. Additional layers (2–4) provide no improvement. The transition during training is equally sharp: routing precision stays near chance for 9 epochs, then jumps from 2.8% to 99.4% in a single epoch (epoch 10), followed by task accuracy climbing from 4.7% to 74.5% over the next few epochs. (The final test-set precision is 98.4%; the 99.4% peak occurs during training at epoch 10.) No other condition shows any phase transition — all remain flat at chance throughout training. This all-or-nothing behavior is reminiscent of phase transitions in statistical physics and grokking phe-nomena in neural network training [34]: the system abruptly transitions between qualitatively different regimes rather than improving gradually. 
+
+## 4.2 The Signal Is Latent, Not Geometric 
+
+A natural hypothesis: attention succeeds because it makes matching tokens geometrically close, providing an easy signal for dot-product routing. Figure 3a refutes this. The 1-layer Transformer — achieving 98.4% routing — has the most negative query-answer cosine gap ( −0.154). Matching tokens are less similar than random pairs in the ambient geometry. The signal lives in a latent subspace. Replacing learned projections Wq , W k with random matrices (same representations) drops routing from 98.4% to 2.6% (Figure 3b). SVD reveals the combined routing matrix 5Figure 3: The routing signal lives in a latent subspace. (a) Cosine similarity between query and answer representations is negative in the successful condition (1L Transformer) — matching tokens are not geometrically close. (b) Replacing learned routing projections with random matrices drops routing from 98.4% to 2.6%, confirming the signal requires specific learned access. (c) SVD of the combined routing matrix Wq W ⊤ 
+
+> k
+
+shows 90% of energy in just 34 of 128 dimensions. 
+
+Wq W ⊤ 
+
+> k
+
+concentrates 90% of its energy in 34 of 128 dimensions (Figure 3c). The content-matching signal occupies roughly a quarter of the representation space — invisible to full-space cosine similarity but accessible to learned linear projections. This finding connects to the broader representation learning literature on linear probing [35]: the relevant information is present in the representation but encoded in a specific subspace, accessible only through the right projection. 
+
+## 4.3 The Comprehensive Routing Landscape 
+
+Figure 4 shows all 20 approaches tested. Five findings emerge: 
+
+1. A ∼25% ceiling for learned routing without attention. Every learned approach without soft-max attention — regardless of representation (Flow, embeddings, bidirectional Flow), summary method (mean-pool, max-pool), or pairwise mechanism (linear attention [9]) — clusters between 9–29%, with most approaches near 24%. Linear attention provides marginal gain (28.7% vs. 24% for recurrence) but does not break the ceiling. 
+
+2. Bidirectional recurrence = unidirectional. Forward + backward Flow (24.4%) matches forward-only (23.8%) at 2 × cost. Processing the sequence in both directions still does not create the pairwise structure routing requires. This rules out the hypothesis that the bottleneck is about directional information flow. 
+
+3. Contextual bandits fail uniformly. LinUCB (3.6%), Thompson Sampling (0.7%), and OFUL (3.6%) all fail at within-segment token selection. The routing bottleneck is not the learning algorithm — it is the quality of the representations the algorithm operates on. 
+
+4. Contrastive pretraining does not help. This is our most informative negative result (Section 4.4). 6Figure 4: The routing landscape. Twenty approaches tested across non-learned indices, learned segment routing, contextual bandits, and contrastive pretraining. Two regimes work; everything else clusters at 1– 29%. 
+
+5. Non-learned indices dominate the middle. A Bloom filter achieves 90.9% with zero learned parameters, far exceeding all learned alternatives except softmax attention. On real-world data (HotpotQA), BM25 achieves 82.7% sentence-segment retrieval. 
+
+## 4.4 Why Contrastive Pretraining Fails 
+
+Contrastive loss (InfoNCE) provides dense pairwise supervision — positive pairs (matching tokens) are pushed together, negative pairs pushed apart. This is the same signal structure as attention’s QK ⊤ compu-tation. Yet it fails: 1.6% with frozen projections, 2.2% with finetuning (Figure 5c). This decomposition reveals which component of attention is critical. Attention computes softmax( QK ⊤/√d)V
+
+in three steps (Figure 5a,b): 1. Pairwise comparison (QK ⊤): identifies which positions match. 2. Normalization (softmax): concentrates weight on the best matches. 3. Value aggregation (·V ): writes the match results back into each position’s representation. Contrastive pretraining replicates step 1 — it provides pairwise comparison supervision. (A subtle differ-ence: InfoNCE operates on sampled pairs per example, while attention computes all n2 pairs simultaneously within the full sequence context. However, with 8000 training sequences and 32 sampled pairs per position, the contrastive signal covers a comparable number of comparisons — the failure is not due to insufficient pairwise coverage.) Yet it fails. This proves that step 3 — value aggregation — is attention’s critical contri-bution. After one attention layer, position q’s representation has been updated to include information from matching positions. The match result becomes part of the representation, not something the router must independently discover. 
+
+No amount of projection learning can read information that was never written. 
+
+This insight connects to a deep distinction in representation learning: the difference between represen-tations that contain information (raw embeddings contain token identity) and representations that encode 
+
+relationships (post-attention representations encode which tokens match which). Attention performs a funda-mentally different operation — it transforms individual-token representations into relational representations. 7Figure 5: Why contrastive pretraining fails. (a) Attention has three steps; contrastive loss replicates only step 1. (b) Step 3 (value aggregation) is irreplaceable: it writes match results into representations. (c) Contrastive pretraining achieves only 1.6–2.2%, no improvement over the 1.2% baseline. 
+
+Figure 6: Generalization beyond the synthetic task. (a) Our findings replicate on the Zoology MQAR benchmark: Transformer 1L achieves 100% routing and 55.6% accuracy; Flow and raw embeddings cluster at ∼25%. (b) BM25 achieves 82.7% retrieval on HotpotQA with zero learned parameters. Having established the mechanism on our synthetic task, we now verify that these findings are not task-specific. 
+
+## 4.5 Generalization 
+
+Our findings generalize across tasks (Figure 6, Table 1). On MQAR [22]: Transformer achieves 100% routing (phase transition at epoch 5); Flow and raw embeddings cluster at ∼25%. On HotpotQA [33]: BM25 keyword retrieval achieves 82.7% sentence-segment precision with zero learned parameters, compared to a random-retrieval baseline of ∼12.5% (selecting 2 of 16 segments at random). These results establish our latent-subspace mechanism as the explanation for the recall gap observed by Arora et al. [22]: recurrent models fail at recall not due to limited capacity or insufficient training, but because their representations structurally lack the geometric property that content-based matching requires. 
+
+# 5 Discussion 
+
+The routing quality hierarchy. Our experiments reveal a discrete hierarchy, not a continuum (Table 2). 8Table 1: Generalization results. The routing hierarchy replicates across tasks. MQAR routing precision = Investigator selects the correct key position. HotpotQA precision = at least one supporting sentence appears in retrieved segments. 
+
+Task Model / Method Routing / Retrieval Task Acc 
+
+MQAR [22] Transformer 1L 100.0% 55.6% Flow 2L 24.2% 5.6% Raw embeddings 25.6% 7.6% HotpotQA [33] BM25 (non-learned) 82.7% —†
+
+Random retrieval 12.5% —†
+
+> †HotpotQA evaluates retrieval precision only; end-to-end QA accuracy is not measured.
+
+Table 2: The routing quality hierarchy. Two regimes work; a large gap separates them from everything else. No intermediate mechanism bridges the gap in our experiments. 
+
+Regime Routing How it works Cost 
+
+Non-learned index 82–91% Exact/keyword match on raw tokens O(n)Softmax attention 98–100% Creates latent subspace via value aggregation O(n2)
+
+Everything else 1–29% No mechanism to create matching structure O(n)– O(n · d2)The gap between the two working regimes and everything else is striking. This hierarchy suggests a fundamental dichotomy: if the matching criterion can be expressed symbolically (exact token match, keyword overlap), non-learned indices solve routing cheaply — explaining the enduring success of BM25 [32]. If the matching criterion requires semantic understanding , at least one layer of softmax attention is needed — explaining why dense retrieval methods [30] require substantial pre-training to outperform BM25. 
+
+Attention as a representation constructor. The prevailing view treats attention as a computation mechanism that combines information from different positions. Our findings suggest a deeper role: attention is a representation constructor that writes relational structure into embedding space. Specifically, value aggregation transforms representations from encoding individual token properties to encoding inter-token relationships . This relational structure is what makes downstream content-based operations possible. This perspective aligns with recent theoretical work on the expressiveness of Transformers [36] and the representational differences between attention and recurrence [15], but provides the first direct empirical evidence that the representational transformation — not just the computational capability — is what matters for routing. 
+
+The routing paradox and its resolution. Learned content-based routing requires attention to create the representations it operates on. But routing exists to avoid full-sequence attention. Two practical resolutions emerge: 1. Non-learned routing for symbolic matching : Bloom filters, BM25, or hash-based indices bypass learned representations entirely. This is the retrieve-then-read paradigm [29] that modern RAG systems already employ. 2. One attention layer for semantic routing : Budget a single attention layer specifically for building routing-compatible representations, then use cheap recurrence for everything else. This is close to what Zamba [20] does with a shared attention layer. 
+
+Implications for MoE routing. Token-level routing in MoE models [27, 28] faces the same constraint. If the router operates on representations lacking content-matching structure, it cannot make content-based decisions. This may explain why MoE routing often relies on load-balancing heuristics and why expert specialization is difficult to control [27]. 9Connection to the recall–throughput tradeoff. Arora et al. [23] identified a recall–throughput tradeoff in efficient models: sub-quadratic models trade recall for speed. Our work characterizes the mechanism of this tradeoff: recall requires relational representations that only pairwise computation creates. The tradeoff is not between model capacity and speed, but between the presence or absence of a specific representational transformation. 
+
+Scope and open questions. Our experiments use models at 200K–884K parameters on tasks requiring exact or keyword-level matching. Three settings (synthetic, MQAR, HotpotQA) show consistent patterns, but important questions remain. Pre-trained embeddings at billion-parameter scale encode rich semantic structure through large-scale training — this pre-existing structure might provide routing-compatible rep-resentations without the explicit attention layer we find necessary at small scale. We conjecture that the phase transition (0 → 1 attention layer) persists but the threshold may shift: pre-training has already per-formed extensive pairwise computation across the training corpus. Semantic matching tasks may alter the positioning within the hierarchy but are unlikely to eliminate the fundamental gap between pairwise and non-pairwise mechanisms. 
+
+Limitations. Small models (200K–884K parameters); sequential Python scan (no optimized CUDA ker-nels) limits scale; HotpotQA validation uses only BM25 retrieval precision; contrastive pretraining tested only with InfoNCE; results may differ with larger models and pre-trained representations. We did not test approximate attention methods that preserve the pairwise computation structure, such as Reformer [7] (LSH attention); these would be expected to achieve routing quality comparable to our 1-layer Transformer result since they approximate the same QK ⊤ computation, but verification is left to future work. 
+
+# 6 Conclusion 
+
+We exhaustively map the routing landscape for hybrid sequence models across 20+ experiments spanning three tasks, nine representation types, four routing mechanisms, and two training signals. The landscape has a sharp two-regime structure: non-learned indices (Bloom filter 90.9%, BM25 82.7%) and softmax attention (98–100%) work; everything else (1–29%) does not. The mechanism is not geometric proximity (cosine similarity is negative in the successful case), not the training signal (contrastive pretrain-ing fails), and not the scoring function (bandits fail equally). It is the representational transformation 
+
+that softmax attention provides: through value aggregation, attention writes pairwise match results into representations, creating a latent ∼34-dimensional subspace that downstream routing projections can read. This yields a routing paradox: learned content-based routing requires the pairwise computation it aims to avoid. The practical resolution is a two-tier approach — non-learned indices for coarse global routing, with one layer of attention for tasks requiring semantic matching. More broadly, our results reframe attention’s role in sequence models. Attention is not merely a computation mechanism for combining information — it is a representation constructor whose role in building relational structure appears irreplaceable by cheaper alternatives in our experiments, and may reflect a fundamental requirement for content-based routing at any scale. 
+
+# References              
+
+> [1] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. Gomez, L. Kaiser, I. Polosukhin. Attention is all you need.
+> NeurIPS , 2017. [2] J. Devlin, M.-W. Chang, K. Lee, K. Toutanova. BERT: Pre-training of deep bidirectional Transformers for language understanding. NAACL , 2019. [3] OpenAI. GPT-4 technical report. arXiv preprint arXiv:2303.08774 , 2023. [4] R. Child, S. Gray, A. Radford, I. Sutskever. Generating long sequences with sparse Transformers. arXiv preprint arXiv:1904.10509 , 2019. [5] I. Beltagy, M. Peters, A. Cohan. Longformer: The long-document Transformer. arXiv preprint arXiv:2004.05150 , 2020. [6] M. Zaheer, G. Guruganesh, K. Dubey, J. Ainslie, C. Alberti, S. Ontanon, P. Pham, A. Ravula, Q. Wang, L. Yang, A. Ahmed. BigBird: Transformers for longer sequences. NeurIPS , 2020.
+
+10 [7] N. Kitaev, L. Kaiser, A. Levskaya. Reformer: The efficient Transformer. ICLR , 2020. [8] K. Choromanski, V. Likhosherstov, D. Dohan, X. Song, A. Gane, T. Sarlos, P. Hawkins, J. Davis, A. Mohiuddin, L. Kaiser, D. Belanger, L. Colwell, A. Weller. Rethinking attention with Performers. ICLR , 2021. [9] A. Katharopoulos, A. Vyas, N. Pappas, F. Fleuret. Transformers are RNNs: Fast autoregressive Transformers with linear attention. ICML , 2020. [10] T. Dao, D. Fu, S. Ermon, A. Rudra, C. R´ e. FlashAttention: Fast and memory-efficient exact attention with IO-awareness. 
+
+NeurIPS , 2022. [11] Y. Tay, M. Dehghani, D. Bahri, D. Metzler. Efficient Transformers: A survey. ACM Computing Surveys , 2022. [12] A. Gu, K. Goel, C. R´ e. Efficiently modeling long sequences with structured state spaces. ICLR , 2022. [13] A. Gu, K. Goel, A. Gupta, C. R´ e. On the parameterization and initialization of diagonal state space models. NeurIPS ,2022. [14] A. Gu and T. Dao. Mamba: Linear-time sequence modeling with selective state spaces. arXiv preprint arXiv:2312.00752 ,2023. [15] T. Dao and A. Gu. Transformers are SSMs: Generalized models and efficient algorithms through structured state space duality. arXiv preprint arXiv:2405.21060 , 2024. [16] B. Peng et al. RWKV: Reinventing RNNs for the Transformer era. arXiv preprint arXiv:2305.13048 , 2023. [17] Y. Sun et al. Retentive network: A successor to Transformer for large language models. arXiv preprint arXiv:2307.08621 ,2023. [18] O. Lieber et al. Jamba: A hybrid Transformer-Mamba language model. arXiv preprint arXiv:2403.19887 , 2024. [19] A. De, S. Smith, et al. Griffin: Mixing gated linear recurrences with local attention for efficient language models. arXiv preprint arXiv:2402.19427 , 2024. [20] P. Glorioso et al. Zamba: A compact 7B SSM hybrid model. arXiv preprint arXiv:2405.18712 , 2024. [21] M. Poli et al. StripedHyena: Moving beyond Transformers with hybrid signal processing models. Blog post, Together AI, 2023. [22] S. Arora, S. Eyuboglu, A. Timalsina, I. Johnson, M. Poli, J. Zou, A. Rudra, C. R´ e. Zoology: Measuring and improving recall in efficient language models. ICLR , 2024. [23] S. Arora, S. Eyuboglu, M. Zhang, A. Smola, C. R´ e. Simple linear attention language models balance the recall-throughput tradeoff. ICML , 2024. [24] M. Poli, S. Massaroli, et al. Hyena hierarchy: Towards larger convolutional language models. ICML , 2023. [25] D. Fu, T. Dao, K. Saab, A. Thomas, A. Rudra, C. R´ e. Hungry hungry hippos: Towards language modeling with state space models. ICLR , 2023. [26] N. Shazeer, A. Mirhoseini, K. Maziarz, A. Davis, Q. Le, G. Hinton, J. Dean. Outrageously large neural networks: The sparsely-gated Mixture-of-Experts layer. ICLR , 2017. [27] W. Fedus, B. Zoph, N. Shazeer. Switch Transformers: Scaling to trillion parameter models with simple and efficient sparsity. JMLR , 2022. [28] A. Jiang et al. Mixtral of Experts. arXiv preprint arXiv:2401.04088 , 2024. [29] P. Lewis, E. Perez, A. Piktus, F. Petroni, V. Karpukhin, N. Goyal, H. K¨ uttler, M. Lewis, W.-T. Yih, T. Rockt¨ aschel, S. Riedel, D. Kiela. Retrieval-augmented generation for knowledge-intensive NLP tasks. NeurIPS , 2020. [30] V. Karpukhin, B. Oguz, S. Min, P. Lewis, L. Wu, S. Edunov, D. Chen, W.-T. Yih. Dense passage retrieval for open-domain question answering. EMNLP , 2020. [31] O. Khattab and M. Zaharia. ColBERT: Efficient and effective passage search via contextualized late interaction over BERT. SIGIR , 2020. [32] S. Robertson and H. Zaragoza. The probabilistic relevance framework: BM25 and beyond. Foundations and Trends in Information Retrieval , 2009. [33] Z. Yang, P. Qi, S. Zhang, Y. Bengio, W. Cohen, R. Salakhutdinov, C. Manning. HotpotQA: A dataset for diverse, explainable multi-hop question answering. EMNLP , 2018. [34] A. Power, Y. Burda, H. Edwards, I. Babuschkin, V. Misra. Grokking: Generalization beyond overfitting on small algo-rithmic datasets. arXiv preprint arXiv:2201.02177 , 2022. [35] G. Alain and Y. Bengio. Understanding intermediate layers using linear classifier probes. ICLR Workshop , 2017. [36] C. Yun, S. Bhojanapalli, A. Rawat, S. Reddi, S. Kumar. Are Transformers universal approximators of sequence-to-sequence functions? ICLR , 2020. 
+
+11
