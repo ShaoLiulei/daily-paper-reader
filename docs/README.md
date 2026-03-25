@@ -6,196 +6,164 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-03-24
-- 运行时间：2026-03-24 20:24:18 UTC
+- 最新运行日期：2026-03-25
+- 运行时间：2026-03-25 20:28:26 UTC
 - 运行状态：成功
-- 本次总论文数：58
-- 精读区：46
+- 本次总论文数：48
+- 精读区：36
 - 速读区：12
 
 ### 今日简报（AI）
-今日深挖 58 篇前沿成果，重点聚焦类脑计算硬件突破与脉冲神经网络（SNN）的自适应演进。
-满分论文揭示了有机单材料自适应神经元（SOMA）及神经元自适应机制在提升系统容量与鲁棒性上的卓越表现。
-建议优先研读两篇 10 分佳作，把握生物启发式硬件与算法融合的最新技术风向。
-- 详情：[/202603/24/README](/202603/24/README)
+今日深度研读 48 篇 AI 论文，聚焦特征稀疏化注意力扩展与隐私保护 RLHF 两项满分
+- 详情：[/202603/25/README](/202603/25/README)
 
 ### 精读区论文标签
-1. [Neuronal Self-Adaptation Enhances Capacity and Robustness of Representation in Spiking Neural Networks](/202603/24/2603.20687v1-neuronal-self-adaptation-enhances-capacity-and-robustness-of-representation-in-spiking-neural-networks)  
-   标签：评分：10.0/10、query:snn
-   evidence：脉冲神经网络架构与神经元自适应
-2. [SOMA: A Single-Material Organic Multivibrator Adaptive Neuron for Fully Integrated PEDOT:PSS Neuromorphic Systems](/202603/24/2603.20954v1-soma-a-single-material-organic-multivibrator-adaptive-neuron-for-fully-integrated-pedotpss-neuromorphic-systems)  
-   标签：评分：10.0/10、query:snn
-   evidence：用于脉冲神经网络和神经形态系统的有机多谐振荡器自适应神经元
-3. [Mixture of Chapters: Scaling Learnt Memory in Transformers](/202603/24/2603.21096v1-mixture-of-chapters-scaling-learnt-memory-in-transformers)  
+1. [Scaling Attention via Feature Sparsity](/202603/25/2603.22300v1-scaling-attention-via-feature-sparsity)  
    标签：评分：10.0/10、query:ai-llm
-   evidence：通过交叉注意力和路由扩展 Transformer 记忆
-4. [No Dense Tensors Needed: Fully Sparse Object Detection on Event-Camera Voxel Grids](/202603/24/2603.21638v1-no-dense-tensors-needed-fully-sparse-object-detection-on-event-camera-voxel-grids)  
-   标签：评分：10.0/10、query:snn
-   evidence：事件相机的全稀疏目标检测
-5. [SPINONet: Scalable Spiking Physics-informed Neural Operator for Computational Mechanics Applications](/202603/24/2603.21674v1-spinonet-scalable-spiking-physics-informed-neural-operator-for-computational-mechanics-applications)  
-   标签：评分：10.0/10、query:snn
-   evidence：可扩展的脉冲物理信息神经算子
-6. [Thinking Deeper, Not Longer: Depth-Recurrent Transformers for Compositional Generalization](/202603/24/2603.21676v1-thinking-deeper-not-longer-depth-recurrent-transformers-for-compositional-generalization)  
+   evidence：通过特征稀疏性和IO感知内核扩展Transformer注意力机制
+2. [Privacy-Preserving Reinforcement Learning from Human Feedback via Decoupled Reward Modeling](/202603/25/2603.22563v1-privacy-preserving-reinforcement-learning-from-human-feedback-via-decoupled-reward-modeling)  
    标签：评分：10.0/10、query:ai-llm
-   evidence：用于推理的深度循环Transformer架构
-7. [Benchmarking Recurrent Event-Based Object Detection for Industrial Multi-Class Recognition on MTEvent](/202603/24/2603.21787v1-benchmarking-recurrent-event-based-object-detection-for-industrial-multi-class-recognition-on-mtevent)  
+   evidence：保护隐私的基于人类反馈的强化学习
+3. [Spiking Personalized Federated Learning for Brain-Computer Interface-Enabled Immersive Communication](/202603/25/2603.22727v1-spiking-personalized-federated-learning-for-brain-computer-interface-enabled-immersive-communication)  
    标签：评分：10.0/10、query:snn
-   evidence：基于事件的物体检测与时间记忆
-8. [Parameter-Efficient Fine-Tuning for Medical Text Summarization: A Comparative Study of Lora, Prompt Tuning, and Full Fine-Tuning](/202603/24/2603.21970v1-parameter-efficient-fine-tuning-for-medical-text-summarization-a-comparative-study-of-lora-prompt-tuning-and-full-fine-tuning)  
-   标签：评分：10.0/10、query:ai-llm
-   evidence：医疗大模型LoRA与提示微调的比较研究
-9. [Compute Allocation for Reasoning-Intensive Retrieval Agents](/202603/24/2603.14635v1-compute-allocation-for-reasoning-intensive-retrieval-agents)  
+   evidence：用于脑机接口和联邦学习的脉冲神经网络
+4. [A Latency Coding Framework for Deep Spiking Neural Networks with Ultra-Low Latency](/202603/25/2603.23206v1-a-latency-coding-framework-for-deep-spiking-neural-networks-with-ultra-low-latency)  
+   标签：评分：10.0/10、query:snn
+   evidence：使用BPTT的深度脉冲神经网络延迟编码框架
+5. [ARISE: Agent Reasoning with Intrinsic Skill Evolution in Hierarchical Reinforcement Learning](/202603/25/2603.16060v1-arise-agent-reasoning-with-intrinsic-skill-evolution-in-hierarchical-reinforcement-learning)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：LLM流水线中的计算分配与推理时思考
-10. [Scalable Text-Embedding-informed Cognitive Diagnosis of Large Language Models](/202603/24/2603.14676v1-scalable-text-embedding-informed-cognitive-diagnosis-of-large-language-models)  
+   evidence：用于语言模型推理的分层强化学习
+6. [Capability-Guided Compression: Toward Interpretability-Aware Budget Allocation for Large Language Models](/202603/25/2603.16440v1-capability-guided-compression-toward-interpretability-aware-budget-allocation-for-large-language-models)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：大语言模型推理能力的细粒度诊断
-11. [BrainBench: Exposing the Commonsense Reasoning Gap in Large Language Models](/202603/24/2603.14761v1-brainbench-exposing-the-commonsense-reasoning-gap-in-large-language-models)  
+   evidence：大语言模型的可解释性感知压缩
+7. [DynHD: Hallucination Detection for Diffusion Large Language Models via Denoising Dynamics Deviation Learning](/202603/25/2603.16459v1-dynhd-hallucination-detection-for-diffusion-large-language-models-via-denoising-dynamics-deviation-learning)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：大语言模型常识推理基准测试
-12. [Ego to World: Collaborative Spatial Reasoning in Embodied Systems via Reinforcement Learning](/202603/24/2603.14811v1-ego-to-world-collaborative-spatial-reasoning-in-embodied-systems-via-reinforcement-learning)  
+   evidence：扩散大语言模型中的幻觉检测
+8. [Segmentation-Based Attention Entropy: Detecting and Mitigating Object Hallucinations in Large Vision-Language Models](/202603/25/2603.16558v1-segmentation-based-attention-entropy-detecting-and-mitigating-object-hallucinations-in-large-vision-language-models)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：视觉语言模型的强化学习与有监督微调
-13. [Advancing Multimodal Agent Reasoning with Long-Term Neuro-Symbolic Memory](/202603/24/2603.15280v1-advancing-multimodal-agent-reasoning-with-long-term-neuro-symbolic-memory)  
+   evidence：减轻生成式视觉语言模型中的幻觉
+9. [Efficient Reasoning on the Edge](/202603/25/2603.16867v1-efficient-reasoning-on-the-edge)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：多模态大模型智能体的神经符号记忆
-14. [Sparse but not Simpler: A Multi-Level Interpretability Analysis of Vision Transformers](/202603/24/2603.15919v1-sparse-but-not-simpler-a-multi-level-interpretability-analysis-of-vision-transformers)  
+   evidence：用于边缘设备推理的有监督微调与LoRA技术
+10. [A Unified Language Model for Large Scale Search, Recommendation, and Reasoning](/202603/25/2603.17533v1-a-unified-language-model-for-large-scale-search-recommendation-and-reasoning)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：视觉 Transformer 的可解释性分析
-15. [Sparse but not Simpler: A Multi-Level Interpretability Analysis of Vision Transformers](/202603/24/2603.15919v2-sparse-but-not-simpler-a-multi-level-interpretability-analysis-of-vision-transformers)  
-   标签：评分：9.0/10、query:ai-llm
-   evidence：视觉 Transformer 的可解释性分析
-16. [Attention-guided Evidence Grounding for Spoken Question Answering](/202603/24/2603.16292v1-attention-guided-evidence-grounding-for-spoken-question-answering)  
-   标签：评分：9.0/10、query:ai-llm
-   evidence：语音大语言模型的监督微调范式
-17. [Anticipatory Planning for Multimodal AI Agents](/202603/24/2603.16777v1-anticipatory-planning-for-multimodal-ai-agents)  
-   标签：评分：9.0/10、query:ai-llm
-   evidence：多模态 AI 智能体的强化学习与规划
-18. [GIST: Gauge-Invariant Spectral Transformers for Scalable Graph Neural Operators](/202603/24/2603.16849v1-gist-gauge-invariant-spectral-transformers-for-scalable-graph-neural-operators)  
-   标签：评分：9.0/10、query:ai-llm
-   evidence：具有谱注意力的全新图Transformer架构
-19. [SHIFT: Motion Alignment in Video Diffusion Models with Adversarial Hybrid Fine-Tuning](/202603/24/2603.17426v1-shift-motion-alignment-in-video-diffusion-models-with-adversarial-hybrid-fine-tuning)  
-   标签：评分：9.0/10、query:ai-llm
-   evidence：视频扩散模型的混合微调方法
-20. [Zipper-LoRA: Dynamic Parameter Decoupling for Speech-LLM based Multilingual Speech Recognition](/202603/24/2603.17558v1-zipper-lora-dynamic-parameter-decoupling-for-speech-llm-based-multilingual-speech-recognition)  
-   标签：评分：9.0/10、query:ai-llm
-   evidence：语音大模型的参数高效微调
-21. [Benchmarking Reinforcement Learning via Stochastic Converse Optimality: Generating Systems with Known Optimal Policies](/202603/24/2603.17631v1-benchmarking-reinforcement-learning-via-stochastic-converse-optimality-generating-systems-with-known-optimal-policies)  
-   标签：评分：9.0/10、query:ai-llm
-   evidence：强化学习算法的基准测试
-22. [Self-Tuning Sparse Attention: Multi-Fidelity Hyperparameter Optimization for Transformer Acceleration](/202603/24/2603.18417v1-self-tuning-sparse-attention-multi-fidelity-hyperparameter-optimization-for-transformer-acceleration)  
-   标签：评分：9.0/10、query:ai-llm
-   evidence：用于 Transformer 加速的稀疏注意力机制
-23. [A Unified Phase-native Computational Principle Governs Hippocampal Spike Timing and Neural Coding](/202603/24/2603.19690v1-a-unified-phase-native-computational-principle-governs-hippocampal-spike-timing-and-neural-coding)  
+   evidence：用于搜索、推荐和推理的统一语言模型
+11. [A Synthesizable RTL Implementation of Predictive Coding Networks](/202603/25/2603.18066v1-a-synthesizable-rtl-implementation-of-predictive-coding-networks)  
    标签：评分：9.0/10、query:snn
-   evidence：脉冲定时和神经编码的计算原理
-24. [Understanding Pruning Regimes in Vision-Language Models Through Domain-Aware Layer Selection](/202603/24/2603.20275v1-understanding-pruning-regimes-in-vision-language-models-through-domain-aware-layer-selection)  
+   evidence：硬件学习与神经核心的数字架构
+12. [Training-Free Sparse Attention for Fast Video Generation via Offline Layer-Wise Sparsity Profiling and Online Bidirectional Co-Clustering](/202603/25/2603.18636v1-training-free-sparse-attention-for-fast-video-generation-via-offline-layer-wise-sparsity-profiling-and-online-bidirectional-co-clustering)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：Transformer 视觉语言模型的剪枝方案
-25. [AE-LLM: Adaptive Efficiency Optimization for Large Language Models](/202603/24/2603.20492v1-ae-llm-adaptive-efficiency-optimization-for-large-language-models)  
+   evidence：扩散Transformer的稀疏注意力机制
+13. [Scalable Prompt Routing via Fine-Grained Latent Task Discovery](/202603/25/2603.19415v1-scalable-prompt-routing-via-fine-grained-latent-task-discovery)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：大语言模型架构的效率优化
-26. [Context Cartography: Toward Structured Governance of Contextual Space in Large Language Model Systems](/202603/24/2603.20578v1-context-cartography-toward-structured-governance-of-contextual-space-in-large-language-model-systems)  
+   evidence：大语言模型池的提示词路由
+14. [Scalable Prompt Routing via Fine-Grained Latent Task Discovery](/202603/25/2603.19415v2-scalable-prompt-routing-via-fine-grained-latent-task-discovery)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：大语言模型系统中的上下文空间治理
-27. [MKA: Memory-Keyed Attention for Efficient Long-Context Reasoning](/202603/24/2603.20586v1-mka-memory-keyed-attention-for-efficient-long-context-reasoning)  
+   evidence：大语言模型池的提示路由
+15. [Neural Uncertainty Principle: A Unified View of Adversarial Fragility and LLM Hallucination](/202603/25/2603.19562v1-neural-uncertainty-principle-a-unified-view-of-adversarial-fragility-and-llm-hallucination)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：用于长文本语言建模的分层注意力机制
-28. [Structural Sensitivity in Compressed Transformers: Error Propagation, Lyapunov Stability, and Formally Verified Bounds](/202603/24/2603.20991v1-structural-sensitivity-in-compressed-transformers-error-propagation-lyapunov-stability-and-formally-verified-bounds)  
+   evidence：大模型幻觉与对抗脆弱性的统一视角
+16. [FAAR: Efficient Frequency-Aware Multi-Task Fine-Tuning via Automatic Rank Selection](/202603/25/2603.20403v1-faar-efficient-frequency-aware-multi-task-fine-tuning-via-automatic-rank-selection)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：压缩Transformer中的结构敏感性与稳定性
-29. [When Does Content-Based Routing Work? Representation Requirements for Selective Attention in Hybrid Sequence Models](/202603/24/2603.20997v1-when-does-content-based-routing-work-representation-requirements-for-selective-attention-in-hybrid-sequence-models)  
+   evidence：通过低秩自适应进行参数高效微调
+17. [MKA: Memory-Keyed Attention for Efficient Long-Context Reasoning](/202603/25/2603.20586v2-mka-memory-keyed-attention-for-efficient-long-context-reasoning)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：混合序列模型中的注意力机制
-30. [CoVFT: Context-aware Visual Fine-tuning for Multimodal Large Language Models](/202603/24/2603.21077v1-covft-context-aware-visual-fine-tuning-for-multimodal-large-language-models)  
+   evidence：用于高效长文本推理的分层注意力机制
+18. [Mitigating Shortcut Reasoning in Language Models: A Gradient-Aware Training Approach](/202603/25/2603.20899v1-mitigating-shortcut-reasoning-in-language-models-a-gradient-aware-training-approach)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：多模态大语言模型的视觉微调
-31. [ResPrune: Text-Conditioned Subspace Reconstruction for Visual Token Pruning in Large Vision-Language Models](/202603/24/2603.21105v1-resprune-text-conditioned-subspace-reconstruction-for-visual-token-pruning-in-large-vision-language-models)  
+   evidence：缓解大语言模型中的捷径推理问题
+19. [Reward Sharpness-Aware Fine-Tuning for Diffusion Models](/202603/25/2603.21175v1-reward-sharpness-aware-fine-tuning-for-diffusion-models)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：大型视觉语言模型的视觉标记剪枝
-32. [ORACLE: Optimizing Reasoning Abilities of Large Language Models via Constraint-Led Synthetic Data Elicitation](/202603/24/2603.21140v1-oracle-optimizing-reasoning-abilities-of-large-language-models-via-constraint-led-synthetic-data-elicitation)  
+   evidence：扩散模型的基于人类反馈强化学习与奖励中心微调
+20. [Enhancing reasoning accuracy in large language models during inference time](/202603/25/2603.21301v1-enhancing-reasoning-accuracy-in-large-language-models-during-inference-time)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：通过合成数据优化LLM的推理能力
-33. [ConsRoute:Consistency-Aware Adaptive Query Routing for Cloud-Edge-Device Large Language Models](/202603/24/2603.21237v1-consrouteconsistency-aware-adaptive-query-routing-for-cloud-edge-device-large-language-models)  
+   evidence：提升大语言模型推理准确率的推理时技术
+21. [A transformer architecture alteration to incentivise externalised reasoning](/202603/25/2603.21376v2-a-transformer-architecture-alteration-to-incentivise-externalised-reasoning)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：云-边-端大语言模型的自适应查询路由
-34. [Aggregation Alignment for Federated Learning with Mixture-of-Experts under Data Heterogeneity](/202603/24/2603.21276v1-aggregation-alignment-for-federated-learning-with-mixture-of-experts-under-data-heterogeneity)  
+   evidence：带有早退机制的 Transformer 架构改进
+22. [Toward a Theory of Hierarchical Memory for Language Agents](/202603/25/2603.21564v1-toward-a-theory-of-hierarchical-memory-for-language-agents)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：基于MoE架构的LLM联邦微调
-35. [Conversation Tree Architecture: A Structured Framework for Context-Aware Multi-Branch LLM Conversations](/202603/24/2603.21278v1-conversation-tree-architecture-a-structured-framework-for-context-aware-multi-branch-llm-conversations)  
+   evidence：语言智能体的分层记忆理论
+23. [Latent Semantic Manifolds in Large Language Models](/202603/25/2603.22301v1-latent-semantic-manifolds-in-large-language-models)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：大语言模型对话架构与上下文管理
-36. [Stream separation improves Bregman conditioning in transformers](/202603/24/2603.21317v1-stream-separation-improves-bregman-conditioning-in-transformers)  
+   evidence：大语言模型隐藏状态与流形的数学框架
+24. [Trained Persistent Memory for Frozen Decoder-Only LLMs](/202603/25/2603.22329v1-trained-persistent-memory-for-frozen-decoder-only-llms)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：Transformer中的Bregman几何与流分离
-37. [A transformer architecture alteration to incentivise externalised reasoning](/202603/24/2603.21376v1-a-transformer-architecture-alteration-to-incentivise-externalised-reasoning)  
+   evidence：冻结解码器大语言模型的持久化内存
+25. [Demystifying Low-Rank Knowledge Distillation in Large Language Models: Convergence, Generalization, and Information-Theoretic Guarantees](/202603/25/2603.22355v1-demystifying-low-rank-knowledge-distillation-in-large-language-models-convergence-generalization-and-information-theoretic-guarantees)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：用于推理的 Transformer 架构改进
-38. [Task-Specific Efficiency Analysis: When Small Language Models Outperform Large Language Models](/202603/24/2603.21389v1-task-specific-efficiency-analysis-when-small-language-models-outperform-large-language-models)  
+   evidence：大语言模型低秩知识蒸馏的理论框架
+26. [Latent Style-based Quantum Wasserstein GAN for Drug Design](/202603/25/2603.22399v1-latent-style-based-quantum-wasserstein-gan-for-drug-design)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：大小语言模型的效率分析
-39. [Efficient Fine-Tuning Methods for Portuguese Question Answering: A Comparative Study of PEFT on BERTimbau and Exploratory Evaluation of Generative LLMs](/202603/24/2603.21418v1-efficient-fine-tuning-methods-for-portuguese-question-answering-a-comparative-study-of-peft-on-bertimbau-and-exploratory-evaluation-of-generative-llms)  
+   evidence：基于量子GAN的药物设计生成式人工智能
+27. [Functional Component Ablation Reveals Specialization Patterns in Hybrid Language Model Architectures](/202603/25/2603.22473v1-functional-component-ablation-reveals-specialization-patterns-in-hybrid-language-model-architectures)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：大语言模型参数高效微调（PEFT）评估
-40. [DRTriton: Large-Scale Synthetic Data Reinforcement Learning for Triton Kernel Generation](/202603/24/2603.21465v1-drtriton-large-scale-synthetic-data-reinforcement-learning-for-triton-kernel-generation)  
+   evidence：结合注意力和状态空间模型的混合语言模型架构
+28. [Cognitive Training for Language Models: Towards General Capabilities via Cross-Entropy Games](/202603/25/2603.22479v1-cognitive-training-for-language-models-towards-general-capabilities-via-cross-entropy-games)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：用于大模型代码生成的强化学习
-41. [Generalizable Self-Evolving Memory for Automatic Prompt Optimization](/202603/24/2603.21520v1-generalizable-self-evolving-memory-for-automatic-prompt-optimization)  
+   evidence：通过交叉熵博弈对语言模型进行认知训练
+29. [Dynamical Systems Theory Behind a Hierarchical Reasoning Model](/202603/25/2603.22871v1-dynamical-systems-theory-behind-a-hierarchical-reasoning-model)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：大模型自动提示词优化的记忆驱动框架
-42. [Sharper Generalization Bounds for Transformer](/202603/24/2603.21541v1-sharper-generalization-bounds-for-transformer)  
+   evidence：使用神经常微分方程改进大模型递归推理的新型架构
+30. [Optimizing Small Language Models for NL2SQL via Chain-of-Thought Fine-Tuning](/202603/25/2603.22942v1-optimizing-small-language-models-for-nl2sql-via-chain-of-thought-fine-tuning)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：Transformer架构的泛化界限
-43. [Stabilizing Iterative Self-Training with Verified Reasoning via Symbolic Recursive Self-Alignment](/202603/24/2603.21558v1-stabilizing-iterative-self-training-with-verified-reasoning-via-symbolic-recursive-self-alignment)  
-   标签：评分：9.0/10、query:ai-llm
-   evidence：稳定模型的迭代自训练
-44. [CurvZO: Adaptive Curvature-Guided Sparse Zeroth-Order Optimization for Efficient LLM Fine-Tuning](/202603/24/2603.21725v1-curvzo-adaptive-curvature-guided-sparse-zeroth-order-optimization-for-efficient-llm-fine-tuning)  
-   标签：评分：9.0/10、query:ai-llm
-   evidence：使用零阶优化的高效大语言模型微调
-45. [Impact of heavy-tailed synaptic strength distributions on self-sustained activity in networks of spiking neurons](/202603/24/2603.21781v1-impact-of-heavy-tailed-synaptic-strength-distributions-on-self-sustained-activity-in-networks-of-spiking-neurons)  
+   evidence：针对NL2SQL任务的小语言模型微调
+31. [Generative Event Pretraining with Foundation Model Alignment](/202603/25/2603.23032v1-generative-event-pretraining-with-foundation-model-alignment)  
    标签：评分：9.0/10、query:snn
-   evidence：脉冲神经元网络活动理论
-46. [Dual-Space Knowledge Distillation with Key-Query Matching for Large Language Models with Vocabulary Mismatch](/202603/24/2603.22056v1-dual-space-knowledge-distillation-with-key-query-matching-for-large-language-models-with-vocabulary-mismatch)  
+   evidence：基于事件相机的生成式预训练视觉基础模型
+32. [Sparser, Faster, Lighter Transformer Language Models](/202603/25/2603.23198v1-sparser-faster-lighter-transformer-language-models)  
    标签：评分：9.0/10、query:ai-llm
-   evidence：针对词表不匹配的大语言模型知识蒸馏
+   evidence：Transformer 前馈层中的稀疏性研究
+33. [MemCollab: Cross-Agent Memory Collaboration via Contrastive Trajectory Distillation](/202603/25/2603.23234v1-memcollab-cross-agent-memory-collaboration-via-contrastive-trajectory-distillation)  
+   标签：评分：9.0/10、query:ai-llm
+   evidence：基于大语言模型的智能体与记忆机制
+34. [SpecEyes: Accelerating Agentic Multimodal LLMs via Speculative Perception and Planning](/202603/25/2603.23483v1-speceyes-accelerating-agentic-multimodal-llms-via-speculative-perception-and-planning)  
+   标签：评分：9.0/10、query:ai-llm
+   evidence：加速代理式多模态大模型架构
+35. [TETO: Tracking Events with Teacher Observation for Motion Estimation and Frame Interpolation](/202603/25/2603.23487v1-teto-tracking-events-with-teacher-observation-for-motion-estimation-and-frame-interpolation)  
+   标签：评分：9.0/10、query:snn
+   evidence：使用事件相机进行基于事件的运动估计和追踪
+36. [VISion On Request: Enhanced VLLM efficiency with sparse, dynamically selected, vision-language interactions](/202603/25/2603.23495v1-vision-on-request-enhanced-vllm-efficiency-with-sparse-dynamically-selected-vision-language-interactions)  
+   标签：评分：9.0/10、query:ai-llm
+   evidence：大型视觉语言模型的效率优化
 
 ### 速读区论文标签
-1. [Compute Allocation for Reasoning-Intensive Retrieval Agents](/202603/24/2603.14635v2-compute-allocation-for-reasoning-intensive-retrieval-agents)  
+1. [Neural Networks as Local-to-Global Computations](/202603/25/2603.14831v1-neural-networks-as-local-to-global-computations)  
    标签：评分：8.0/10、query:ai-llm
-   evidence：推理密集型大语言模型检索流水线中的计算分配
-2. [Punctuated Equilibria in Artificial Intelligence: The Institutional Scaling Law and the Speciation of Sovereign AI](/202603/24/2603.14664v1-punctuated-equilibria-in-artificial-intelligence-the-institutional-scaling-law-and-the-speciation-of-sovereign-ai)  
+   evidence：神经网络计算的基础理论
+2. [Neural Networks as Local-to-Global Computations](/202603/25/2603.14831v2-neural-networks-as-local-to-global-computations)  
    标签：评分：8.0/10、query:ai-llm
-   evidence：分析AI缩放法则及Transformer架构的影响
-3. [Two Birds, One Projection: Harmonizing Safety and Utility in LVLMs via Inference-time Feature Projection](/202603/24/2603.14825v1-two-birds-one-projection-harmonizing-safety-and-utility-in-lvlms-via-inference-time-feature-projection)  
+   evidence：神经网络计算的基础理论
+3. [AutoMoT: A Unified Vision-Language-Action Model with Asynchronous Mixture-of-Transformers for End-to-End Autonomous Driving](/202603/25/2603.14851v2-automot-a-unified-vision-language-action-model-with-asynchronous-mixture-of-transformers-for-end-to-end-autonomous-driving)  
    标签：评分：8.0/10、query:ai-llm
-   evidence：大视觉语言模型推理阶段的特征投影安全防御
-4. [Dataset Distillation Efficiently Encodes Low-Dimensional Representations from Gradient-Based Learning of Non-Linear Tasks](/202603/24/2603.14830v1-dataset-distillation-efficiently-encodes-low-dimensional-representations-from-gradient-based-learning-of-non-linear-tasks)  
+   evidence：采用混合Transformer结构的视觉-语言-动作模型
+4. [Sample-Efficient Hypergradient Estimation for Decentralized Bi-Level Reinforcement Learning](/202603/25/2603.14867v1-sample-efficient-hypergradient-estimation-for-decentralized-bi-level-reinforcement-learning)  
    标签：评分：8.0/10、query:ai-llm
-   evidence：神经网络训练的理论分析
-5. [MONET: Modeling and Optimization of neural NEtwork Training from Edge to Data Centers](/202603/24/2603.15002v1-monet-modeling-and-optimization-of-neural-network-training-from-edge-to-data-centers)  
+   evidence：去中心化双层强化学习算法
+5. [PhasorFlow: A Python Library for Unit Circle Based Computing](/202603/25/2603.15886v1-phasorflow-a-python-library-for-unit-circle-based-computing)  
+   标签：评分：7.0/10、query:snn
+   evidence：用于类脑和单位圆计算的库
+6. [Argumentative Human-AI Decision-Making: Toward AI Agents That Reason With Us, Not For Us](/202603/25/2603.15946v1-argumentative-human-ai-decision-making-toward-ai-agents-that-reason-with-us-not-for-us)  
    标签：评分：7.0/10、query:ai-llm
-   evidence：硬件加速器上神经网络训练的模型化与优化
-6. [Rethinking Machine Unlearning: Models Designed to Forget via Key Deletion](/202603/24/2603.15033v1-rethinking-machine-unlearning-models-designed-to-forget-via-key-deletion)  
+   evidence：结合计算论证和大模型进行推理的AI智能体
+7. [When Generative Augmentation Hurts: A Benchmark Study of GAN and Diffusion Models for Bias Correction in AI Classification Systems](/202603/25/2603.16134v1-when-generative-augmentation-hurts-a-benchmark-study-of-gan-and-diffusion-models-for-bias-correction-in-ai-classification-systems)  
    标签：评分：7.0/10、query:ai-llm
-   evidence：AI模型中机器遗忘的新范式
-7. [Mechanistic Foundations of Goal-Directed Control](/202603/24/2603.15248v2-mechanistic-foundations-of-goal-directed-control)  
+   evidence：用于AI分类系统中偏见纠正的生成模型研究
+8. [FG-SGL: Fine-Grained Semantic Guidance Learning via Motion Process Decomposition for Micro-Gesture Recognition](/202603/25/2603.16269v1-fg-sgl-fine-grained-semantic-guidance-learning-via-motion-process-decomposition-for-micro-gesture-recognition)  
    标签：评分：7.0/10、query:ai-llm
-   evidence：Transformer电路的机械可解释性
-8. [Trajectory-Diversity-Driven Robust Vision-and-Language Navigation](/202603/24/2603.15370v1-trajectory-diversity-driven-robust-vision-and-language-navigation)  
-   标签：评分：7.0/10、query:ai-llm
-   evidence：用于目标导向导航的强化学习框架
-9. [ViSA: Visited-State Augmentation for Generalized Goal-Space Contrastive Reinforcement Learning](/202603/24/2603.14887v1-visa-visited-state-augmentation-for-generalized-goal-space-contrastive-reinforcement-learning)  
+   evidence：用于微手势识别的视觉语言模型
+9. [100x Cost & Latency Reduction: Performance Analysis of AI Query Approximation using Lightweight Proxy Models](/202603/25/2603.15970v1-100x-cost--latency-reduction-performance-analysis-of-ai-query-approximation-using-lightweight-proxy-models)  
    标签：评分：6.0/10、query:ai-llm
-   evidence：对比强化学习与策略更新
-10. [PrototypeNAS: Rapid Design of Deep Neural Networks for Microcontroller Units](/202603/24/2603.15106v1-prototypenas-rapid-design-of-deep-neural-networks-for-microcontroller-units)  
+   evidence：使用轻量级代理模型对LLM进行AI查询近似
+10. [Speakers Localization Using Batch EM In Unfolding Neural Network](/202603/25/2603.16278v1-speakers-localization-using-batch-em-in-unfolding-neural-network)  
    标签：评分：6.0/10、query:ai-llm
-   evidence：用于微控制器上高效深度神经网络设计的零样本NAS
-11. [Storage and selection of multiple chaotic attractors in minimal reservoir computers](/202603/24/2603.15155v1-storage-and-selection-of-multiple-chaotic-attractors-in-minimal-reservoir-computers)  
+   evidence：用于说话人定位的展开神经网络
+11. [Stochastic Resetting Accelerates Policy Convergence in Reinforcement Learning](/202603/25/2603.16842v1-stochastic-resetting-accelerates-policy-convergence-in-reinforcement-learning)  
    标签：评分：6.0/10、query:ai-llm
-   evidence：用于混沌吸引子的极简储备池计算
-12. [Massive Redundancy in Gradient Transport Enables Sparse Online Learning](/202603/24/2603.15195v1-massive-redundancy-in-gradient-transport-enables-sparse-online-learning)  
-   标签：评分：6.0/10、query:snn
-   evidence：循环动力学中的稀疏在线学习与梯度传输
+   evidence：强化学习中的随机重置机制
+12. [Unifying Optimization and Dynamics to Parallelize Sequential Computation: A Guide to Parallel Newton Methods for Breaking Sequential Bottlenecks](/202603/25/2603.16850v1-unifying-optimization-and-dynamics-to-parallelize-sequential-computation-a-guide-to-parallel-newton-methods-for-breaking-sequential-bottlenecks)  
+   标签：评分：6.0/10、query:ai-llm
+   evidence：机器学习和循环网络的并行算法
 
 
 <div class="dpr-home-promo-card">

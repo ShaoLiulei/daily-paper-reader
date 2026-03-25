@@ -1,0 +1,1895 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-03-25T20:21:33.789920+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 2,
+    "deep_divecandidates": 116,
+    "deep_cap": 7,
+    "deep_selected": 36,
+    "quick_candidates": 145,
+    "quick_skim_target": 12,
+    "quick_selected": 12
+  },
+  "deep_dive": [
+    {
+      "id": "2603.22300v1",
+      "title": "Scaling Attention via Feature Sparsity",
+      "abstract": "Scaling Transformers to ultra-long contexts is bottlenecked by the $O(n^2 d)$ cost of self-attention. Existing methods reduce this cost along the sequence axis through local windows, kernel approximations, or token-level sparsity, but these approaches consistently degrade accuracy. In this paper, we instead explore an orthogonal axis: feature sparsity. We propose Sparse Feature Attention (SFA), where queries and keys are represented as $k$-sparse codes that preserve high-dimensional expressivity while reducing the cost of attention from $Θ(n^2 d)$ to $Θ(n^2 k^2/d)$. To make this efficient at scale, we introduce FlashSFA, an IO-aware kernel that extends FlashAttention to operate directly on sparse overlaps without materializing dense score matrices. Across GPT-2 and Qwen3 pretraining, SFA matches dense baselines while improving speed by up to $2.5\\times$ and reducing FLOPs and KV-cache by nearly 50\\%. On synthetic and downstream benchmarks, SFA preserves retrieval accuracy and robustness at long contexts, outperforming short-embedding baselines that collapse feature diversity. These results establish feature-level sparsity as a complementary and underexplored axis for efficient attention, enabling Transformers to scale to orders-of-magnitude longer contexts with minimal quality loss. Code is available at https://github.com/YannX1e/Sparse-Feature-Attention.",
+      "authors": [
+        "Yan Xie",
+        "Tiansheng Wen",
+        "Tangda Huang",
+        "Bo Chen",
+        "Chenyu You",
+        "Stefanie Jegelka",
+        "Yifei Wang"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-03-17T08:41:50+00:00",
+      "link": "https://arxiv.org/pdf/2603.22300v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Scaling Transformer attention via feature sparsity and IO-aware kernels",
+      "llm_evidence_cn": "通过特征稀疏性和IO感知内核扩展Transformer注意力机制",
+      "llm_evidence": "通过特征稀疏性和IO感知内核扩展Transformer注意力机制",
+      "canonical_evidence": "通过特征稀疏性和IO感知内核扩展Transformer注意力机制",
+      "llm_tldr_en": "Proposes Sparse Feature Attention to reduce the computational cost of Transformers for long contexts.",
+      "llm_tldr_cn": "提出了稀疏特征注意力机制，以降低Transformer在长上下文下的计算成本。",
+      "llm_tldr": "提出了稀疏特征注意力机制，以降低Transformer在长上下文下的计算成本。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Transformer based models and attention mechanisms",
+      "matched_requirement_id": "req-9",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.22563v1",
+      "title": "Privacy-Preserving Reinforcement Learning from Human Feedback via Decoupled Reward Modeling",
+      "abstract": "Preference-based fine-tuning has become an important component in training large language models, and the data used at this stage may contain sensitive user information. A central question is how to design a differentially private pipeline that is well suited to the distinct structure of reinforcement learning from human feedback. We propose a privacy-preserving framework that imposes differential privacy only on reward learning and derives the final policy from the resulting private reward model. Theoretically, we study the suboptimality gap and show that privacy contributes an additional additive term beyond the usual non-private statistical error. We also establish a minimax lower bound and show that the dominant term changes with sample size and privacy level, which in turn characterizes regimes in which the upper bound is rate-optimal up to logarithmic factors. Empirically, synthetic experiments confirm the scaling predicted by the theory, and experiments on the Anthropic HH-RLHF dataset using the Gemma-2B-IT model show stronger private alignment performance than existing differentially private baseline methods across privacy budgets.",
+      "authors": [
+        "Young Hyun Cho",
+        "Will Wei Sun"
+      ],
+      "primary_category": "stat.ML",
+      "categories": [
+        "stat.ML",
+        "cs.LG"
+      ],
+      "published": "2026-03-23T20:45:17+00:00",
+      "link": "https://arxiv.org/pdf/2603.22563v1",
+      "tags": [
+        "keyword:AI LLM"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "privacy-preserving reinforcement learning from human feedback",
+      "llm_evidence_cn": "保护隐私的基于人类反馈的强化学习",
+      "llm_evidence": "保护隐私的基于人类反馈的强化学习",
+      "canonical_evidence": "保护隐私的基于人类反馈的强化学习",
+      "llm_tldr_en": "Proposes a differentially private RLHF framework by decoupling reward modeling from policy derivation.",
+      "llm_tldr_cn": "通过将奖励建模与策略推导解耦，提出了一种差分隐私 RLHF 框架。",
+      "llm_tldr": "通过将奖励建模与策略推导解耦，提出了一种差分隐私 RLHF 框架。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Reinforcement learning from human feedback and algorithms",
+      "matched_requirement_id": "req-11",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.22727v1",
+      "title": "Spiking Personalized Federated Learning for Brain-Computer Interface-Enabled Immersive Communication",
+      "abstract": "This work proposes a novel immersive communication framework that leverages brain-computer interface (BCI) to acquire brain signals for inferring user-centric states (e.g., intention and perception-related discomfort), thereby enabling more personalized and robust immersive adaptation under strong individual variability. Specifically, we develop a personalized federated learning (PFL) model to analyze and process the collected brain signals, which not only accommodates neurodiverse brain-signal data but also prevents the leakage of sensitive brain-signal information. To address the energy bottleneck of continual on-device learning and inference on energy-limited immersive terminals (e.g., head-mounted display), we further embed spiking neural networks (SNNs) into the PFL. By exploiting sparse, event-driven spike computation, the SNN-enabled PFL reduces the computation and energy cost of training and inference while maintaining competitive personalization performance. Experiments on real brain-signal dataset demonstrate that our method achieves the best overall identification accuracy while reducing inference energy by 6.46$\\times$ compared with conventional artificial neural network-based personalized baselines.",
+      "authors": [
+        "Chen Shang",
+        "Dinh Thai Hoang",
+        "Diep N. Nguyen",
+        "Jiadong Yu"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "eess.SP"
+      ],
+      "published": "2026-03-24T02:46:47+00:00",
+      "link": "https://arxiv.org/pdf/2603.22727v1",
+      "tags": [
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "spiking neural networks for BCI and federated learning",
+      "llm_evidence_cn": "用于脑机接口和联邦学习的脉冲神经网络",
+      "llm_evidence": "用于脑机接口和联邦学习的脉冲神经网络",
+      "canonical_evidence": "用于脑机接口和联邦学习的脉冲神经网络",
+      "llm_tldr_en": "Leverages spiking neural networks in a federated learning framework for energy-efficient BCI signal processing.",
+      "llm_tldr_cn": "在联邦学习框架中利用脉冲神经网络实现高效节能的脑机接口信号处理。",
+      "llm_tldr": "在联邦学习框架中利用脉冲神经网络实现高效节能的脑机接口信号处理。",
+      "llm_tags": [
+        "query:snn:composite"
+      ],
+      "matched_query_tag": "query:snn:composite",
+      "matched_query_text": "Papers central to 请帮我查找有关脉冲神经网络的论文, especially work that connects or combines: Spiking Neural Networks (SNN) architecture and theory; Neuromorphic computing hardware and algorithms; Event-based vision and spiking neural networks; Supervised and unsupervised training methods for SNN; Recent advances in Spiking Neural Networks research; State of the art algorithms for training Spiking Neural Networks.",
+      "matched_requirement_id": "req-composite-snn",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.23206v1",
+      "title": "A Latency Coding Framework for Deep Spiking Neural Networks with Ultra-Low Latency",
+      "abstract": "Spiking neural networks (SNNs) offer a biologically inspired computing paradigm with significant potential for energy-efficient neural processing. Among neural coding schemes of SNNs, Time-To-First-Spike (TTFS) coding, which encodes information through the precise timing of a neuron's first spike, provides exceptional energy efficiency and biological plausibility. Despite its theoretical advantages, existing TTFS models lack efficient training methods, suffering from high inference latency and limited performance. In this work, we present a comprehensive framework, which enables the efficient training of deep TTFS-coded SNNs by employing backpropagation throuh time (BPTT) algorithm. We name the generalized TTFS coding method in our framework as latency coding. The framework includes: (1) a latency encoding (LE) module with feature extraction and straight-through estimators to address severe information loss in direct intensity-to-latency mapping and ensure smooth gradient flow; (2) relaxation of the strict single-spike constraint of traditional TTFS, allowing neurons of intermediate layers to fire multiple times to mitigating gradient vanishing in deep networks; (3) a temporal adaptive decision (TAD) loss function that dynamically weights supervision signals based on sample-dependent confidence, resolving the incompatibility between latency coding and standard cross-entropy loss. Experimental results demonstrate that our method achieves state-of-the-art accuracy in comparison to existing TTFS-coded SNNs with ultra-low inference latency and superior energy efficiency. The framework also demonstrates improved robustness against input corruptions. Our study investigates the characteristics and potential of latency coding in scenarios demanding rapid response, providing valuable insights for further exploiting the temporal learning capabilities of SNNs.",
+      "authors": [
+        "Yi Lu",
+        "Jianhao Ding",
+        "Zhaofei Yu"
+      ],
+      "primary_category": "cs.NE",
+      "categories": [
+        "cs.NE"
+      ],
+      "published": "2026-03-24T13:52:03+00:00",
+      "link": "https://arxiv.org/pdf/2603.23206v1",
+      "tags": [
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "latency coding framework for deep SNNs using BPTT",
+      "llm_evidence_cn": "使用BPTT的深度脉冲神经网络延迟编码框架",
+      "llm_evidence": "使用BPTT的深度脉冲神经网络延迟编码框架",
+      "canonical_evidence": "使用BPTT的深度脉冲神经网络延迟编码框架",
+      "llm_tldr_en": "Develops a framework for efficient training of deep TTFS-coded SNNs with ultra-low latency.",
+      "llm_tldr_cn": "开发了一个高效训练深度TTFS编码脉冲神经网络的框架，实现了超低延迟。",
+      "llm_tldr": "开发了一个高效训练深度TTFS编码脉冲神经网络的框架，实现了超低延迟。",
+      "llm_tags": [
+        "query:snn:composite"
+      ],
+      "matched_query_tag": "query:snn:composite",
+      "matched_query_text": "Papers central to 请帮我查找有关脉冲神经网络的论文, especially work that connects or combines: Spiking Neural Networks (SNN) architecture and theory; Neuromorphic computing hardware and algorithms; Event-based vision and spiking neural networks; Supervised and unsupervised training methods for SNN; Recent advances in Spiking Neural Networks research; State of the art algorithms for training Spiking Neural Networks.",
+      "matched_requirement_id": "req-composite-snn",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.16060v1",
+      "title": "ARISE: Agent Reasoning with Intrinsic Skill Evolution in Hierarchical Reinforcement Learning",
+      "abstract": "The dominant paradigm for improving mathematical reasoning in language models relies on Reinforcement Learning with verifiable rewards. Yet existing methods treat each problem instance in isolation without leveraging the reusable strategies that emerge and accumulate during training. To this end, we introduce ARISE (Agent Reasoning via Intrinsic Skill Evolution), a hierarchical reinforcement learning framework, in which a shared policy operates both to manage skills at high-level and to generate responses at low-level (denoted as a Skills Manager and a Worker, respectively). The Manager maintains a tiered skill library through a dedicated skill generation rollout that performs structured summarization of successful solution traces (after execution), while employing a policy-driven selection mechanism to retrieve relevant skills to condition future rollouts (before execution). A hierarchical reward design guides the co-evolution of reasoning ability and library quality. Experiments on two base models and seven benchmarks spanning both competition mathematics and Omni-MATH show that ARISE consistently outperforms GRPO-family algorithms and memory-augmented baselines, with particularly notable gains on out-of-distribution tasks. Ablation studies confirm that each component contributes to the observed improvements and that library quality and reasoning performance improve in tandem throughout training. Code is available at \\href{https://github.com/Skylanding/ARISE}{https://github.com/Skylanding/ARISE}.",
+      "authors": [
+        "Yu Li",
+        "Rui Miao",
+        "Zhengling Qi",
+        "Tian Lan"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-03-17T02:03:17+00:00",
+      "link": "https://arxiv.org/pdf/2603.16060v1",
+      "tags": [
+        "keyword:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Hierarchical reinforcement learning for language model reasoning",
+      "llm_evidence_cn": "用于语言模型推理的分层强化学习",
+      "llm_evidence": "用于语言模型推理的分层强化学习",
+      "canonical_evidence": "用于语言模型推理的分层强化学习",
+      "llm_tldr_en": "Proposes a hierarchical RL framework to improve LLM mathematical reasoning via intrinsic skill evolution.",
+      "llm_tldr_cn": "提出一种分层强化学习框架，通过内在技能演化提升大语言模型的数学推理能力。",
+      "llm_tldr": "提出一种分层强化学习框架，通过内在技能演化提升大语言模型的数学推理能力。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Reinforcement learning from human feedback and algorithms",
+      "matched_requirement_id": "req-11",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.16440v1",
+      "title": "Capability-Guided Compression: Toward Interpretability-Aware Budget Allocation for Large Language Models",
+      "abstract": "Large language model compression has made substantial progress through pruning, quantization, and low-rank decomposition, yet a fundamental limitation persists across all existing methods: compression budgets are allocated without any representation of what individual model components functionally encode. We term this the capability-blind compression problem and argue it is a root cause of two well-documented failures -- the insensitivity of perplexity-based evaluation to reasoning capability loss, and the abrupt phase transitions in model performance recently characterized by Ma et al. (2026). We propose Capability-Guided Compression (CGC), a framework that addresses this by using Sparse Autoencoder (SAE)-derived capability density maps to allocate differential compression budgets across transformer components. Capability density is a formally defined scalar measure combining the feature breadth, activation entropy, and cross-input consistency of a component's SAE feature activation distribution. We prove theoretically that components with higher capability density exhibit lower structural redundancy and reach their individual phase transition points at lower compression ratios, providing the first pre-compression mechanism for component-level phase transition prediction. Experiments on GPT-2 Medium confirm that capability density is statistically independent of Wanda importance scores (Spearman rho = -0.054, n = 384 heads), establishing it as a genuinely novel compression signal orthogonal to all existing importance metrics. We report a negative result on PPL-based compression comparison and provide a principled diagnosis identifying GPT-2 Medium as an insufficient test bed for the full CGC hypothesis. The theoretical framework, density formalism, and orthogonality finding constitute a foundation for capability-aware compression research.",
+      "authors": [
+        "Rishaank Gupta"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CL"
+      ],
+      "published": "2026-03-17T12:21:07+00:00",
+      "link": "https://arxiv.org/pdf/2603.16440v1",
+      "tags": [
+        "keyword:AI LLM",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Interpretability-aware compression for LLMs",
+      "llm_evidence_cn": "大语言模型的可解释性感知压缩",
+      "llm_evidence": "大语言模型的可解释性感知压缩",
+      "canonical_evidence": "大语言模型的可解释性感知压缩",
+      "llm_tldr_en": "Introduces Capability-Guided Compression to align LLM pruning with functional interpretability.",
+      "llm_tldr_cn": "引入能力引导压缩框架，使大语言模型的剪枝与功能可解释性保持一致。",
+      "llm_tldr": "引入能力引导压缩框架，使大语言模型的剪枝与功能可解释性保持一致。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.16459v1",
+      "title": "DynHD: Hallucination Detection for Diffusion Large Language Models via Denoising Dynamics Deviation Learning",
+      "abstract": "Diffusion large language models (D-LLMs) have emerged as a promising alternative to auto-regressive models due to their iterative refinement capabilities. However, hallucinations remain a critical issue that hinders their reliability. To detect hallucination responses from model outputs, token-level uncertainty (e.g., entropy) has been widely used as an effective signal to indicate potential factual errors. Nevertheless, the fixed-length generation paradigm of D-LLMs implies that tokens contribute unevenly to hallucination detection, with only a small subset providing meaningful signals. Moreover, the evolution trend of uncertainty throughout the diffusion process can also provide important signals, highlighting the necessity of modeling its denoising dynamics for hallucination detection. In this paper, we propose DynHD that bridge these gaps from both spatial (token sequence) and temporal (denoising dynamics) perspectives. To address the information density imbalance across tokens, we propose a semantic-aware evidence construction module that extracts hallucination-indicative signals by filtering out non-informative tokens and emphasizing semantically meaningful ones. To model denoising dynamics for hallucination detection, we introduce a reference evidence generator that learns the expected evolution trajectory of uncertainty evidence, along with a deviation-based hallucination detector that makes predictions by measuring the discrepancy between the observed and reference trajectories. Extensive experiments demonstrate that DynHD consistently outperforms state-of-the-art baselines while achieving higher efficiency across multiple benchmarks and backbone models.",
+      "authors": [
+        "Yanyu Qian",
+        "Yue Tan",
+        "Yixin Liu",
+        "Wang Yu",
+        "Shirui Pan"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-03-17T12:40:29+00:00",
+      "link": "https://arxiv.org/pdf/2603.16459v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Hallucination detection in Diffusion Large Language Models",
+      "llm_evidence_cn": "扩散大语言模型中的幻觉检测",
+      "llm_evidence": "扩散大语言模型中的幻觉检测",
+      "canonical_evidence": "扩散大语言模型中的幻觉检测",
+      "llm_tldr_en": "Proposes DynHD to detect hallucinations in D-LLMs by analyzing denoising dynamics and uncertainty.",
+      "llm_tldr_cn": "提出了DynHD，通过分析去噪动态和不确定性来检测扩散大语言模型中的幻觉。",
+      "llm_tldr": "提出了DynHD，通过分析去噪动态和不确定性来检测扩散大语言模型中的幻觉。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.16558v1",
+      "title": "Segmentation-Based Attention Entropy: Detecting and Mitigating Object Hallucinations in Large Vision-Language Models",
+      "abstract": "Large Vision-Language Models (LVLMs) achieve strong performance on many multimodal tasks, but object hallucinations severely undermine their reliability. Most existing studies focus on the text modality, attributing hallucinations to overly strong language priors and insufficient visual grounding. In contrast, we observe that abnormal attention patterns within the visual modality can also give rise to hallucinated objects. Building on this observation, we propose Segmentation-based Attention Entropy (SAE), which leverages semantic segmentation to quantify visual attention uncertainty in an object-level semantic space. Based on SAE, we further design a reliability score for hallucination detection and an SAE-guided attention adjustment method that modifies visual attention at inference time to mitigate hallucinations. We evaluate our approach on public benchmarks and in real embodied multimodal scenarios with quadruped robots. Experimental results show that SAE substantially reduces object hallucinations without any additional training cost, thereby enabling more trustworthy LVLM-driven perception and decision-making.",
+      "authors": [
+        "Jiale Song",
+        "Jiaxin Luo",
+        "Xue-song Tang",
+        "Kuangrong Hao",
+        "Mingbo Zhao"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.MM"
+      ],
+      "published": "2026-03-17T14:19:22+00:00",
+      "link": "https://arxiv.org/pdf/2603.16558v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "mitigating hallucinations in generative vision-language models",
+      "llm_evidence_cn": "减轻生成式视觉语言模型中的幻觉",
+      "llm_evidence": "减轻生成式视觉语言模型中的幻觉",
+      "canonical_evidence": "减轻生成式视觉语言模型中的幻觉",
+      "llm_tldr_en": "Uses attention entropy to detect and mitigate object hallucinations in large vision-language models.",
+      "llm_tldr_cn": "利用注意力熵来检测和减轻大型视觉语言模型中的物体幻觉问题。",
+      "llm_tldr": "利用注意力熵来检测和减轻大型视觉语言模型中的物体幻觉问题。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Generative artificial intelligence algorithms and models",
+      "matched_requirement_id": "req-12",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.16867v1",
+      "title": "Efficient Reasoning on the Edge",
+      "abstract": "Large language models (LLMs) with chain-of-thought reasoning achieve state-of-the-art performance across complex problem-solving tasks, but their verbose reasoning traces and large context requirements make them impractical for edge deployment. These challenges include high token generation costs, large KV-cache footprints, and inefficiencies when distilling reasoning capabilities into smaller models for mobile devices. Existing approaches often rely on distilling reasoning traces from larger models into smaller models, which are verbose and stylistically redundant, undesirable for on-device inference. In this work, we propose a lightweight approach to enable reasoning in small LLMs using LoRA adapters combined with supervised fine-tuning. We further introduce budget forcing via reinforcement learning on these adapters, significantly reducing response length with minimal accuracy loss. To address memory-bound decoding, we exploit parallel test-time scaling, improving accuracy at minor latency increase. Finally, we present a dynamic adapter-switching mechanism that activates reasoning only when needed and a KV-cache sharing strategy during prompt encoding, reducing time-to-first-token for on-device inference. Experiments on Qwen2.5-7B demonstrate that our method achieves efficient, accurate reasoning under strict resource constraints, making LLM reasoning practical for mobile scenarios. Videos demonstrating our solution running on mobile devices are available on our project page.",
+      "authors": [
+        "Yelysei Bondarenko",
+        "Thomas Hehn",
+        "Rob Hesselink",
+        "Romain Lepert",
+        "Fabio Valerio Massoli",
+        "Evgeny Mironov",
+        "Leyla Mirvakhabova",
+        "Tribhuvanesh Orekondy",
+        "Spyridon Stasis",
+        "Andrey Kuzmin",
+        "Anna Kuzina",
+        "Markus Nagel",
+        "Ankita Nayak",
+        "Corrado Rainone",
+        "Ork de Rooij",
+        "Paul N Whatmough",
+        "Arash Behboodi",
+        "Babak Ehteshami Bejnordi"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CL"
+      ],
+      "published": "2026-03-17T17:59:51+00:00",
+      "link": "https://arxiv.org/pdf/2603.16867v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Supervised fine-tuning and LoRA for reasoning on edge devices",
+      "llm_evidence_cn": "用于边缘设备推理的有监督微调与LoRA技术",
+      "llm_evidence": "用于边缘设备推理的有监督微调与LoRA技术",
+      "canonical_evidence": "用于边缘设备推理的有监督微调与LoRA技术",
+      "llm_tldr_en": "Enables reasoning in small LLMs using LoRA and supervised fine-tuning for efficient edge deployment.",
+      "llm_tldr_cn": "利用LoRA和有监督微调使小型大模型具备推理能力，便于高效的边缘部署。",
+      "llm_tldr": "利用LoRA和有监督微调使小型大模型具备推理能力，便于高效的边缘部署。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Supervised fine-tuning and instruction tuning methods",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.17533v1",
+      "title": "A Unified Language Model for Large Scale Search, Recommendation, and Reasoning",
+      "abstract": "LLMs are increasingly applied to recommendation, retrieval, and reasoning, yet deploying a single end-to-end model that can jointly support these behaviors over large, heterogeneous catalogs remains challenging. Such systems must generate unambiguous references to real items, handle multiple entity types, and operate under strict latency and reliability constraints requirements that are difficult to satisfy with text-only generation. While tool-augmented recommender systems address parts of this problem, they introduce orchestration complexity and limit end-to-end optimization. We view this setting as an instance of a broader research problem: how to adapt LLMs to reason jointly over multiple-domain entities, users, and language in a fully self-contained manner. To this end, we introduce NEO, a framework that adapts a pre-trained decoder-only LLM into a tool-free, catalog-grounded generator. NEO represents items as SIDs and trains a single model to interleave natural language and typed item identifiers within a shared sequence. Text prompts control the task, target entity type, and output format (IDs, text, or mixed), while constrained decoding guarantees catalog-valid item generation without restricting free-form text. We refer to this instruction-conditioned controllability as language-steerability. We treat SIDs as a distinct modality and study design choices for integrating discrete entity representations into LLMs via staged alignment and instruction tuning. We evaluate NEO at scale on a real-world catalog of over 10M items across multiple media types and discovery tasks, including recommendation, search, and user understanding. In offline experiments, NEO consistently outperforms strong task-specific baselines and exhibits cross-task transfer, demonstrating a practical path toward consolidating large-scale discovery capabilities into a single language-steerable generative model.",
+      "authors": [
+        "Marco De Nadai",
+        "Edoardo D'Amico",
+        "Max Lefarov",
+        "Alexandre Tamborrino",
+        "Divita Vohra",
+        "Mark VanMiddlesworth",
+        "Shawn Lin",
+        "Jacqueline Wood",
+        "Jan Stypka",
+        "Eliza Klyce",
+        "Keshi Dai",
+        "Timothy Christopher Heath",
+        "Martin D. Gould",
+        "Yves Raimond",
+        "Sandeep Ghael",
+        "Tony Jebara",
+        "Andreas Damianou",
+        "Vladan Radosavljevic",
+        "Paul N. Bennett",
+        "Mounia Lalmas",
+        "Praveen Chandar"
+      ],
+      "primary_category": "cs.IR",
+      "categories": [
+        "cs.IR",
+        "cs.LG"
+      ],
+      "published": "2026-03-18T09:42:32+00:00",
+      "link": "https://arxiv.org/pdf/2603.17533v1",
+      "tags": [
+        "keyword:AI LLM",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Unified language model for search, recommendation, and reasoning",
+      "llm_evidence_cn": "用于搜索、推荐和推理的统一语言模型",
+      "llm_evidence": "用于搜索、推荐和推理的统一语言模型",
+      "canonical_evidence": "用于搜索、推荐和推理的统一语言模型",
+      "llm_tldr_en": "Adapts LLMs to jointly reason over multiple domains and entities for large-scale search and recommendation.",
+      "llm_tldr_cn": "调整大语言模型，使其能够在多个领域和实体上进行联合推理，用于大规模搜索和推荐。",
+      "llm_tldr": "调整大语言模型，使其能够在多个领域和实体上进行联合推理，用于大规模搜索和推荐。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.18066v1",
+      "title": "A Synthesizable RTL Implementation of Predictive Coding Networks",
+      "abstract": "Backpropagation has enabled modern deep learning but is difficult to realize as an online, fully distributed hardware learning system due to global error propagation, phase separation, and heavy reliance on centralized memory. Predictive coding offers an alternative in which inference and learning arise from local prediction-error dynamics between adjacent layers. This paper presents a digital architecture that implements a discrete-time predictive coding update directly in hardware. Each neural core maintains its own activity, prediction error, and synaptic weights, and communicates only with adjacent layers through hardwired connections. Supervised learning and inference are supported via a uniform per-neuron clamping primitive that enforces boundary conditions while leaving the internal update schedule unchanged. The design is a deterministic, synthesizable RTL substrate built around a sequential MAC datapath and a fixed finite-state schedule. Rather than executing a task-specific instruction sequence inside the learning substrate, the system evolves under fixed local update rules, with task structure imposed through connectivity, parameters, and boundary conditions. The contribution of this work is not a new learning rule, but a complete synthesizable digital substrate that executes predictive-coding learning dynamics directly in hardware.",
+      "authors": [
+        "Timothy Oh"
+      ],
+      "primary_category": "cs.NE",
+      "categories": [
+        "cs.NE",
+        "cs.AI",
+        "cs.AR",
+        "cs.LG"
+      ],
+      "published": "2026-03-18T03:07:19+00:00",
+      "link": "https://arxiv.org/pdf/2603.18066v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Digital architecture for hardware learning and neural cores",
+      "llm_evidence_cn": "硬件学习与神经核心的数字架构",
+      "llm_evidence": "硬件学习与神经核心的数字架构",
+      "canonical_evidence": "硬件学习与神经核心的数字架构",
+      "llm_tldr_en": "Implements predictive coding networks in synthesizable RTL for distributed hardware learning.",
+      "llm_tldr_cn": "在可综合RTL中实现预测编码网络，用于分布式硬件学习系统。",
+      "llm_tldr": "在可综合RTL中实现预测编码网络，用于分布式硬件学习系统。",
+      "llm_tags": [
+        "query:snn"
+      ],
+      "matched_query_tag": "query:snn",
+      "matched_query_text": "Neuromorphic computing hardware and algorithms",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.18636v1",
+      "title": "Training-Free Sparse Attention for Fast Video Generation via Offline Layer-Wise Sparsity Profiling and Online Bidirectional Co-Clustering",
+      "abstract": "Diffusion Transformers (DiTs) achieve strong video generation quality but suffer from high inference cost due to dense 3D attention, leading to the development of sparse attention technologies to improve efficiency. However, existing training-free sparse attention methods in video generation still face two unresolved limitations: ignoring layer heterogeneity in attention pruning and ignoring query-key coupling in block partitioning, which hinder a better quality-speedup trade-off. In this work, we uncover a critical insight that the attention sparsity of each layer is its intrinsic property, with minor effects across different inputs. Motivated by this, we propose SVOO, a training-free Sparse attention framework for fast Video generation via Offline layer-wise sparsity profiling and Online bidirectional co-clustering. Specifically, SVOO adopts a two-stage paradigm: (i) offline layer-wise sensitivity profiling to derive intrinsic per-layer pruning levels, and (ii) online block-wise sparse attention via a novel bidirectional co-clustering algorithm. Extensive experiments on seven widely used video generation models demonstrate that SVOO achieves a superior quality-speedup trade-off over state-of-the-art methods, delivering up to $1.93\\times$ speedup while maintaining a PSNR of up to 29 dB on Wan2.1.",
+      "authors": [
+        "Jiayi Luo",
+        "Jiayu Chen",
+        "Jiankun Wang",
+        "Cong Wang",
+        "Hanxin Zhu",
+        "Qingyun Sun",
+        "Chen Gao",
+        "Zhibo Chen",
+        "Jianxin Li"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-03-19T09:00:08+00:00",
+      "link": "https://arxiv.org/pdf/2603.18636v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "sparse attention for Diffusion Transformers",
+      "llm_evidence_cn": "扩散Transformer的稀疏注意力机制",
+      "llm_evidence": "扩散Transformer的稀疏注意力机制",
+      "canonical_evidence": "扩散Transformer的稀疏注意力机制",
+      "llm_tldr_en": "Proposes a training-free sparse attention method to improve the inference efficiency of Diffusion Transformers.",
+      "llm_tldr_cn": "提出一种无需训练的稀疏注意力方法，提升扩散Transformer的推理效率。",
+      "llm_tldr": "提出一种无需训练的稀疏注意力方法，提升扩散Transformer的推理效率。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Transformer based models and attention mechanisms",
+      "matched_requirement_id": "req-9",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.19415v1",
+      "title": "Scalable Prompt Routing via Fine-Grained Latent Task Discovery",
+      "abstract": "Prompt routing dynamically selects the most appropriate large language model from a pool of candidates for each query, optimizing performance while managing costs. As model pools scale to include dozens of frontier models with narrow performance gaps, existing approaches face significant challenges: manually defined task taxonomies cannot capture fine-grained capability distinctions, while monolithic routers struggle to differentiate subtle differences across diverse tasks. We propose a two-stage routing architecture that addresses these limitations through automated fine-grained task discovery and task-aware quality estimation. Our first stage employs graph-based clustering to discover latent task types and trains a classifier to assign prompts to discovered tasks. The second stage uses a mixture-of-experts architecture with task-specific prediction heads for specialized quality estimates. At inference, we aggregate predictions from both stages to balance task-level stability with prompt-specific adaptability. Evaluated on 10 benchmarks with 11 frontier models, our method consistently outperforms existing baselines and surpasses the strongest individual model while incurring less than half its cost.",
+      "authors": [
+        "Yunyi Zhang",
+        "Soji Adeshina",
+        "Patrick Guan",
+        "Ashwin Ganesh",
+        "Zhen Han",
+        "Vassilis N. Ioannidis",
+        "Huzefa Rangwala",
+        "George Karypis"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-03-19T19:15:51+00:00",
+      "link": "https://arxiv.org/pdf/2603.19415v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Prompt routing for large language model pools",
+      "llm_evidence_cn": "大语言模型池的提示词路由",
+      "llm_evidence": "大语言模型池的提示词路由",
+      "canonical_evidence": "大语言模型池的提示词路由",
+      "llm_tldr_en": "Develops a two-stage routing architecture for selecting the best LLM based on latent task discovery.",
+      "llm_tldr_cn": "开发了一种两阶段路由架构，通过潜在任务发现为每个查询选择最合适的大模型。",
+      "llm_tldr": "开发了一种两阶段路由架构，通过潜在任务发现为每个查询选择最合适的大模型。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.19415v2",
+      "title": "Scalable Prompt Routing via Fine-Grained Latent Task Discovery",
+      "abstract": "Prompt routing dynamically selects the most appropriate large language model from a pool of candidates for each query, optimizing performance while managing costs. As model pools scale to include dozens of frontier models with narrow performance gaps, existing approaches face significant challenges: manually defined task taxonomies cannot capture fine-grained capability distinctions, while monolithic routers struggle to differentiate subtle differences across diverse tasks. We propose a two-stage routing architecture that addresses these limitations through automated fine-grained task discovery and task-aware quality estimation. Our first stage employs graph-based clustering to discover latent task types and trains a classifier to assign prompts to discovered tasks. The second stage uses a mixture-of-experts architecture with task-specific prediction heads for specialized quality estimates. At inference, we aggregate predictions from both stages to balance task-level stability with prompt-specific adaptability. Evaluated on 10 benchmarks with 11 frontier models, our method consistently outperforms existing baselines and surpasses the strongest individual model while incurring less than half its cost.",
+      "authors": [
+        "Yunyi Zhang",
+        "Soji Adeshina",
+        "Sheng Guan",
+        "Ashwin Ganesh",
+        "Zhen Han",
+        "Vassilis N. Ioannidis",
+        "Huzefa Rangwala",
+        "George Karypis"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-03-19T19:15:51+00:00",
+      "link": "https://arxiv.org/pdf/2603.19415v2",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Prompt routing for large language model pools",
+      "llm_evidence_cn": "大语言模型池的提示路由",
+      "llm_evidence": "大语言模型池的提示路由",
+      "canonical_evidence": "大语言模型池的提示路由",
+      "llm_tldr_en": "Proposes a two-stage routing architecture to optimize LLM selection via latent task discovery.",
+      "llm_tldr_cn": "提出了一种两阶段路由架构，通过潜在任务发现优化大语言模型的选择。",
+      "llm_tldr": "提出了一种两阶段路由架构，通过潜在任务发现优化大语言模型的选择。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.19562v1",
+      "title": "Neural Uncertainty Principle: A Unified View of Adversarial Fragility and LLM Hallucination",
+      "abstract": "Adversarial vulnerability in vision and hallucination in large language models are conventionally viewed as separate problems, each addressed with modality-specific patches. This study first reveals that they share a common geometric origin: the input and its loss gradient are conjugate observables subject to an irreducible uncertainty bound. Formalizing a Neural Uncertainty Principle (NUP) under a loss-induced state, we find that in near-bound regimes, further compression must be accompanied by increased sensitivity dispersion (adversarial fragility), while weak prompt-gradient coupling leaves generation under-constrained (hallucination). Crucially, this bound is modulated by an input-gradient correlation channel, captured by a specifically designed single-backward probe. In vision, masking highly coupled components improves robustness without costly adversarial training; in language, the same prefill-stage probe detects hallucination risk before generating any answer tokens. NUP thus turns two seemingly separate failure taxonomies into a shared uncertainty-budget view and provides a principled lens for reliability analysis. Guided by this NUP theory, we propose ConjMask (masking high-contribution input components) and LogitReg (logit-side regularization) to improve robustness without adversarial training, and use the probe as a decoding-free risk signal for LLMs, enabling hallucination detection and prompt selection. NUP thus provides a unified, practical framework for diagnosing and mitigating boundary anomalies across perception and generation tasks.",
+      "authors": [
+        "Dong-Xiao Zhang",
+        "Hu Lou",
+        "Jun-Jie Zhang",
+        "Jun Zhu",
+        "Deyu Meng"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.IT",
+        "physics.comp-ph"
+      ],
+      "published": "2026-03-20T02:07:10+00:00",
+      "link": "https://arxiv.org/pdf/2603.19562v1",
+      "tags": [
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Unified view of LLM hallucination and adversarial fragility",
+      "llm_evidence_cn": "大模型幻觉与对抗脆弱性的统一视角",
+      "llm_evidence": "大模型幻觉与对抗脆弱性的统一视角",
+      "canonical_evidence": "大模型幻觉与对抗脆弱性的统一视角",
+      "llm_tldr_en": "Proposes a Neural Uncertainty Principle to explain both vision model fragility and LLM hallucinations.",
+      "llm_tldr_cn": "提出了神经不确定性原理，统一解释视觉模型的脆弱性和大模型的幻觉问题。",
+      "llm_tldr": "提出了神经不确定性原理，统一解释视觉模型的脆弱性和大模型的幻觉问题。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.20403v1",
+      "title": "FAAR: Efficient Frequency-Aware Multi-Task Fine-Tuning via Automatic Rank Selection",
+      "abstract": "Adapting models pre-trained on large-scale datasets is a proven way to reach strong performance quickly for down-stream tasks. However, the growth of state-of-the-art mod-els makes traditional full fine-tuning unsuitable and difficult, especially for multi-task learning (MTL) where cost scales with the number of tasks. As a result, recent studies investigate parameter-efficient fine-tuning (PEFT) using low-rank adaptation to significantly reduce the number of trainable parameters. However, these existing methods use a single, fixed rank, which may not be optimal for differ-ent tasks or positions in the MTL architecture. Moreover, these methods fail to learn spatial information that cap-tures inter-task relationships and helps to improve diverse task predictions. This paper introduces Frequency-Aware and Automatic Rank (FAAR) for efficient MTL fine-tuning. Our method introduces Performance-Driven Rank Shrink-ing (PDRS) to allocate the optimal rank per adapter location and per task. Moreover, by analyzing the image frequency spectrum, FAAR proposes a Task-Spectral Pyramidal Decoder (TS-PD) that injects input-specific context into spatial bias learning to better reflect cross-task relationships. Experiments performed on dense visual task benchmarks show the superiority of our method in terms of both accuracy and efficiency compared to other PEFT methods in MTL. FAAR reduces the number of parameters by up to 9 times compared to traditional MTL fine-tuning whilst improving overall performance. Our code is available.",
+      "authors": [
+        "Maxime Fontana",
+        "Michael Spratling",
+        "Miaojing Shi"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-03-20T18:24:06+00:00",
+      "link": "https://arxiv.org/pdf/2603.20403v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "parameter-efficient fine-tuning via low-rank adaptation",
+      "llm_evidence_cn": "通过低秩自适应进行参数高效微调",
+      "llm_evidence": "通过低秩自适应进行参数高效微调",
+      "canonical_evidence": "通过低秩自适应进行参数高效微调",
+      "llm_tldr_en": "Proposes FAAR for efficient multi-task fine-tuning using automatic rank selection in low-rank adaptation.",
+      "llm_tldr_cn": "提出了 FAAR，通过低秩自适应中的自动秩选择实现高效的多任务微调。",
+      "llm_tldr": "提出了 FAAR，通过低秩自适应中的自动秩选择实现高效的多任务微调。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Supervised fine-tuning and instruction tuning methods",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.20586v2",
+      "title": "MKA: Memory-Keyed Attention for Efficient Long-Context Reasoning",
+      "abstract": "As long-context language modeling becomes increasingly important, the cost of maintaining and attending to large Key/Value (KV) caches grows rapidly, becoming a major bottleneck in both training and inference. While prior works such as Multi-Query Attention (MQA) and Multi-Latent Attention (MLA) reduce memory by sharing or compressing KV features, they often trade off representation quality or incur runtime overhead. We propose Memory-Keyed Attention (MKA), a hierarchical attention mechanism that integrates multi-level KV caches (local, session, and long-term) and learns to route attention across them dynamically. We further introduce Route-Fused MKA (FastMKA), a broadcast-routed variant that fuses memory sources before attention computation for improved efficiency. Experiments on different sequence lengths show that FastMKA achieves a favorable accuracy-efficiency trade-off: comparable perplexity to MLA while achieving up to 5x faster training throughput and 1.8x lower evaluation latency. These results highlight MKA as a practical and extensible framework for efficient long-context attention.",
+      "authors": [
+        "Dong Liu",
+        "Yanxuan Yu",
+        "Ben Lengerich",
+        "Ying Nian Wu"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-03-21T01:04:03+00:00",
+      "link": "https://arxiv.org/pdf/2603.20586v2",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "hierarchical attention mechanism for efficient long-context reasoning",
+      "llm_evidence_cn": "用于高效长文本推理的分层注意力机制",
+      "llm_evidence": "用于高效长文本推理的分层注意力机制",
+      "canonical_evidence": "用于高效长文本推理的分层注意力机制",
+      "llm_tldr_en": "Proposes Memory-Keyed Attention to optimize KV cache management and improve long-context modeling efficiency.",
+      "llm_tldr_cn": "提出了内存键控注意力机制，以优化KV缓存管理并提高长文本建模效率。",
+      "llm_tldr": "提出了内存键控注意力机制，以优化KV缓存管理并提高长文本建模效率。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Transformer based models and attention mechanisms",
+      "matched_requirement_id": "req-9",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.20899v1",
+      "title": "Mitigating Shortcut Reasoning in Language Models: A Gradient-Aware Training Approach",
+      "abstract": "Large language models exhibit strong reasoning capabilities, yet often rely on shortcuts such as surface pattern matching and answer memorization rather than genuine logical inference. We propose Shortcut-Aware Reasoning Training (SART), a gradient-aware framework that detects and mitigates shortcut-promoting samples via ShortcutScore and gradient surgery. Our method identifies shortcut signals through gradient misalignment with validation objectives and answer-token concentration, and modifies training dynamics accordingly. Experiments on controlled reasoning benchmarks show that SART achieves +16.5% accuracy and +40.2% robustness over the strongest baseline, significantly improving generalization under distribution shifts. Code is available at: https://github.com/fuyanjie/short-cut-aware-data-centric-reasoning.",
+      "authors": [
+        "Hongyu Cao",
+        "Kunpeng Liu",
+        "Dongjie Wang",
+        "Yanjie Fu"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "published": "2026-03-21T18:17:17+00:00",
+      "link": "https://arxiv.org/pdf/2603.20899v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Mitigating shortcut reasoning in large language models",
+      "llm_evidence_cn": "缓解大语言模型中的捷径推理问题",
+      "llm_evidence": "缓解大语言模型中的捷径推理问题",
+      "canonical_evidence": "缓解大语言模型中的捷径推理问题",
+      "llm_tldr_en": "Proposes a gradient-aware training framework to reduce reliance on surface patterns in LLM reasoning.",
+      "llm_tldr_cn": "提出了一种梯度感知训练框架，以减少大语言模型推理对表面模式的依赖。",
+      "llm_tldr": "提出了一种梯度感知训练框架，以减少大语言模型推理对表面模式的依赖。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.21175v1",
+      "title": "Reward Sharpness-Aware Fine-Tuning for Diffusion Models",
+      "abstract": "Reinforcement learning from human feedback (RLHF) has proven effective in aligning large language models with human preferences, inspiring the development of reward-centric diffusion reinforcement learning (RDRL) to achieve similar alignment and controllability. While diffusion models can generate high-quality outputs, RDRL remains susceptible to reward hacking, where the reward score increases without corresponding improvements in perceptual quality. We demonstrate that this vulnerability arises from the non-robustness of reward model gradients, particularly when the reward landscape with respect to the input image is sharp. To mitigate this issue, we introduce methods that exploit gradients from a robustified reward model without requiring its retraining. Specifically, we employ gradients from a flattened reward model, obtained through parameter perturbations of the diffusion model and perturbations of its generated samples. Empirically, each method independently alleviates reward hacking and improves robustness, while their joint use amplifies these benefits. Our resulting framework, RSA-FT (Reward Sharpness-Aware Fine-Tuning), is simple, broadly compatible, and consistently enhances the reliability of RDRL.",
+      "authors": [
+        "Kwanyoung Kim",
+        "Byeongsu Sim"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-03-22T11:32:50+00:00",
+      "link": "https://arxiv.org/pdf/2603.21175v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Reinforcement learning from human feedback and reward-centric fine-tuning for diffusion models",
+      "llm_evidence_cn": "扩散模型的基于人类反馈强化学习与奖励中心微调",
+      "llm_evidence": "扩散模型的基于人类反馈强化学习与奖励中心微调",
+      "canonical_evidence": "扩散模型的基于人类反馈强化学习与奖励中心微调",
+      "llm_tldr_en": "Improves diffusion model alignment by addressing reward hacking through sharpness-aware fine-tuning.",
+      "llm_tldr_cn": "通过锐度感知微调解决奖励欺骗问题，改进了扩散模型的对齐效果。",
+      "llm_tldr": "通过锐度感知微调解决奖励欺骗问题，改进了扩散模型的对齐效果。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Reinforcement learning from human feedback and algorithms",
+      "matched_requirement_id": "req-11",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.21301v1",
+      "title": "Enhancing reasoning accuracy in large language models during inference time",
+      "abstract": "Large Language Models (LLMs) often exhibit strong linguistic abilities while remaining unreliable on multi-step reasoning tasks, particularly when deployed without additional training or fine-tuning. In this work, we study inference-time techniques to improve the reasoning accuracy of LLMs. We systematically evaluate three classes of inference-time strategies: (i) self-consistency via stochastic decoding, where the model is sampled multiple times using controlled temperature and nucleus sampling and the most frequent final answer is selected; (ii) dual-model reasoning agreement, where outputs from two independent models are compared and only consistent reasoning traces are trusted; and (iii) self-reflection, where the model critiques and revises its own reasoning. Across all evaluated methods, we employ Chain-of-Thought (CoT) [1] prompting to elicit explicit intermediate reasoning steps before generating final answers. In this work, we provide a controlled comparative evaluation across three inference-time strategies under identical prompting and verification settings. Our experiments on LLM [2] show that self-consistency with nucleus sampling and controlled temperature value yields the substantial gains, achieving a 9% to 15% absolute improvement in accuracy over greedy single-pass decoding, well-suited for low-risk domains, offering meaningful gains with minimal overhead. The dual-model approach provides additional confirmation for model reasoning steps thus more appropriate for moderate-risk domains, where higher reliability justifies additional compute. Self-reflection offers only marginal improvements, suggesting limited effectiveness for smaller non-reasoning models at inference time.",
+      "authors": [
+        "Vinay Sharma",
+        "Manish Jain"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "published": "2026-03-22T16:00:07+00:00",
+      "link": "https://arxiv.org/pdf/2603.21301v1",
+      "tags": [
+        "keyword:AI LLM",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "inference-time techniques for LLM reasoning accuracy",
+      "llm_evidence_cn": "提升大语言模型推理准确率的推理时技术",
+      "llm_evidence": "提升大语言模型推理准确率的推理时技术",
+      "canonical_evidence": "提升大语言模型推理准确率的推理时技术",
+      "llm_tldr_en": "Evaluates inference-time strategies like self-consistency and self-reflection to improve LLM reasoning accuracy.",
+      "llm_tldr_cn": "评估了自一致性和自我反思等推理时策略，以提高大语言模型的推理准确性。",
+      "llm_tldr": "评估了自一致性和自我反思等推理时策略，以提高大语言模型的推理准确性。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "State of the art artificial intelligence algorithms and research papers",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.21376v2",
+      "title": "A transformer architecture alteration to incentivise externalised reasoning",
+      "abstract": "We propose a new architectural change, and post-training pipeline, for making LLMs more verbose reasoners by teaching a model to truncate forward passes early. We augment an existing transformer architecture with an early-exit mechanism at intermediate layers and train the model to exit at shallower layers when the next token can be predicted without deep computation. After a calibration stage, we incentivise the model to exit as early as possible while maintaining task performance using reinforcement learning. We provide preliminary results to this effect for small reasoning models, showing that they learn to adaptively reduce computations across tokens. We predict that, applied at the right scale, our approach can minimise the amount of excess computation that reasoning models have at their disposal to perform non-myopic planning using their internal activations, reserving this only for difficult-to-predict tokens.",
+      "authors": [
+        "Elizabeth Pavlova",
+        "Mariia Koroliuk",
+        "Karthik Viswanathan",
+        "Cameron Tice",
+        "Edward James Young",
+        "Puria Radmard"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-03-22T19:28:21+00:00",
+      "link": "https://arxiv.org/pdf/2603.21376v2",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "transformer architecture alteration with early-exit mechanism",
+      "llm_evidence_cn": "带有早退机制的 Transformer 架构改进",
+      "llm_evidence": "带有早退机制的 Transformer 架构改进",
+      "canonical_evidence": "带有早退机制的 Transformer 架构改进",
+      "llm_tldr_en": "Modifies Transformer architecture with early-exits and RL to incentivize externalized reasoning and efficiency.",
+      "llm_tldr_cn": "通过早退机制和强化学习改进 Transformer 架构，以激励模型进行外部化推理并提高效率。",
+      "llm_tldr": "通过早退机制和强化学习改进 Transformer 架构，以激励模型进行外部化推理并提高效率。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Transformer based models and attention mechanisms",
+      "matched_requirement_id": "req-9",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.21564v1",
+      "title": "Toward a Theory of Hierarchical Memory for Language Agents",
+      "abstract": "Many recent long-context and agentic systems address context-length limitations by adding hierarchical memory: they extract atomic units from raw data, build multi-level representatives by grouping and compression, and traverse this structure to retrieve content under a token budget. Despite recurring implementations, there is no shared formalism for comparing design choices. We propose a unifying theory in terms of three operators. Extraction ($α$) maps raw data to atomic information units; coarsening ($C = (π, ρ)$) partitions units and assigns a representative to each group; and traversal ($τ$) selects which units to include in context given a query and budget. We identify a self-sufficiency spectrum for the representative function $ρ$ and show how it constrains viable retrieval strategies (a coarsening-traversal coupling). Finally, we instantiate the decomposition on eleven existing systems spanning document hierarchies, conversational memory, and agent execution traces, showcasing its generality.",
+      "authors": [
+        "Yashar Talebirad",
+        "Ali Parsaee",
+        "Csongor Y. Szepesvari",
+        "Amirhossein Nadiri",
+        "Osmar Zaiane"
+      ],
+      "primary_category": "cs.IR",
+      "categories": [
+        "cs.IR",
+        "cs.AI",
+        "cs.IT",
+        "cs.SI"
+      ],
+      "published": "2026-03-23T04:35:13+00:00",
+      "link": "https://arxiv.org/pdf/2603.21564v1",
+      "tags": [
+        "keyword:AI LLM",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Theory of hierarchical memory for language agents",
+      "llm_evidence_cn": "语言智能体的分层记忆理论",
+      "llm_evidence": "语言智能体的分层记忆理论",
+      "canonical_evidence": "语言智能体的分层记忆理论",
+      "llm_tldr_en": "Proposes a unifying theory for hierarchical memory systems in long-context language agents.",
+      "llm_tldr_cn": "为长文本语言智能体中的分层记忆系统提出了一个统一的理论框架。",
+      "llm_tldr": "为长文本语言智能体中的分层记忆系统提出了一个统一的理论框架。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Large Language Model architectures and methodologies",
+      "matched_requirement_id": "req-8",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.22301v1",
+      "title": "Latent Semantic Manifolds in Large Language Models",
+      "abstract": "Large Language Models (LLMs) perform internal computations in continuous vector spaces yet produce discrete tokens -- a fundamental mismatch whose geometric consequences remain poorly understood. We develop a mathematical framework that interprets LLM hidden states as points on a latent semantic manifold: a Riemannian submanifold equipped with the Fisher information metric, where tokens correspond to Voronoi regions partitioning the manifold. We define the expressibility gap, a geometric measure of the semantic distortion from vocabulary discretization, and prove two theorems: a rate-distortion lower bound on distortion for any finite vocabulary, and a linear volume scaling law for the expressibility gap via the coarea formula. We validate these predictions across six transformer architectures (124M-1.5B parameters), confirming universal hourglass intrinsic dimension profiles, smooth curvature structure, and linear gap scaling with slopes 0.87-1.12 (R^2 > 0.985). The margin distribution across models reveals a persistent hard core of boundary-proximal representations invariant to scale, providing a geometric decomposition of perplexity. We discuss implications for architecture design, model compression, decoding strategies, and scaling laws",
+      "authors": [
+        "Mohamed A. Mabrok"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-03-17T13:05:56+00:00",
+      "link": "https://arxiv.org/pdf/2603.22301v1",
+      "tags": [
+        "keyword:AI LLM",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Mathematical framework for LLM hidden states and manifolds",
+      "llm_evidence_cn": "大语言模型隐藏状态与流形的数学框架",
+      "llm_evidence": "大语言模型隐藏状态与流形的数学框架",
+      "canonical_evidence": "大语言模型隐藏状态与流形的数学框架",
+      "llm_tldr_en": "Analyzes LLM hidden states as points on a Riemannian manifold to understand semantic distortion.",
+      "llm_tldr_cn": "将大模型隐藏状态建模为黎曼流形上的点，从几何角度分析词表离散化带来的语义失真。",
+      "llm_tldr": "将大模型隐藏状态建模为黎曼流形上的点，从几何角度分析词表离散化带来的语义失真。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Foundational papers on transformer models and scaling laws",
+      "matched_requirement_id": "req-15",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.22329v1",
+      "title": "Trained Persistent Memory for Frozen Decoder-Only LLMs",
+      "abstract": "Decoder-only language models are stateless: hidden representations are discarded after every forward pass and nothing persists across sessions. Jeong (2026a) showed that trained memory adapters give a frozen encoder-decoder backbone persistent latent-space memory, building on the lateral-memory framework of Jeong (2026b,c). Here we ask whether the same principle transfers to the decoder-only setting, where no cross-attention pathway exists and memory must enter through self-attention alone. We adapt six methods -- prefix, parallel cross-attention, KV extension, Hebbian memory, context-gated branch, and slot-based sparse write -- to a frozen GPT-2, training only a small adapter $θ_{mem}$. The write rule is shared; only the read injection changes from decoder cross-attention to self-attention KV prefix or parallel branch. On LoCoMo we find a striking inductive-bias dichotomy: at $1\\times$ capacity, three methods with strong architectural priors -- cross-attention (M.2), Hebbian (M.4), and slot write (M.6) -- achieve retained-memory scores of $7-18\\%$ and knowledge gains $ΔK$ of $7-10$, while the other three fail ($< 0.4\\%$). At $10\\times$ capacity all six converge, showing the gap is architectural, not fundamental. Together with the encoder-decoder results of Jeong (2026a) and the brain-inspired modules of Jeong (2026b,c), these findings establish persistent latent-space memory as a general paradigm spanning major transformer families.",
+      "authors": [
+        "Hong Jeong"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-03-20T19:11:02+00:00",
+      "link": "https://arxiv.org/pdf/2603.22329v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Persistent memory for frozen decoder-only LLMs",
+      "llm_evidence_cn": "冻结解码器大语言模型的持久化内存",
+      "llm_evidence": "冻结解码器大语言模型的持久化内存",
+      "canonical_evidence": "冻结解码器大语言模型的持久化内存",
+      "llm_tldr_en": "Investigates methods to add persistent latent-space memory to frozen decoder-only language models.",
+      "llm_tldr_cn": "研究了为冻结的仅解码器语言模型添加持久潜空间内存的方法。",
+      "llm_tldr": "研究了为冻结的仅解码器语言模型添加持久潜空间内存的方法。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Large Language Model architectures and methodologies",
+      "matched_requirement_id": "req-8",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.22355v1",
+      "title": "Demystifying Low-Rank Knowledge Distillation in Large Language Models: Convergence, Generalization, and Information-Theoretic Guarantees",
+      "abstract": "Knowledge distillation has emerged as a powerful technique for compressing large language models (LLMs) into efficient, deployable architectures while preserving their advanced capabilities. Recent advances in low-rank knowledge distillation, particularly methods like Low-Rank Clone (LRC), have demonstrated remarkable empirical success, achieving comparable performance to full-parameter distillation with significantly reduced training data and computational overhead. However, the theoretical foundations underlying these methods remain poorly understood. In this paper, we establish a rigorous theoretical framework for low-rank knowledge distillation in language models. We prove that under mild assumptions, low-rank projection preserves the optimization dynamics, yielding explicit convergence rates of $O(1/\\sqrt{T})$. We derive generalization bounds that characterize the fundamental trade-off between model compression and generalization capability, showing that the generalization error scales with the rank parameter as $O(r(m+n)/\\sqrt{n})$. Furthermore, we provide an information-theoretic analysis of the activation cloning mechanism, revealing its role in maximizing the mutual information between the teacher's and student's intermediate representations. Our theoretical results offer principled guidelines for rank selection, mathematically suggesting an optimal rank $r^* = O(\\sqrt{n})$ where $n$ is the sample size. Experimental validation on standard language modeling benchmarks confirms our theoretical predictions, demonstrating that the empirical convergence, rank scaling, and generalization behaviors align closely with our bounds.",
+      "authors": [
+        "Alberlucia Rafael Soarez",
+        "Daniel Kim",
+        "Mariana Costa",
+        "Alejandro Torre"
+      ],
+      "primary_category": "stat.ML",
+      "categories": [
+        "stat.ML",
+        "cs.CL",
+        "cs.LG"
+      ],
+      "published": "2026-03-22T14:10:27+00:00",
+      "link": "https://arxiv.org/pdf/2603.22355v1",
+      "tags": [
+        "keyword:AI LLM",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Theoretical framework for low-rank knowledge distillation in LLMs",
+      "llm_evidence_cn": "大语言模型低秩知识蒸馏的理论框架",
+      "llm_evidence": "大语言模型低秩知识蒸馏的理论框架",
+      "canonical_evidence": "大语言模型低秩知识蒸馏的理论框架",
+      "llm_tldr_en": "Establishes theoretical guarantees for low-rank knowledge distillation methods used to compress LLMs.",
+      "llm_tldr_cn": "为用于压缩大语言模型的低秩知识蒸馏方法建立了严谨的理论框架。",
+      "llm_tldr": "为用于压缩大语言模型的低秩知识蒸馏方法建立了严谨的理论框架。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Large Language Model architectures and methodologies",
+      "matched_requirement_id": "req-8",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.22399v1",
+      "title": "Latent Style-based Quantum Wasserstein GAN for Drug Design",
+      "abstract": "The development of new drugs is a tedious, time-consuming, and expensive process, for which the average costs are estimated to be up to around $2.5 billion. The first step in this long process is the design of the new drug, for which de novo drug design, assisted by artificial intelligence, has blossomed in recent years and revolutionized the field. In particular, generative artificial intelligence has delivered promising results in drug discovery and development, reducing costs and the time to solution. However, classical generative models, such as generative adversarial networks (GANs), are difficult to train due to barren plateaus and prone to mode collapse. Quantum computing may be an avenue to overcome these issues and provide models with fewer parameters, thereby enhancing the generalizability of GANs. We propose a new style-based quantum GAN (QGAN) architecture for drug design that implements noise encoding at every rotational gate of the circuit and a gradient penalty in the loss function to mitigate mode collapse. Our pipeline employs a variational autoencoder to represent the molecular structure in a latent space, which is then used as input to our QGAN. Our baseline model runs on up to 15 qubits to validate our architecture on quantum simulators, and a 156-qubit IBM Heron quantum computer in the five-qubit setup is used for inference to investigate the effects of using real quantum hardware on the analysis. We benchmark our results against classical models as provided by the MOSES benchmark suite.",
+      "authors": [
+        "Julien Baglio",
+        "Yacine Haddad",
+        "Richard Polifka"
+      ],
+      "primary_category": "quant-ph",
+      "categories": [
+        "quant-ph",
+        "cs.AI",
+        "cs.LG",
+        "q-bio.BM"
+      ],
+      "published": "2026-03-23T18:00:12+00:00",
+      "link": "https://arxiv.org/pdf/2603.22399v1",
+      "tags": [
+        "keyword:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Generative AI for drug design using Quantum GANs",
+      "llm_evidence_cn": "基于量子GAN的药物设计生成式人工智能",
+      "llm_evidence": "基于量子GAN的药物设计生成式人工智能",
+      "canonical_evidence": "基于量子GAN的药物设计生成式人工智能",
+      "llm_tldr_en": "Explores quantum generative adversarial networks for efficient de novo drug design.",
+      "llm_tldr_cn": "探索利用量子生成对抗网络进行高效的药物从头设计。",
+      "llm_tldr": "探索利用量子生成对抗网络进行高效的药物从头设计。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Generative artificial intelligence algorithms and models",
+      "matched_requirement_id": "req-12",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.22473v1",
+      "title": "Functional Component Ablation Reveals Specialization Patterns in Hybrid Language Model Architectures",
+      "abstract": "Hybrid language models combining attention with state space models (SSMs) or linear attention offer improved efficiency, but whether both components are genuinely utilized remains unclear. We present a functional component ablation framework applied to two sub-1B hybrid models -- Qwen3.5-0.8B (sequential: Gated DeltaNet + softmax attention) and Falcon-H1-0.5B (parallel: Mamba-2 + attention) -- with a pure Transformer control (Qwen2.5-0.5B). Through group ablations, layer-wise sweeps, positional ablations, matched random controls, and perplexity analysis across five benchmarks, we establish four findings: (1) both component types are essential and neither is bypassed; (2) the alternative component (linear attention or SSM) is the primary language modeling backbone, causing >35,000x perplexity degradation when removed versus ~82x for attention; (3) component importance follows a positional gradient, with early layers being disproportionately critical; and (4) hybrid architectures exhibit 20-119x greater resilience to random layer removal than pure Transformers, revealing built-in functional redundancy between component types. These results provide actionable guidance for hybrid model compression, architecture design, and fault-tolerant deployment.",
+      "authors": [
+        "Hector Borobia",
+        "Elies Seguí-Mas",
+        "Guillermina Tormo-Carbó"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-03-23T18:41:49+00:00",
+      "link": "https://arxiv.org/pdf/2603.22473v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Hybrid language model architectures combining attention and SSMs",
+      "llm_evidence_cn": "结合注意力和状态空间模型的混合语言模型架构",
+      "llm_evidence": "结合注意力和状态空间模型的混合语言模型架构",
+      "canonical_evidence": "结合注意力和状态空间模型的混合语言模型架构",
+      "llm_tldr_en": "Analyzes functional specialization in hybrid models like Mamba-2 and attention-based architectures.",
+      "llm_tldr_cn": "分析了结合 Mamba-2 和注意力机制等混合架构模型的功能专业化模式。",
+      "llm_tldr": "分析了结合 Mamba-2 和注意力机制等混合架构模型的功能专业化模式。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.22479v1",
+      "title": "Cognitive Training for Language Models: Towards General Capabilities via Cross-Entropy Games",
+      "abstract": "Defining a constructive process to build general capabilities for language models in an automatic manner is considered an open problem in artificial intelligence. Towards this, we consider the problem of building a curriculum of tasks that grows a model via relevant skill discovery. We provide a concrete framework for this task, using a family of tasks called cross-entropy games, which we postulate is universal in a suitable sense. We show that if it is possible to grow the curriculum for relevant skill discovery by iterating a greedy optimization algorithm, then, under natural assumptions, there is essentially only one meta-objective possible (up to a few hyperparameters). We call the resulting process cognitive training. We postulate that, given sufficiently capable language models as players and meta-samplers and sufficient training time, cognitive training provides a principled way to relevant skill discovery; and hence to the extent general capabilities are achievable via greedy curriculum learning, cognitive training would be a solution.",
+      "authors": [
+        "Clément Hongler",
+        "Franck Gabriel",
+        "Valentin Hartmann",
+        "Arthur Renard",
+        "Andrew Emil"
+      ],
+      "primary_category": "math.OC",
+      "categories": [
+        "math.OC",
+        "cs.AI"
+      ],
+      "published": "2026-03-23T18:47:45+00:00",
+      "link": "https://arxiv.org/pdf/2603.22479v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "cognitive training for language models via cross-entropy games",
+      "llm_evidence_cn": "通过交叉熵博弈对语言模型进行认知训练",
+      "llm_evidence": "通过交叉熵博弈对语言模型进行认知训练",
+      "canonical_evidence": "通过交叉熵博弈对语言模型进行认知训练",
+      "llm_tldr_en": "Proposes a cognitive training framework to build general capabilities in language models via skill discovery.",
+      "llm_tldr_cn": "提出了一种认知训练框架，通过技能发现自动构建语言模型的通用能力。",
+      "llm_tldr": "提出了一种认知训练框架，通过技能发现自动构建语言模型的通用能力。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.22871v1",
+      "title": "Dynamical Systems Theory Behind a Hierarchical Reasoning Model",
+      "abstract": "Current large language models (LLMs) primarily rely on linear sequence generation and massive parameter counts, yet they severely struggle with complex algorithmic reasoning. While recent reasoning architectures, such as the Hierarchical Reasoning Model (HRM) and Tiny Recursive Model (TRM), demonstrate that compact recursive networks can tackle these tasks, their training dynamics often lack rigorous mathematical guarantees, leading to instability and representational collapse. We propose the Contraction Mapping Model (CMM), a novel architecture that reformulates discrete recursive reasoning into continuous Neural Ordinary and Stochastic Differential Equations (NODEs/NSDEs). By explicitly enforcing the convergence of the latent phase point to a stable equilibrium state and mitigating feature collapse with a hyperspherical repulsion loss, the CMM provides a mathematically grounded and highly stable reasoning engine. On the Sudoku-Extreme benchmark, a 5M-parameter CMM achieves a state-of-the-art accuracy of 93.7 %, outperforming the 27M-parameter HRM (55.0 %) and 5M-parameter TRM (87.4 %). Remarkably, even when aggressively compressed to an ultra-tiny footprint of just 0.26M parameters, the CMM retains robust predictive power, achieving 85.4 % on Sudoku-Extreme and 82.2 % on the Maze benchmark. These results establish a new frontier for extreme parameter efficiency, proving that mathematically rigorous latent dynamics can effectively replace brute-force scaling in artificial reasoning.",
+      "authors": [
+        "Vasiliy A. Es'kin",
+        "Mikhail E. Smorkalov"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.LG",
+        "math.DS"
+      ],
+      "published": "2026-03-24T07:14:22+00:00",
+      "link": "https://arxiv.org/pdf/2603.22871v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Novel architecture for recursive reasoning in LLMs using Neural ODEs",
+      "llm_evidence_cn": "使用神经常微分方程改进大模型递归推理的新型架构",
+      "llm_evidence": "使用神经常微分方程改进大模型递归推理的新型架构",
+      "canonical_evidence": "使用神经常微分方程改进大模型递归推理的新型架构",
+      "llm_tldr_en": "Reformulates LLM reasoning into continuous dynamical systems to improve stability and performance.",
+      "llm_tldr_cn": "将大模型推理重新表述为连续动力系统，以提高稳定性和推理性能。",
+      "llm_tldr": "将大模型推理重新表述为连续动力系统，以提高稳定性和推理性能。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.22942v1",
+      "title": "Optimizing Small Language Models for NL2SQL via Chain-of-Thought Fine-Tuning",
+      "abstract": "Translating Natural Language to SQL (NL2SQL) remains a critical bottleneck for democratization of data in enterprises. Although Large Language Models (LLMs) like Gemini 2.5 and other LLMs have demonstrated impressive zero-shot capabilities, their high inference costs limit deployment at scale. This paper explores the efficacy of fine-tuning both large and small language models on NL2SQL tasks.   Our research reveals a counter-intuitive scaling phenomenon. Fine-tuning large models (Gemini 2.5 Flash/Lite) on standard datasets yields negligible returns, often leading to overfitting on complex queries. Conversely, small models (Qwen) show significant gains. Fine-tuning improved the small model baseline from 36% to 45%, and further enriching the dataset with explicit Chain-of-Thought (CoT) reasoning surged accuracy to 54.5%(Fig 2). While this is still lower than the accuracy of large models like Gemini 2.5 , it does serve the business goal of significant cost reduction, latency in inference time and also meeting the business critical performance accuracy threshold.This paper demonstrates that transferring reasoning patterns enables compute-efficient smaller models to approach production-grade performance.",
+      "authors": [
+        "Anshul Solanki",
+        "Sanchit Latawa",
+        "Koushik Chakraborty",
+        "Navneet Kamboj"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-03-24T08:39:06+00:00",
+      "link": "https://arxiv.org/pdf/2603.22942v1",
+      "tags": [
+        "keyword:AI LLM",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "fine-tuning small language models for NL2SQL tasks",
+      "llm_evidence_cn": "针对NL2SQL任务的小语言模型微调",
+      "llm_evidence": "针对NL2SQL任务的小语言模型微调",
+      "canonical_evidence": "针对NL2SQL任务的小语言模型微调",
+      "llm_tldr_en": "Explores chain-of-thought fine-tuning to optimize small language models for natural language to SQL tasks.",
+      "llm_tldr_cn": "探索通过思维链微调来优化小语言模型在自然语言转SQL任务中的表现。",
+      "llm_tldr": "探索通过思维链微调来优化小语言模型在自然语言转SQL任务中的表现。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Supervised fine-tuning and instruction tuning methods",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.23032v1",
+      "title": "Generative Event Pretraining with Foundation Model Alignment",
+      "abstract": "Event cameras provide robust visual signals under fast motion and challenging illumination conditions thanks to their microsecond latency and high dynamic range. However, their unique sensing characteristics and limited labeled data make it challenging to train event-based visual foundation models (VFMs), which are crucial for learning visual features transferable across tasks. To tackle this problem, we propose GEP (Generative Event Pretraining), a two-stage framework that transfers semantic knowledge learned from internet-scale image datasets to event data while learning event-specific temporal dynamics. First, an event encoder is aligned to a frozen VFM through a joint regression-contrastive objective, grounding event features in image semantics. Second, a transformer backbone is autoregressively pretrained on mixed event-image sequences to capture the temporal structure unique to events. Our approach outperforms state-of-the-art event pretraining methods on a diverse range of downstream tasks, including object recognition, segmentation, and depth estimation. Together, VFM-guided alignment and generative sequence modeling yield a semantically rich, temporally aware event model that generalizes robustly across domains.",
+      "authors": [
+        "Jianwen Cao",
+        "Jiaxu Xing",
+        "Nico Messikommer",
+        "Davide Scaramuzza"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.RO"
+      ],
+      "published": "2026-03-24T10:10:34+00:00",
+      "link": "https://arxiv.org/pdf/2603.23032v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "generative event pretraining for event-based visual foundation models",
+      "llm_evidence_cn": "基于事件相机的生成式预训练视觉基础模型",
+      "llm_evidence": "基于事件相机的生成式预训练视觉基础模型",
+      "canonical_evidence": "基于事件相机的生成式预训练视觉基础模型",
+      "llm_tldr_en": "Proposes GEP to align event-based data with visual foundation models for better temporal dynamics learning.",
+      "llm_tldr_cn": "提出GEP框架，将事件相机数据与视觉基础模型对齐以学习时间动力学。",
+      "llm_tldr": "提出GEP框架，将事件相机数据与视觉基础模型对齐以学习时间动力学。",
+      "llm_tags": [
+        "query:snn"
+      ],
+      "matched_query_tag": "query:snn",
+      "matched_query_text": "Event-based vision and spiking neural networks",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.23198v1",
+      "title": "Sparser, Faster, Lighter Transformer Language Models",
+      "abstract": "Scaling autoregressive large language models (LLMs) has driven unprecedented progress but comes with vast computational costs. In this work, we tackle these costs by leveraging unstructured sparsity within an LLM's feedforward layers, the components accounting for most of the model parameters and execution FLOPs. To achieve this, we introduce a new sparse packing format and a set of CUDA kernels designed to seamlessly integrate with the optimized execution pipelines of modern GPUs, enabling efficient sparse computation during LLM inference and training. To substantiate our gains, we provide a quantitative study of LLM sparsity, demonstrating that simple L1 regularization can induce over 99% sparsity with negligible impact on downstream performance. When paired with our kernels, we show that these sparsity levels translate into substantial throughput, energy efficiency, and memory usage benefits that increase with model scale. We will release all code and kernels under an open-source license to promote adoption and accelerate research toward establishing sparsity as a practical axis for improving the efficiency and scalability of modern foundation models.",
+      "authors": [
+        "Edoardo Cetin",
+        "Stefano Peluchetti",
+        "Emilio Castillo",
+        "Akira Naruse",
+        "Mana Murakami",
+        "Llion Jones"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CL"
+      ],
+      "published": "2026-03-24T13:43:27+00:00",
+      "link": "https://arxiv.org/pdf/2603.23198v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Sparsity in Transformer feedforward layers",
+      "llm_evidence_cn": "Transformer 前馈层中的稀疏性研究",
+      "llm_evidence": "Transformer 前馈层中的稀疏性研究",
+      "canonical_evidence": "Transformer 前馈层中的稀疏性研究",
+      "llm_tldr_en": "Leverages unstructured sparsity in Transformer layers to enable faster and lighter LLM inference.",
+      "llm_tldr_cn": "利用 Transformer 前馈层中的非结构化稀疏性，实现更快速、更轻量的大模型推理。",
+      "llm_tldr": "利用 Transformer 前馈层中的非结构化稀疏性，实现更快速、更轻量的大模型推理。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Transformer based models and attention mechanisms",
+      "matched_requirement_id": "req-9",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.23234v1",
+      "title": "MemCollab: Cross-Agent Memory Collaboration via Contrastive Trajectory Distillation",
+      "abstract": "Large language model (LLM)-based agents rely on memory mechanisms to reuse knowledge from past problem-solving experiences. Existing approaches typically construct memory in a per-agent manner, tightly coupling stored knowledge to a single model's reasoning style. In modern deployments with heterogeneous agents, a natural question arises: can a single memory system be shared across different models? We found that naively transferring memory between agents often degrades performance, as such memory entangles task-relevant knowledge with agent-specific biases. To address this challenge, we propose MemCollab, a collaborative memory framework that constructs agent-agnostic memory by contrasting reasoning trajectories generated by different agents on the same task. This contrastive process distills abstract reasoning constraints that capture shared task-level invariants while suppressing agent-specific artifacts. We further introduce a task-aware retrieval mechanism that conditions memory access on task category, ensuring that only relevant constraints are used at inference time. Experiments on mathematical reasoning and code generation benchmarks demonstrate that MemCollab consistently improves both accuracy and inference-time efficiency across diverse agents, including cross-modal-family settings. Our results show that the collaboratively constructed memory can function as a shared reasoning resource for diverse LLM-based agents.",
+      "authors": [
+        "Yurui Chang",
+        "Yiran Wu",
+        "Qingyun Wu",
+        "Lu Lin"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-03-24T14:05:47+00:00",
+      "link": "https://arxiv.org/pdf/2603.23234v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "LLM-based agents and memory mechanisms",
+      "llm_evidence_cn": "基于大语言模型的智能体与记忆机制",
+      "llm_evidence": "基于大语言模型的智能体与记忆机制",
+      "canonical_evidence": "基于大语言模型的智能体与记忆机制",
+      "llm_tldr_en": "Proposes MemCollab, a framework for agent-agnostic memory sharing across heterogeneous LLM agents.",
+      "llm_tldr_cn": "提出MemCollab框架，实现异构大模型智能体之间的代理无关记忆共享。",
+      "llm_tldr": "提出MemCollab框架，实现异构大模型智能体之间的代理无关记忆共享。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Large Language Model architectures and methodologies",
+      "matched_requirement_id": "req-8",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.23483v1",
+      "title": "SpecEyes: Accelerating Agentic Multimodal LLMs via Speculative Perception and Planning",
+      "abstract": "Agentic multimodal large language models (MLLMs) (e.g., OpenAI o3 and Gemini Agentic Vision) achieve remarkable reasoning capabilities through iterative visual tool invocation. However, the cascaded perception, reasoning, and tool-calling loops introduce significant sequential overhead. This overhead, termed agentic depth, incurs prohibitive latency and seriously limits system-level concurrency. To this end, we propose SpecEyes, an agentic-level speculative acceleration framework that breaks this sequential bottleneck. Our key insight is that a lightweight, tool-free MLLM can serve as a speculative planner to predict the execution trajectory, enabling early termination of expensive tool chains without sacrificing accuracy. To regulate this speculative planning, we introduce a cognitive gating mechanism based on answer separability, which quantifies the model's confidence for self-verification without requiring oracle labels. Furthermore, we design a heterogeneous parallel funnel that exploits the stateless concurrency of the small model to mask the stateful serial execution of the large model, maximizing system throughput. Extensive experiments on V* Bench, HR-Bench, and POPE demonstrate that SpecEyes achieves 1.1-3.35x speedup over the agentic baseline while preserving or even improving accuracy (up to +6.7%), thereby boosting serving throughput under concurrent workloads.",
+      "authors": [
+        "Haoyu Huang",
+        "Jinfa Huang",
+        "Zhongwei Wan",
+        "Xiawu Zheng",
+        "Rongrong Ji",
+        "Jiebo Luo"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.CL"
+      ],
+      "published": "2026-03-24T17:45:47+00:00",
+      "link": "https://arxiv.org/pdf/2603.23483v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Accelerating agentic multimodal LLM architectures",
+      "llm_evidence_cn": "加速代理式多模态大模型架构",
+      "llm_evidence": "加速代理式多模态大模型架构",
+      "canonical_evidence": "加速代理式多模态大模型架构",
+      "llm_tldr_en": "Proposes speculative perception to reduce latency in agentic multimodal large language models.",
+      "llm_tldr_cn": "提出了投机性感知技术，以降低代理式多模态大语言模型的延迟。",
+      "llm_tldr": "提出了投机性感知技术，以降低代理式多模态大语言模型的延迟。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.23487v1",
+      "title": "TETO: Tracking Events with Teacher Observation for Motion Estimation and Frame Interpolation",
+      "abstract": "Event cameras capture per-pixel brightness changes with microsecond resolution, offering continuous motion information lost between RGB frames. However, existing event-based motion estimators depend on large-scale synthetic data that often suffers from a significant sim-to-real gap. We propose TETO (Tracking Events with Teacher Observation), a teacher-student framework that learns event motion estimation from only $\\sim$25 minutes of unannotated real-world recordings through knowledge distillation from a pretrained RGB tracker. Our motion-aware data curation and query sampling strategy maximizes learning from limited data by disentangling object motion from dominant ego-motion. The resulting estimator jointly predicts point trajectories and dense optical flow, which we leverage as explicit motion priors to condition a pretrained video diffusion transformer for frame interpolation. We achieve state-of-the-art point tracking on EVIMO2 and optical flow on DSEC using orders of magnitude less training data, and demonstrate that accurate motion estimation translates directly to superior frame interpolation quality on BS-ERGB and HQ-EVFI.",
+      "authors": [
+        "Jini Yang",
+        "Eunbeen Hong",
+        "Soowon Son",
+        "Hyunkoo Lee",
+        "Sunghwan Hong",
+        "Sunok Kim",
+        "Seungryong Kim"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-03-24T17:53:41+00:00",
+      "link": "https://arxiv.org/pdf/2603.23487v1",
+      "tags": [
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Event-based motion estimation and tracking using event cameras",
+      "llm_evidence_cn": "使用事件相机进行基于事件的运动估计和追踪",
+      "llm_evidence": "使用事件相机进行基于事件的运动估计和追踪",
+      "canonical_evidence": "使用事件相机进行基于事件的运动估计和追踪",
+      "llm_tldr_en": "Proposes a teacher-student framework for event-based motion estimation from real-world recordings.",
+      "llm_tldr_cn": "提出一种教师-学生框架，用于从真实世界记录中进行基于事件的运动估计。",
+      "llm_tldr": "提出一种教师-学生框架，用于从真实世界记录中进行基于事件的运动估计。",
+      "llm_tags": [
+        "query:snn"
+      ],
+      "matched_query_tag": "query:snn",
+      "matched_query_text": "Event-based vision and spiking neural networks",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.23495v1",
+      "title": "VISion On Request: Enhanced VLLM efficiency with sparse, dynamically selected, vision-language interactions",
+      "abstract": "Existing approaches for improving the efficiency of Large Vision-Language Models (LVLMs) are largely based on the concept of visual token reduction. This approach, however, creates an information bottleneck that impairs performance, especially on challenging tasks that require fine-grained understanding and reasoning. In this work, we challenge this paradigm by introducing VISion On Request (VISOR), a method that reduces inference cost without discarding visual information. Instead of compressing the image, VISOR improves efficiency by sparsifying the interaction between image and text tokens. Specifically, the language model attends to the full set of high-resolution visual tokens through a small, strategically placed set of attention layers: general visual context is provided by efficient cross-attention between text-image, while a few well-placed and dynamically selected self-attention layers refine the visual representations themselves, enabling complex, high-resolution reasoning when needed. Based on this principle, we first train a single universal network on a range of computational budgets by varying the number of self-attention layers, and then introduce a lightweight policy mechanism that dynamically allocates visual computation based on per-sample complexity. Extensive experiments show that VISOR drastically reduces computational cost while matching or exceeding state-of-the-art results across a diverse suite of benchmarks, and excels in challenging tasks that require detailed visual understanding.",
+      "authors": [
+        "Adrian Bulat",
+        "Alberto Baldrati",
+        "Ioannis Maniadis Metaxas",
+        "Yassine Ouali",
+        "Georgios Tzimiropoulos"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-03-24T17:58:17+00:00",
+      "link": "https://arxiv.org/pdf/2603.23495v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "efficiency in large vision-language models",
+      "llm_evidence_cn": "大型视觉语言模型的效率优化",
+      "llm_evidence": "大型视觉语言模型的效率优化",
+      "canonical_evidence": "大型视觉语言模型的效率优化",
+      "llm_tldr_en": "Proposes VISOR to improve LVLM efficiency by sparsifying interactions between image and text tokens.",
+      "llm_tldr_cn": "提出 VISOR 方法，通过稀疏化图像与文本标记间的交互来提高视觉语言模型的效率。",
+      "llm_tldr": "提出 VISOR 方法，通过稀疏化图像与文本标记间的交互来提高视觉语言模型的效率。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2603.14831v1",
+      "title": "Neural Networks as Local-to-Global Computations",
+      "abstract": "We construct a cellular sheaf from any feedforward ReLU neural network by placing one vertex for each intermediate quantity in the forward pass and encoding each computational step - affine transformation, activation, output - as a restriction map on an edge. The restricted coboundary operator on the free coordinates is unitriangular, so its determinant is $1$ and the restricted Laplacian is positive definite for every activation pattern. It follows that the relative cohomology vanishes and the forward pass output is the unique harmonic extension of the boundary data. The sheaf heat equation converges exponentially to this output despite the state-dependent switching introduced by piecewise linear activations. Unlike the forward pass, the heat equation propagates information bidirectionally across layers, enabling pinned neurons that impose constraints in both directions, training through local discrepancy minimization without a backward pass, and per-edge diagnostics that decompose network behavior by layer and operation type. We validate the framework experimentally on small synthetic tasks, confirming the convergence theorems and demonstrating that sheaf-based training, while not yet competitive with stochastic gradient descent, obeys quantitative scaling laws predicted by the theory.",
+      "authors": [
+        "Vicente Bosca",
+        "Robert Ghrist"
+      ],
+      "primary_category": "math.AT",
+      "categories": [
+        "math.AT",
+        "cs.LG",
+        "math.DS"
+      ],
+      "published": "2026-03-16T05:23:31+00:00",
+      "link": "https://arxiv.org/pdf/2603.14831v1",
+      "tags": [
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Foundational theory of neural network computation",
+      "llm_evidence_cn": "神经网络计算的基础理论",
+      "llm_evidence": "神经网络计算的基础理论",
+      "canonical_evidence": "神经网络计算的基础理论",
+      "llm_tldr_en": "This paper models ReLU neural networks as cellular sheaves to analyze forward pass as harmonic extensions.",
+      "llm_tldr_cn": "该论文将 ReLU 神经网络建模为细胞层，将前向传播分析为唯一的调和扩展。",
+      "llm_tldr": "该论文将 ReLU 神经网络建模为细胞层，将前向传播分析为唯一的调和扩展。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Artificial Intelligence algorithms and foundational theories",
+      "matched_requirement_id": "req-7",
+      "selection_source": "carryover_cache",
+      "paper_id": "2603.14831v1",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2603.15886v1",
+      "title": "PhasorFlow: A Python Library for Unit Circle Based Computing",
+      "abstract": "We present PhasorFlow, an open-source Python library introducing a computational paradigm operating on the $S^1$ unit circle. Inputs are encoded as complex phasors $z = e^{iθ}$ on the $N$-Torus ($\\mathbb{T}^N$). As computation proceeds via unitary wave interference gates, global norm is preserved while individual components drift into $\\mathbb{C}^N$, allowing algorithms to natively leverage continuous geometric gradients for predictive learning. PhasorFlow provides three core contributions. First, we formalize the Phasor Circuit model ($N$ unit circle threads, $M$ gates) and introduce a 22-gate library covering Standard Unitary, Non-Linear, Neuromorphic, and Encoding operations with full matrix algebra simulation. Second, we present the Variational Phasor Circuit (VPC), analogous to Variational Quantum Circuits (VQC), enabling optimization of continuous phase parameters for classical machine learning tasks. Third, we introduce the Phasor Transformer, replacing expensive $QK^TV$ attention with a parameter-free, DFT-based token mixing layer inspired by FNet. We validate PhasorFlow on non-linear spatial classification, time-series prediction, financial volatility detection, and neuromorphic tasks including neural binding and oscillatory associative memory. Our results establish unit circle computing as a deterministic, lightweight, and mathematically principled alternative to classical neural networks and quantum circuits. It operates on classical hardware while sharing quantum mechanics' unitary foundations. PhasorFlow is available at https://github.com/mindverse-computing/phasorflow.",
+      "authors": [
+        "Dibakar Sigdel",
+        "Namuna Panday"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-03-16T20:28:53+00:00",
+      "link": "https://arxiv.org/pdf/2603.15886v1",
+      "tags": [
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "library for neuromorphic and unit circle based computing",
+      "llm_evidence_cn": "用于类脑和单位圆计算的库",
+      "llm_evidence": "用于类脑和单位圆计算的库",
+      "canonical_evidence": "用于类脑和单位圆计算的库",
+      "llm_tldr_en": "PhasorFlow is a library for unit circle based computing supporting neuromorphic and unitary wave operations.",
+      "llm_tldr_cn": "PhasorFlow 是一个基于单位圆计算的库，支持类脑计算和酉波干扰操作。",
+      "llm_tldr": "PhasorFlow 是一个基于单位圆计算的库，支持类脑计算和酉波干扰操作。",
+      "llm_tags": [
+        "query:snn"
+      ],
+      "matched_query_tag": "query:snn",
+      "matched_query_text": "Neuromorphic computing hardware and algorithms",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2603.15970v1",
+      "title": "100x Cost & Latency Reduction: Performance Analysis of AI Query Approximation using Lightweight Proxy Models",
+      "abstract": "Several data warehouse and database providers have recently introduced extensions to SQL called AI Queries, enabling users to specify functions and conditions in SQL that are evaluated by LLMs, thereby broadening significantly the kinds of queries one can express over the combination of structured and unstructured data. LLMs offer remarkable semantic reasoning capabilities, making them an essential tool for complex and nuanced queries that blend structured and unstructured data. While extremely powerful, these AI queries can become prohibitively costly when invoked thousands of times.   This paper provides an extensive evaluation of a recent AI query approximation approach that enables low cost analytics and database applications to benefit from AI queries. The approach delivers >100x cost and latency reduction for the semantic filter (AI.IF) operator and also important gains for semantic ranking (AI.RANK). The cost and performance gains come from utilizing cheap and accurate proxy models over embedding vectors. We show that despite the massive gains in latency and cost, these proxy models preserve accuracy and occasionally improve accuracy across various benchmark datasets, including the extended Amazon reviews benchmark that has 10M rows. We present an OLAP-friendly architecture within Google \\textit{BigQuery} for this approach for purely online (ad hoc) queries, and a low-latency HTAP database-friendly architecture in \\textit{AlloyDB} that could further improve the latency by moving the proxy model training offline. We present techniques that accelerate the proxy model training.",
+      "authors": [
+        "Yeounoh Chung",
+        "Rushabh Desai",
+        "Jian He",
+        "Yu Xiao",
+        "Thibaud Hottelier",
+        "Yves-Laurent Kom Samo",
+        "Pushkar Kadilkar",
+        "Xianshun Chen",
+        "Sam Idicula",
+        "Fatma Özcan",
+        "Alon Halevy",
+        "Yannis Papakonstantinou"
+      ],
+      "primary_category": "cs.DB",
+      "categories": [
+        "cs.DB",
+        "cs.AI"
+      ],
+      "published": "2026-03-16T22:42:45+00:00",
+      "link": "https://arxiv.org/pdf/2603.15970v1",
+      "tags": [
+        "keyword:AI LLM",
+        "query:AI LLM"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "AI query approximation using lightweight proxy models for LLMs",
+      "llm_evidence_cn": "使用轻量级代理模型对LLM进行AI查询近似",
+      "llm_evidence": "使用轻量级代理模型对LLM进行AI查询近似",
+      "canonical_evidence": "使用轻量级代理模型对LLM进行AI查询近似",
+      "llm_tldr_en": "Evaluates a method to reduce cost and latency of LLM-based SQL queries using lightweight proxy models.",
+      "llm_tldr_cn": "评估了一种利用轻量级代理模型降低基于LLM的SQL查询成本和延迟的方法。",
+      "llm_tldr": "评估了一种利用轻量级代理模型降低基于LLM的SQL查询成本和延迟的方法。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "State of the art artificial intelligence algorithms and research papers",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2603.14831v2",
+      "title": "Neural Networks as Local-to-Global Computations",
+      "abstract": "We construct a cellular sheaf from any feedforward ReLU neural network by placing one vertex for each intermediate quantity in the forward pass and encoding each computational step - affine transformation, activation, output - as a restriction map on an edge. The restricted coboundary operator on the free coordinates is unitriangular, so its determinant is $1$ and the restricted Laplacian is positive definite for every activation pattern. It follows that the relative cohomology vanishes and the forward pass output is the unique harmonic extension of the boundary data. The sheaf heat equation converges exponentially to this output despite the state-dependent switching introduced by piecewise linear activations. Unlike the forward pass, the heat equation propagates information bidirectionally across layers, enabling pinned neurons that impose constraints in both directions, training through local discrepancy minimization without a backward pass, and per-edge diagnostics that decompose network behavior by layer and operation type. We validate the framework experimentally on small synthetic tasks, confirming the convergence theorems and demonstrating that sheaf-based training, while not yet competitive with stochastic gradient descent, obeys quantitative scaling laws predicted by the theory.",
+      "authors": [
+        "Vicente Bosca",
+        "Robert Ghrist"
+      ],
+      "primary_category": "math.AT",
+      "categories": [
+        "math.AT",
+        "cs.LG",
+        "math.DS"
+      ],
+      "published": "2026-03-16T05:23:31+00:00",
+      "link": "https://arxiv.org/pdf/2603.14831v2",
+      "tags": [
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Foundational theory of neural network computations",
+      "llm_evidence_cn": "神经网络计算的基础理论",
+      "llm_evidence": "神经网络计算的基础理论",
+      "canonical_evidence": "神经网络计算的基础理论",
+      "llm_tldr_en": "Models feedforward ReLU networks as cellular sheaves to analyze local-to-global computations.",
+      "llm_tldr_cn": "将前馈ReLU网络建模为细胞层，以分析从局部到全局的计算过程。",
+      "llm_tldr": "将前馈ReLU网络建模为细胞层，以分析从局部到全局的计算过程。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Artificial Intelligence algorithms and foundational theories",
+      "matched_requirement_id": "req-7",
+      "selection_source": "carryover_cache",
+      "paper_id": "2603.14831v2",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2603.15946v1",
+      "title": "Argumentative Human-AI Decision-Making: Toward AI Agents That Reason With Us, Not For Us",
+      "abstract": "Computational argumentation offers formal frameworks for transparent, verifiable reasoning but has traditionally been limited by its reliance on domain-specific information and extensive feature engineering. In contrast, LLMs excel at processing unstructured text, yet their opaque nature makes their reasoning difficult to evaluate and trust. We argue that the convergence of these fields will lay the foundation for a new paradigm: Argumentative Human-AI Decision-Making. We analyze how the synergy of argumentation framework mining, argumentation framework synthesis, and argumentative reasoning enables agents that do not just justify decisions, but engage in dialectical processes where decisions are contestable and revisable -- reasoning with humans rather than for them. This convergence of computational argumentation and LLMs is essential for human-aware, trustworthy AI in high-stakes domains.",
+      "authors": [
+        "Stylianos Loukas Vasileiou",
+        "Antonio Rago",
+        "Francesca Toni",
+        "William Yeoh"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-03-16T21:51:36+00:00",
+      "link": "https://arxiv.org/pdf/2603.15946v1",
+      "tags": [
+        "keyword:AI LLM",
+        "query:AI LLM"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "AI agents that reason using computational argumentation and LLMs",
+      "llm_evidence_cn": "结合计算论证和大模型进行推理的AI智能体",
+      "llm_evidence": "结合计算论证和大模型进行推理的AI智能体",
+      "canonical_evidence": "结合计算论证和大模型进行推理的AI智能体",
+      "llm_tldr_en": "Explores a new paradigm for human-AI decision-making through argumentative reasoning agents.",
+      "llm_tldr_cn": "通过论证推理智能体探索人机决策的新范式。",
+      "llm_tldr": "通过论证推理智能体探索人机决策的新范式。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "State of the art artificial intelligence algorithms and research papers",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2603.16278v1",
+      "title": "Speakers Localization Using Batch EM In Unfolding Neural Network",
+      "abstract": "We propose an interpretable Batch-EM Unfolded Network for robust speaker localization. By embedding the iterative EM procedure within an encoder-EM-decoder architecture, the method mitigates initialization sensitivity and improves convergence. Experiments show superior accuracy and robustness over the classical Batch-EM in reverberant conditions.",
+      "authors": [
+        "Rina Veler",
+        "Sharon Gannot"
+      ],
+      "primary_category": "eess.AS",
+      "categories": [
+        "eess.AS",
+        "eess.SP"
+      ],
+      "published": "2026-03-17T09:10:12+00:00",
+      "link": "https://arxiv.org/pdf/2603.16278v1",
+      "tags": [
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "unfolding neural network for speaker localization",
+      "llm_evidence_cn": "用于说话人定位的展开神经网络",
+      "llm_evidence": "用于说话人定位的展开神经网络",
+      "canonical_evidence": "用于说话人定位的展开神经网络",
+      "llm_tldr_en": "Proposes an interpretable unfolded network for robust speaker localization using the EM algorithm.",
+      "llm_tldr_cn": "提出了一种可解释的展开网络，利用 EM 算法实现鲁棒的说话人定位。",
+      "llm_tldr": "提出了一种可解释的展开网络，利用 EM 算法实现鲁棒的说话人定位。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Artificial Intelligence algorithms and foundational theories",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2603.14851v2",
+      "title": "AutoMoT: A Unified Vision-Language-Action Model with Asynchronous Mixture-of-Transformers for End-to-End Autonomous Driving",
+      "abstract": "Integrating vision-language models (VLMs) into end-to-end (E2E) autonomous driving (AD) systems has shown promise in improving scene understanding. However, existing integration strategies suffer from several limitations: they either struggle to resolve distribution misalignment between reasoning and action spaces, underexploit the general reasoning capabilities of pretrained VLMs, or incur substantial inference latency during action policy generation, which degrades driving performance. To address these challenges, we propose \\OURS in this work, an end-to-end AD framework that unifies reasoning and action generation within a single vision-language-action (VLA) model. Our approach leverages a mixture-of-transformer (MoT) architecture with joint attention sharing, which preserves the general reasoning capabilities of pre-trained VLMs while enabling efficient fast-slow inference through asynchronous execution at different task frequencies. Extensive experiments on multiple benchmarks, under both open- and closed-loop settings, demonstrate that \\OURS achieves competitive performance compared to state-of-the-art methods. We further investigate the functional boundary of pre-trained VLMs in AD, examining when AD-tailored fine-tuning is necessary. Our results show that pre-trained VLMs can achieve competitive multi-task scene understanding performance through semantic prompting alone, while fine-tuning remains essential for action-level tasks such as decision-making and trajectory planning. We refer to \\href{https://automot-website.github.io/}{Project Page} for the demonstration videos and qualitative results.",
+      "authors": [
+        "Wenhui Huang",
+        "Songyan Zhang",
+        "Qihang Huang",
+        "Zhidong Wang",
+        "Zhiqi Mao",
+        "Collister Chua",
+        "Zhan Chen",
+        "Long Chen",
+        "Chen Lv"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.RO"
+      ],
+      "published": "2026-03-16T05:50:31+00:00",
+      "link": "https://arxiv.org/pdf/2603.14851v2",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Vision-Language-Action model with Mixture-of-Transformers",
+      "llm_evidence_cn": "采用混合Transformer结构的视觉-语言-动作模型",
+      "llm_evidence": "采用混合Transformer结构的视觉-语言-动作模型",
+      "canonical_evidence": "采用混合Transformer结构的视觉-语言-动作模型",
+      "llm_tldr_en": "Unifies reasoning and action for autonomous driving using an asynchronous Mixture-of-Transformers architecture.",
+      "llm_tldr_cn": "采用异步混合Transformer架构，统一了自动驾驶中的推理与动作生成。",
+      "llm_tldr": "采用异步混合Transformer架构，统一了自动驾驶中的推理与动作生成。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Transformer based models and attention mechanisms",
+      "matched_requirement_id": "req-9",
+      "selection_source": "carryover_cache",
+      "paper_id": "2603.14851v2",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2603.16134v1",
+      "title": "When Generative Augmentation Hurts: A Benchmark Study of GAN and Diffusion Models for Bias Correction in AI Classification Systems",
+      "abstract": "Generative models are widely used to compensate for class imbalance in AI training pipelines, yet their failure modes under low-data conditions are poorly understood. This paper reports a controlled benchmark comparing three augmentation strategies applied to a fine-grained animal classification task: traditional transforms, FastGAN, and Stable Diffusion 1.5 fine-tuned with Low-Rank Adaptation (LoRA). Using the Oxford-IIIT Pet Dataset with eight artificially underrepresented breeds, we find that FastGAN augmentation does not merely underperform at very low training set sizes but actively increases classifier bias, with a statistically significant large effect across three random seeds (bias gap increase: +20.7%, Cohen's d = +5.03, p = 0.013). The effect size here is large enough to give confidence in the direction of the finding despite the small number of seeds. Feature embedding analysis using t-distributed Stochastic Neighbor Embedding reveals that FastGAN images for severe-minority breeds form tight isolated clusters outside the real image distribution, a pattern consistent with mode collapse. Stable Diffusion with Low-Rank Adaptation produced the best results overall, achieving the highest macro F1 (0.9125 plus or minus 0.0047) and a 13.1% reduction in the bias gap relative to the unaugmented baseline. The data suggest a sample-size boundary somewhere between 20 and 50 training images per class below which GAN augmentation becomes harmful in this setting, though further work across additional domains is needed to establish where that boundary sits more precisely. All experiments run on a consumer-grade GPU with 6 to 8 GB of memory, with no cloud compute required.",
+      "authors": [
+        "Shesh Narayan Gupta",
+        "Nik Bear Brown"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-03-17T05:37:17+00:00",
+      "link": "https://arxiv.org/pdf/2603.16134v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Generative models for bias correction in AI classification",
+      "llm_evidence_cn": "用于AI分类系统中偏见纠正的生成模型研究",
+      "llm_evidence": "用于AI分类系统中偏见纠正的生成模型研究",
+      "canonical_evidence": "用于AI分类系统中偏见纠正的生成模型研究",
+      "llm_tldr_en": "Benchmarks GAN and Diffusion models for data augmentation, revealing risks of increased classifier bias.",
+      "llm_tldr_cn": "评估了GAN和扩散模型在数据增强中的表现，揭示了增加分类器偏见的风险。",
+      "llm_tldr": "评估了GAN和扩散模型在数据增强中的表现，揭示了增加分类器偏见的风险。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Generative artificial intelligence algorithms and models",
+      "matched_requirement_id": "req-12",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2603.16842v1",
+      "title": "Stochastic Resetting Accelerates Policy Convergence in Reinforcement Learning",
+      "abstract": "Stochastic resetting, where a dynamical process is intermittently returned to a fixed reference state, has emerged as a powerful mechanism for optimizing first-passage properties. Existing theory largely treats static, non-learning processes. Here we ask how stochastic resetting interacts with reinforcement learning, where the underlying dynamics adapt through experience. In tabular grid environments, we find that resetting accelerates policy convergence even when it does not reduce the search time of a purely diffusive agent, indicating a novel mechanism beyond classical first-passage optimization. In a continuous control task with neural-network-based value approximation, we show that random resetting improves deep reinforcement learning when exploration is difficult and rewards are sparse. Unlike temporal discounting, resetting preserves the optimal policy while accelerating convergence by truncating long, uninformative trajectories to enhance value propagation. Our results establish stochastic resetting as a simple, tunable mechanism for accelerating learning, translating a canonical phenomenon of statistical mechanics into an optimization principle for reinforcement learning.",
+      "authors": [
+        "Jello Zhou",
+        "Vudtiwat Ngampruetikorn",
+        "David J. Schwab"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cond-mat.dis-nn",
+        "cond-mat.stat-mech",
+        "eess.SY",
+        "physics.bio-ph"
+      ],
+      "published": "2026-03-17T17:50:32+00:00",
+      "link": "https://arxiv.org/pdf/2603.16842v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Stochastic resetting in reinforcement learning",
+      "llm_evidence_cn": "强化学习中的随机重置机制",
+      "llm_evidence": "强化学习中的随机重置机制",
+      "canonical_evidence": "强化学习中的随机重置机制",
+      "llm_tldr_en": "Demonstrates that stochastic resetting can accelerate policy convergence in deep reinforcement learning.",
+      "llm_tldr_cn": "证明了随机重置机制可以加速深度强化学习中的策略收敛。",
+      "llm_tldr": "证明了随机重置机制可以加速深度强化学习中的策略收敛。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "State of the art artificial intelligence algorithms and research papers",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2603.14867v1",
+      "title": "Sample-Efficient Hypergradient Estimation for Decentralized Bi-Level Reinforcement Learning",
+      "abstract": "Many strategic decision-making problems, such as environment design for warehouse robots, can be naturally formulated as bi-level reinforcement learning (RL), where a leader agent optimizes its objective while a follower solves a Markov decision process (MDP) conditioned on the leader's decisions. In many situations, a fundamental challenge arises when the leader cannot intervene in the follower's optimization process; it can only observe the optimization outcome. We address this decentralized setting by deriving the hypergradient of the leader's objective, i.e., the gradient of the leader's strategy that accounts for changes in the follower's optimal policy. Unlike prior hypergradient-based methods that require extensive data for repeated state visits or rely on gradient estimators whose complexity can increase substantially with the high-dimensional leader's decision space, we leverage the Boltzmann covariance trick to derive an alternative hypergradient formulation. This enables efficient hypergradient estimation solely from interaction samples, even when the leader's decision space is high-dimensional. Additionally, to our knowledge, this is the first method that enables hypergradient-based optimization for 2-player Markov games in decentralized settings. Experiments highlight the impact of hypergradient updates and demonstrate our method's effectiveness in both discrete and continuous state tasks.",
+      "authors": [
+        "Mikoto Kudo",
+        "Takumi Tanabe",
+        "Akifumi Wachi",
+        "Youhei Akimoto"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.GT",
+        "cs.MA"
+      ],
+      "published": "2026-03-16T06:11:00+00:00",
+      "link": "https://arxiv.org/pdf/2603.14867v1",
+      "tags": [
+        "keyword:AI LLM",
+        "query:AI LLM"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Decentralized bi-level reinforcement learning algorithms",
+      "llm_evidence_cn": "去中心化双层强化学习算法",
+      "llm_evidence": "去中心化双层强化学习算法",
+      "canonical_evidence": "去中心化双层强化学习算法",
+      "llm_tldr_en": "Addresses hypergradient estimation in decentralized bi-level reinforcement learning settings.",
+      "llm_tldr_cn": "研究了去中心化双层强化学习中的超梯度估计问题，提升了样本效率。",
+      "llm_tldr": "研究了去中心化双层强化学习中的超梯度估计问题，提升了样本效率。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Reinforcement learning from human feedback and algorithms",
+      "matched_requirement_id": "req-11",
+      "selection_source": "carryover_cache",
+      "paper_id": "2603.14867v1",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2603.16269v1",
+      "title": "FG-SGL: Fine-Grained Semantic Guidance Learning via Motion Process Decomposition for Micro-Gesture Recognition",
+      "abstract": "Micro-gesture recognition (MGR) is challenging due to subtle inter-class variations. Existing methods rely on category-level supervision, which is insufficient for capturing subtle and localized motion differences. Thus, this paper proposes a Fine-Grained Semantic Guidance Learning (FG-SGL) framework that jointly integrates fine-grained and category-level semantics to guide vision--language models in perceiving local MG motions. FG-SA adopts fine-grained semantic cues to guide the learning of local motion features, while CP-A enhances the separability of MG features through category-level semantic guidance. To support fine-grained semantic guidance, this work constructs a fine-grained textual dataset with human annotations that describes the dynamic process of MGs in four refined semantic dimensions. Furthermore, a Multi-Level Contrastive Optimization strategy is designed to jointly optimize both modules in a coarse-to-fine pattern. Experiments show that FG-SGL achieves competitive performance, validating the effectiveness of fine-grained semantic guidance for MGR.",
+      "authors": [
+        "Jinsheng Wei",
+        "Zhaodi Xu",
+        "Guanming Lu",
+        "Haoyu Chen",
+        "Jingjie Yan"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-03-17T08:57:54+00:00",
+      "link": "https://arxiv.org/pdf/2603.16269v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "vision-language models for micro-gesture recognition",
+      "llm_evidence_cn": "用于微手势识别的视觉语言模型",
+      "llm_evidence": "用于微手势识别的视觉语言模型",
+      "canonical_evidence": "用于微手势识别的视觉语言模型",
+      "llm_tldr_en": "Develops a fine-grained semantic guidance framework to improve micro-gesture recognition in vision-language models.",
+      "llm_tldr_cn": "开发了一个细粒度语义引导框架，以提高视觉语言模型在微手势识别中的表现。",
+      "llm_tldr": "开发了一个细粒度语义引导框架，以提高视觉语言模型在微手势识别中的表现。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "State of the art artificial intelligence algorithms and research papers",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2603.16850v1",
+      "title": "Unifying Optimization and Dynamics to Parallelize Sequential Computation: A Guide to Parallel Newton Methods for Breaking Sequential Bottlenecks",
+      "abstract": "Massively parallel hardware (GPUs) and long sequence data have made parallel algorithms essential for machine learning at scale. Yet dynamical systems, like recurrent neural networks and Markov chain Monte Carlo, were thought to suffer from sequential bottlenecks. Recent work showed that dynamical systems can in fact be parallelized across the sequence length by reframing their evaluation as a system of nonlinear equations, which can be solved with Newton's method using a parallel associative scan. However, these parallel Newton methods struggled with limitations, primarily inefficiency, instability, and lack of convergence guarantees. This thesis addresses these limitations with methodological and theoretical contributions, drawing particularly from optimization. Methodologically, we develop scalable and stable parallel Newton methods, based on quasi-Newton and trust-region approaches. The quasi-Newton methods are faster and more memory efficient, while the trust-region approaches are significantly more stable. Theoretically, we unify many fixed-point methods into our parallel Newton framework, including Picard and Jacobi iterations. We establish a linear convergence rate for these techniques that depends on the method's approximation accuracy and stability. Moreover, we give a precise condition, rooted in dynamical stability, that characterizes when parallelization provably accelerates a dynamical system and when it cannot. Specifically, the sign of the Largest Lyapunov Exponent of a dynamical system determines whether or not parallel Newton methods converge quickly. In sum, this thesis unlocks scalable and stable methods for parallelizing sequential computation, and provides a firm theoretical basis for when such techniques will and will not work. This thesis also serves as a guide to parallel Newton methods for researchers who want to write the next chapter in this ongoing story.",
+      "authors": [
+        "Xavier Gonzalez"
+      ],
+      "primary_category": "math.NA",
+      "categories": [
+        "math.NA",
+        "cs.AI",
+        "cs.DC",
+        "math.DS",
+        "math.OC"
+      ],
+      "published": "2026-03-17T17:55:01+00:00",
+      "link": "https://arxiv.org/pdf/2603.16850v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Parallel algorithms for machine learning and recurrent networks",
+      "llm_evidence_cn": "机器学习和循环网络的并行算法",
+      "llm_evidence": "机器学习和循环网络的并行算法",
+      "canonical_evidence": "机器学习和循环网络的并行算法",
+      "llm_tldr_en": "Explores parallel Newton methods to break sequential bottlenecks in dynamical systems like RNNs.",
+      "llm_tldr_cn": "探索并行牛顿法以打破循环神经网络等动力系统的串行瓶颈。",
+      "llm_tldr": "探索并行牛顿法以打破循环神经网络等动力系统的串行瓶颈。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Artificial Intelligence algorithms and foundational theories",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}

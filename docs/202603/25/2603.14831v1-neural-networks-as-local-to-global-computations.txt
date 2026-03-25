@@ -1,0 +1,2436 @@
+Title: Neural Networks as Local-to-Global Computations
+
+URL Source: https://arxiv.org/pdf/2603.14831v1
+
+Published Time: Tue, 17 Mar 2026 05:22:30 GMT
+
+Number of Pages: 43
+
+Markdown Content:
+# Neural Networks as Local-to-Global Computations 
+
+Vicente Bosca Robert Ghrist 
+
+Department of Mathematics, University of Pennsylvania 
+
+vicenteg@sas.upenn.edu ghrist@math.upenn.edu 
+
+Abstract 
+
+We construct a cellular sheaf from any feedforward ReLU neural network by placing one vertex for each intermediate quantity in the forward pass and encoding each computational step – affine transformation, activation, output – as a restriction map on an edge. The restricted coboundary operator on the free coordinates is unitriangular, so its determinant is 1 and the restricted Laplacian is positive definite for every activation pattern. It follows that the relative cohomology vanishes and the forward pass output is the unique harmonic extension of the boundary data. The sheaf heat equation converges exponentially to this output despite the state-dependent switching introduced by piecewise linear activations. Unlike the forward pass, the heat equation propagates information bidirectionally across layers, enabling pinned neurons that impose constraints in both directions, training through local discrepancy minimization without a backward pass, and per-edge diagnostics that decompose network behavior by layer and operation type. We validate the framework experimentally on small synthetic tasks, confirming the convergence theorems and demonstrating that sheaf-based training, while not yet competitive with stochastic gradient descent, obeys quantitative scaling laws predicted by the theory. 
+
+1. Introduction 
+
+A feedforward neural network computes by propagating data in one direction: input enters at the first layer, passes through alternating affine transformations and nonlinearities, and exits at the last. In contrast, a cellular sheaf on a graph assigns vector spaces to vertices and linear maps to edges, encoding local consistency constraints whose global resolution is governed bidirectionally by the sheaf Laplacian. We connect the two: the forward pass of a feedforward ReLU network is the unique harmonic extension of boundary data on a cellular sheaf constructed from the network’s weights, biases, and activation functions. The construction places one vertex for each intermediate quantity in the forward pass – pre-activations, post-activations, output – and one edge for each computational step. Weight matrices and biases are absorbed into extended restriction maps on the weight edges; the ReLU nonlinearity becomes a diagonal projection on the activation edges. Input data and bias coordinates are held fixed as boundary conditions. The mathematical core of the embedding is a single structural observation: the restricted coboundary operator δΩ on the free coordinates is a square, block lower-unitriangular matrix (Lemma 3.2). The identity blocks on the diagonal come from the downstream endpoint of each edge; the sub-diagonal blocks are the restriction maps themselves – ReLU projections, weight matrices, and identity maps – none of which contribute to the determinant. Unitriangularity gives det δΩ = 1 , hence the restricted Laplacian δT 
+
+> Ω
+
+δΩ is positive definite, the relative cohomology vanishes, and the harmonic extension of the boundary data is unique. Forward substitution in the unitriangular system reproduces the forward pass equations layer by layer (Proposition 3.4). The sheaf heat equation converges exponentially to this harmonic extension (Theorem 4.1), but unlike the forward pass, it propagates information bidirectionally across the graph. Convergence is not immediate: the ReLU creates a state-dependent sheaf whose restriction maps switch discontinuously 1
+
+> arXiv:2603.14831v1 [math.AT] 16 Mar 2026
+
+as pre-activations cross zero, producing a continuous piecewise affine (CPWA) dynamical system. The convergence proof combines a Lyapunov argument – the total discrepancy ∥δ x ∥2 decreases along trajectories, including during Filippov sliding at switching surfaces – with a structural observation: the feedforward cascade excludes spurious critical points on switching surfaces for generic weights. A second convergence theorem (Theorem 4.2) extends the result to nonlinear output activations (sigmoid, softmax) via local adjoint techniques, drawing on the CPWA convergence theory developed by Gould [11]. This identification supports three constructions that exploit the bidirectional and local character of sheaf diffusion. 1. Pinned neurons. Constraining a hidden neuron to a target value adds a penalty edge to the sheaf graph. The heat equation then propagates the constraint upstream and downstream simultaneously, producing an equilibrium that reflects a global compromise across the entire network rather than a local downstream override. The construction generalizes the weighted reluctance mechanism of Hansen and Ghrist [ 14 ] to the neural setting (Section 5.1). More generally, for any frozen activation pattern, clamping an arbitrary mixture of inputs, hidden coordinates, and outputs yields a local-minimizer completion of the rest (Note 5.1), turning a pretrained feedforward network into a boundary-value problem solver. 2. Sheaf-based training. Evolving the trainable restriction maps (weight matrices) alongside the 
+
+0-cochain through local discrepancy minimization yields a training algorithm in which each weight update depends only on the data at adjacent vertices – no backward pass is required in the usual reverse-mode sense. This places the construction near other local or relaxation-based alternatives to backpropagation, including equilibrium propagation and predictive-coding-style learning [ 19 , 24 , 28 ], while remaining distinct in that the computation is organized as sheaf diffusion minimizing a global discrepancy functional. The resulting joint dynamics on coupled state and parameter sheaves extend the opinion-expression framework of [ 3]. A stagnation bound from that framework predicts the scaling 
+
+β ∼ 1/n train for the weight learning rate, which we confirm experimentally. On small synthetic tasks, sheaf-based training converges on all configurations tested but does not match the final loss achieved by stochastic gradient descent (Sections 5.2 and 5.3). 3. Structural diagnostics. The sheaf Laplacian’s spectrum and the per-edge discord decomposition provide diagnostic tools with no feedforward counterpart. The Fiedler eigenvector consistently concentrates on the output pre-activation stalk, identifying it as the information-flow bottleneck. The spectral gap stabilizes before the training loss does, suggesting that diffusion geometry is set early in optimization. These diagnostics apply to any trained network embedded post hoc as a sheaf, not only to sheaf-trained networks (Section 6.3). Our work is distinct from sheaf neural networks [ 1 , 2, 12 ], which design new graph neural network architectures by running sheaf diffusion as a message-passing layer, and from quiver representations [ 21 , 25 ], which describe linear network structure algebraically. We do not propose a new architecture: we embed an existing one in a sheaf-theoretic framework and develop the consequences. The construction draws on machinery from the opinion dynamics framework of [ 3] – stubborn opinions become pinned neurons, joint dynamics on state and structure sheaves become simultaneous training of activations and weights, and timescale separation bounds become learning rate schedules – as well as the CPWA convergence theory of Gould [11]. The paper is organized as follows. Section 2 reviews feedforward networks and cellular sheaf diffusion. Section 3 presents the construction and proves the harmonic extension result. Section 4 2establishes convergence. Section 5 develops pinned neurons, training, and batch processing. Section 6 reports experimental results. Section 7 discusses limitations, extensions to other architectures, and open problems. 
+
+2. Background 
+
+Our construction bridges two mathematical worlds: feedforward ReLU networks (§2.1) and cellular sheaves with their associated diffusion dynamics (§2.2). We review each in turn, establishing the notation and results that §3 will bring together. Readers comfortable with either topic may skim the corresponding subsection; the essential points to carry forward are the piecewise linear structure of ReLU networks (Remark 2.1) and the convergence of sheaf diffusion to harmonic extensions (Theorem 2.5). 
+
+2.1. Feedforward ReLU Networks 
+
+Consider a feedforward neural network with k hidden layers and input x ∈ Rn0 . Layer ℓ ∈{1, . . . , k +1} has nℓ neurons, weight matrix W (ℓ) ∈ Rnℓ×nℓ−1 , and bias vector b(ℓ) ∈ Rnℓ . Writing 
+
+a(0) ≡ x for the input, each hidden layer computes 
+
+z(ℓ) = W (ℓ)a(ℓ−1) + b(ℓ), a(ℓ) = ReLU( z(ℓ)), 1 ≤ ℓ ≤ k, (1) where ReLU (·) = max (·, 0) is applied element-wise and z(ℓ) denotes the pre-activation vector. The output layer applies a final activation ϕ chosen according to the task (softmax for classification, identity for regression): 
+
+ˆy = ϕ(W (k+1) a(k) + b(k+1) ). (2) Each layer performs an affine transformation followed by a nonlinearity, and the full network is their composition. In Section 3, we rewrite each of these steps as a linear map between appropriately extended vector spaces, so that the entire forward pass can be encoded in the restriction maps of a cellular sheaf. 
+
+Remark 2.1 (Piecewise linear structure) . The ReLU activation partitions Rn0 into finitely many convex polyhedral regions determined by the sign patterns of the pre-activations z(ℓ). Within each region the network implements an affine map, but the global function is nonlinear due to the region-dependent activation pattern. This is the continuous piecewise affine (CPWA) structure studied systematically in [ 11 , 20 ]; see also [ 4 , 17 ]. We return to this structure in Section 4, where the state-dependence of the activation pattern on the evolving dynamics creates a switched system. 
+
+2.2. Cellular Sheaves and Sheaf Diffusion 
+
+Cellular sheaves assign vector spaces and linear maps to a graph in a way that encodes local consistency constraints. The theory was initiated by Curry [ 9 ]; spectral and Laplacian aspects were developed by Hansen and Ghrist [ 13 ]. We follow the conventions of [3 ], which in turn builds on the opinion dynamics framework of [ 14 ]. Readers familiar with sheaf Laplacians and harmonic extension may skip to Section 3. Let G = ( V, E ) be a finite connected graph with a chosen orientation on each edge. 
+
+Definition 2.2 . A cellular sheaf F on G assigns: (i) a finite-dimensional real inner product space F(v), called the stalk , to each vertex v ∈ V ,3(ii) a finite-dimensional real inner product space F(e) to each edge e ∈ E, and (iii) a linear map Fv⩽e : F(v) → F (e), called a restriction map , for each incident pair v ⩽ e.We identify each stalk with Rn for the appropriate n, each inner product with the standard one, and each restriction map with its representing matrix. The spaces of 0-cochains and 1-cochains 
+
+bundle all vertex and edge data: 
+
+C0(G; F) = ⊕
+
+> v∈V
+
+F(v), C1(G; F) = ⊕
+
+> e∈E
+
+F(e), (3) each equipped with the direct sum inner product. A 0-cochain x ∈ C0(G; F) assigns a vector 
+
+xv ∈ F (v) to every vertex. The coboundary operator δ : C0(G; F) → C1(G; F) is defined on each oriented edge e = u → v by 
+
+(δx )e = Fv⩽e xv − F u⩽e xu. (4) The value (δx )e measures the discrepancy on edge e: it vanishes precisely when the restriction maps applied to the data at both endpoints produce the same vector in the edge stalk. The sheaf Laplacian 
+
+LF = δT δ : C0(G; F) → C0(G; F) (5) is positive semidefinite, and the quadratic form ⟨x, L F x⟩ = ∥δx ∥2 measures the total discrepancy in the network. Its local action at vertex v is 
+
+(LF x)v = ∑ 
+
+> e:v⩽e
+
+FTv⩽e
+
+> (
+
+Fv⩽e xv − F w⩽e xw
+
+> )
+
+, (6) where the sum runs over edges incident to v and w denotes the other endpoint of e. Each vertex updates its data using only information from its immediate neighbors, making the dynamics inherently local. 
+
+Remark 2.3 (Opinion dynamics interpretation) . In the opinion dynamics framework of [3, 14], the stalk F(v) is an agent’s private opinion space, the edge stalk F(e) is a shared discourse space, and restriction maps encode how agents express private opinions to neighbors. The coboundary measures disagreement, and the sheaf Laplacian drives agents toward consensus. This vocabulary will occasionally resurface: we refer to the quadratic form ∥δx ∥2 as the discord of the 0-cochain x,and to vertices with fixed data as stubborn .The space of global sections is 
+
+H0(G; F) = ker δ = ker LF . (7) The equality ker δ = ker LF is the sheaf Hodge theorem [ 13 ]. A global section is a 0-cochain with zero discrepancy on every edge: a consistent assignment of data across the entire network. The sheaf heat equation drives an arbitrary 0-cochain toward such a consistent state. 
+
+Theorem 2.4 (Convergence of sheaf diffusion [ 14 , Theorem 4.1]) . Solutions to the sheaf heat equation dx dt = −α L F x, α > 0, (8) 
+
+converge exponentially to the orthogonal projection of x(0) onto H0(G; F). The rate of convergence is governed by the smallest positive eigenvalue of LF .
+
+4When a subset U ⊆ V of vertices maintains fixed data, the relevant dynamics act only on the complement Ω = V \ U . Writing ω = x|Ω for the restriction of the 0-cochain to free vertices and 
+
+u = x|U for the fixed boundary data, the U -restricted dynamics take the reduced form 
+
+dω dt = −α(LF [Ω , Ω] ω + LF [Ω , U ] u), (9) where LF [·, ·] denotes the corresponding block of the sheaf Laplacian. 
+
+Theorem 2.5 ( U -restricted dynamics [ 14 , Theorem 5.1]) . The dynamics (9) converge exponentially to the harmonic extension of u: the unique 0-cochain x∗ satisfying x∗|U = u and (LF x∗)v = 0 for all v ∈ Ω. Uniqueness holds whenever the relative cohomology H0(G, U ; F) = 0 .
+
+The harmonic extension minimizes the total discrepancy ∥δx ∥2 subject to the boundary conditions imposed by U . In the context of our neural network construction (Section 3), the input vertex plays the role of a stubborn vertex, and the forward pass output emerges as the harmonic extension of their fixed values. Theorems 2.4 and 2.5 apply to sheaves with fixed, linear restriction maps. Two generalizations are needed for the neural network setting. The first concerns evolving restriction maps . When both vertex data and restriction maps adapt simultaneously to reduce discrepancy, one obtains a joint dynamics on the state and the sheaf structure. This framework was introduced by Hansen and Ghrist [ 14 ] and extended in [3 ], which shows that selective constraints on both vertex data and restriction maps can be treated uniformly as constrained diffusion on appropriate sheaves, following the interpretation of such constraints as affine sheaf structures developed by Gould [ 11 ]. We draw on this framework in Section 5, where evolving restriction maps correspond to weight training. The second concerns nonlinear restriction maps . The definitions above require each Fv⩽e to be a linear map, which restricts the class of operations that a sheaf can encode. Gould [ 11 ] extends the convergence theory to sheaves whose restriction maps are continuous piecewise affine (CPWA), using Filippov theory and generalized gradient techniques. This extension opens the door to encoding the components of feedforward ReLU networks within the cellular sheaf framework, as we develop in Section 3. 
+
+3. The Neural Sheaf Construction 
+
+We now embed a feedforward ReLU network into a cellular sheaf so that the forward pass computation becomes a question of local-to-global consistency. The construction assigns a vertex to each intermediate quantity in the forward pass and encodes each computational step as a restriction map on an edge. The input values are held fixed as boundary conditions, and the network output emerges as the unique harmonic extension of these boundary data. 
+
+3.1. From Networks to Sheaves 
+
+The forward pass (1) alternates affine transformations with ReLU nonlinearities. To encode each step as a linear map between stalks, we introduce extended representations that absorb biases into the weight matrices. For each layer ℓ ∈ { 1, . . . , k +1 }, define the extended weight matrix 
+
+W (ℓ) := 
+
+> (
+
+W (ℓ) B(ℓ))
+
+∈ Rnℓ×(nℓ−1+nℓ), B(ℓ) = diag( b(ℓ)). (10) 5For each hidden layer ℓ ∈ { 1, . . . , k }, define the extended activation vector 
+
+a(ℓ) := 
+
+(
+
+a(ℓ)
+
+1nℓ+1 
+
+)
+
+∈ Rnℓ+nℓ+1 , (11) and set a(0) := ( xT , 1Tn1 )T for the input. The ones block in each extended vector carries the bias information for the next layer: combined with the diagonal matrix B(ℓ) in W (ℓ), it produces the bias term b(ℓ) through ordinary matrix multiplication. This ones block is held fixed throughout the dynamics, making it a stubborn direction in the sense of [ 3]; see also the affine sheaf interpretation in [11]. The ReLU activation at layer ℓ is encoded by the diagonal ReLU matrix Rz(ℓ)
+
+∈ Rnℓ×nℓ with entries 
+
+Rz(ℓ) 
+
+> jj
+
+=
+
+
+
+1 if z(ℓ) 
+
+> j
+
+≥ 0,
+
+0 if z(ℓ) 
+
+> j
+
+< 0. (12) Since Rz(ℓ)
+
+is diagonal with entries in {0, 1}, it is an orthogonal projection: (Rz(ℓ)
+
+)2 = Rz(ℓ)
+
+and 
+
+(Rz(ℓ)
+
+)T = Rz(ℓ)
+
+. Finally, let Pnℓ =
+
+(
+
+Inℓ 0
+
+)
+
+denote the projection onto the first nℓ coordinates. With these definitions, the forward pass equations (1) become z(ℓ) = W (ℓ)a(ℓ−1) and a(ℓ) = Rz(ℓ)
+
+z(ℓ):each step is now a matrix multiplication. We construct a cellular sheaf F on a graph G = ( V, E ) encoding the full k-layer forward pass. The underlying graph is a path with one vertex for each intermediate quantity: 
+
+vx – vz(1) – va(1) – vz(2) – · · · – va(k) – vz(k+1) – vy. (13) 
+
+Stalks. The stalk dimensions match the quantities they carry: 
+
+F(vx) = Rn0+n1 , F(vz(ℓ) ) = Rnℓ , 1 ≤ ℓ ≤ k+1 ,
+
+F(va(ℓ) ) = Rnℓ+nℓ+1 , F(vy) = Rnk+1 . 1 ≤ ℓ ≤ k. (14) The extended stalks at vx and va(ℓ) have two blocks. The first block carries neural data (the input 
+
+x at vx, or the activation a(ℓ) at va(ℓ) ). The second block holds 1nℓ+1 , which is fixed and propagates bias to the next layer. 
+
+Restriction maps. Edges connect consecutive vertices, and restriction maps encode the forward pass operations. Three types of edges appear. A weight edge ez(ℓ) connects va(ℓ−1) to vz(ℓ) for each ℓ ∈ { 1, . . . , k +1} (identifying va(0) ≡ vx), with edge stalk Rnℓ and restriction maps 
+
+Fva(ℓ−1) ⩽ez(ℓ) = W (ℓ), Fvz(ℓ) ⩽ez(ℓ) = Inℓ . (15) An activation edge ea(ℓ) connects vz(ℓ) to va(ℓ) for each ℓ ∈ { 1, . . . , k }, with edge stalk Rnℓ and restriction maps 
+
+Fvz(ℓ) ⩽ea(ℓ) = Rz(ℓ)
+
+, Fva(ℓ) ⩽ea(ℓ) = Pnℓ . (16) An output edge ey connects vz(k+1) to vy, with edge stalk Rnk+1 and restriction maps 
+
+Fvz(k+1) ⩽ey = ϕ, Fvy ⩽ey = Ink+1 . (17) When ϕ is the identity, this is a standard linear restriction map. When ϕ is nonlinear (sigmoid, softmax), it falls outside the linear sheaf framework; we address convergence in this case in Section 4. 6Figure 1 illustrates the correspondence for the general k-hidden layer construction, and Fig. 2 displays a single hidden layer network. The input vertex vx is pinned to the extended input x = ( xT , 1Tn1 )T . At each post-activation vertex va(ℓ) , the second block of coordinates is held fixed at 1nℓ+1 while the first block (the activation 
+
+a(ℓ)) is free to evolve. All other vertices are fully dynamic. These fixed coordinates are the boundary data of the sheaf; the remaining coordinates evolve under sheaf diffusion (Section 3.2). 
+
+x
+
+z(1) a(1) z(2) a(k) z(k+1) 
+
+ˆy
+
+· · ·           
+
+> W(1)
+> In1
+> Rz(1) Pn1W(2) In2Rz(2) PnkW(k+1) Ink+1
+> Ink+1
+> ϕ
+
+Figure 1: Neural sheaf encoding a k-hidden layer ReLU network. Red nodes are stubborn (boundary conditions); green and yellow nodes are dynamic, with yellow nodes having a fixed component. Restriction maps W (ℓ) encode weights and biases, Rz(ℓ)
+
+encodes ReLU activation, Pnℓ projects onto the first nℓ coordinates, and ϕ is the final activation function. The restriction maps are designed so that local consistency on each edge reproduces one step of the forward pass. On a weight edge, vanishing discrepancy requires W (ℓ)a(ℓ−1) = z(ℓ); on an activation edge, it requires Rz(ℓ)
+
+z(ℓ) = a(ℓ). A 0-cochain that is locally consistent on every edge therefore encodes the complete forward pass. In Section 3.2 we show that sheaf diffusion with the fixed boundary data converges to precisely this consistent state. 
+
+3.2. The Forward Pass as Harmonic Extension 
+
+The sheaf F from Section 3.1 comes equipped with boundary data: the input stalk at vx is fixed to 
+
+a(0) , and the ones block in each extended activation a(ℓ) is held at 1nℓ+1 . The remaining coordinates are free. We collect the fixed coordinates into a vector u and the free coordinates into ω, so that the 
+
+0-cochain decomposes as ω = u ⊕ ω. This is analogous to the U -restricted dynamics of Theorem 2.5, though here the fixed data consists of individual coordinates within stalks rather than entire vertex stalks. [3 ] formalizes this coordinate-level decomposition through constrained opinion dynamics on sheaves with stubborn directions; for our purposes, the informal description suffices. Applying the sheaf heat equation to the free coordinates gives the restricted dynamics 
+
+dω dt = −α(LFt [Ω , Ω] ω + LFt [Ω , U ] u), (18) where LFt [Ω , Ω] and LFt [Ω , U ] denote the blocks of the sheaf Laplacian restricted to the free and fixed coordinate subspaces, respectively. Each free coordinate is driven by discrepancies on its incident edges: the pre-activation z(ℓ) is pulled toward agreement with W (ℓ)a(ℓ−1) via its weight edge, while the activation a(ℓ) is pulled toward Rz(ℓ)
+
+z(ℓ) via its activation edge and toward z(ℓ+1) 
+
+via the subsequent weight edge. 
+
+Remark 3.1 (State-dependent restriction maps) . The diagonal ReLU matrix Rz(ℓ)
+
+depends on the sign pattern of the current pre-activation z(ℓ). Since z(ℓ) is part of the evolving 0-cochain, the restriction maps on the activation edges change with the dynamics, creating a state-dependent sheaf 
+
+7Ft: the Laplacian LFt and the dynamics (18) are piecewise constant, switching when a pre-activation coordinate crosses zero. For each fixed activation pattern the sheaf is an ordinary cellular sheaf and the classical theory of Theorems 2.4 and 2.5 applies. Convergence despite the switching is the subject of Section 4. The existence and uniqueness of a harmonic extension, and its identification with the forward pass, rest on a single structural property of the coboundary operator. For any frozen activation pattern, write FR for the cellular sheaf whose activation-edge restriction maps use the corresponding diagonal ReLU matrices R(ℓ). Decompose each 0-cochain as ω = u ⊕ ω,where u collects the fixed boundary data (input, bias directions) and ω the free coordinates. The coboundary decomposes accordingly: δω = δΩ ω + δU u, where δΩ : C0Ω → C1 is the restriction of the coboundary to the free coordinate subspace. 
+
+Lemma 3.2 (Unitriangular factorization) . For any activation pattern and identity output activation 
+
+ϕ = id , the restricted coboundary δΩ is a square matrix with det δΩ = 1 . Consequently the restricted Laplacian satisfies 
+
+LFR [Ω , Ω] = δT 
+
+> Ω
+
+δΩ, det LFR [Ω , Ω] = 1 ,
+
+and in particular is positive definite. Proof. Order the free coordinates along the path as 
+
+ω = (z(1) , a (1) , z (2) , a (2) , . . . , a (k), z (k+1) , ˆy),
+
+and the edge stalks in the same path order: ez(1) , e a(1) , e z(2) , . . . , e z(k+1) , e y. Each free-coordinate block has the same dimension as the edge stalk it is paired with – Rnℓ for both z(ℓ) and ez(ℓ) , and likewise for activation edges and the output edge – so δΩ is a square matrix of size (2∑kℓ=1 nℓ +2 nk+1 
+
+).Each edge contributes one block row to δΩ: the downstream endpoint enters with an identity block on the diagonal, and the upstream endpoint enters with −R(ℓ), −W (ℓ), or −I on the first block sub-diagonal. Concretely, for a single hidden layer ( k = 1 ) with free coordinates ω = ( z(1) , a (1) , z (2) , ˆy):
+
+δΩ =
+
+
+
+In1
+
+−R(1) In1
+
+−W (2) In2
+
+−In2 In2
+
+ . (19) For general k, the pattern extends along the path: sub-diagonal blocks alternate between −R(ℓ)
+
+(activation edges) and −W (ℓ+1) (weight edges), terminating with −Ink+1 (output edge). In every case δΩ is block lower-triangular with identity blocks on the diagonal, so det δΩ = 1 . Therefore 
+
+det LFR [Ω , Ω] = (det δΩ
+
+)2 = 1 .
+
+Invertibility of δΩ implies that δT 
+
+> Ω
+
+δΩ is positive definite. 
+
+Remark 3.3 . For identity output, the output edge forces ˆy = z(k+1) at equilibrium. Elimi-nating ˆy by Schur complement gives the reduced restricted Laplacian on the free coordinates 
+
+(z(1) , a (1) , . . . , a (k), z (k+1) ). Since the ˆy-diagonal block is Ink+1 , the Schur complement preserves the unit determinant. The reduced system has the block-tridiagonal form derived in Section A.1 and is used for the dynamics throughout Sections 4 and 5. 8The unit determinant forces LFR [Ω , Ω] to be positive definite for every activation pattern. In the language of Section 2.2, for a fixed t the relative cohomology H0(G, U ; FR) = 0 vanishes, so the harmonic extension of the boundary data exists and is unique. Since there are finitely many activation patterns, the smallest eigenvalue across all patterns provides a uniform lower bound 
+
+λ∗ = α min R λmin (LFR [Ω , Ω]) > 0 on the convergence rate. Since the restricted Laplacian is positive definite for every activation pattern, each pattern yields a unique harmonic extension of the boundary data. The following result identifies all of these harmonic extensions at once and shows that forward substitution in the unitriangular system is exactly the forward pass. 
+
+Proposition 3.4 (Forward pass as harmonic extension) . For any frozen activation pattern R, the unique harmonic extension of the boundary data satisfies z(ℓ)∗ = W (ℓ)a(ℓ−1) ∗ and a(ℓ)∗ = R(ℓ) z(ℓ)∗
+
+for all layers, with ˆy∗ = z(k+1) ∗. In particular, when a(0) is fixed to x, only the forward-pass activation pattern (1) produces a harmonic extension that is also a global section. Proof. The harmonic extension minimizes the total discrepancy 12 ∥δ ω ∥2 subject to the boundary data, so it satisfies δT 
+
+> Ω
+
+(δΩ ω∗ + δU u) = 0 . Since δΩ is invertible (Lemma 3.2), this simplifies to 
+
+δΩ ω∗ = −δU u, 
+
+which is the zero-discrepancy condition: the total coboundary δ ω ∗ = 0 vanishes on every edge. Because δΩ is unitriangular, this system is solved by forward substitution along the path. The first block row (weight edge 1) gives z(1) ∗ = W (1) x. The second row (activation edge 1) gives 
+
+a(1) ∗ = R(1) z(1) ∗. Continuing alternately through weight and activation edges: z(ℓ)∗ = W (ℓ)a(ℓ−1) ∗
+
+and a(ℓ)∗ = R(ℓ)z(ℓ)∗ for 1 ≤ ℓ ≤ k, and finally z(k+1) ∗ = W (k+1) a(k)∗ and ˆy∗ = z(k+1) ∗. These are exactly the forward-pass equations (1) with activation pattern R.Since δ ω ∗ = 0 , the extension is a global section of the frozen sheaf FR. It is a global section of the actual state-dependent sheaf Ft only when R is self-consistent: the sign pattern of the computed 
+
+z(ℓ)∗ must agree with R(ℓ). Fixing a(0) = x determines z(1) ∗, hence R(1) , hence a(1) ∗, and so on layer by layer: the self-consistent pattern is unique, provided no pre-activation coordinate vanishes (a generic condition in the weights; see Remark 3.5). 
+
+Remark 3.5 (Zero pre-activations) . When z(ℓ) 
+
+> j
+
+= 0 at the forward-pass solution, both R(ℓ) 
+
+> jj
+
+= 0 and 
+
+R(ℓ) 
+
+> jj
+
+= 1 produce a(ℓ) 
+
+> j
+
+= 0 , so the harmonic extension is the same either way. Self-consistency is unambiguous; the non-uniqueness is only in the labeling of the activation pattern, not in the solution itself. This is a codimension-one condition in weight space and is absent for generic weights, but it can arise for trained networks with dead neurons. Our convention R(ℓ) 
+
+> jj
+
+= 1 for z(ℓ) 
+
+> j
+
+≥ 0 resolves the labeling; the forward pass and all convergence results are unaffected. Thus, a standard feedforward ReLU network can be embedded in the space of global sections of a cellular sheaf in this way. The sheaf diffusion dynamics (18) provide an alternative approach to compute this output. Although more convoluted, we argue that this formulation might offer benefits in terms of interpretability and privacy, stemming from the distributed nature of the algorithm. In Section 4 we show that the dynamics converge to ω∗ exponentially fast despite this switching. 
+
+4. Convergence Analysis 
+
+Proposition 3.4 identifies the forward pass output as the unique harmonic extension of the boundary data for each fixed activation pattern, but the activation pattern itself evolves with the dynamics. 9x1               
+
+> x2
+> a(1)
+> 1
+> a(1)
+> 2
+> a(1)
+> 3
+> ˆy
+> W(1)
+> 11
+> W(1)
+> 32
+> W(2)
+> 11
+> W(2)
+> 13
+> xa(1) = ReLU( W(1) x+b(1) )ˆy=ϕ(W(2) a(1) +b(2) )
+> Input
+> Hidden
+> Output
+
+(a) Feedforward neural network 
+
+x
+
+z(1) a(1) z(2) 
+
+ˆy
+
+dω dt = −α(LFt [Ω , Ω] ω + LFt [Ω , U ]u)     
+
+> W(1)
+> I3
+> Rz(1) P3W(2) I2
+> I1
+> ϕ
+
+(b) Cellular sheaf structure 
+
+Figure 2: The neural network–sheaf correspondence. Red nodes represent fixed data (boundary conditions); green and yellow nodes are computed, with yellow nodes having a fixed component. 
+
+(a) The feedforward network computes postactivations a(1) = ReLU (W (1) x + b(1) ) and output 
+
+ˆy = ϕ(W (2) a(1) + b(2) ) via the forward pass. (b) In the sheaf formulation, only x (input extended with ones) is pinned. Restriction maps encode weights and biases ( W (1) , W (2) ), ReLU activations (Rz(1) 
+
+), and final activation ( ϕ). The heat equation drives any initialization to the correct forward pass output. This section establishes that the dynamics nonetheless converge to the correct output. We treat identity output activation first (Section 4.1), then extend to nonlinear final activations in Section 4.2. 
+
+4.1. Convergence for ReLU Networks 
+
+The restricted dynamics (18) form a continuous piecewise affine (CPWA) system [ 11 ]: the state space is partitioned into finitely many convex polyhedral regions {R i}Ni=1 , one per ReLU activation pattern [ 17 ], and within each region the vector field is affine. Write Fi for the sheaf whose restriction maps correspond to the activation pattern of region Ri. At region boundaries where some z(ℓ) 
+
+> j
+
+= 0 ,the restriction maps Rz(ℓ)
+
+switch discontinuously. Under our convention that Rz(ℓ) 
+
+> jj
+
+= 1 for z(ℓ) 
+
+> j
+
+≥ 0,the dynamics select the velocity of maximal norm among Filippov selections at switching surfaces; this is Gould’s fast selection rule [11 , Def. 7.4.17], which guarantees existence and uniqueness of solutions and prevents spurious sliding [11, Prop. 7.4.14, Rem. 7.4.20]. 
+
+Theorem 4.1 (Convergence to neural network output) . Consider a k-hidden-layer ReLU network with identity output activation ϕ = id , and assume the forward-pass equilibrium ω∗ lies in the interior of an activation region (a generic condition in the weights; see Remark 3.5). For any initial condition ω0, the solution of the restricted dynamics (18) converges exponentially to the unique cochain ω∗ encoding the standard forward pass output. Proof. Within each region Ri, the dynamics are gradient descent on the potential 
+
+V (ω) = 12 ωT LFi [Ω , Ω] ω + ωT LFi [Ω , U ] u, (20) which equals the total discord 12 ∥δiω∥2 up to an additive constant depending only on the boundary data u, where δi is the coboundary of Fi and ω = u ⊕ ω is the full 0-cochain. By Lemma 3.2, 
+
+LFi [Ω , Ω] is positive definite in every region, so V has a unique minimizer in each region. 10 The forward pass cochain ω∗ from Proposition 3.4 is the unique self-consistent critical point: the activation pattern it induces is the same one used to compute it. Any interior critical point of a region Ri must satisfy the forward pass equations with the ReLU pattern of Ri, and for a feedforward network the pinned input determines the activation pattern layer by layer, so only ω∗
+
+qualifies. Boundary critical points, where V > 0 and the discord does not vanish, are not local minima of V ; the fast selection rule ensures trajectories exit such points rather than remaining there [11, Lem. 7.4.23, Rem. 7.4.20]. All fast solutions are bounded [ 11 , Thm. 7.4.21], and bounded solutions of CPWA gradient systems converge to generalized critical points [ 11 , Lem. 7.4.16]. Since ω∗ is the only such point, all trajectories converge to ω∗.For the rate, the hypothesis guarantees that ω∗ lies in the interior of some region R∗. There exists 
+
+T such that the trajectory remains in R∗ for t > T , after which the dynamics reduce to the linear sys-tem ddt ω = −α L F∗ [Ω , Ω]( ω − ω∗), giving exponential convergence at rate α λ min (LF∗ [Ω , Ω]) . During the transient t ≤ T , the Lyapunov function V decreases at rate at least α λ min (LFi [Ω , Ω]) within each visited region Ri, so the overall convergence rate is bounded below by λ∗ = α min i λmin (LFi [Ω , Ω]) >
+
+0, which is positive since there are finitely many regions and each restricted Laplacian is positive definite by Lemma 3.2. Note that when the final activation is the identity, z(k+1) = ˆy, so the output edge is redundant and in practice we can eliminate it. For all the other cases the output edge enforces additional nontrivial constraints, as we emphasize in the following section. 
+
+4.2. Convergence with Final Activations 
+
+Theorem 4.1 covers networks with identity output, sufficient for regression. Classification requires nonlinear final activations such as sigmoid, tanh, or softmax, and these are not piecewise linear: they cannot be encoded as linear restriction maps in a cellular sheaf. Gould [ 11 ] resolves this through the notion of a local adjoint , which extends the sheaf framework to nonlinear maps. To do this Gould considers that edge ey carries an edge potential 
+
+Uout (z(k+1) , ˆy) = 12 ∥ϕ(z(k+1) ) − ˆy∥2 (21) Gradient descent on this potential drives both vertices toward agreement through ϕ. When ϕ is a linear map this reduces to standard sheaf diffusion, but in the case of nonlinear ϕ the chain rule introduces the Jacobian Jϕ(z(k+1) ), which acts as a local adjoint [ 11 , Def. 7.2.9]: the best linear approximation to the adjoint of ϕ at the current operating point. The resulting dynamics on the output pair are 
+
+ddt z(k+1) = −α[(z(k+1) − W (k+1) a(k)) + Jϕ(z(k+1) )T (ϕ(z(k+1) ) − ˆy)] ,ddt ˆy = −α(ˆy − ϕ(z(k+1) )), (22) where the first term in the z(k+1) equation is the contribution from the weight edge to the previous layer. The dynamics for all other coordinates remain as in (18) . At any fixed point, ˆy = ϕ(z(k+1) )
+
+and the Jacobian term vanishes, so the hidden layer equations reduce to the harmonic extension of Proposition 3.4. The full system therefore recovers the standard forward pass including the final activation. 11 Theorem 4.2 (Convergence with final activation) . Consider a k-hidden-layer ReLU network with 
+
+C1 final activation ϕ : Rnk+1 → Rnk+1 that is either bounded (sigmoid, tanh, softmax) or has at most linear growth ( ∥ϕ(z)∥ ≤ C(1 + ∥z∥) for some C > 0). Assume the forward-pass equilibrium ω∗
+
+lies in the interior of an activation region (a generic condition; see Remark 3.5). For any initial condition (ω0, ˆy0), the solution of the restricted dynamics (18) augmented by (22) converges to the unique fixed point (ω∗, ϕ (z(k+1) ∗)) encoding the standard neural network output. Proof sketch. Append the output potential (21) to the Lyapunov function (20) to obtain E(ω, ˆy) = 
+
+V (ω) + 12 ∥ϕ(z(k+1) ) − ˆy∥2. The positive-definite quadratic term V (ω) dominates at large ∥ω∥, and the growth hypothesis on ϕ ensures the output potential does not destroy this dominance, so E is coercive and trajectories are bounded. In each ReLU region interior, ddt E = −α ∥∇ E∥2 ≤ 0. Since 
+
+ReLU (0) = 0 regardless of convention, the one-sided energies agree on every switching surface, and 
+
+E decreases during Filippov sliding at rate −α ∥∇ τ E∥2. LaSalle’s invariance principle [ 26 ] yields convergence to the set where 0 ∈ ∂C E. The feedforward cascade structure excludes Clarke critical points on switching surfaces for generic weights, so ω∗ is the unique element of this set. The full proof appears in Section A. The edge potential (21) uses squared error as its notion of discrepancy. Hansen and Ghrist [ 14 ]observe that replacing quadratic potentials with other convex functions yields nonlinear sheaf Laplacians that retain the local update structure. In Section 5, we exploit this flexibility to pair ϕ
+
+with other loss functions in the training setting. 
+
+5. Extensions 
+
+The sheaf framework developed in Sections 3 and 4 identifies the forward pass as a global section of a cellular sheaf, computed via heat equation dynamics. The extensions below build on the distributed, bidirectional nature of this formulation. Each has a feedforward counterpart: pinning parallels dropout, restriction map evolution parallels backpropagation, and batch processing is standard minibatch evaluation. The sheaf perspective restructures these operations as local consistency problems on a graph, which changes the geometry of information flow and opens the door to hybrid strategies that mix feedforward and diffusion-based reasoning. 
+
+5.1. Pinned Neurons 
+
+In the feedforward view, fixing a hidden neuron to a target value affects only downstream layers. The sheaf formulation replaces this asymmetry with a global consistency problem. When we constrain a neuron, the heat equation propagates that constraint in both directions along the graph, and the entire network seeks an equilibrium that accommodates the imposed value while minimizing total discord. This is the neural analogue of the weighted reluctance construction of Hansen and Ghrist [ 14 ], where a stubborn “parent” vertex exerts continuous influence on an agent’s expressed opinion. To pin a subset Jℓ of neurons at layer ℓ to target values p ∈ R|Jℓ|, we augment the sheaf with a new stubborn vertex vp with stalk R|Jℓ| holding the target value p, connected to va(ℓ) by a penalty edge ep with restriction maps 
+
+Fva(ℓ) ⩽ep = √γ P Jℓ , Fvp⩽ep = √γ I |Jℓ|, (23) where PJℓ projects onto the coordinates in Jℓ and γ > 0 controls the pinning strength. The penalty edge contributes a term γ P TJℓ
+
+> (
+
+PJℓ a(ℓ) − p) to the Laplacian action at va(ℓ) , pulling the selected 12 neurons toward p. As γ → ∞ this approaches a hard constraint; for finite γ the network may deviate from the target if other edges create sufficient tension. The input vertex vx in our construction is itself an instance of this mechanism with γ = ∞, and the ones blocks in the extended activations are another.        
+
+> x1
+> x2
+> a(1)
+> 1
+> a(1)
+> 2
+> p
+> ˆy
+> (a) Pinning a neuron in the network
+> x
+> z(1) a(1) z(2)
+> ˆyp
+> W(1)
+> I3
+> Rz(1) P3W(2) I2
+> I1
+> ϕ
+> √γI 1
+> √γP {3}
+> (b) Pinning in the sheaf formulation
+
+Figure 3: Pinning a neuron. (a) Fixing the third hidden neuron to the value p in the feedforward network affects only the output neuron through the red edge. (b) In the sheaf formulation, the pinned value p is imposed through the restriction map P{3}, which projects onto the third component of a(1) . The disturbance propagates to both adjacent stalks z(1) and z(2) (red edges). The modified dynamics take the same form as (18) : pinning simply enlarges the boundary data. The pinned coordinates join the fixed set U , and the target values p are appended to u.The bidirectional nature of pinning distinguishes it from feedforward interventions such as dropout [ 27 ]. It is closer in spirit to relaxation-based inference schemes in which constraints may be imposed on internal variables of a computation graph [ 19 , 24 ], though the mechanism here is sheaf diffusion minimizing edgewise discrepancy. In the feedforward view, fixing a neuron at layer ℓ
+
+leaves layers 1, . . . , ℓ −1 untouched. In the sheaf dynamics, discrepancies created by the penalty edge propagate upstream through the weight and activation edges, forcing earlier layers to adjust. The equilibrium of the pinned dynamics reflects a global compromise across the entire network, not a local override. 
+
+Note 5.1 (Partial clamping) . The unpinned dynamics converge to a global section of the sheaf, where every activation satisfies a(ℓ)∗ = ReLU (z(ℓ)∗) and the total discrepancy vanishes (Proposition 3.4). Pinning disrupts this guarantee. The modified inhomogeneous term in the pinned dynamics can shift the equilibrium so that the natural computation ReLU (z(ℓ)∗) conflicts with the pinning constraint, forcing the trajectory onto a ReLU boundary where some z(ℓ)∗ 
+
+> j
+
+= 0 . At such a boundary the steady state may satisfy a(ℓ)∗̸ = ReLU (z(ℓ)∗), so the equilibrium is no longer a global section in general. Gould’s CPWA framework [ 11 ] guarantees, via Clarke’s generalized gradient [ 7], that the pinned system still converges to a generalized critical point. However, this critical point need not have zero discrepancy; it is a local minimum of the Lyapunov function under the fast selection rule [ 11 ,Lem. 7.4.23], not necessarily the global one. 
+
+5.2. Training via Joint Dynamics 
+
+Section 4 and Section 5.1 treated the restriction maps as fixed: the network’s weights were given, and only the 0-cochain ω evolved under the heat equation. Training a neural network means adjusting the weights themselves. In the sheaf framework, this amounts to evolving the restriction maps Fv⩽e
+
+alongside the cochain, so that the sheaf structure adapts to reduce discrepancy. This is the joint opinion-expression dynamics of [ 3 , 11 , 14 ], transplanted to the neural setting. From the perspective 13 of learning algorithms this resembles other local learning schemes on general computation graphs, such as predictive coding networks [ 19 , 28 ], but here the update rule arises directly from gradient descent on a global sheaf discrepancy functional. 
+
+5.2.1. Evolving restriction maps 
+
+Consider a supervised training pair (x, y). The input vertex is already stubborn at x, and following Section 5.1 we fix the output vertex ˆy to the target y. In general, the current weights cannot produce the target from the given input, so the equilibrium may retain nonzero discrepancy. The key observation is that we can also evolve the restriction maps, allowing the sheaf structure itself to adapt until the 0-cochain becomes a global section. This is the “learning to lie” mechanism from [ 14 ]. In [ 3 ] we explore a constrained version where only a designated subset of restriction maps evolves, which is the setting relevant here, since not all restriction maps in our construction correspond to trainable parameters. The general update rule is gradient descent on the local edge discrepancy. For an edge e = u → v
+
+with restriction maps Fv⩽e and Fu⩽e, the edgewise discrepancy is Fv⩽e xv − F u⩽e xu, and gradient descent on 12 ∥F v⩽e xv − F u⩽e xu∥2 with respect to Fv⩽e gives 
+
+ddt Fv⩽e = −β(Fv⩽e xv − F u⩽e xu 
+
+> )
+
+xTv , (24) where β > 0 is the learning rate for the structural dynamics. Each restriction map updates independently, using only the discrepancy at its own edge and the data at the adjacent vertex. This locality is a distinctive feature of sheaf-based training. In the neural sheaf, the trainable restriction maps are the extended weight matrices W (ℓ)
+
+on the weight edges ez(ℓ) . Applying the same idea of gradient descent to these edges, where 
+
+Fva(ℓ−1) ⩽ez(ℓ) = W (ℓ) and Fvz(ℓ) ⩽ez(ℓ) = Inℓ , yields updates for the weight matrix and bias vector separately: 
+
+ddt W (ℓ) = −β (W (ℓ) a(ℓ−1) − z(ℓ)) a(ℓ−1) T , ddt b(ℓ) = −β (W (ℓ) a(ℓ−1) − z(ℓ)). (25) Note that the decomposition into W (ℓ) and b(ℓ) is enforced by projecting onto the subspace of matrices that preserve the diagonal sparsity pattern of B(ℓ) = diag( b(ℓ)).
+
+5.2.2. The joint dynamics 
+
+Combining the cochain dynamics (18) with the weight updates (25) across all layers yields a coupled system. To write it compactly, we introduce two projections. The free-cochain projection PΩ zeros out the components of ω that correspond to fixed boundary data, namely the input and output vertices, and the ones blocks in the extended activations. When the sheaf Laplacian LF ω acts on the full cochain, PΩ extracts only the update to the free coordinates 
+
+ω, leaving the stubborn coordinates untouched. The trainable-map projection ΠW zeros out velocity components for restriction maps that should not evolve, namely the identity maps on weight edges, the ReLU diagonal matrices on activation edges, and the projection maps Pnℓ . It also enforces the diagonal sparsity of B(ℓ). What remains after projection are the updates to the extended weight matrices W (ℓ), the only restriction maps we allow to evolve. 14 With these projections, the joint dynamics take the form 
+
+dω dt = −α P Ω
+
+> (
+
+δ(t)T δ(t) ω(t)),dδ dt = −β ΠW
+
+> (
+
+δ(t) ω(t) ω(t)T ),
+
+(26) where δ denotes the coboundary operator encoding all restriction maps. The first equation is sheaf diffusion restricted to free coordinates, as in (18) , but now with time-varying restriction maps. The second equation aggregates the edgewise updates (24) across all weight edges. Both equations are gradient descent on the total discrepancy energy Ψ( ω, δ ) = 12 ∥δ ω ∥2 with respect to ω and δ
+
+respectively. The rates α and β control the relative speeds of cochain and weight updates. In the language of [ 3], this evolution can also be interpreted through an auxiliary parameter sheaf HW whose vertex data are spaces of admissible restriction maps, and whose own Laplacian depends on the current cochain ω. We defer this interpretation, along with a detailed figure of the coupled sheaves, to Appendix B.1. 
+
+5.2.3. Loss functions and the output edge 
+
+The edge potential framework from Section 4.2 extends naturally to training. We identify the output edge potential Uout with a loss function L(ϕ(z(k+1) ), y), where ϕ is the final activation and ˆy = y is the target output, held fixed as a stubborn vertex. We say that a loss function fits the discrepancy framework if it depends on predictions and targets only through their difference d = ˆy − y, so that Uout ( ˆy, y) = f (d) for some convex function f : Rnk+1 → R. In this case, the gradient ∇f (d) produces a nonlinear sheaf Laplacian 
+
+L∇f 
+
+> F
+
+= δT ◦ ∇ f ◦ δ in the sense of Hansen and Ghrist [ 14 , §10]. The squared error f (d) = 12 ∥d∥2
+
+recovers the standard sheaf Laplacian. The L1 loss f (d) = ∥d∥1 has gradient (∇f (d)) i = sign (di).The formulas for other losses in this family (Huber, p-norm) can be found in Appendix B.3. Cross-entropy L(ˆ y, y) = − ∑ 
+
+> i
+
+yi log ˆ yi does not fit the discrepancy framework, since it depends on the predicted probabilities ˆy and the target y separately rather than on their difference. However, paired with the local adjoint perspective from Section 4.2, the expression simplifies. For softmax 
+
+ϕ(z)i = ezi / ∑ 
+
+> j
+
+ezj , a short calculation gives 
+
+Jϕ(z(k+1) )T ∇ˆy L = ϕ(z(k+1) ) − y, (27) and the same identity holds for sigmoid with binary cross-entropy. The Jacobian of the activation cancels with the gradient structure of the loss, so the resulting dynamics on the output edge takes the discrepancy back via the identity. Classification training thus fits within the same local update framework as regression. 15 x
+
+z(1) [a(1) 
+
+> 1
+
+] z(2) 
+
+y     
+
+> W(1)
+> In1
+> Rz(1) Pn1W(2) In2
+> In2
+> ∇Uout
+> In2
+
+(a) Regression with nonlinear potential 
+
+x
+
+z(1) [a(1) 
+
+> 1
+
+] z(2) 
+
+y     
+
+> W(1)
+> In1
+> Rz(1) Pn1W(2) In2
+> In2
+> C.E.
+> Softmax
+
+(b) Classification with cross-entropy 
+
+Figure 4: Two training configurations for a 1-hidden-layer network. Red nodes are pinned boundary conditions, green nodes are dynamic pre-activation variables, and yellow nodes are dynamic post-activation variables with some part fixed. Green arrows represent trainable weight matrices. Left: 
+
+Regression with identity activation composed with gradient of nonlinear potential ∇U , enabling other losses beyond L2, like L1, Lp, or Huber. Right: Classification with Softmax/Sigmoid activation and cross-entropy loss, where dynamics simplify to allow a sheaf-like construction. 
+
+5.2.4. Regularization 
+
+The total discrepancy Ψ( ω, δ ) = 12 ∥δ ω ∥2 is not coercive. A priori, there is no guarantee that trajectories of (26) remain bounded, since the cochain and the coboundary operator can grow simultaneously while δ ω stays small. Standard L2 regularization resolves this. The regularized energy functional is 
+
+Lλ,μ (ω, δ ) = 12 ∥δ ω ∥2 + λ 
+
+> 2
+
+∥ω∥2 + μ 
+
+> 2
+
+∥δ∥2 
+
+> F
+
+, (28) where λ, μ > 0 are regularization strengths. The gradient descent dynamics of Lλ,μ are 
+
+dω dt = −αP Ω
+
+(
+
+δT δ ω + λ ω 
+
+)
+
+,dδ dt = −β ΠW
+
+(
+
+δ ω ω T + μ δ 
+
+)
+
+.
+
+(29) The cochain term (λ/ 2) ∥ω∥2 penalizes large free coordinates, acting as weight decay on the internal state. The weight term (μ/ 2) ∥δ∥2 
+
+> F
+
+penalizes large restriction maps, corresponding to standard weight decay on the network parameters. Both regularization terms admit sheaf-theoretic interpretations as weighted reluctance, as shown in [ 3 , 14 ]. The general form with nonzero anchoring, its connection to the framework in [ 3], and the diagrammatic realization within the sheaf are developed in Appendix B.2. 
+
+Note 5.2 (Nonlinear regularization) . The L2 penalties above correspond to quadratic edge potentials on the regularization edges. Just as in Section 5.2.3, these can be replaced by any convex function of the discrepancy: L1 regularization uses f (d) = ∥d∥1, elastic net combines L1 and L2, and so on. Each choice produces a different nonlinear Laplacian on the augmented graph, selecting for different sparsity or smoothness properties of the equilibrium. 
+
+5.2.5. Batch Processing 
+
+The development so far treats a single input x ∈ Rn0 . Training and inference require processing multiple inputs simultaneously. The extension is straightforward. Given a batch X = ( x1, . . . , xM ) ∈
+
+Rn0×M , we replace each vertex stalk Rnℓ with Rnℓ×M , so that the 0-cochain stores M columns 16 rather than one. The restriction maps W (ℓ) act identically on each column, since they encode network structure rather than data. The ReLU operation requires more care. For a single input, ReLU is encoded by the diagonal matrix Rz(ℓ)
+
+acting via matrix multiplication. For a batch, each column z(ℓ) 
+
+> m
+
+activates a different subset of neurons, so there is no single matrix that applies to the full batch. Instead, we define a mask matrix MASK Z(ℓ)
+
+∈ { 0, 1}nℓ×M with entries MASK Z(ℓ) 
+
+> im
+
+= 1 if Z(ℓ) 
+
+> im
+
+≥ 0 and 0 otherwise, and replace matrix multiplication by coordinatewise (Hadamard) multiplication: A(ℓ) = MASK Z(ℓ)
+
+⊙Z(ℓ).This is no longer a linear map between stalks in the classical sheaf sense. The batch dynamics are equivalent to M independent sheaves sharing the same restriction maps but with separate activation patterns. 
+
+X
+
+Z(1) 
+
+A(1) Z(2) 
+
+Y     
+
+> W(1)
+> In1×M
+> MASK Z(1)
+> ⊙Pn1×MW(2) In2×M
+> In2×M
+> ϕ
+
+# ≡
+
+X
+
+Z(1) 
+
+A(1) Z(2) 
+
+Y   
+
+> W(1)
+> In1×M
+> Rz(1) ,1
+> Rz(1) ,M
+> Pn1,1
+> Pn1,M
+> W(2) In2×M
+> In2×M
+> ϕ
+
+Figure 5: Batch processing for a one-hidden-layer network with batch size M . Top : the batch sheaf with matrix-valued stalks, where ReLU acts via coordinatewise masking. Bottom : the equivalent representation as M parallel activation edges, each carrying its own diagonal ReLU matrix Rz(1) ,m 
+
+and projection Pn1,m . The weight edges are shared across all inputs. 
+
+5.3. Convergence and Timescale Considerations 
+
+The joint dynamics (26) sit at the intersection of several existing frameworks, but are not fully covered by any one of them. The analysis in [ 3] establishes convergence for joint dynamics in the affine setting, without the piecewise linear switching introduced by ReLU activations. Gould [ 11 ]extends convergence theory to CPWA sheaves, but treats only the case of evolving 0-cochains with fixed restriction maps. Our setting requires both simultaneously: the coboundary operator δ and the 0-cochain (hence the polyhedral partition) change together. We now examine what is known about convergence in this combined regime and identify the open problems that remain. 17 Two obstructions to convergence. Extending convergence theory to the full joint CPWA setting faces two obstructions. The first is norm blowup : the bilinear coupling δ ω can remain small while ∥ω∥ + ∥δ∥F → ∞ , so the unregularized energy Ψ( ω, δ ) = 12 ∥δ ω ∥2 has no minimizer and trajectories may escape to infinity. The regularized energy (28) is coercive and rules out this pathology, although we never saw it in practice with the unregularized potential. The second obstruction is more subtle: persistent noncritical sliding along ReLU switching surfaces. At a boundary between activation regions, the Filippov differential inclusion admits convex combinations of the one-sided gradient flows. If these convex combinations include velocities tangent to the boundary that neither leave the surface nor strictly decrease the energy, trajectories can slide indefinitely without reaching a critical point. In the fixed-weight setting of Section 4, sliding along switching surfaces does not obstruct convergence: we show in the proof of Theorem 4.2 that the energy decreases even during Filippov sliding. Phase-plane analysis (Section 6.1) shows that ReLU boundary crossings are transient; transient Filippov sliding is observed but does not impede convergence (Section C.1). When weights evolve simultaneously, the switching surfaces themselves move, and whether the energy remains nonincreasing during sliding in this coupled setting is an open question. 
+
+Timescale separation. The ratio α/β controls the relative speeds of 0-cochain and weight updates, and the timescale analysis in [ 3 ] provides quantitative guidance. When α ≫ β, the 0-cochain equilibrates rapidly while weights change slowly; this resembles standard training where inference is essentially instantaneous relative to parameter updates. The structural stagnation bound [ 3 , Prop. 5.1] quantifies how much the weights can drift during this equilibration. For a trajectory (ω(t), δ (t)) evolving over a time interval [0 , T ], the total weight displacement satisfies 
+
+∥δ(T ) − δ0∥F ≤ β B ω ∥δ0 ω0∥
+
+α λ eff 
+
+, (30) where Bω bounds the 0-cochain norm along the trajectory, ∥δ0 ω0∥ is the initial disagreement, and 
+
+λeff is an effective spectral gap measuring how efficiently projected diffusion dissipates energy. The bound has a direct interpretation: weight drift is proportional to the rate ratio β/α , scales with the 0-cochain magnitude, and is suppressed by efficient fast dynamics (large λeff ). Since λeff depends on the structure of the sheaf graph, deeper networks with longer path graphs can be expected to have smaller effective spectral gaps and hence slower equilibration per unit time. A symmetric bound [ 3 ,Prop. 5.3] governs 0-cochain displacement when β ≫ α. These bounds are derived for affine sheaves, so they apply within each activation region of our piecewise linear setting, but a priori there is no guarantee that they compose across region boundaries. 
+
+Experimental guidance from the stagnation bound. The bound (30) provides concrete guidance for parameter selection. We fix α ∼ 1 and treat λeff as independent of the number of samples in the batch M (empirically, we observe it depends on network depth, but not on batch size), leaving β as the free parameter. The remaining quantities depend on the initialization and M .We initialize the 0-cochain with normalized values at each vertex stalk, so that each of the M
+
+columns in the batch 0-cochain contributes O(1) to the Frobenius norm [ 15 ]. This gives Bω ∼ √M .The initial disagreement aggregates M columns of per-sample disagreement, each of order O(1) for randomly initialized weights, so ∥δ0 ω0∥ ∼ √M . Substituting into the stagnation bound (30): 
+
+βB ω∥δ0 ω0∥
+
+αλ eff 
+
+∼ β M. (31) 18 For the weight displacement to remain O(1) during each equilibration cycle, we need β ∼ 1/M .This scaling ensures that weights do not drift faster than the stalks can track through the sheaf graph. Section 6.2 confirms this prediction: setting β = 1 /n train works across all tasks and depths without per-task tuning, while deviations in either direction degrade performance. 
+
+6. Experiments 
+
+We implement the sheaf construction and the joint training dynamics from Sections 3 and 5 in a PyTorch library 1 that encodes feedforward ReLU networks as NeuralSheaf objects and integrates the restricted heat equation via forward Euler. All computations use float64 precision on networks with at most 30 neurons per hidden layer and two-dimensional synthetic data. We begin with the inference dynamics (Section 6.1), visualizing how the heat equation evolves the stalks toward the forward pass output. Section 6.2 tests whether the joint dynamics from Section 5.2 can learn from data. Section 6.3 illustrates two kinds of structural analysis that the sheaf embedding makes accessible: spectral decomposition of the restricted Laplacian, and per-edge discord as a local consistency measure. 
+
+6.1. Convergence and Dynamics Visualization 
+
+Given a trained network, we encode it as a sheaf, initialize all free stalks to random values, and run the restricted heat equation (18) . Figure 6 shows the resulting dynamics for a [2 , 4, 1] network: total discord decreases monotonically on a log scale, with all edge types and layers converging to machine precision. The output stalk trajectory converges from its random starting point to the forward pass value. 0 1000 2000 3000 4000 5000     
+
+> Iteration
+> 10 7
+> 10 5
+> 10 3
+> 10 1
+> 10 1
+> Total discord
+> ReLU boundary crossing
+
+(a) Total discord. 0 1000 2000 3000 4000 5000  
+
+> Iteration
+> 1.4
+> 1.3
+> 1.2
+> 1.1
+> 1.0
+> 0.9
+> 0.8
+> 0.7
+> Output stalk value
+> Output stalk
+> Forward-pass value
+
+(b) Output convergence. 
+
+Figure 6: Convergence dynamics for a [2 , 4, 1] network with identity output activation, α = 1 .0,
+
+dt = 0 .01 , stalks initialized randomly. (a) Total discord decreases monotonically on a log scale to machine precision. (b) The output stalk converges from its random starting value to the forward-pass prediction (black dashed). This validates Theorem 4.1. Across all tested configurations, spanning different depths, output activations, and batched inference with multiple simultaneous inputs, the dynamics converge to the forward pass output within machine precision, confirming Theorems 4.1 and 4.2. The unit determinant property (Lemma 3.2) holds to numerical precision across all networks tested. 
+
+> 1https://github.com/vicenbosca/neural-sheaf
+
+19 Phase-plane plots of pre-activation stalk pairs (Section C.1) show trajectories navigating through multiple activation regions before settling at the forward pass fixed point. ReLU boundary crossings concentrate in the first few hundred iterations; after that, activation patterns stabilize and the dynamics proceed as linear diffusion within a single region. Most crossings are transversal, but a fraction of stalks exhibit transient Filippov sliding, where opposing forces from the weight and activation edges temporarily trap the trajectory near a switching surface until downstream stalks converge and the trapping condition dissolves. Discord decreases monotonically throughout all observed sliding episodes, consistent with the energy decrease argument in the proof of Theorem 4.2. The library also supports the pinning mechanisms from Section 5.1. Hard-pinning a hidden stalk to a non-forward-pass value produces a different equilibrium, since the harmonic extension changes when boundary conditions change. Soft pins with coupling strength γ smoothly interpolate between the free equilibrium and the target, approaching the hard-pin limit as γ → ∞ .
+
+6.2. Sheaf-Based Training 
+
+We test the joint dynamics (26) as a training algorithm on four synthetic benchmarks: paraboloid and saddle regression ( x21 +x22 −2/3 and x21 −x22 +0 .5 sin (2 x1) on [−2, 2] 2 and [0 , 2] 2 respectively), circular binary classification (disk vs. annulus), and four-class blob classification (anisotropic Gaussians). Each task is run at two depths: one hidden layer ( [2 , 30 , 1] for regression, [2 , 25 , 1] or [2 , 25 , 4] for classification) and two hidden layers ( [2 , 10 , 8, ·]). The sheaf trainer uses α = 1 .0, β = 1 /n train 
+
+(ntrain = 300 ), dt = 0 .005 (1H) or 0.01 (2H), with 10 5 (1H) or 2 · 10 5 (2H) Euler steps. The SGD baseline uses identical architectures with He initialization [15]. We compare by final test loss. Both methods converge on all eight configurations, producing qualitatively correct regression surfaces and decision boundaries. Figure 7 shows representative results at one hidden layer. On classification, sheaf training is competitive with SGD, with both methods reaching comparable test loss and 100% accuracy on the circular data. On regression, SGD reaches lower loss, with sheaf-to-SGD test loss ratios of roughly 2× on the paraboloid and 1.3× on the saddle, at 10k SGD epochs against 100k sheaf Euler steps. With a larger SGD budget, the gap widens (see Table 1). At two hidden layers, the SGD advantage widens across all tasks. A targeted depth × dt sweep on the paraboloid task clarifies the mechanism: the total integration time T = dt × nsteps , not the step size dt alone, governs performance. A fixed-T control confirms that the continuous-time analysis faithfully describes the discrete implementation. Deeper networks converge more slowly per unit T , consistent with the stagnation bound (30) : the spectral gap λ1 of LFt [Ω , Ω] decreases systematically with depth at initialization, predicting slower equilibration through the bound’s dependence on λeff .A sweep of β over several orders of magnitude on the paraboloid task confirms the 1/M scaling predicted by the stagnation bound (31) . Figure 8a shows that when loss curves are plotted against the product βM (where M = ntrain is the batch size), runs at different β collapse onto a single profile. Too small a βM starves the weight dynamics of information and the network stagnates; too large a 
+
+βM inflates weight norms and eventually causes divergence. The optimum lies at βM ∼ O(1) , and 
+
+β = 1 /n train falls within the optimal region without per-task tuning. Random initialization works best for regression tasks, while forward-pass initialization suits clas-sification. The two regimes produce visibly different discord dynamics. With random initialization, discord starts high across all edges and generally decreases as stalks and weights co-equilibrate. With forward-pass initialization, internal edges begin near a global section with near-zero discord, so the output edge carries the full discrepancy between predictions and targets; this discord then propagates inward as the weights adjust to accommodate the labeled data. In both cases, discord concentrates on the nonlinear activation edges, which mediate the ReLU constraint between pre-activation and 20 0 20000 40000 60000 80000 100000 
+
+Euler step  
+
+> 10 1
+> 10 0
+> 10 1
+> Loss (MSE)
+
+Sheaf Paraboloid 
+
+> Train
+> Test
+
+(a) Sheaf training curve. 0 2000 4000 6000 8000 10000 
+
+SGD epoch  
+
+> 10 1
+> 10 0
+> 10 1
+> Loss (MSE)
+
+SGD Paraboloid  
+
+> Train
+> Test
+
+(b) SGD training curve. 2 1 0 1 2
+
+> x1
+> 2.0
+> 1.5
+> 1.0
+> 0.5
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> x2
+> Target
+> 1.199
+> 0.133
+> 0.934
+> 2.001
+> 3.067
+> 4.134
+> 5.200
+> 6.267
+> 7.333
+> f(x1, x 2)
+
+(c) Target. 2 1 0 1 2 
+
+> x1
+> 2.0
+> 1.5
+> 1.0
+> 0.5
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> x2
+> Sheaf
+> 1.199
+> 0.133
+> 0.934
+> 2.001
+> 3.067
+> 4.134
+> 5.200
+> 6.267
+> 7.333
+> f(x1, x 2)
+
+(d) Sheaf. 2 1 0 1 2 
+
+> x1
+> 2.0
+> 1.5
+> 1.0
+> 0.5
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> x2
+> SGD
+> 1.199
+> 0.133
+> 0.934
+> 2.001
+> 3.067
+> 4.134
+> 5.200
+> 6.267
+> 7.333
+> f(x1, x 2)
+
+(e) SGD. 
+
+Figure 7: Sheaf training vs. SGD on the paraboloid regression task ( [2 , 30 , 1] architecture, identity output). (a, b) Training and test loss on a log scale. Both methods converge smoothly; SGD reaches lower final loss. (c–e) Learned surfaces on the [−2, 2] 2 domain, shown with a shared colour scale. Both methods recover the paraboloid shape, with SGD producing a slightly smoother approximation. post-activation stalks. Figure 20 shows how per-edge discord residuals shrink across three training stages, illustrating the progression from scattered to locally consistent. 
+
+6.3. Sheaf-Based Diagnostics 
+
+The sheaf embedding provides diagnostic tools that have no direct feedforward counterpart. We illustrate two: spectral analysis of the restricted Laplacian, and per-edge discord as a local consistency measure. 
+
+Spectral analysis. For a trained [2 , 30 , 1] network on the paraboloid task, we compute the spectrum of LFt [Ω , Ω] across 50 random inputs at three training stages (early, intermediate, well-trained). The eigenvalue spectra cluster tightly across inputs at each stage, indicating that the Laplacian structure depends primarily on the weights rather than on which particular neurons happen to be active. Eigenvector cosine similarities exceed 0.98 for the well-trained model, confirming this input-independence quantitatively. The spectral gap λ1 stabilizes early in training while the loss continues to decrease, indicating that the diffusion geometry is set before fine-grained fitting occurs. Both sheaf-trained and SGD-trained networks show spectra shifting toward smaller eigenvalues as training progresses, with sheaf-trained 21 10 2 10 1 10 0 10 1     
+
+> β n train
+> 10 1
+> 10 0
+> Final test loss (MSE)  Stagnation Optimal Divergence
+> β= 1 /n train
+> ntrain = 300
+
+(a) β scaling. 10 0 10 1     
+
+> Total integration time T= ∆ t·nsteps
+> 10 0
+> Test loss
+> 1H [2, 30, 1]
+> 2H [2, 10, 8, 1]
+> 3H [2, 8, 6, 4, 1]
+
+(b) Integration time sweep. 
+
+Figure 8: Hyperparameter investigation on the paraboloid task (a) Final test loss as a function of 
+
+βM for several values of β. The collapse confirms the β ∼ 1/M scaling from the stagnation bound: performance depends on the product βM , not on β or M individually. The dashed line marks the default β = 1 /n train . (b) Final test loss as a function of total integration time T = ∆ t × nsteps for three architectures of increasing depth. For each depth, loss decreases monotonically as T increases, confirming that longer equilibration improves the sheaf training output. Deeper networks achieve higher loss, requiring more integration time to reach comparable performance. This is consistent with the stagnation bound, which predicts slower convergence when λ1 is smaller. Table 2 confirms that λ1 decreases with depth. networks consistently producing smaller eigenvalues at comparable stages. Across architectures of varying depth and width, the Fiedler eigenvector consistently concentrates its energy on the output pre-activation stalk z(k+1) , with concentration strongest for shallow networks and decreasing as depth increases. Layer width is not the determining factor: the pattern holds even when hidden layers are narrower than the output. Additional spectral diagnostics, including condition number evolution and λmax tracking, appear in Section C.3. 
+
+Per-edge discord. The discord ∥δω ∥2 decomposes naturally over edges, giving a per-edge con-sistency score. Since the sheaf training dynamics do not enforce exact consistency at every step, the converged state during training may not perfectly reproduce the feedforward structure. One can measure this gap directly: for each weight edge, plot the value that the forward pass would produce, W (ℓ)a(ℓ−1) , against the actual stalk value z(ℓ); for each ReLU edge, plot z(ℓ) against a(ℓ).In a well-trained model at equilibrium, weight edge residuals cluster near zero and ReLU edge residuals follow the characteristic hinge curve, confirming local consistency. Poorly trained models show scatter in both plots. Discord localizes along edges in a structured way, governed by the activation state of each pre-activation coordinate z(ℓ) 
+
+> j
+
+. When z(ℓ) 
+
+> j
+
+< 0, the adjoint of the ReLU restriction map Rz(ℓ)
+
+has a zero diagonal entry at index j, so the activation edge exerts no force on z(ℓ) 
+
+> j
+
+. The weight edge is then the sole force, and z(ℓ) 
+
+> j
+
+settles at the predicted value (W (ℓ)a(ℓ−1) )j with zero weight edge discord. When z(ℓ) 
+
+> j
+
+≥ 0, both edges pull on z(ℓ) 
+
+> j
+
+: the weight edge toward the predicted value and the activation edge toward a(ℓ) 
+
+> j
+
+, so at equilibrium z(ℓ) 
+
+> j
+
+sits at the midpoint and both edges carry discord proportional to the gap between predicted value and a(ℓ) 
+
+> j
+
+.22 Embedding an SGD-trained network as a sheaf, pinning the output stalk to true labels, and running diffusion to convergence produces a per-edge discord distribution that reveals how prediction error distributes backward through the layers. Comparing this distribution against a sheaf-trained network on the same task yields visibly different discord profiles, consistent with the two methods navigating different regions of the optimization landscape. Details appear in Section C.3. 3 2 1 0 1 2    
+
+> z(1)
+> j
+> 0.04
+> 0.03
+> 0.02
+> 0.01
+> 0.00
+> 0.01
+> 0.02
+> 0.03
+> (W (1) a(0)  + b (1) )j − z(1)
+> j
+> Weight edge 1
+> Inactive ( zj<0)
+> Active ( zj≥0)
+
+(a) Weight edge discord. 3 2 1 0 1 2     
+
+> z(1)
+> j
+> 0.04
+> 0.03
+> 0.02
+> 0.01
+> 0.00
+> 0.01
+> 0.02
+> 0.03
+> ReLU( z(1)
+> j ) − a(1)
+> j
+> ReLU edge 1
+> Inactive ( zj<0)
+> Active ( zj≥0)
+
+(b) ReLU edge discord. 
+
+Figure 9: Per-coordinate edge discord for a well-trained [2 , 30 , 1] sheaf network on the paraboloid task ( 300 training inputs). (a) Weight edge discord (W (1) a(0) + b(1) )j − z(1)  
+
+> j
+
+vs. pre-activation z(1)  
+
+> j
+
+.Inactive coordinates ( zj < 0, purple) lie on the zero line: the ReLU edge exerts no competing force, so the weight edge drives zj to its predicted value exactly. Active coordinates ( zj ≥ 0, orange) show a spread around zero, reflecting the equilibrium compromise between weight and activation edge forces. (b) ReLU edge discord ReLU (z(1)  
+
+> j
+
+) − a(1)  
+
+> j
+
+vs. z(1)  
+
+> j
+
+. For inactive coordinates ( zj < 0,purple), this quantity equals −a(1)  
+
+> j
+
+; the nonzero spread reflects the downstream weight edge pulling 
+
+a(1)  
+
+> j
+
+away from zero to reduce its own discrepancy. For active coordinates ( zj ≥ 0, orange), both edges compete, producing a symmetric cloud. The magnitudes are comparable to the weight-edge residuals, consistent with the equilibrium force balance described in Section 6.3. 
+
+7. Discussion 
+
+We constructed a cellular sheaf whose unique harmonic extension encodes the forward pass of a feedforward ReLU neural network. The mathematical core is the unitriangular factorization of the restricted coboundary (Lemma 3.2): each computational step in the forward pass contributes a sub-diagonal block to a square matrix with identity blocks on the diagonal, so the determinant is 1, the restricted Laplacian is positive definite, and the harmonic extension is unique. Forward substitution in the unitriangular system is the forward pass; the sheaf heat equation converges exponentially to the same output despite the state-dependent switching introduced by ReLU. Several limitations should be stated plainly. 1. Path-graph dependence. The unitriangular structure of δΩ depends on a dimensional coincidence specific to the path graph: the total dimension of the edge stalks equals the total dimension of the free vertex coordinates, making δΩ square. Skip connections, as in residual architectures [ 16 ], add edges without adding free variables, producing a tall δΩ; the restricted Laplacian δT 
+
+> Ω
+
+δΩ
+
+23 remains positive definite (so harmonic extensions still exist and are unique), but the unit-determinant identity is lost. More complex architectures – encoder-decoder structures such as U-Net [ 23 ], multi-modal couplings such as CLIP [ 22 ] – can be encoded as sheaves on richer graphs, and the heat equation distributes information bidirectionally on any such graph, but the convergence analysis requires checking positive definiteness case by case rather than deducing it from a universal algebraic identity. Architectures with genuine cycles (recurrent networks) break the triangular ordering entirely. 2. Genericity assumption. The convergence theorems assume that the forward-pass equilibrium lies in the interior of an activation region (Remark 3.5). For trained networks with dead neurons (z(ℓ) 
+
+> j
+
+= 0 at the forward-pass solution), this assumption can fail, though the harmonic extension itself is unaffected – only the labeling of the activation pattern is ambiguous, not the solution. 3. Training performance. Sheaf-based training, while principled, is not yet competitive with stochastic gradient descent on most of our benchmarks: at matched iteration counts (Table 1) test loss ratios range from 0.2× to 60 ×. The computational cost of integrating the heat equation – 10 5 Euler steps, where SGD already achieves lower loss with 10 4 epochs– exceeds that of a backward pass. The framework’s present value is conceptual and diagnostic, not algorithmic. Within these limits, the sheaf perspective offers tools that the feedforward view does not provide. The per-edge discord decomposition and the spectral analysis of the restricted Laplacian apply to any trained network embedded post hoc, not only to sheaf-trained ones. The Fiedler eigenvector’s concentration on the output pre-activation stalk, the early stabilization of the spectral gap during training, and the active/inactive decomposition of weight-edge discord are empirical observations with no feedforward counterpart. The partial clamping note (Note 5.1) gives an immediate operational mode: given any mixture of observed inputs, desired outputs, and internal constraints on a pretrained network, solve for a local-minimizer completion of the remaining coordinates. This naturally covers hidden-neuron steering, missing-feature imputation, label-conditioned reconstruction, and counterfactual editing of internal representations—all as instances of harmonic extension with different boundary data on the same sheaf. Whether the spectral and cohomological invariants of the neural sheaf can serve as systematic tools for identifying structural bottlenecks or failure modes in larger networks is a natural question that remains open. The locality of sheaf-based training – each weight update depends only on adjacent stalks – connects to distributed optimization. Gossip algorithms [ 5 ] achieve coherence through local averaging, federated learning [ 18 ] partitions training across clients, and the split consensus approach of [ 6] trains different layers through peer-to-peer communication. The sheaf framework encodes communication structure, local objectives, and coordination mechanism in a single mathematical object. Whether this structural clarity can compensate for the computational overhead of diffusion-based training at scale is an open question. Three specific open problems stand out. 1. Convergence of the joint CPWA dynamics. When weights and cochains evolve simultaneously, the switching surfaces move with the parameters, and whether trajectories can become trapped in a noncritical sliding mode is unresolved. The fixed-weight case (Theorems 4.1 and 4.2) and the affine joint dynamics [ 3 ] are both settled; the coupled nonlinear setting may require tools from CPWA theory [8, 11] beyond those used here. 2. Extension beyond path graphs. For architectures with skip connections or shared parameters, the restricted coboundary is no longer square, and the unit-determinant identity fails. Positive 24 definiteness of δT 
+
+> Ω
+
+δΩ – equivalently, full column rank of δΩ – may still hold, but it must be verified for each architecture rather than following from a universal algebraic argument. Understanding which graph topologies and restriction-map structures guarantee this property is a natural algebraic question. 3. Scaling. The current implementation uses forward Euler on networks with at most 30 neurons per hidden layer. Efficient integration exploiting the block-tridiagonal Laplacian structure, adaptive step sizes respecting ReLU boundary geometry, and parallelization leveraging the locality of the updates all need development. The β ∼ 1/n train scaling from Section 5.3 is a first quantitative step, but a full understanding of how diffusion-based training interacts with width and depth at scale remains to be developed. In this light, neural networks may be viewed less as layered circuits than as geometric objects whose behavior is governed by local consistency relations. The sheaf framework makes these relations explicit and places them within a broader topological setting, suggesting that the mathematics of local-to-global phenomena may have more to say about learning systems than we currently understand. 
+
+References 
+
+[1] F. Barbero, C. Bodnar, H. Sáez de Ocáriz Borde, M. Bronstein, P. Veličković, and P. Liò. Sheaf neural networks with connection laplacians. In Proceedings of Topological, Algebraic, and Geometric Learning Workshops 2022 , volume 196 of Proceedings of Machine Learning Research ,pages 28–36, 2022. URL https://proceedings.mlr.press/v196/barbero22a.html .[2] C. Bodnar, F. D. Giovanni, B. P. Chamberlain, P. Lio, and M. M. Bronstein. Neural sheaf diffusion: A topological perspective on heterophily and oversmoothing in GNNs. In A. H. Oh, A. Agarwal, D. Belgrave, and K. Cho, editors, Advances in Neural Information Processing Systems , 2022. URL https://openreview.net/forum?id=vbPsD-BhOZ .[3] V. Bosca and R. Ghrist. Selective adaptation of beliefs and communication on cellular sheaves, 2026. URL https://arxiv.org/abs/2601.22431 .[4] V. Bosca, T. Rask, S. Tanweer, A. R. Tawfeek, and B. Stone. Topological signatures of reLU neural network activation patterns. In Topology, Algebra, and Geometry in Data Science , 2025. URL https://openreview.net/forum?id=Q88w76j2Dd .[5] S. Boyd, A. Ghosh, B. Prabhakar, and D. Shah. Randomized gossip algorithms. IEEE Transactions on Information Theory , 52(6):2508–2530, 2006. doi:10.1109/TIT.2006.874516. [6] B. Camajori Tedeschini, M. Brambilla, and M. Nicoli. Split consensus federated learning: An approach for distributed training and inference. IEEE Access , 12:119535–119549, 01 2024. doi:10.1109/ACCESS.2024.3446577. [7] F. H. Clarke. Optimization and Nonsmooth Analysis . Canadian Mathematical Society Series of Monographs and Advanced Texts. John Wiley & Sons, New York, 1983. ISBN 0-471-87504-X. [8] J. Cortés. Discontinuous dynamical systems: a tutorial on solutions, nonsmooth analysis, and stability. IEEE Control Systems Magazine , 28(3):36–73, 2008. doi:10.1109/MCS.2008.919306. 25 [9] J. M. Curry. Sheaves, Cosheaves and Applications . PhD thesis, University of Penn-sylvania, Philadelphia, PA, 2014. URL https://repository.upenn.edu/bitstreams/ 53914c60-81a8-4305-b8b6-693f2f42ea18/download . Ph.D. thesis; arXiv:1303.3255. [10] A. F. Filippov. Differential Equations with Discontinuous Righthand Sides . Kluwer Academic Publishers, Dordrecht, 1988. [11] J. J. Gould. Cellular Sheaves of Hilbert Spaces . Ph.d. thesis, University of Pennsylva-nia, Philadelphia, PA, 2025. URL https://repository.upenn.edu/entities/publication/ a40a44d9-f4e2-4c56-abcb-53936caeffad . Department of Mathematics. [12] J. Hansen and T. Gebhart. Sheaf neural networks. CoRR , abs/2012.06333, 2020. URL 
+
+https://arxiv.org/abs/2012.06333 .[13] J. Hansen and R. Ghrist. Toward a spectral theory of cellular sheaves. Journal of Applied and Computational Topology , 3(4):315–358, 2019. ISSN 2367-1734. doi:10.1007/s41468-019-00038-7. URL https://doi.org/10.1007/s41468-019-00038-7 .[14] J. Hansen and R. Ghrist. Opinion dynamics on discourse sheaves. SIAM Journal on Applied Mathematics , 81(5):2033–2060, 2021. doi:10.1137/20M1341088. URL https://doi.org/10. 1137/20M1341088 .[15] K. He, X. Zhang, S. Ren, and J. Sun. Delving deep into rectifiers: Surpassing human-level performance on imagenet classification. In Proceedings of the IEEE International Conference on Computer Vision (ICCV) , pages 1026–1034, 2015. doi:10.1109/ICCV.2015.123. [16] K. He, X. Zhang, S. Ren, and J. Sun. Deep residual learning for image recognition. In 
+
+Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition , pages 770–778, 2016. doi:10.1109/CVPR.2016.90. [17] Y. Liu, C. M. Cole, C. Peterson, and M. Kirby. Relu neural networks, polyhedral decompositions, and persistent homology, 2023. URL https://arxiv.org/abs/2306.17418 .[18] B. McMahan, E. Moore, D. Ramage, S. Hampson, and B. A. y. Arcas. Communication-Efficient Learning of Deep Networks from Decentralized Data. In A. Singh and J. Zhu, editors, Proceedings of the 20th International Conference on Artificial Intelligence and Statistics , volume 54 of 
+
+Proceedings of Machine Learning Research , pages 1273–1282. PMLR, 20–22 Apr 2017. URL 
+
+https://proceedings.mlr.press/v54/mcmahan17a.html .[19] B. Millidge, A. Tschantz, and C. L. Buckley. Predictive coding approximates back-prop along arbitrary computation graphs. Neural Computation , 34(6):1329–1368, 2022. doi:10.1162/neco_a_01497. [20] G. F. Montúfar, R. Pascanu, K. Cho, and Y. Bengio. On the number of lin-ear regions of deep neural networks. In Advances in Neural Information Pro-cessing Systems 27 , 2014. URL https://proceedings.neurips.cc/paper/2014/hash/ fa6f2a469cc4d61a92d96e74617c3d2a-Abstract.html .[21] A. Parada-Mayorga, H. Riess, A. Ribeiro, and R. Ghrist. Quiver signal processing (qsp), 2020. URL https://arxiv.org/abs/2010.11525 .26 [22] A. Radford, J. W. Kim, C. Hallacy, A. Ramesh, G. Goh, S. Agarwal, G. Sastry, A. Askell, P. Mishkin, J. Clark, G. Krueger, and I. Sutskever. Learning transferable visual models from natural language supervision, 2021. URL https://arxiv.org/abs/2103.00020 .[23] O. Ronneberger, P. Fischer, and T. Brox. U-net: Convolutional networks for biomedical image segmentation. In N. Navab, J. Hornegger, W. M. Wells, and A. F. Frangi, editors, Medical Image Computing and Computer-Assisted Intervention – MICCAI 2015 , pages 234–241, Cham, 2015. Springer International Publishing. ISBN 978-3-319-24574-4. [24] B. Scellier and Y. Bengio. Equilibrium propagation: Bridging the gap between energy-based models and backpropagation. Frontiers in Computational Neuroscience , 11:24, 2017. doi:10.3389/fncom.2017.00024. [25] A. Seigal, H. A. Harrington, and V. Nanda. Principal components along quiver representa-tions. Foundations of Computational Mathematics , 23(4):1129–1165, 2023. ISSN 1615-3383. doi:10.1007/s10208-022-09563-x. URL https://doi.org/10.1007/s10208-022-09563-x .[26] D. Shevitz and B. Paden. Lyapunov stability theory of nonsmooth systems. IEEE Transactions on Automatic Control , 39(9):1910–1914, 1994. doi:10.1109/9.317122. [27] N. Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever, and R. Salakhutdinov. Dropout: a simple way to prevent neural networks from overfitting. Journal of Machine Learning Research , 15 (56):1929–1958, 2014. [28] J. C. R. Whittington and R. Bogacz. An approximation of the error backpropagation algorithm in a predictive coding network with local hebbian synaptic plasticity. Neural Computation , 29 (5):1229–1262, 2017. doi:10.1162/NECO_a_00949. 
+
+A. Proofs 
+
+This appendix collects the explicit block structure of the restricted Laplacian LFt [Ω , Ω] and the convergence proof for networks with nonlinear final activations Theorem 4.2. 
+
+A.1. Block structure of the restricted Laplacian 
+
+Recall the restricted dynamics (18) . We derive the block structure of LFt [Ω , Ω] from the construction in Section 3.1. For the identity output case ( ϕ = I), the output edge enforces ˆy = z(k+1) at equilibrium, so we work with the free coordinates 
+
+ω = (z(1) , a (1) , z (2) , a (2) , . . . , a (k), z (k+1) ). (32) The fixed boundary data consists of the input x ∈ Rn0+n1 at vx together with the ones blocks 1nℓ+1 
+
+held constant within each extended activation stalk at va(ℓ) for ℓ = 1 , . . . , k .Each weight edge ez(ℓ) couples a(ℓ−1) = ( a(ℓ−1) T , 1Tnℓ )T to z(ℓ) through the extended weight matrix W (ℓ) = ( W (ℓ) | B(ℓ)). Since the ones block is fixed, only W (ℓ) appears in the free-free coupling L[Ω , Ω] ; the bias contribution B(ℓ)1nℓ = b(ℓ) enters through L[Ω , U ]u.27 Single hidden layer. For k = 1 , the restricted Laplacian on the free coordinates ω = ( z(1) , a (1) , z (2) )
+
+is 
+
+LFt [Ω , Ω] = 
+
+
+
+In1 + Rz(1) 
+
+−Rz(1) 
+
+−Rz(1) 
+
+In1 + W (2) T W (2) −W (2) T
+
+−W (2) In2
+
+ . (33) The corresponding coordinate dynamics are 
+
+ddt 
+
+
+
+z(1) 
+
+a(1) 
+
+z(2) 
+
+ = −α
+
+
+
+z(1) − W (1) x + Rz(1) 
+
+(z(1) − a(1) )
+
+a(1) − Rz(1) 
+
+z(1) + W (2) T (W (2) a(1) − z(2) )
+
+z(2) − W (2) a(1) 
+
+ , (34) where the terms −W (1) x, W (2) T b(2) , and −b(2) are the boundary contributions from LFt [Ω , U ]u.
+
+General k-layer network. Group the free coordinates into layer blocks (z(ℓ), a (ℓ)) for ℓ = 1 , . . . , k ,with a final block z(k+1) . Define the block components for ℓ ∈ { 1, . . . , k }:
+
+Aℓ := 
+
+Inℓ + Rz(ℓ)
+
+−Rz(ℓ)
+
+−Rz(ℓ)
+
+Inℓ + W (ℓ+1) T W (ℓ+1) 
+
+ ∈ R2nℓ×2nℓ ,Cℓ := 
+
+(0 −W (ℓ)
+
+0 0
+
+)
+
+, Dℓ := 
+
+(
+
+0 −W (ℓ))
+
+.
+
+(35) The diagonal block Aℓ captures the activation edge (coupling z(ℓ) and a(ℓ)) and the weight edge to the next layer (contributing W (ℓ+1) T W (ℓ+1) to the a(ℓ) diagonal). The off-diagonal blocks Cℓ and Dℓ
+
+couple consecutive layers through weight edges. The restricted Laplacian has the block-tridiagonal form 
+
+LFt [Ω , Ω] = 
+
+
+
+A1 CT
+
+> 2
+
+C2 A2 CT
+
+> 3
+
+C3
+
+. . . . . .. . . Ak DTk+1 
+
+Dk+1 Ink+1 
+
+
+
+. (36) 
+
+A.2. Convergence with final activation (Theorem 4.2) 
+
+We restate the theorem for convenience. 
+
+Theorem 4.2 (Convergence with final activation ). Consider a k-hidden-layer ReLU network with 
+
+C1 final activation ϕ : Rnk+1 → Rnk+1 that is either bounded or has at most linear growth. Assume the forward-pass equilibrium ω∗ lies in the interior of an activation region (a generic condition; see Remark 3.5). For any initial condition (ω0, ˆy0), the solution of the restricted dynamics (18) 
+
+augmented by (22) converges to the unique fixed point (ω∗, ϕ (z(k+1) ∗)) encoding the standard neural network output. Proof. Recall that LFi [Ω , Ω] is positive definite for every activation pattern by Lemma 3.2. Write 
+
+x = ( ω, ˆy), where ω collects all free coordinates up to the final preactivation z(k+1) (included), and 
+
+ˆy is the output vertex state. Define the energy 
+
+E(ω, ˆy) = 12 ωT LFi [Ω , Ω] ω + ωT LFi [Ω , U ] u + 12
+
+∥∥ϕ(z(k+1) ) − ˆy∥∥2. (37) 28 Each term is continuous and piecewise C1, so E is continuous and locally Lipschitz. The positive-definite quadratic term 12 ωT LFi [Ω , Ω] ω dominates at large ∥ω∥, and the growth hypothesis on ϕ
+
+ensures the output potential does not destroy this dominance, so E is coercive and sublevel sets are bounded. The right-hand side of (18) –(22) equals −α ∇E in the interior of every ReLU region. At switching surfaces, the Filippov set equals the convex hull of the limiting gradient vectors, so the dynamics satisfy ddt x(t) ∈ − α ∂ C E(x(t)) , where ∂C E denotes the Clarke subdifferential [ 7 ]. Existence of absolutely continuous Filippov solutions follows from standard theory [8, 10], since the right-hand side is measurable and locally bounded. In the interior of any activation region, the chain rule gives ddt E(x(t)) = −α ∥∇ E(x(t)) ∥2 ≤ 0.At a switching surface {z(ℓ) 
+
+> j
+
+= 0 }, the activation edge contributes 12 (Rz(ℓ) 
+
+> jj
+
+z(ℓ) 
+
+> j
+
+− a(ℓ) 
+
+> j
+
+)2 to the energy. Since ReLU (0) = 0 regardless of convention, this evaluates to 12 (a(ℓ) 
+
+> j
+
+)2 from both sides, so E+ = E−
+
+on the surface. Both E+ and E− are C1 functions that coincide on {z(ℓ) 
+
+> j
+
+= 0 }, so differentiating along any tangent direction τ gives ∇τ E+ = ∇τ E−; only the normal derivatives differ. Any Filippov sliding velocity vs is tangent to the surface, and its tangential component equals −α ∇τ E (since both one-sided velocities v± = −α ∇E± share this tangential part). Hence vs = −α ∇τ E and 
+
+ddt E(x(t)) = 〈∇τ E, v s 
+
+> 〉
+
+= −α ∥∥∇τ E∥∥2 ≤ 0.
+
+Combining both cases, E ◦ x is nonincreasing. Coercivity then implies that trajectories remain bounded, so the ω-limit set of any solution is nonempty, compact, and invariant. By LaSalle’s invariance principle [ 10 , 26 ], every trajectory converges to the largest invariant subset of {x : 0 ∈
+
+∂C E(x)}.In the interior of any activation region, ∇E = 0 gives ˆy = ϕ(z(k+1) ) and LFi [Ω , Ω] ω +
+
+LFi [Ω , U ] u = 0 . Positive definiteness of the restricted Laplacian and self-consistency identify 
+
+ω = ω∗ as the unique interior critical point, as in Theorem 4.1. It remains to exclude Clarke critical points on switching surfaces. Consider the surface {z(ℓ) 
+
+> j
+
+= 0 }
+
+and suppose ∇τ E = 0 there. The stationarity equations cascade from the output: ∂E/∂ ˆy = 0 
+
+gives ˆy = ϕ(z(k+1) ), then ∂E/∂z (k+1) = 0 forces the weight-edge discord at layer k + 1 to vanish, and propagating layer by layer, the weight-edge discord vanishes at every layer above ℓ. The stationarity equation for a(ℓ) 
+
+> j
+
+then reduces to a(ℓ) 
+
+> j
+
+= 0 (the activation edge is the only remaining contribution, since z(ℓ) 
+
+> j
+
+= 0 and the discord from layer ℓ + 1 has been eliminated). With a(ℓ) 
+
+> j
+
+= 0 ,the activation edge contributes Rz(ℓ) 
+
+> jj
+
+(Rz(ℓ) 
+
+> jj
+
+· 0 − 0) = 0 to both one-sided normal derivatives, so 
+
+∂zj E+ = ∂zj E− = −tj , where tj = ( W (ℓ)a(ℓ−1) )j . Since both one-sided normal derivatives equal −tj ,the Clarke condition requires tj = 0 . If tj = 0 , the cascade extends through all layers: the discord vanishes at every edge, making the cochain a global section of the sheaf. Positive definiteness of the restricted Laplacian implies the unique global section consistent with the pinned input is ω∗. But 
+
+z(ℓ)∗
+
+> j
+
+̸ = 0 by general position, contradicting z(ℓ) 
+
+> j
+
+= 0 .Since ω∗ is the unique element of the LaSalle invariant set, all trajectories converge to 
+
+(ω∗, ϕ (z(k+1) ∗)) .
+
+B. Supplementary Diagrams and Formulas 
+
+This appendix develops three topics deferred from Sections 5.2.2 to 5.2.4: the parameter sheaf that governs weight dynamics, the sheaf-theoretic realization of regularization, and the explicit edge potential formulas for losses in the discrepancy framework. 29 B.1. The parameter sheaf and coupled dynamics 
+
+The joint dynamics (26) describe coupled evolution of the 0-cochain ω and the coboundary operator 
+
+δ. The cochain equation is sheaf diffusion on the state sheaf FΩ with restriction maps determined by the current weights. The weight equation has an analogous interpretation: it is sheaf diffusion on an auxiliary parameter sheaf HW , introduced in [ 3 ] for opinion dynamics and independently by Gould [11] under the name restriction map diffusion .We specialize the construction of [ 3 , Def. 4.5] to the neural setting. Fix a 0-cochain ω on the neural sheaf F. The parameter sheaf HW is defined on the same graph as F, with the following data. The vertex stalk at each vertex v is the direct sum of spaces of candidate restriction maps from 
+
+v:
+
+HW (v) = ⊕  
+
+> e:v⩽e
+
+Hom (F(v), F(e)). (38) A 0-cochain ρ ∈ C0(HW ) assigns to each vertex a tuple of matrices, one per incident edge. In the neural network, only the weight matrices W (ℓ) are trainable; the remaining restriction maps (identity, ReLU diagonal, projection) are fixed. The trainable-map projection ΠW restricts attention to the weight components. The edge stalk at each edge e coincides with the edge stalk of F on weight edges, and it is trivial on activation and output edges. The restriction maps of HW are evaluation maps at the current cochain: for each incidence v ⩽ e,
+
+(HW )v⩽e(ρv) = ρv⩽e(ωv), (39) where ρv⩽e is the e-component of ρv and ωv is the current extended activation at vertex v. The coboundary of HW measures structural discrepancy : (δHρ)e = 0 precisely when the candidate maps encoded in ρ make the fixed cochain ω locally consistent on edge e. Global sections of HW are sheaf structures under which ω is a global section of F.The Laplacian of HW governs weight updates. Diffusion on HW , projected onto the trainable components via ΠW , recovers the second line of (26): 
+
+dδ dt = −β ΠW
+
+> (
+
+LHW ρ) = −β ΠW
+
+> (
+
+δ ω ω T ). (40) The two sheaves are coupled: FΩ depends on the current weights through its restriction maps, while HW depends on the current activations through its evaluation maps. Training is simultaneous diffusion on both sheaves, each using the other’s current state to define its own Laplacian. Figure 10 illustrates this coupling for a 1-hidden layer network. 
+
+B.2. Regularization as sheaf augmentation 
+
+The regularized energy (28) penalizes deviation from zero: (λ/ 2) ∥ω∥2 + ( μ/ 2) ∥δ∥2 
+
+> F
+
+. The general form anchors to an arbitrary reference point (ω0, δ 0), typically the initial condition: 
+
+Lλ,μ (ω, δ ) = 12 ∥δ ω ∥2 + λ 
+
+> 2
+
+∥ω − ω0∥2 + μ 
+
+> 2
+
+∥δ − δ0∥2 
+
+> F
+
+. (41) The corresponding gradient descent dynamics are 
+
+dω dt = −αP Ω
+
+> (
+
+δT δ ω + λ (ω − ω0)
+
+> )
+
+,dδ dt = −β ΠW
+
+> (
+
+δ ω ω T + μ (δ − δ0)
+
+> )
+
+.
+
+(42) 30 x
+
+z(1) 
+
+a(1) z(2) 
+
+y     
+
+> W(1)
+> In1
+> Rz(1) Pn1W(2) In2
+> In2
+> ϕ
+
+State sheaf FΩ
+
+dω dt = −α P Ω
+
+(δT δ ω ),
+
+W (1)       
+
+> (In1Rz(1)
+> )(Pn1W(2) )(In2ϕ)
+
+In2
+
+> x
+
+[z(1) 
+
+> 0
+
+]
+
+[ 0
+
+> z(1)
+
+] [a(1) 
+
+> 0
+
+] [ 0
+
+> a(1)
+
+] [z(2) 
+
+> 0
+
+]
+
+> y
+
+[ 0
+
+> z(2)
+
+]
+
+Parameter sheaf HW
+
+dδ dt = −β ΠW
+
+(δ ω ω T )
+
+Figure 10: Joint dynamics on coupled sheaves. The upper diagram depicts the state sheaf FΩ,where vertices represent network layers (pinned vertices x and y in red, hidden states in green) and edge stalks carry restriction maps built from weights and activations. The lower diagram shows the parameters sheaf HW , where vertices store weight matrices and edge stalks encode gradients with respect to activations. Dashed blue arrows link state variables (pointing downward) and parameters (pointing upward) between the two sheaves, illustrating how the heat diffusion on both sheaves is coupled. 31 Both regularization terms admit sheaf-theoretic interpretations as weighted reluctance [3 , 14 ]. The idea is to augment the graph with additional edges that penalize departure from a reference value, converting a penalty term in the energy into an ordinary discrepancy term on an enlarged sheaf. For the cochain term, add a reluctance edge from each dynamic vertex v to a new anchor vertex 
+
+v0 holding the reference value ω0,v . The restriction maps on this edge are both √λ I , so the edge discrepancy is √λ(ωv − ω0,v ) and the edge potential is (λ/ 2) ∥ωv − ω0,v ∥2. Summing over all dynamic vertices recovers the cochain penalty. For the weight term, an analogous construction operates on the parameter sheaf HW . Areluctance edge connects each weight vertex to an anchor holding δ0, with restriction maps √μ I .Diffusion on the augmented parameter sheaf produces the μ(δ − δ0) term in the weight dynamics. The augmented graph thus has the same topology as the original neural graph, plus one reluctance edge per dynamic vertex (for cochain regularization) and one per weight edge (for structure regularization). On this enlarged graph, the regularized dynamics (42) are unregularized joint dynamics: gradient descent on the total discrepancy of the augmented sheaf, with no additional penalty terms. This is the diagrammatic realization referred to in Section 5.2.4.        
+
+> x
+> z(1)
+> [a(1)
+> 1
+> ]z(2)
+> y0
+> 00
+> W(1)
+> In1
+> Rz(1) Pn1W(2) In2
+> In2
+> ∇Uout
+> In2
+> I
+> √λ P
+> ∇Ureg
+> √λ I
+> I
+> ∇Ureg
+> √λ I
+> I
+> ∇Ureg
+
+(a) State sheaf FΩ              
+
+> W(1)
+> (In1Rz(1)
+> )(Pn1W(2) )(In2In2)
+> In2
+> 0
+> 0
+> x
+> [z(1)
+> 0
+> ]
+> [0
+> z(1)
+> ][a(1)
+> 0
+> ][0
+> a(1)
+> ][z(2)
+> 0
+> ]
+> y
+> ∇Uout
+> [0
+> z(2)
+> ]
+> I
+> √μ I
+> ∇Ureg
+> I
+> √μ P
+> ∇Ureg
+
+(b) Parameter sheaf HW
+
+Figure 11: Regularization as sheaf augmentation for a 1-hidden-layer network. Each free variable is anchored to its own dummy vertex pinned at 0, with restriction maps √λ I (or √μ I ) penalizing deviation from zero. Separate parent vertices allow for different types of regularization. (a) In the state sheaf FΩ, three regularization edges anchor the free cochains z(1) , a(1) , and z(2) toward zero, adding λI to the diagonal of the Laplacian. (b) In the parameter sheaf HW , regularization edges anchor the trainable restriction maps W (1) and W (2) toward zero, contributing μI to the weight dynamics. Green elements indicate the trainable variables. Setting ω0 = 0 and δ0 = 0 recovers (28) : the anchors hold zero values, and the reluctance edges penalize the norms ∥ω∥ and ∥δ∥F directly. This is the standard weight decay interpretation. Setting 
+
+(ω0, δ 0) to the initial condition produces the form used in [ 3 , §C.1], where reluctance models agents’ resistance to changing their initial beliefs or communication patterns. 32 B.3. Edge potential formulas 
+
+Section 5.2.3 introduced the discrepancy framework: a loss fits this framework when Uout ( ˆy, y) = 
+
+f ( ˆy −y) for a convex function f . Each such f produces a nonlinear sheaf Laplacian L∇f 
+
+> F
+
+= δT ◦∇ f ◦δ
+
+in the sense of Hansen and Ghrist [14, §10]. We collect the explicit formulas here. Throughout, d = ˆy − y ∈ Rnk+1 denotes the prediction error, and the gradient (or subgradient) is taken componentwise. 
+
+Squared error. The potential f (d) = 12 ∥d∥2 has gradient (∇f (d)) i = di, recovering the standard (linear) sheaf Laplacian. This is the loss implicit in the convergence theorems of Section 4. 
+
+L1 loss. The potential f (d) = ∥d∥1 = ∑ 
+
+> i
+
+|di| has subgradient (∂f (d)) i = sign (di), with sign (0) ∈
+
+[−1, 1] . The resulting Laplacian penalizes all nonzero discrepancies equally, regardless of magnitude. 
+
+p-norm loss. For 1 < p < ∞, the potential f (d) = 1 
+
+> p
+> ∑
+> i
+
+|di|p has gradient 
+
+(∇f (d)) i = |di|p−2 di. (43) The case p = 2 reduces to squared error. For 1 < p < 2, the gradient grows sublinearly in |di|,placing relatively more weight on small discrepancies than squared error does. For p > 2, the gradient grows superlinearly, emphasizing large discrepancies. 
+
+Huber loss. The Huber potential with threshold τ > 0 interpolates between squared error (for small discrepancies) and L1 (for large ones): 
+
+fτ (d)i = 
+
+> 
+> 12
+
+d2 
+
+> i
+
+if |di| ≤ τ, τ (|di| − 12 τ ) if |di| > τ, (44) with gradient 
+
+(∇fτ (d)) i = clip( di, −τ, τ ) = 
+
+> {
+
+di if |di| ≤ τ, τ sign( di) if |di| > τ. (45) The Huber Laplacian behaves like the standard sheaf Laplacian near consensus and like the L1 Laplacian far from it, combining sensitivity to small errors with robustness to outliers. All four losses are convex and componentwise separable, so the resulting nonlinear Laplacians retain the local update structure: each vertex update depends only on the discrepancies with its neighbors. The same family of potentials applies to the regularization edges discussed in Section B.2. Replacing the quadratic reluctance potential with an L1 or elastic net potential produces sparse regularization within the sheaf framework, as noted in Section 5.2.4. 
+
+C. Extended experiments 
+
+This appendix collects the extended experimental results referenced in Section 6. Section C.1 provides convergence diagnostics for deeper architectures and phase-plane visualizations. Section C.2 reports full numerical results across all benchmark configurations. Section C.3 presents the complete spectral and discord analyses. 33 C.1. Convergence and dynamics 
+
+Figure 12 extends the convergence demonstration from Section 6.1 to a [2 , 6, 4, 4, 1] network with sigmoid output activation, exercising both Theorems 4.1 and 4.2. Figure 13 displays the phase-plane dynamics described in the main text, showing ReLU boundary crossings concentrated in the first few hundred iterations across three architectures of increasing depth. 0 10000 20000 30000 40000 50000 60000 
+
+Iteration     
+
+> 10 10
+> 10 7
+> 10 4
+> 10 1
+> 10 2
+> Total discord
+
+Total discord (log scale)  
+
+> 010000 20000 30000 40000 50000 60000
+
+Iteration      
+
+> 10 14
+> 10 11
+> 10 8
+> 10 5
+> 10 2
+> 10 1
+> Discord
+
+Discord by edge type  
+
+> Weight
+> Activation
+> Output
+> 010000 20000 30000 40000 50000 60000
+
+Iteration     
+
+> 10 12
+> 10 9
+> 10 6
+> 10 3
+> 10 0
+> Discord
+
+Discord by layer  
+
+> Layer 1
+> Layer 2
+> Layer 3
+> Output layer
+> 010000 20000 30000 40000 50000 60000
+
+Iteration 
+
+> 0.40
+> 0.45
+> 0.50
+> 0.55
+> 0.60
+> 0.65
+> 0.70
+> σ(z(4) )
+
+Output stalk convergence 
+
+> Sheaf output
+> Forward-pass value
+
+Convergence: [2, 6, 4, 4, 1], sigmoid output (62,500 iterations) 
+
+Figure 12: Convergence dynamics for a [2 , 6, 4, 4, 1] network with sigmoid output activation, α = 1 .0,
+
+dt = 0 .01 , stalks initialized randomly. Top left: Total discord decreases monotonically on a log scale to machine precision. Top right: Discord decomposed by edge type; the output activation edge (enforcing the sigmoid nonlinearity) is visible as a separate component. Bottom left: Per-layer discord shows a transient phase in the first hundred iterations followed by exponential convergence. 
+
+Bottom right: The output stalk σ(z(4) ) converges from its random starting value to the forward-pass prediction (black dashed). This validates Theorems 4.1 and 4.2 for deeper networks with nonlinear final activations. 34 0.5 0.0 0.5 
+
+z(1) 1
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> z(1) 2
+
+[2,4,1]    
+
+> ReLU boundary
+> Crossings (8)
+> Fixed point
+> Start
+> 0.00 0.25 0.50 0.75
+
+z(1) 1
+
+> 0.150
+> 0.125
+> 0.100
+> 0.075
+> 0.050
+> 0.025
+> 0.000
+> 0.025
+> z(1) 2
+
+[2,6,4,1]   
+
+> ReLU boundary
+> Crossings (111)
+> Fixed point
+> Start
+> 0.0 0.2 0.4
+
+z(1) 1
+
+> 0.8
+> 0.6
+> 0.4
+> 0.2
+> 0.0
+> z(1) 2
+
+[2,6,4,4,1] 
+
+> ReLU boundary
+> Crossings (34)
+> Fixed point
+> Start
+
+Figure 13: Phase-plane trajectories of two pre-activation components (z(1) 1 , z (1) 2 ) during sheaf diffusion, for three architectures of increasing depth. Trajectories fade from light (early) to dark (late). Dashed grey lines mark the ReLU boundaries zj = 0 , red crosses mark boundary crossings, and the gold star marks the forward-pass fixed point. Crossings are concentrated in the first few hundred iterations; the trajectory then settles into a single activation region and converges monotonically. Deeper networks produce longer transients but the same qualitative pattern: ReLU boundary crossings are a transient phenomenon that does not impede convergence. 35 C.2. Training results 
+
+Table 1 reports test loss for both training methods across all eight task × depth configurations for matched iteration counts in SGD and the sheaf method ( 10 5 for 1H and 2 · 10 5 for 2H). Figure 14 shows the learned regression surfaces and decision boundaries for the single-hidden-layer experiments. Table 1: Training results across all task/depth configurations. Task Depth Sheaf Train SGD Train Sheaf Test SGD Test Ratio Paraboloid 1H 0.0756 0.0030 0.0884 0.0044 19.9 ×
+
+Saddle 1H 0.0108 0.0010 0.0106 0.0013 8.4 ×
+
+Circular 1H 0.0652 0.0021 0.0679 0.0031 22.0 ×
+
+Blobs 1H 0.1368 0.0657 0.1212 0.2613 0.5 ×
+
+Paraboloid 2H 0.0764 0.0065 0.0880 0.0095 9.2 ×
+
+Saddle 2H 0.0110 0.0009 0.0126 0.0011 11.0 ×
+
+Circular 2H 0.0180 0.0001 0.0188 0.0003 58.7 ×
+
+Blobs 2H 0.1319 0.0249 0.1323 0.6758 0.2 ×
+
+36 2 1 0 1 2
+
+> 2.0
+> 1.5
+> 1.0
+> 0.5
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> Paraboloid
+
+Target     
+
+> 21012
+> 2.0
+> 1.5
+> 1.0
+> 0.5
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+
+Sheaf     
+
+> 21012
+> 2.0
+> 1.5
+> 1.0
+> 0.5
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+
+SGD                               
+
+> 0.0 0.5 1.0 1.5 2.0
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> 1.25
+> 1.50
+> 1.75
+> 2.00
+> Saddle
+> 0.0 0.5 1.0 1.5 2.0
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> 1.25
+> 1.50
+> 1.75
+> 2.00
+> 0.0 0.5 1.0 1.5 2.0
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> 1.25
+> 1.50
+> 1.75
+> 2.00
+> 202
+> 2
+> 1
+> 0
+> 1
+> 2
+> 3
+> Circular
+> Class 0
+> Class 1
+> 202
+> 2
+> 1
+> 0
+> 1
+> 2
+> 3
+> 202
+> 2
+> 1
+> 0
+> 1
+> 2
+> 3
+> 42024
+> 2
+> 0
+> 2
+> 4
+> Blobs
+> Class 0
+> Class 1
+> Class 2
+> Class 3
+> 42024
+> 2
+> 0
+> 2
+> 4
+> 42024
+> 2
+> 0
+> 2
+> 4
+> 0.0
+> 1.2
+> 2.4
+> 3.6
+> 4.8
+> 6.0
+> 7.2
+> 4.0
+> 3.2
+> 2.4
+> 1.6
+> 0.8
+> 0.0
+> 0.8
+> 1.6
+> 2.4
+> 3.2
+
+Figure 14: Learned outputs for all four benchmark tasks (single hidden layer). Each row shows the target function or data distribution (left), the sheaf-trained output (center), and the SGD-trained output (right). Paraboloid and saddle (top two rows): filled contour plots of the learned regression surface on the input domain, with shared color scales within each row. Circular and blobs (bottom two rows): training data colored by class label, with the learned decision boundary shown as a shaded background. Both methods produce qualitatively correct outputs across all tasks. The sheaf method captures the global shape but with less fine-grained detail in regression, consistent with the test loss ratios reported in Table 1. 37 C.3. Spectral and discord diagnostics 
+
+We first report the spectral analysis referenced in Section 6.3. Table 2 shows that λ1 decreases systematically with network depth at initialization, supporting the stagnation bound discussion in Section 6.2. Figure 15 displays per-block eigenvector energy for two architectures, confirming the Fiedler concentration on the output pre-activation stalk described in the main text. Figures 16 to 18 track spectral quantities during training, comparing sheaf-trained and SGD-trained networks. The remaining figures present per-edge discord analyses. Figure 19 extends the one-hidden-layer discord plots from Fig. 9 to a [2 , 12 , 8, 6, 1] network, showing that the inactive/active decomposition persists across layers. Figure 20 displays discord residuals at three training stages, illustrating how local consistency improves as training progresses. Table 3 reports aggregate discord statistics under output-pinned inference for both training methods. Table 2: Spectral gap λ1 vs. depth at initialization (median over 50 inputs). Architecture λ1 (median) λ1 (std) 
+
+[2,30,1] 0.2248 0.0200 
+
+[2,10,8,1] 0.0602 0.0047 
+
+[2,8,6,4,1] 0.0281 0.0060 Table 3: Per-edge pinned discord (mean ± std over 50 test inputs). Output stalk hard-pinned to true labels. Edge Sheaf-trained SGD-trained W1 0.0007 ± 0.0010 0.0000 ± 0.0001 W2 0.0001 ± 0.0002 0.0000 ± 0.0000 R1 0.0027 ± 0.0034 0.0002 ± 0.0003 Total 0.0035 0.0003 38 z(1) a(1) z(2) 
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Fraction of Fiedler energy
+
+(a) Fiedler energy, [2 , 30 , 1] .z(1) a(1) z(2) a(2) z(3) a(3) z(4)  
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> Fraction of Fiedler energy
+
+(b) Fiedler energy, [2 , 12 , 8, 6, 1] .z(1) a(1) z(2) 
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Fraction of  λmax  energy
+
+(c) λmax energy, [2 , 30 , 1] .z(1) a(1) z(2) a(2) z(3) a(3) z(4)  
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Fraction of  λmax  energy
+
+(d) λmax energy, [2 , 12 , 8, 6, 1] .
+
+Figure 15: Per-block eigenvector energy of LF [Ω , Ω] for two architectures (columns) and two eigenvectors (rows), averaged over 50 random inputs with error bars showing one standard deviation. 
+
+Top row: Fiedler eigenvector ( λ1). In both architectures, the Fiedler energy concentrates on the output pre-activation stalk z(k+1) , identifying it as the information-flow bottleneck of the sheaf graph. Bottom row: λmax eigenvector. The dominant eigenvector energy coincides with the post-activation block a(ℓ) adjacent to the weight matrix with the largest operator norm. Neither layer position nor layer width is the determining factor. 0 20 40 60 80 100     
+
+> Step ( ×10 3)
+> 10 1
+> λ1 (median  ± IQR)
+> Spectral gap sheaf
+> 10 2
+> 10 1
+> 10 0
+> Train loss
+
+(a) Sheaf training 0 20 40 60 80 100      
+
+> Step ( ×10 3)
+> 10 1
+> λ1 (median  ± IQR)
+> Spectral gap SGD
+> 10 2
+> 10 1
+> 10 0
+> Train loss
+
+(b) SGD training 
+
+Figure 16: Spectral gap λ1 (median ± IQR over 50 inputs) and training loss during training of a 
+
+[2 , 30 , 1] network on the paraboloid task. Both axes share identical limits across panels for direct comparison. In both methods, λ1 drops rapidly in the first ∼10 k steps. The sheaf method produces consistently smaller λ1 throughout training. 39 0 20 40 60 80 100   
+
+> Step ( ×10 3)
+> 10 1
+> λ1 (median  ± IQR)
+> Spectral gap sheaf vs SGD
+> Sheaf
+> SGD
+
+(a) λ10 20 40 60 80 100   
+
+> Step ( ×10 3)
+> 5.0
+> 7.5
+> 10.0
+> 12.5
+> 15.0
+> 17.5
+> 20.0
+> 22.5
+> λmax  (median  ± IQR)
+> Largest eigenvalue sheaf vs SGD
+> Sheaf
+> SGD
+
+(b) λmax 0 20 40 60 80 100   
+
+> Step ( ×10 3)
+> 100
+> 200
+> 300
+> 400
+> 500
+> 600
+> 700
+> (median  ± IQR)
+> Condition number sheaf vs SGD
+> Sheaf
+> SGD
+
+(c) κ = λmax /λ 1
+
+Figure 17: Spectral statistics of LFt [Ω , Ω] during training (median ± IQR, [2 , 30 , 1] on paraboloid). Both methods shift the spectrum toward smaller λ1 and larger λmax as training progresses, but the sheaf method produces consistently smaller spectral gaps (a) and larger condition numbers (c) . The largest eigenvalue (b) grows in both methods, with sheaf-trained networks producing moderately larger λmax .10 1     
+
+> 3 × 10 24 × 10 26 × 10 2
+
+λ1
+
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> 0.35
+> Fraction of input samples
+
+Spectral gap distribution sheaf 
+
+> Poorly trained (1k)
+> Intermediate (20k)
+> Well trained (100k)
+
+(a) Sheaf training 10 1     
+
+> 3 × 10 24 × 10 26 × 10 2
+
+λ1
+
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> 0.35
+> 0.40
+> Fraction of input samples
+
+Spectral gap distribution SGD  
+
+> Poorly trained (1k)
+> Intermediate (20k)
+> Well trained (100k)
+
+(b) SGD training 
+
+Figure 18: Distribution of the spectral gap λ1 across 100 random inputs at three training stages (poorly trained at 1k steps, intermediate at 20k, well trained at 100k). Log-spaced bins; shared 
+
+x-axis range across both panels. In both methods, the distribution shifts leftward (toward smaller 
+
+λ1) as training progresses, tightening around a stable value. The sheaf-trained distributions are shifted further left at all stages, consistent with the tracking plots in Fig. 16. 40 2.0 1.5 1.0 0.5 0.0 0.5 1.0 1.5 2.0     
+
+> z(1)
+> j
+> 0.006
+> 0.004
+> 0.002
+> 0.000
+> 0.002
+> 0.004
+> 0.006
+> (W (1) a(0)  + b (1) )j − z(1)
+> j
+> Weight edge 1
+> Inactive ( zj<0)
+> Active ( zj≥0)
+
+(a) Weight edge 1. 0.6 0.4 0.2 0.0 0.2 0.4 0.6 0.8 1.0      
+
+> z(2)
+> j
+> 0.004
+> 0.002
+> 0.000
+> 0.002
+> 0.004
+> 0.006
+> (W (2) a(1)  + b (2) )j − z(2)
+> j
+> Weight edge 2
+> Inactive ( zj<0)
+> Active ( zj≥0)
+
+(b) Weight edge 2. 0.25 0.00 0.25 0.50 0.75 1.00 1.25 1.50      
+
+> z(3)
+> j
+> 0.0025
+> 0.0020
+> 0.0015
+> 0.0010
+> 0.0005
+> 0.0000
+> 0.0005
+> 0.0010
+> 0.0015
+> (W (3) a(2)  + b (3) )j − z(3)
+> j
+> Weight edge 3
+> Inactive ( zj<0)
+> Active ( zj≥0)
+
+(c) Weight edge 3. 1 0 1 2 3 4 5 6 7     
+
+> z(4)
+> j
+> 0.00075
+> 0.00050
+> 0.00025
+> 0.00000
+> 0.00025
+> 0.00050
+> 0.00075
+> 0.00100
+> (W (4) a(3)  + b (4) )j − z(4)
+> j
+> Weight edge 4
+> Inactive ( zj<0)
+> Active ( zj≥0)
+
+(d) Weight edge 4. 2.0 1.5 1.0 0.5 0.0 0.5 1.0 1.5 2.0 
+
+z(1) 
+
+> j
+
+0.006 
+
+0.004 
+
+0.002 
+
+0.000 
+
+0.002 
+
+0.004 
+
+0.006 
+
+> ReLU( z(1)
+> j ) − a(1)
+> j
+
+ReLU edge 1 
+
+Inactive ( zj < 0)
+
+Active ( zj ≥ 0)
+
+(e) ReLU edge 1. 0.6 0.4 0.2 0.0 0.2 0.4 0.6 0.8 1.0 
+
+z(2) 
+
+> j
+
+0.004 
+
+0.002 
+
+0.000 
+
+0.002 
+
+0.004 
+
+0.006 
+
+> ReLU( z(2)
+> j ) − a(2)
+> j
+
+ReLU edge 2 
+
+Inactive ( zj < 0)
+
+Active ( zj ≥ 0) (f) ReLU edge 2. 0.25 0.00 0.25 0.50 0.75 1.00 1.25 1.50 
+
+z(3) 
+
+> j
+
+0.002 
+
+0.001 
+
+0.000 
+
+0.001 
+
+0.002 
+
+0.003 
+
+> ReLU( z(3)
+> j ) − a(3)
+> j
+
+ReLU edge 3 
+
+Inactive ( zj < 0)
+
+Active ( zj ≥ 0) (g) ReLU edge 3. 
+
+Figure 19: Per-coordinate edge discord for a well-trained [2 , 12 , 8, 6, 1] sheaf network (three hidden layers) on the paraboloid task. (a–d) Weight edge discord (W (ℓ)a(ℓ−1) +b(ℓ))j −z(ℓ)
+
+j vs. pre-activation 
+
+z(ℓ)
+
+j for each of the four weight edges. Across the three first weight edges, inactive coordinates (purple) cluster tightly on the zero line, confirming that the ReLU edge exerts no force on dead neurons and the weight edge achieves zero discord. The last weight edge does not follow this pattern because the final activation in this case is the identity, so this edge acts as the output edge. Active coordinates (orange) show a symmetric spread around zero whose magnitude varies by layer, reflecting the local force balance between weight and activation edges at equilibrium. (e–g) ReLU edge discord ReLU (z(ℓ)
+
+j ) − a(ℓ)
+
+j vs. z(ℓ)
+
+j for the three activation edges. We found no clear structure. Across all ReLU edges, we observe a decay in the number of inactive neurons (negative values of zj ). 41 2 1 0 1 2
+
+z(1) 
+
+> j
+
+0.075 
+
+0.050 
+
+0.025 
+
+0.000 
+
+0.025 
+
+0.050 
+
+> (W (1) a(0)  + b (1) )j − z(1)
+> j
+
+Weight edge Poorly trained (1k)     
+
+> Inactive ( zj<0)
+> Active ( zj≥0)
+
+2 1 0 1 2
+
+z(1) 
+
+> j
+
+0.075 
+
+0.050 
+
+0.025 
+
+0.000 
+
+0.025 
+
+0.050 
+
+> ReLU( z(1)
+> j ) − a(1)
+> j
+
+ReLU edge Poorly trained (1k)     
+
+> Inactive ( zj<0)
+> Active ( zj≥0)
+
+2 1 0 1 2
+
+z(1) 
+
+> j
+
+0.075 
+
+0.050 
+
+0.025 
+
+0.000 
+
+0.025 
+
+0.050 
+
+> (W (1) a(0)  + b (1) )j − z(1)
+> j
+
+Weight edge Intermediate (20k) 
+
+2 1 0 1 2
+
+z(1) 
+
+> j
+
+0.075 
+
+0.050 
+
+0.025 
+
+0.000 
+
+0.025 
+
+0.050 
+
+> ReLU( z(1)
+> j ) − a(1)
+> j
+
+ReLU edge Intermediate (20k) 
+
+2 1 0 1 2
+
+z(1) 
+
+> j
+
+0.075 
+
+0.050 
+
+0.025 
+
+0.000 
+
+0.025 
+
+0.050 
+
+> (W (1) a(0)  + b (1) )j − z(1)
+> j
+
+Weight edge Well trained (100k) 
+
+2 1 0 1 2
+
+z(1) 
+
+> j
+
+0.075 
+
+0.050 
+
+0.025 
+
+0.000 
+
+0.025 
+
+0.050 
+
+> ReLU( z(1)
+> j ) − a(1)
+> j
+
+ReLU edge Well trained (100k) 
+
+Sheaf-trained Figure 20: Per-edge discord residuals at three training stages for a sheaf-trained [2 , 30 , 1] network on the paraboloid task. Each row corresponds to a training stage (1k, 20k, 100k steps); output stalks are hard-pinned to true labels. y-axis limits are fixed across all rows (set by the intermediate stage) to show the decrease in discord magnitude with training. Points are colored by activation state: active ( zj ≥ 0, orange) or inactive ( zj < 0, purple). Left: Weight edge discord residual 
+
+(W (1) a(0) + b(1) )j − z(1) 
+
+j . Right: ReLU edge discord residual ReLU (z(1) 
+
+j ) − a(1) 
+
+j . In the well-trained model (bottom), inactive coordinates lie on the zero line and active coordinates cluster near zero, confirming local consistency at equilibrium. 42 5.0 2.5 0.0 2.5 5.0 
+
+z(1) 
+
+> j
+
+0.075 
+
+0.050 
+
+0.025 
+
+0.000 
+
+0.025 
+
+0.050 
+
+> (W (1) a(0)  + b (1) )j − z(1)
+> j
+
+Weight edge Poorly trained (1k)     
+
+> Inactive ( zj<0)
+> Active ( zj≥0)
+
+5.0 2.5 0.0 2.5 5.0 
+
+z(1) 
+
+> j
+
+0.075 
+
+0.050 
+
+0.025 
+
+0.000 
+
+0.025 
+
+0.050 
+
+> ReLU( z(1)
+> j ) − a(1)
+> j
+
+ReLU edge Poorly trained (1k)     
+
+> Inactive ( zj<0)
+> Active ( zj≥0)
+
+5.0 2.5 0.0 2.5 5.0 
+
+z(1) 
+
+> j
+
+0.075 
+
+0.050 
+
+0.025 
+
+0.000 
+
+0.025 
+
+0.050 
+
+> (W (1) a(0)  + b (1) )j − z(1)
+> j
+
+Weight edge Intermediate (20k) 
+
+5.0 2.5 0.0 2.5 5.0 
+
+z(1) 
+
+> j
+
+0.075 
+
+0.050 
+
+0.025 
+
+0.000 
+
+0.025 
+
+0.050 
+
+> ReLU( z(1)
+> j ) − a(1)
+> j
+
+ReLU edge Intermediate (20k) 
+
+5.0 2.5 0.0 2.5 5.0 
+
+z(1) 
+
+> j
+
+0.075 
+
+0.050 
+
+0.025 
+
+0.000 
+
+0.025 
+
+0.050 
+
+> (W (1) a(0)  + b (1) )j − z(1)
+> j
+
+Weight edge Well trained (100k) 
+
+5.0 2.5 0.0 2.5 5.0 
+
+z(1) 
+
+> j
+
+0.075 
+
+0.050 
+
+0.025 
+
+0.000 
+
+0.025 
+
+0.050 
+
+> ReLU( z(1)
+> j ) − a(1)
+> j
+
+ReLU edge Well trained (100k) 
+
+SGD-trained Figure 21: Same as Fig. 20 but for an SGD-trained network with the same architecture and training budget. y-axis limits are shared with the sheaf figure for direct comparison. The SGD-trained network’s weights are embedded in a NeuralSheaf and analysed via pinned diffusion under the same protocol. Qualitative differences in the residual patterns reflect the different optimization landscapes explored by the two methods. 43
