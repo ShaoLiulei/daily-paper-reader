@@ -1,0 +1,453 @@
+Title: ALIGN: Adversarial Learning for Generalizable Speech Neuroprosthesis
+
+URL Source: https://arxiv.org/pdf/2603.18299v1
+
+Published Time: Fri, 20 Mar 2026 00:21:49 GMT
+
+Number of Pages: 19
+
+Markdown Content:
+# ALIGN: A DVERSARIAL LEARNING FOR GENERALIZABLE 
+
+# SPEECH NEUROPROSTHESIS 
+
+Zhanqi Zhang ∗
+
+Department of Computer Science and Engineering University of California San Diego La Jolla, California, USA 
+
+zhanqi@ucsd.edu 
+
+Shun Li ∗
+
+Kempner Institute for the Study of Natural and Artificial Intelligence Harvard University Boston, Massachusetts, USA 
+
+shunli@g.harvard.edu 
+
+Bernardo L. Sabatini 
+
+Kempner Institute for the Study of Natural and Artificial Intelligence Harvard University Boston, Massachusetts, USA 
+
+bernardo_sabatini@hms.harvard.edu 
+
+Mikio Aoi †
+
+Halıcıo˘ glu Data Science Institute Department of Neurobiology University of California San Diego La Jolla, California, USA 
+
+maoi@ucsd.edu 
+
+Gal Mishne †
+
+Halıcıo˘ glu Data Science Institute Department of Electrical and Computer Engineering Department of Computer Science and Engineering University of California San Diego La Jolla, California, USA 
+
+gmishne@ucsd.edu 
+
+## ABSTRACT 
+
+Intracortical brain-computer interfaces (BCIs) can decode speech from neural activity with high accuracy when trained on data pooled across recording sessions. In realistic deployment, however, models must generalize to new sessions without labeled data, and performance often degrades due to cross-session nonstationarities (e.g., electrode shifts, neural turnover, and changes in user strategy). In this paper, we propose ALIGN , a session-invariant learning framework based on multi-domain adversarial neural networks for semi-supervised cross-session adaptation. ALIGN trains a feature encoder jointly with a phoneme classifier and a domain classifier operating on the latent representation. Through adversarial optimization, the encoder is encouraged to preserve task-relevant information while suppressing session-specific cues. We evaluate ALIGN on intracortical speech decoding and find that it generalizes consistently better to previously unseen sessions, improving both phoneme error rate and word error rate relative to baselines. These results indicate that adversarial domain alignment is an effective approach for mitigating session-level distribution shift and enabling robust longitudinal BCI decoding. 
+
+## 1 Introduction 
+
+Intracortical brain–computer interfaces (BCIs) have recently achieved strong brain-to-text performance (Willett et al. [2023]), but a central challenge for real-world use is cross-session generalization. Neural recordings are nonstationary: 
+
+> ∗
+
+These authors contributed equally. 
+
+> †
+
+These authors contributed equally. 
+
+> arXiv:2603.18299v1 [cs.LG] 18 Mar 2026
+
+Preprint the mapping from neural activity to intended output drifts across sessions due to electrode impedance changes, electrode drift, and neural turnover (Chestek et al. [2011], Perge et al. [2013], Downey et al. [2018]). As a result, decoders trained on one session can degrade on later sessions, requiring frequent recalibration and limiting long-term usability. For participants, each additional day of calibration is a substantial burden, adding clinical workload and reducing time available for everyday communication. Moreover, it is well known in neuroscience that biological systems naturally execute motor programs like vocalization/movement at diverse speeds with high temporal flexibility (Banerjee et al. [2024], Wang et al. [2018], Stroud et al. [2018]). Therefore, developing methods to mitigate such trial- and session-level variability is critical. 
+
+Figure 1: Dataset and domain shift across sessions. a. Attempted speech dataset. Intracortical neural activity was recorded from a participant with amyotrophic lateral sclerosis (ALS) while they attempted to speak sentences presented on a screen. Although vocalizations were produced, the speech was not intelligible. b. Example neural activity corresponding to the same attempted sentence recorded in two different sessions, illustrating session-dependent neural dynamics variabilities. c. Illustration of distribution shift in source sessions and target sessions caused by nonstationarities in neural dynamics and the session-invariant distributions with adaptation. d. t-SNE visualization of the latent embeddings used for phoneme decoding (input to the phoneme classifier), showing source sessions (blue) and target sessions (red) before and after ALIGN. In machine learning, domain adaptation aims to mitigate session-dependent distribution shift by leveraging labeled source data together with unlabeled target data, typically by learning representations that are invariant across domains. Common approaches include adversarial objectives (Ganin et al. [2016], Zhao et al. [2017]) and importance re-weighting (Borgwardt et al. [2006]). In neuroscience, related ideas have been used to align neural representations across days using adversarial training (Farshchian et al. [2019], Ma et al. [2023]), improve robustness to channel/unit turnover via masking (Feghhi et al. [2025]) or permutation-invariant population models (Le et al. [2025]), and explicitly match latent manifolds across sessions (Perge et al. [2013], Karpowicz et al. [2025]). Other work applies test-time adaptation (TTA) using pseudo-labels to update models online at deployment (Feghhi et al. [2025], Fan et al. [2023]). However, extending these approaches to brain-to-text decoders is substantially harder. While most of these methods are evaluated on continuous decoding tasks with dense supervision, phonemes/words are discrete categorical outputs, with no ground truth label for each neural time step because supervision is only available at the sequence level (i.e., the prompted sentence), and there is no overt behavior that can be time-aligned to neural activity. As a result, training must rely on sequence-level objectives for alignment rather than per-frame targets, and decoder outputs are typically composed with a language model whose prior is strong but imperfect and therefore cannot reliably recover from all classes of phonetic errors. Moreover, in brain-to-text settings, test-time adaptation (TTA) via self-training can be brittle under large distribution shifts: once the phoneme error rate crosses a threshold, language-model-based pseudo-labels can become systematically wrong and errors can compound, especially when the test session is far from the last labeled training session (Fan et al. [2023]). These challenges motivate the need for models that learn 2Preprint session-invariant neural representations for intracortical brain-to-text decoding and that generalize robustly to unseen sessions. In this paper, we propose a new approach ALIGN , ( Adversarial Learn Ing for Generalizable Speech Neuroprostheses), for brain-to-text decoding robust to session drifts, building on domain adaptation. Our main contributions are: • A multi-source adversarial session-invariance objective for intracortical brain-to-text decoding that aligns session representations to promote learning of session-invariant features. • An intermediate-layer adversarial regularization strategy that promotes day-invariant yet phoneme-discriminative features for decoding. • Temporal Stretch Augmentation (TSA) to improve robustness to temporal nonstationarities. 
+
+## 2 Related Work 
+
+Brain–computer interfaces (BCIs) aim to restore communication and motor function by translating neural activity into intended actions or language (Metzger et al. [2023], Moses et al. [2021], Willett et al. [2023], Card et al. [2024]). This is particularly important for people with severe paralysis (e.g. due to amyotrophic lateral sclerosis or brainstem stroke, for whom neuroprostheses could restore communication by converting neural signals into words. However, a major challenge for chronic BCI deployment is that neural decoding performance can degrade as recording conditions and neural representations drift over time (Sussillo et al. [2016], Driscoll et al. [2022], Pun et al. [2024]). Models that remain stable across days can therefore reduce the need for frequent decoder recalibration (Wilson et al. [2025]). 
+
+Brain-to-text decoding is a BCI setting that aims to infer a person’s intended speech directly from recorded neural activity, without direct reference to the musculoskeletal components of vocal production. Willett et al. [2023] demon-strated strong performance with a Gated Recurrent Unit (GRU) based model to decode phonemes from neural activity, followed by beam search guided by an n-gram language model (LM) to convert phoneme to words; Card et al. [2024] extended this to another participant. More recent work Feghhi et al. [2025] explores replacing the GRU with transformer decoders (e.g. relative positional embeddings, temporal patches, and masking strategies) or using pre-trained end-to-end frameworks (Zhang et al. [2025]). In contrast to prior work that primarily addressed online in-session decoding and offline in-session decoding, we directly study cross-session generalization for brain-to-text decoding, for which the closest related efforts are the test-time adaptation (TTA) approaches such as those in Feghhi et al. [2025], Fan et al. [2023]. However, TTA does not learn a generalizable embedding during training and instead relies upon post-hoc adaptation. In addition, TTA methods that rely on pseudo-labels are sensitive to pseudo-label quality: if the pseudo-label accuracy is low, TTA recalibration accuracy would also degrade (Fan et al. [2023]). Under large session shifts, where the initial phoneme error rates are high, pseudo-labels may become systematically inaccurate, leading to runaway error compounding. These shortcomings highlight the need for methods to address the problem of drifting distributions. 
+
+Domain adaptation methods aim to mitigate distribution shift by combining labeled source data with unlabeled target data to learn representations that transfer across domains. Classic approaches include adversarial objectives that encourage domain-invariant features (Ganin et al. [2016], Zhao et al. [2017]), as well as discrepancy and re-weighting methods such as Maximum Mean Discrepancy (MMD)-based alignment (Borgwardt et al. [2006]). Specifically, the multi-source domain adaptation network (MDAN) framework (Zhao et al. [2017]) extends adversarial domain adaptation to multiple source domains by coupling a task predictor with a domain classifier and aggregating per-source discrepancies to learn features that generalize to an unlabeled target domain. This multi-source perspective is especially relevant in our setting, where session identity induces substantial shifts in neural feature distributions. However, directly porting standard domain adaptation recipes to brain-to-text is nontrivial: many alignment objectives assume per-sample labels (or low-noise pseudo-labels) in the target domain and are mostly developed for continuous-output decoding, whereas speech decoding involves discrete symbols with only sequence-level supervision. Prior BCI work has pursued cross-session robustness through adversarial alignment with autoencoder-style objectives (Farshchian et al. [2019], Ma et al. [2023]), manifold alignment of latent dynamics (Karpowicz et al. [2025]), re-weighting techniques (Cowan and Linderman [2025]), disentanglement through diffusion models (Wang et al. [2024]), and other approaches that align neural activity between a single source session and a single held-out target session. Beyond explicit alignment, permutation-invariant set-based encoders address changes in the recorded neural population (Le et al. [2025]). Nonetheless, because most of these methods were designed for continuous labels (e.g., cursor position or EMG), they do not directly carry over to speech decoding. Taken together, these limitations motivate a training-time approach that explicitly targets session-induced distribution shift while respecting the discrete, sequence-level supervision inherent to speech. In this work, we draw inspiration 3Preprint from multi-source domain adaptation frameworks like MDAN (Zhao et al. [2017]) to treat sessions as distinct source domains and to encourage session-invariant neural representations. Next, we introduce ALIGN, which is designed to provide such a foundation and enable more reliable test-time adaptation under large session shifts. 
+
+## 3 Method 
+
+The key intuition underlying our approach is to formulate cross-session brain-to-text decoding as a domain adaptation problem. Given labeled neural data from multiple source sessions and unlabeled data from subsequent target sessions, our objective is to learn a session-invariant representation that preserves speech-discriminative information while reducing session-specific encoding. The goal is to improve test-time generalization without the need for retraining or fine-tuning the decoder, which is burdensome to the participant. To this end, we introduce ALIGN , an adversarial multi-source single-target alignment framework built upon state-of-the-art neural decoders. ALIGN augments the base neural decoder with a domain classifier operating on latent features. Conceptually, by adversarially suppressing session-specific structure in the latent space, ALIGN retains speech-relevant information while mitigating sensitivity to session-by-session variability. We detail each component below. 
+
+3.1 Neural Decoder 
+
+Similar to established methods (Feghhi et al. [2025], Willett et al. [2023]), our neural decoder consists of two components: (1) a feature encoder f and (2) a phoneme classifier p. We schematically illustrate the ALIGN architecture in Figure 2. The feature encoder takes neural signals X ∈ Rc×T of c channels and length T , recorded during attempted speech and produces a sequence of latent features zt ∈ RD , a D-dimensional latent embedding at each time t, that captures the relevant information for decoding phonemes. The phoneme classifier maps the latent sequence {zt}Tt=1 
+
+through a linear softmax layer to estimate a distribution over phonemes at each time step. Let y be the ground-truth phoneme sequence corresponding to the spoken sentence in a single trial x ∈ X. We train the encoder and phoneme classifier with the connectionist temporal classification (CTC) loss (Graves et al. [2006]): 
+
+LCTC (θ) = − log Pθ (y | x) = − log X 
+
+> π7→yT
+
+Y
+
+> t=1
+
+Pθ (πt | x),
+
+where Pθ (πt|x) are the probabilities of frame-level phoneme label πt at time t given by the softmax over the encoder’s output zt = f (xt; θf ), and θ = ( θf , θ p), where θf and θp denote the parameters of the encoder and phoneme classifier, respectively. The CTC loss marginalizes over all valid frame-level alignments between neural activity and the target phoneme sequence. This is essential to enabling decoding in the BCI setting where precise temporal alignment between neural signals and phoneme onsets is unavailable, since there is no overt behavior. 
+
+3.2 Adversarial Session Invariance 
+
+Neural recordings collected across sessions exhibit distribution shifts, even though the phoneme prediction decoding task remains unchanged. We therefore treat earlier labeled sessions as source domains and subsequent sessions as target domains, framing cross-session decoding as a domain adaptation problem. To promote generalization to target sessions and unseen test sessions, ALIGN introduces an adversarial domain classifier on the feature encoder’s latent features. Formally, the adversarial domain classifier d(z; θd) is constructed as a multi-head binary classifier with m heads, one for each source session, where θd are the parameters of the domain classifier. Each head i is trained to distinguish embeddings from source session DSi versus embeddings from all target sessions. Samples from DSi are routed only to head i, while samples from the target sessions are routed to all heads. Each head outputs a binary prediction ySi ∈ { 0, 1}
+
+(source vs. target) using a three-layer multilayer perceptron (Figure 2). We train each domain classifier head with binary cross-entropy classification loss and take the mean across all m classifier heads. The overall domain loss is computed as the mean across all m heads 
+
+Ldomain (θ) = 1
+
+m
+
+> m
+
+X
+
+> i=1
+
+L(i)
+
+> session
+
+(θ). (1) While we optimize θd to minimize Ldomian , we simultaneously optimize the encoder parameters θf to maximize this loss with a gradient reversal layer (GRL, Ganin and Lempitsky [2015]). At test time, the domain classifier is inactive, and phoneme predictions are generated by the neural decoder, and then passed to the LM. 4Preprint Feature Encoder 𝑓     
+
+> 𝐗
+> Transformer (2x)
+> Patch Embedding
+> Linear
+> Domain Classifier 𝑑
+> Phoneme Classifier 𝑝
+> 𝐷 !!,𝐷 "#"
+
+𝒚 
+
+𝒚 𝑺 𝟏   
+
+> …
+> Early sessions  Later sessions
+> MLP
+> −𝝀 𝝏 𝑳 𝒅
+> 𝝏 𝜽 𝒇
+> 𝝀 𝝏 𝑳 𝒅
+> 𝝏 𝜽 𝒅
+> 𝑳 𝒅𝒐𝒎𝒂𝒊𝒏
+> 𝑳 𝑪𝑻𝑪
+> 𝝏 𝑳 𝑪𝑻𝑪
+> 𝝏 𝜽 𝒇
+> 𝝏 𝑳 𝑪𝑻𝑪
+> 𝝏 𝜽 𝒑
+> Gradient
+> Reversal
+> Transformer (3x)
+> Layer Norm
+> Sour ce sessions  {𝒟 𝒮 !, … , 𝒟 𝒮 𝓂 }
+> …
+> Target  sessions {𝒟 𝓉ℊ𝓉 !, … , 𝒟 𝓉ℊ𝓉 𝓃  }
+> …
+> MLP MLP
+
+𝒚 𝑺 "
+
+𝒚 𝑺 𝒎     
+
+> 𝐷 !$,𝐷 "#"
+> 𝐷 !%,𝐷 "#"
+
+Figure 2: ALIGN model architecture. Our ALIGN model consists of three major modules. The feature encoder f and phoneme classifier p backbone shown here is instantiated with a Transformer-based decoder (Feghhi et al. [2025]). We added a domain classifier d, which takes the transformer encoder embedding as input and the multi-head classifiers are trained to predict whether the input is coming from source or target sessions. A gradient reversal layer is used to make the encoder learn session-invariant features. 
+
+3.3 Alternative Scheduling 
+
+The total loss is given by 
+
+L = LCTC + α λ Ldomain .
+
+where λ determines the relative importance of the domain objective in the total loss, controlling the global strength of domain alignment throughout training. During the forward pass, the GRL acts as the identity mapping between f and d. During backpropagation, it multiplies the gradient flowing from the domain loss into the feature encoder by −αλ . Therefore, the gradient update on the encoder parameters become: 
+
+∂L
+
+∂θ f
+
+= ∂LCTC 
+
+∂θ f
+
+− αλ ∂Ldomain 
+
+∂θ f
+
+.
+
+The phoneme and domain classifiers receive gradients: 
+
+∂L
+
+∂θ p
+
+= ∂LCTC 
+
+∂θ p
+
+, ∂L
+
+∂θ d
+
+= λ ∂Ldomain 
+
+∂θ d
+
+.
+
+We use α to modulate the magnitude of the reversed gradient passed at each step, governing how strongly adversarial signals influence the feature encoder. Let s be the training steps, and stotal be the total number of training steps then: 
+
+κ = min 
+
+ sstotal 
+
+, 1
+
+
+
+,
+
+denotes normalized training progress. We applied a sinusoidal scheduling α(κ, ω )
+
+α(κ, ω ) = 12 + 12 sin 
+
+
+
+ω π κ − π
+
+2
+
+
+
+.
+
+Thus, α(κ, ω ) is a sinusoidal function whose frequency is controlled by the ω parameter. This scheduling strategy allows the model to alternatively prioritize learning phoneme-discriminative structure and progressively enforcing 5Preprint domain invariance. Together, λ sets the scale of domain supervision, while α(κ, ω ) dynamically regulates its effect on representation learning over the course of training. This two-player setup eventually converges to an equilibrium where zt contains minimal session information and the encoder cannot further improve by altering zt without hurting CTC performance. Table 3 lists the full set of hyperparameters. 
+
+3.4 Temporal Stretch Augmentation 
+
+To address variability in the duration of equivalent sequences across both repetitions and sessions observed in the data (Figure 1b), we developed Temporal Stretch Augmentation (TSA) . For each neural feature sequence X ∈ Rc×T , we simulate trial-to-trial variability in the temporal dimension by generating a stretched version of the sample. Specifically, for each sample, a stretch factor r is drawn from a predefined range [rmin , r max ], and the sequence is rescaled to length 
+
+T ′ = ⌊rT ⌋ . The resampled sequence eX ∈ Rc×T ′
+
+is obtained by linear interpolation along the temporal axis while preserving feature dimensionality. See Appendix D for more details. This augmentation simulates natural variations in speech rate and neural timing without altering phoneme labels. 
+
+3.5 Test-time Adaptation 
+
+We used DietCORP proposed in Feghhi et al. [2025] for test-time adaptation (TTA) with two initializations: (i) TTA from the first target session, where we first adapt on the validation sessions stream and use the resulting weights as initialization for test sessions ; and (ii) TTA from the first test session, where adaptation begins from the neural decoder checkpoint trained on all source sessions, at the first test trial. Specifically, for each trial, we first feed the neural decoder’s CTC logits into the 3-gram language model to obtain an LM-refined pseudo-transcription, which is then converted to a sequence of phoneme pseudo-labels. We then adapt the decoder online by minimizing the CTC loss to these pseudo-labels. For each trial, we generate n = 64 augmented copies using additive white noise and baseline shifts and perform one gradient step, carrying the updated weights forward to subsequent trials, following the original DietCORP adaptation procedure in Feghhi et al. [2025]. 
+
+Figure 3: Embedding visualization before and after ALIGN. (a) PCA projections of the intermediate latent embeddings produced by the feature encoder in the transformer baseline decoder for T12 (top) and in ALIGN (bottom). Twelve source sessions are shown in color, along with three target sessions shown in gray. (b) Corresponding embeddings of final latent embeddings in both model. 
+
+## 4 Experiments 
+
+Datasets We evaluated ALIGN on two intracortical speech BCI datasets from participants with Amyotrophic Lateral Sclerosis (ALS), T12 (Willett et al. [2023]), and T15 (Card et al. [2024]). Both datasets consist of multi-session recordings from four 64-channel micro-electrode arrays (256 electrodes total) implanted in the cortical speech motor network (ventral and premotor cortex for T12; ventral premotor cortex, area 6v, area 55b, and primary motor cortex for T15). Neural activity is represented as binned features every 20 ms (256 features for T12; 512 for T15). T12 contains 10,850 sentences collected over 24 sessions ( ∼4 months), and T15 contains 10,948 sentences collected over 45 sessions (∼20 months). Each trial includes neural time-series features paired with sentence-level transcriptions and phoneme sequence labels. Full dataset details are provided in Willett et al. [2023], Card et al. [2024]. 6Preprint The original T12 and T15 train/validation/held-out dataset partitions are split per session (Figure 6, left). For example, in T12, the validation partition (referred to as “test” in Willett et al. [2023]) contains the last block of each day with 40 sentences; the held-out partition (referred to as “competitionHoldOut” in Willett et al. [2023]) contains the first two blocks with 80 sentences; and “train” contains the rest. In T15, approximately 90% of each session’s data was used for training and validation, and 10% was used for held-out. For cross-session generalization experiments, we restructured the train/validation/test partition as follows: m source sessions (domains) {D src 1 , . . . , Dsrc m }, n subsequent unlabeled target sessions {D tgt 1 , . . . , Dtgt n } , and ℓ subsequent held-out test sessions {D test 1 , . . . , Dtest ℓ } , where each session corresponds to a separate recording day (Figure 6, right). There are gap days between recording sessions (i.e., sessions are not consecutive days). For both T12 and T15, we combine the train and validation data from source days as our training set, and the train and validation data from target days as our validation set. We use the unlabeled (i.e. no phoneme labels) held-out data from all target days as the target set, and we use the combined original training and validation data from test days as our test set. We evaluate our models on both T12 and T15 using several session-level partitions to assess cross-session generalization. For T12, we consider three partitions: (a) 12 source, 8 target, 3 test (referred to as 12–8–3), i.e. 12 sessions are used for training, 8 sessions for validation (target-domain tuning), and the remaining 3 sessions for testing; (b) 15 source, 5 target, 3 test (referred to as 15–5–3); and (c) 12 source, 4 target, 7 test (referred to as 12–4–7). The first two partitions match those of Feghhi et al. [2025]. For T15, we consider 5 source, 13 target, 4 test. If a source session contains only training data (i.e., no validation or test partition), we use this data as the source data. 
+
+4.1 Evaluation Metrics 
+
+Phoneme error rate (PER) and word error rate (WER) are used to evaluate model decoding accuracy. PER is the number of phoneme errors (i.e., insertions, deletions, and substitutions) from all sentences over the total number of ground truth phonemes, computed directly from the output of the neural decoder after duplicated phonemes were removed. PER serves as the raw measurement of the decoding performance and validation PER was used for model selection. By feeding phoneme probabilities from the neural decoder into an n-gram language model, we can obtain the sequence of words forming a likely natural language sentence and compute the WER with respect to the ground-truth transcript of the attempted speech. 
+
+4.2 Baselines GRU-based Neural Decoder The GRU decoder is a recurrent neural network that maps time-varying neural activity to phoneme sequences (Willett et al. [2023], Card et al. [2024]). It first applies a day-specific transformation to normalize session-dependent variability in neural signals. The transformed features are then processed by a stack of gated recurrent units (GRUs), which capture temporal dependencies in the neural activity. The final recurrent representation is passed through a linear layer to produce frame-level phoneme logits, and the model is trained using CTC loss to align neural activity with phoneme sequences without requiring explicit frame-level labels. Data augmentation includes additive white noise, baseline shift, random temporal cuts, and Gaussian smoothing to improve robustness across sessions. We adopt the same augmentation scheme during training. The GRU decoder serves as baseline for both T12 and T15. 
+
+Transformer-based Neural Decoder We used the Transformer decoder of Feghhi et al. [2025] as an additional baseline for T12 only (an official checkpoint trained on T15 was not available at the time of submission). The input neural time series of 256 channels was padded and Gaussian-smoothed, then partitioned into non-overlapping temporal patches of length 5. Each patch ( R256 ×5) was flattened and mapped to a m = 384 -dimensional embedding with LayerNorm and a linear projection and a second LayerNorm over m, yielding a patch sequence that was processed by a 5-layer Transformer with causal self-attention. During training, patch-level time masking was applied. A linear projection produces phoneme logits per timestep for CTC-based phoneme decoding. 
+
+4.3 Multi-session Generalization 
+
+For all experiments, we performed model selection and hyperparameter tuning based on validation PER. 
+
+T12 evaluation: For participant T12, ALIGN achieved better PER across target sessions compared to the transformer baseline (Figure 5), yielding an average session improvement of approximately 9% validation PER on the 12-8-3 split. PCA projections of source and target representations of the baseline model at earlier transformer layers exhibited more noticeable session drift (Figure 3a, top) than deeper layers (Figure 3b, top). We therefore applied the adversarial invariance loss to the intermediate layers (Figure 2), which yielded the most effective drift-robust decoding performance. Applying ALIGN resulted in more spatially overlapped embeddings between each source session and the target sessions, 7Preprint indicating that the learned representations were less session-dependent as shown in Figure 3 (bottom rows) for T12 partition 12-8-3. We also compared ALIGN against the baseline models for unseen test sessions using word error rate (WER). Because the transformer-based decoder in Feghhi et al. [2025] achieves lower WER than the GRU baseline, we focus our T12 comparisons on the transformer model. We evaluated both models with and without test-time adaptation (TTA) for 5 random seeds. We evaluated three different train–test partitions and reported results with and without TTA (Figure 4). Across partitions, ALIGN consistently improved WER relative to the transformer baseline in both settings. Without TTA, ALIGN reduced test-session WER compared to both baselines (GRU: 65 .93 ± 0.28% ; Transformer: 
+
+60 .01 ± 1.44% ; ALIGN: 46 .50 ± 0.46% on the first held-out test session in the 12–4–7 partition, with consistently lower WER on subsequent test sessions), suggesting that the adversarial objective promotes better generalization to held-out test sessions. 
+
+Test-time adaption: With TTA, ALIGN further improved test-session WER and, importantly, yielded greater stability across sessions than the transformer baseline with TTA (Figure 4). When TTA started from the first target day, the transformer baseline remained consistently worse than ALIGN across partitions and test sessions (Figure 4, left). For two of the three partitions, the transformer baseline’s WER rose sharply on later test sessions, while WER of ALIGN showed around 65% absolute improvement at the last test session. This pattern suggests that, under accumulating session drift, language-model pseudo-labels and self-training can become unreliable and may fail to correct, or even amplify, decoder errors, whereas ALIGN provides a more robust starting point for adaptation. The benefit of ALIGN is even clearer when TTA started from the first test session rather than the first target session. Because test sessions took place after target sessions, there was a comparatively larger distribution shift between the last labeled training day and the first day used for TTA, making self-training more challenging. Consistent with this, the transformer baseline with TTA initially performed moderately on the first test session 55 .68 ± 0.83% but rapidly degraded (Figure 4, right), reaching higher than 90% WER from the second test session onward. On the other hand, WER of ALIGN with TTA remained lower, tightly bounded between 29% and 33% across days with a low overall WER of 32 .23 ± 0.35% , without exhibiting a late-session collapse. These results suggest that ALIGN is more resilient to cross-session variability and can be effectively paired with modern TTA to maintain performance under larger session shifts. Baseline GRU (no TTA) Baseline (no TTA)                    
+
+> Baseline GRU (no TTA)
+> 15 source, 5 target 12 source, 8 target 12 source, 4 target
+> ALIGN (no TTA) Baseline (TTA) ALIGN (TTA) 40 42 35 56 6163 Word Error Rate (%) 20 40 60 80 100 34 40 4951 56 6163 Baseline (no TTA) ALIGN (no TTA) Baseline (TTA) ALIGN (TTA)
+> Word Error Rate (%)
+> 40 42 35 56 6163 34 40 49 51 56 6163
+> Test WER (TTA from first target session) Test WER (TTA from first test session) 15 source, 5 target 12 source, 8 target 12 source, 4 target
+> Days from last trained session Days from last trained session
+> 20 40 60 80 100 20 40 60 80 100 20 40 60 80 100 20 40 60 80 100 20 40 60 80 100
+
+Figure 4: ALIGN with and without TTA. Test WER of GRU baseline (green) without TTA, transformer baseline (blue) and ALIGN model (orange) with and without TTA (dark and light shades), where TTA is trained from the first target session (left) or from the first test session (right). All models are tested on three different train-test partition for 5 seeds. Across the three T12 partitions, performance consistently degraded as the temporal gap between the final training session and the held-out test sessions increased. In the challenging 12–4–7 partition, only four target sessions are available for ALIGN, and the seven test sessions spaned a larger temporal distance from the last training day. The reduced number of intermediate target days limited the model’s ability to gradually track session drift, resulting in larger performance drops (i.e. higher WER) for the baseline models. ALIGN mitigated this degradation by learning a more session-invariant latent representation, yielding consistently lower WER. 
+
+T15 evaluation: We next evaluated performance on T15, using the most challenging setup: 5 training sessions, 13 target sessions, and 3 held-out test sessions. This configuration contained the fewest training days and the largest temporal gap between the final training session and the latest test session, spanning up to 86 days. The limited labeled training data and substantial cross-session drift over time made this partition particularly demanding. ALIGN improved 8Preprint over the GRU baseline in test WER. When TTA was initialized from the first test session, the GRU baseline degraded on later sessions, whereas ALIGN remained lower than baseline across time (Table 1). Table 1: T15 Test Word Error Rate (WER) (across 5 seeds)                       
+
+> WER (%) (mean ±std) Days from last train GRU Baseline ALIGN
+> TTA from First Test Session
+> 71 51.28 ±0.95 45.40 ±0.00 84 86.71 ±2.29 65.65 ±0.19 86 99.11 ±0.11 71.79 ±0.68
+
+4.4 ALIGN model ablations 
+
+We tested the importance of each of ALIGN’s components by removing (1) adversarial loss, and (2) temporal augmentation while keeping the hyperparameter unchanged, and presented these results in the T12 12–4–7 setting in Table 2. Removing the adversarial loss altogether drastically degraded validation PER from 26 .30 ± 0.52 to 31 .95 ± 0.42% .This result supports the core hypothesis of ALIGN: explicitly discouraging session-identifiable structure in the learned representation is necessary for robust cross-session generalization. Without the adversarial loss, the decoder can achieve low training error by exploiting session-specific features (e.g., electrode- or day-dependent statistics), but these cues do not transfer to new sessions, resulting in higher PER. Second, removing temporal stretch augmentation degraded validation PER to 27 .70 ± 0.67% . This indicates that TSA provides a complementary robustness beyond adversarial alignment. By expanding the temporal variability observed during training, TSA reduces reliance on narrow timing statistics of the source sessions and encourages representations that are stable under realistic temporal distortions. Table 2: Ablation study on validation phoneme error rate (PER). Models are trained with 12 source sessions and 4 target sessions. 4 seeds were ran for each condition. Validation PER are shown in mean percentage ± std.           
+
+> Ablation Validation PER (%)
+> ALIGN 26 .30 ±0.52
+> w/o adversarial loss 31 .95 ±0.42
+> w/o temporal stretch augmentation 27 .70 ±0.67
+
+To further examine the effect of TSA, we detached the adversarial loss and trained the transformer baseline decoder in Feghhi et al. [2025] on (i) data without TSA and (ii) with TSA applied. To evaluate whether model trained with TSA can be more robust to temporal variability (Figure 1b), we computed Wasserstein distance (WD) between source–target and validation–target embedding pairs on temporally-stretched trials. The TSA-trained decoder consistently produced embeddings that remained closer to the target distribution (lower WD across stretch factors) than the same model trained without TSA (Appendix D, Figure 8). Therefore, temporal stretch augmentation likely acts as an implicit regularizer that encourages temporal invariance in the learned features, making the representation less sensitive to trial-wise speed fluctuations and reducing the mismatch between training and evaluation conditions. 
+
+## 5 Discussion 
+
+Our work addresses a practical challenge in intracortical speech BCIs: models trained on pooled data often degrade when deployed to a new recording session without labels. We propose a session-invariant learning framework that combines adversarial alignment across multiple source sessions with alignment applied at an intermediate decoder layer. This placement reduces session-discriminative structure while preserving information relevant for CTC-based phoneme decoding. Importantly, our approach operates in a few-shot, unsupervised setting on target sessions, requiring no phoneme labels during alignment. A second contribution is Temporal Stretch Augmentation (TSA), which generates greater temporal diversity in neural speech sequences. Biologically, animals execute motor programs over a wide range of speeds (Banerjee et al. [2024], Wang et al. [2018], Stroud et al. [2018]), and biophysical properties of neurons can support downstream circuits to 9Preprint readout time-warped activity patterns as time-invariant representations (Gütig and Sompolinsky [2009]). Motivated by this, TSA increases temporal variability during training by stochastically time-stretching trials. Empirically, TSA complements the adversarial loss of ALIGN and further improves performance in terms of phoneme- and word-level decoding accuracy in unseen data. We suggest several directions for future work. Decoding performance depends jointly on the phoneme decoding model and the language model, and tighter integration or a language-model-aware training objective could further improve accuracy. Leveraging self-supervised pretraining on large corpora of unlabeled neural activity may also reduce reliance on labeled data and enhance robustness across sessions. In addition, deeper analysis of what information is removed/preserved by alignment, such as identifying which neural dimensions are most session-specific, and which phoneme errors are most impacted, could improve interpretability and guide more principled regularization. Overall, our findings suggest that adversarial multi-session alignment, when applied at the right representational level and paired with temporally targeted augmentation, can mitigate session-level distribution shift and advance intracortical speech decoding closer to reliable long-term deployment, and reduce the need for frequent decoder recalibration. 
+
+Acknowledgements. We thank collaborators and colleagues for discussions and feedback, especially for the helpful conversations with Jingya Huang. Zhanqi Zhang was supported in part by the Halıcıo˘ glu Data Science Institute (HDSI) Ph.D. Fellowship. This work was partially supported by NSF award EFRI 2223822. This work has been made possible in part by a gift from the Chan Zuckerberg Initiative Foundation to establish the Kempner Institute for the Study of Natural and Artificial Intelligence. 
+
+References 
+
+Arkarup Banerjee, Feng Chen, Shaul Druckmann, and Michael A. Long. Temporal scaling of motor cortical dynamics reveals hierarchical control of vocal production. Nature Neuroscience , 27(3):527–535, March 2024. ISSN 1546-1726. doi:10.1038/s41593-023-01556-5. Karsten M. Borgwardt, Arthur Gretton, Malte J. Rasch, Hans-Peter Kriegel, Bernhard Schölkopf, and Alex J. Smola. Integrating structured biological data by kernel maximum mean discrepancy. Bioinformatics , 22(14):e49–e57, July 2006. ISSN 1367-4803. doi:10.1093/bioinformatics/btl242. Nicholas S. Card, Maitreyee Wairagkar, Carrina Iacobacci, Xianda Hou, Tyler Singer-Clark, Francis R. Willett, Erin M. Kunz, Chaofei Fan, Maryam Vahdati Nia, Darrel R. Deo, Aparna Srinivasan, Eun Young Choi, Matthew F. Glasser, Leigh R. Hochberg, Jaimie M. Henderson, Kiarash Shahlaie, Sergey D. Stavisky, and David M. Brandman. An accurate and rapidly calibrating speech neuroprosthesis. New England Journal of Medicine , 391(7):609–618, August 2024. ISSN 0028-4793. doi:10.1056/NEJMoa2314132. Cynthia A. Chestek, Vikash Gilja, Paul Nuyujukian, Justin D. Foster, Joline M. Fan, Matthew T. Kaufman, Mark M. Churchland, Zuley Rivera-Alvidrez, John P. Cunningham, Stephen I. Ryu, and Krishna V. Shenoy. Long-term stability of neural prosthetic control signals from silicon cortical arrays in rhesus macaque motor cortex. Journal of Neural Engineering , 8(4):045005, August 2011. ISSN 1741-2552. doi:10.1088/1741-2560/8/4/045005. Noah Cowan and Scott Linderman. Sliced-wasserstein importance weighting for robust brain-computer interface speech decoding. In Data on the Brain & Mind Findings , 2025. URL https://openreview.net/forum?id= vCh4rDQuAs .John E. Downey, Nathaniel Schwed, Steven M. Chase, Andrew B. Schwartz, and Jennifer L. Collinger. Intracortical recording stability in human brain-computer interface users. Journal of Neural Engineering , 15(4):046016, August 2018. ISSN 1741-2552. doi:10.1088/1741-2552/aab7a0. Laura N. Driscoll, Lea Duncker, and Christopher D Harvey. Representational drift: Emerging theories for continual learning and experimental future directions. Current Opinion in Neurobiology , 76:102609, 2022. doi:10.1016/j.conb.2022.102609. Chaofei Fan, Nick Hahn, Foram Kamdar, Donald Avansino, Guy H. Wilson, Leigh Hochberg, Krishna V. Shenoy, Jaimie M. Henderson, and Francis R. Willett. Plug-and-play stability for intracortical brain-computer interfaces: A one-year demonstration of seamless brain-to-text communication, 2023. Ali Farshchian, Juan A. Gallego, Joseph P. Cohen, Yoshua Bengio, Lee E. Miller, and Sara A. Solla. Adversarial domain adaptation for stable brain-machine interfaces, 2019. Ebrahim Feghhi, Shreyas Kaasyap, Nima Ryan Hadidi, and Jonathan Kao. Time-masked transformers with lightweight test-time adaptation for neural speech decoding. In The Thirty-ninth Annual Conference on Neural Information Processing Systems , 2025. Yaroslav Ganin and Victor Lempitsky. Unsupervised domain adaptation by backpropagation, 2015. 10 Preprint Yaroslav Ganin, Evgeniya Ustinova, Hana Ajakan, Pascal Germain, Hugo Larochelle, François Laviolette, Mario Marchand, and Victor Lempitsky. Domain-adversarial training of neural networks, 2016. Alex Graves, Santiago Fernández, Faustino Gomez, and Jürgen Schmidhuber. Connectionist temporal classification: labelling unsegmented sequence data with recurrent neural networks. In Proceedings of the 23rd international conference on Machine learning , ICML ’06, page 369–376. Association for Computing Machinery, 2006. ISBN 978-1-59593-383-6. doi:10.1145/1143844.1143891. R. Gütig and H. Sompolinsky. Time-warp–invariant neuronal processing. PLOS Biology , 7(7):e1000141, 2009. doi:10.1371/journal.pbio.1000141. Brianna M. Karpowicz, Yahia H. Ali, Lahiru N. Wimalasena, Andrew R. Sedler, Mohammad Reza Keshtkaran, Kevin Bodkin, Xuan Ma, Daniel B. Rubin, Ziv M. Williams, Sydney S. Cash, Leigh R. Hochberg, Lee E. Miller, and Chethan Pandarinath. Stabilizing brain-computer interfaces through alignment of latent dynamics. Nature Communications ,16(1):4662, May 2025. ISSN 2041-1723. doi:10.1038/s41467-025-59652-y. Trung Le, Hao Fang, Jingyuan Li, Tung Nguyen, Lu Mi, Amy L Orsborn, Uygar Sümbül, and Eli Shlizerman. SPINT: Spatial permutation-invariant neural transformer for consistent intracortical motor decoding. In The Thirty-ninth Annual Conference on Neural Information Processing Systems , 2025. Xuan Ma, Fabio Rizzoglio, Kevin L Bodkin, Eric Perreault, Lee E Miller, and Ann Kennedy. Using adversarial networks to extend brain computer interface decoding accuracy over time. eLife , 12:e84296, August 2023. ISSN 2050-084X. doi:10.7554/eLife.84296. Sean L. Metzger, Kaylo T. Littlejohn, Alexander B. Silva, David A. Moses, Margaret P. Seaton, Ran Wang, Maximilian E. Dougherty, Jessie R. Liu, Peter Wu, Michael A. Berger, Inga Zhuravleva, Adelyn Tu-Chan, Karunesh Ganguly, Gopala K. Anumanchipalli, and Edward F. Chang. A high-performance neuroprosthesis for speech decoding and avatar control. Nature , 620(7976):1037–1046, August 2023. ISSN 1476-4687. doi:10.1038/s41586-023-06443-4. Mehryar Mohri, Fernando C. N. Pereira, and Michael Riley. Speech recognition with weighted finite-state transducers. In Handbook on Speech Processing and Speech Communication, Part E: Speech recognition . 2008. David A. Moses, Sean L. Metzger, Jessie R. Liu, Gopala K. Anumanchipalli, Joseph G. Makin, Pengfei F. Sun, Josh Chartier, Maximilian E. Dougherty, Patricia M. Liu, Gary M. Abrams, Adelyn Tu-Chan, Karunesh Ganguly, and Edward F. Chang. Neuroprosthesis for decoding speech in a paralyzed person with anarthria. The New England Journal of Medicine , 385(3):217–227, 2021. ISSN 1533-4406. doi:10.1056/NEJMoa2027540. János A. Perge, Mark L. Homer, Wasim Q. Malik, Sydney Cash, Emad Eskandar, Gerhard Friehs, John P. Donoghue, and Leigh R. Hochberg. Intra-day signal instabilities affect decoding performance in an intracortical neural interface system. Journal of Neural Engineering , 10(3):036004, 2013. ISSN 1741-2552. doi:10.1088/1741-2560/10/3/036004. Tsam Kiu Pun, Mona Khoshnevis, Tommy Hosman, Guy H. Wilson, Anastasia Kapitonava, Foram Kamdar, Jaimie M. Henderson, John D. Simeral, Carlos E. Vargas-Irwin, Matthew T. Harrison, and Leigh R. Hochberg. Measuring instability in chronic human intracortical neural recordings towards stable, long-term brain-computer interfaces. 
+
+Communications Biology , 7(1):1363, 2024. doi:10.1038/s42003-024-06784-4. Jake P. Stroud, Mason A. Porter, Guillaume Hennequin, and Tim P. Vogels. Motor primitives in space and time via targeted gain modulation in cortical networks. Nature Neuroscience , 21(12):1774–1783, 2018. doi:10.1038/s41593-018-0276-0. David Sussillo, Sergey D. Stavisky, Jonathan C. Kao, Stephen I. Ryu, and Krishna V. Shenoy. Making brain–machine interfaces robust to future neural variability. Nature Communications , 7:13749, 2016. doi:10.1038/ncomms13749. Jing Wang, Devika Narain, Eghbal A. Hosseini, and Mehrdad Jazayeri. Flexible timing by temporal scaling of cortical responses. Nature Neuroscience , 21(1):102–110, 2018. doi:10.1038/s41593-017-0028-6. Yule Wang, Chengrui Li, Weihan Li, and Anqi Wu. Exploring behavior-relevant and disentangled neural dynamics with generative diffusion models, 2024. URL https://arxiv.org/abs/2410.09614 .Francis R. Willett, Erin M. Kunz, Chaofei Fan, Donald T. Avansino, Guy H. Wilson, Eun Young Choi, Foram Kamdar, Matthew F. Glasser, Leigh R. Hochberg, Shaul Druckmann, Krishna V. Shenoy, and Jaimie M. Henderson. A high-performance speech neuroprosthesis. Nature , 620(7976):1031–1036, August 2023. ISSN 1476-4687. doi:10.1038/s41586-023-06377-x. Guy H. Wilson et al. Long-term unsupervised recalibration of cursor-based intracortical brain–computer interfaces using a hidden markov model. Nature Biomedical Engineering , 2025. doi:10.1038/s41551-025-01536-z. Yizi Zhang, Linyang He, Chaofei Fan, Tingkai Liu, Han Yu, Trung Le, Jingyuan Li, Scott Linderman, Lea Duncker, Francis R Willett, Nima Mesgarani, and Liam Paninski. Decoding inner speech with an end-to-end brain-to-text neural interface, 2025. 11 Preprint Han Zhao, Shanghang Zhang, Guanhang Wu, João P. Costeira, José M. F. Moura, and Geoffrey J. Gordon. Multiple source domain adaptation with adversarial training of neural networks, 2017. 12 Preprint 
+
+## A Brain-to-text Benchmarking 
+
+We evaluated on the Brain-to-Text Benchmark ’24 (T12) Willett et al. [2023], and the Brain-to-Text Benchmark ’25 
+
+(T15) Card et al. [2024]. We apply the same preprocessing pipeline as the baseline neural decoders, following the procedures described in the original benchmark releases. 
+
+## B Phoneme Error Rate 
+
+We selected models based on each dataset’s validation phoneme error rate (PER). ALIGN consistently achieved the lowest PER across all validation and test sessions in the cross-session setting (Figure 5). For the T12 12–8–3 partition, on the validation set (8 sessions), the Transformer baseline PER increased from 24 .92 ±
+
+0.17% (5 days from last training day) to 49 .21 ± 0.33% (51 days), with a session-average of 38 .74 ± 0.43% . ALIGN ranges from 22 .07 ± 0.50% to 37 .14 ± 0.88% , achieving a lower session-average of 30 .46 ± 0.52% , corresponding to an absolute improvement of over 8% points in PER. On the held-out test sessions (56–63 days away from last training), the Transformer baseline obtains a session-average PER of 52 .61 ± 0.24% , while ALIGN reduces this to 
+
+43 .39 ± 0.62% , yielding an improvement of approximately 9% absolute PER (Figure 5). Phoneme Error Rate (%) 20 30 40 50 60 Days from last trained session 5 12 21 28 34 40 49 51 56 6163 Baseline val ALIGN val Baseline test ALIGN test 
+
+Figure 5: Per-day phoneme error rate (PER). Mean and std of PER of the transformer baseline (blue) and ALIGN (orange) on T12 12–8–3 dataset. The first eight sessions correspond to validation of target sessions, and the last three correspond to held-out test sessions. These results demonstrate that ALIGN improves phoneme decoding accuracy and reduces cross-session performance degradation as temporal distance from the last training session increases. The reported PER reflects raw neural decoder performance without test-time adaptation (TTA), directly measuring cross-session generalization of the learned representation. The consistently lower PER values therefore indicate improved cross-session robustness. Combined with prior findings that Transformer decoders outperform GRU baselines Feghhi et al. [2025], ALIGN achieves the best performance among the evaluated methods in the cross-session brain-to-text decoding setup. 
+
+## C ALIGN on target and test days 
+
+ALIGN leverages the distribution of the target sessions for domain alignment, but does not use any supervised CTC objective on target data. Specifically, target session neural data are used only to reduce session-related distribution shifts between source and target domains via the alignment loss. No target transcripts are used, and the CTC decoding objective is optimized exclusively on source sessions. Consequently, the reported Phoneme Error Rate and Word Error Rate on the target validation sessions can also be interpreted as adaptation results , as the model is aligned to the target session distribution, but without supervised decoding on those sessions. In contrast, the unseen test sessions represent the strictest generalization and is closest to a real-world deployment setting, as neither alignment nor supervision is performed on those sessions. The model is adapted using target sessions only, and then directly evaluated on unseen test sessions. In Figure 7, we report the full trajectory of Word Error Rate (WER) across both target sessions and unseen test sessions, spanning up to 63 days from the last trained source day in T12. 13 Preprint val train test    
+
+> val
+> train
+> test
+> target
+> Original dataset split
+> Early sessions Later sessions
+> Trials Trials
+> Our dataset split
+
+Figure 6: Dataset Partition. Left: In the official Brain-to-Text Benchmark ’24 partition, each recording day is internally divided into train, validation, and competitionHoldOut (test) blocks (except for a few sessions that lack a test block), so most sessions contribute data to every partition. Right: We reorganize data by session into source (train), unlabeled target (for unsupervised alignment), labeled validation (for model selection via validation PER), and fully unseen test sessions to evaluate cross-session generalization. 
+
+## D Temporal Stretch Augmentation 
+
+We used temporal stretch augmentation (TSA) as a complementary approach to the adversarial structure of ALIGN to further address data variability, specifically temporal variability at the trial level. TSA is applied per trial to the neural feature sequence (time x features). The sequence is resampled along the time axis using linear interpolation with a stretch factor. The stretch factor used in this paper is always greater than 1 due to the CTC objective of ALIGN. CTC aligns a sequence of encoder frames (length T ) to a sequence of labels (length L) using blanks and repeated labels. A valid alignment exists only if the input length T is at least as long as the target length L (i.e. T ≥ L) to allow the encoder have enough time steps to “place" all labels (with optional blanks and repeats). Therefore, stretch factors less than 1 would violate such a constraint. For each trial, a stretch factor is sampled from a specified range (e.g., 1.5 − 5.0×). During training, the data loader includes (1) the original trial and (2) a single time-stretched copy generated using a randomly sampled factor from this range. In summary, the model is trained on a mix of original and temporally warped trials to mimic trial-to-trial temporal variability. 
+
+## E Embeddings of ALIGN 
+
+Session-Distinct Embedding Dimension Analysis. To quantify session-specific variability in the learned repre-sentation, we measured the 1D Wasserstein distance between source and target distributions along each embedding dimension in the final latent space. Specifically, for each dimension j = 1 , . . . , D , we compute 
+
+Wj = W  zsrc  
+
+> j
+
+, z tgt 
+
+> j
+
+,
+
+where zsrc  
+
+> j
+
+and ztgt  
+
+> j
+
+denote the marginal distributions of the j-th embedding coordinate for source and target sessions, respectively. We first rank dimensions in the transformer baseline from largest to smallest Wj , thereby identifying the most session-distinct components of the representation. We then compute the same distances after applying ALIGN. As shown in Figure 9, ALIGN aligned the activation distributions across all dimensions, indicating that it suppresses session-specific variability and promotes tighter alignment between source and target distributions in the final embedding space. 
+
+## F Language Model 
+
+The n-gram language model (LM) is trained on the OpenWebText2 corpus and constructed using a CMU-dictionary–based phoneme lexicon. As in Willett et al. [2023], Feghhi et al. [2025], Card et al. [2024], we use 14 Preprint Baseline val (no TTA) Baseline test (no TTA) Baseline GRU val (no TTA) Baseline GRU test (no TTA) 
+
+Days from last trained session 5 12 21 28 34 40 49 51 56 61 63 Word Error Rate (%) ALIGN val (no TTA) Baseline val (TTA) ALIGN val (TTA) ALIGN test (no TTA) Baseline test (TTA) ALIGN test (TTA)         
+
+> Word Error Rate (%) 512 21 28 34 40 49 51 56 61 63 20 40 60 80 100
+
+12 source, 4 target (TTA from first target session) 
+
+> Baseline val (no TTA) ALIGN val (no TTA) Baseline val (TTA) ALIGN val (TTA) Baseline test (no TTA) ALIGN test (no TTA) Baseline test (TTA) ALIGN test (TTA)
+
+Days from last trained session                   
+
+> 40 42 35 30 28 19 13 740 42 35 30 28 19 13 7512 21 28 34 40 49 51 56 61 63 512 21 28 34 40 49 51 56 61 63
+
+Days from last trained session Days from last trained session 
+
+12 source, 4 target (TTA from first test session) 12 source, 8 target (TTA from first target session) 12 source, 8 target (TTA from first test session) 
+
+> Word Error Rate (%) Word Error Rate (%) Word Error Rate (%) Word Error Rate (%)
+
+Days from last trained session Days from last trained session 
+
+15 source, 5 target (TTA from first target session) 15 source, 5 target (TTA from first test session) 
+
+> Baseline GRU val (no TTA) Baseline GRU test (no TTA) 20 40 60 80 100 20 40 60 80 100 20 40 60 80 100 20 40 60 80 100 20 40 60 80 100
+
+Figure 7: ALIGN on target and test sessions. Validation and test WER (%) of GRU baseline (green) without TTA, transformer baseline (blue) and ALIGN model (orange) with and without TTA (dark and light shades), where TTA is trained from the first target session (left) or from the first test session (right). All models are tested on three different train-test partition for 5 seeds. the 125,000-word 3-gram language model implemented in Kaldi and integrated through a Weighted Finite State Transducer (WFST) beam search decoder (Mohri et al. [2008]). The LM is loaded into a custom Python runtime and used for phoneme-to-word decoding. During decoding, the neural decoder produces a sequence of frame-level phoneme posterior probabilities. Beam search is applied over these probabilities to generate multiple candidate hypotheses, where each candidate beam b corresponds to a complete phoneme sequence obtained after collapsing repeated labels and removing blanks. 15 Preprint Trained with TSA Trained w/o TSA Trained with TSA Trained w/o TSA 
+
+Figure 8: Embedding analysis of TSA-trained decoder. Feature-wise Wasserstein distance (WD) between augmented embeddings and a held-out set as a function of the stretch factor. Left: WD computed between source embeddings and target embeddings (average across the first 10 embedding dimensions); Right: WD computed between validation embeddings and target embeddings (average across the first 10 embedding dimensions). Thick lines show the mean across days and shaded bands denote ±SEM; faint lines show individual day traces. Gray indicates the decoder trained on data without TSA, and green indicates decoder trained on data with TSA. For each candidate beam b, we compute a joint score by combining the encoder likelihood and the n-gram language model likelihood using an acoustic _scale :score (b) = acoustic _scale log Penc (b) + log Pngram (b). (2) Here, Penc (b) denotes the probability of the phoneme sequence under the phoneme classifier (CTC), and Pngram (b) is the probability assigned by the n-gram language model to the same phoneme sequence. The beam search is performed on the composed WFST graph, and the hypothesis with the highest combined score is selected as the final decoded transcription. To discourage excessive blank emissions from the encoder, blank probabilities are penalized by dividing them by a fixed constant during decoding. All language model hyper-parameters matched those reported in Willett et al. [2023], Feghhi et al. [2025] for T12 and Card et al. [2024] for T15. Specifically, for the 3-gram language model on T12, we used a beam width of 18, set acoustic _scale = 0 .8, and applied a blank penalty of log(2) . For T15, we used a beam width of 17, set 
+
+acoustic _scale = 0 .5, and applied a blank penalty of log(9) .
+
+## G Adversarial Classifier and TTA Implementation Details 
+
+Each classifier head is a multi-layer perceptron with two hidden layers of size dh = 256 , each followed by ReLU activation and dropout. For test time adaptation, because DietCORP was not evaluated on T15, we implement the same DietCORP adaptation logic while adopting data augmentation hyperparameters reported in Card et al. [2024]. The full hyperparameters for the models are provided below. 
+
+## H Hyperparameters 
+
+16 Preprint 1.0 0.5 0.0 0.5 1.0 1.5 
+
+> Activation value
+> Top-k dims (stacked)
+
+model1 baseline      
+
+> Source (train)
+> Target
+> 1.0 0.5 0.0 0.5 1.0 1.5
+> Activation value
+
+model2 layer 0 softmax 1.0 BCE 
+
+top-16 dims layer=final_norm 
+
+Figure 9: ALIGN reduces the session distributional gap. Top-k most session-distinct embedding dimensions before (left) and after ALIGN (right). 17 Preprint Table 3: Transformer Decoder Training and Domain Adaptation Hyperparameters 
+
+Parameter Value 
+
+Optimizer AdamW Learning rate 0.001 Weight decay 1 × 10 −5
+
+Batch size 64 Epochs 500 Scheduler Multistep (milestone=300) 
+
+γ 0.1 Depth 5Embedding dim 384 Heads 6Dropout 0.35 Input dropout 0.2 Patch size (5, 256) Rep. layer index 2
+
+λDANN 0.6 
+
+λsrc 1
+
+λtgt 1Disc. hidden dim 256 Disc. LR multiplier 0.6 Alpha type Alternative ( ω = 16 )Binary loss True Target loss True Stretch range (1.5, 5) Max mask pct 0.075 Num masks 20 White noise SD 0.2 Baseline Shift 0.05 Gaussian smooth width 2Test-time Adaptation learning rate 3e-3 18 Preprint Table 4: GRU Decoder Training and Domain Adaptation Hyperparameters for T12 and T15 
+
+Parameter T12 T15 
+
+Optimizer Adam AdamW Learning rate scheduler None Cosine Learning rate warmup batches – 1000 Training 73 epochs 120000 batches Batch size 64 64 
+
+β0, β 1 (0.9, 0.999) (0.9, 0.999) 
+
+ϵ 0.1 0.1 LR (start / end) 0.02 / 0.02 0.005 / 0.0001 Weight decay (main) 1 × 10 −5 0.001 Grad norm clip – 10 Neural dim 256 512 # GRU layers 5 5GRU hidden units 1024 768 Bidirectional False False GRU dropout 0.4 0.4 Input layer dropout 0 0.2 Patch size / stride 32 / 4 14 / 4 White noise std 0.8 1.0 Baseline shift (constant offset std) 0.2 0.2 Random cut (timesteps) – 3Smoothing kernel std 2.0 2.0 
+
+ALIGN 
+
+Rep. layer index – 2Discriminator hidden dim – 256 Discriminator LR multiplier – 0.8 Discriminator weight decay – 1 × 10 −5
+
+Alpha type – Alternative ( ω = 24 )Alpha warmup steps – 5Domain dropout – 0.0 TTA learning rate – 5 × 10 −4
+
+Stretch range – (1.5, 5.0) 19

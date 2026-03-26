@@ -1,0 +1,251 @@
+Title: CRE-T1 Preview Technical Report: Beyond Contrastive Learning for Reasoning-Intensive Retrieval
+
+URL Source: https://arxiv.org/pdf/2603.17387v1
+
+Published Time: Thu, 19 Mar 2026 00:49:39 GMT
+
+Number of Pages: 13
+
+Markdown Content:
+# CRE-T1 Preview Technical Report: Beyond Contrastive Learning for Reasoning-Intensive Retrieval 
+
+Guangzhi Wang Yinghao Jiao Zhi Liu 
+
+CareerInternational Research Team 
+
+## Abstract 
+
+The central challenge of reasoning-intensive retrieval lies in identifying implicit reasoning relationships between queries and documents, rather than superficial se-mantic or lexical similarity. The contrastive learning paradigm is fundamentally a static representation consolidation technique: during training, it encodes hier-archical relevance concepts into fixed geometric structures in the vector space, and at inference time it cannot dynamically adjust relevance judgments accord-ing to the specific reasoning demands of each query. Consequently, performance degrades noticeably when vocabulary mismatch exists between queries and doc-uments or when implicit reasoning is required to establish relevance. This pa-per proposes Thought 1 (T1), a generative retrieval model that shifts relevance modeling from static alignment to dynamic reasoning. On the query side, T1 dy-namically generates intermediate reasoning trajectories for each query to bridge implicit reasoning relationships and uses <emb token> as a semantic aggregation point for the reasoning output. On the document side, it employs an instruction + text + <emb token> encoding format to support high-throughput indexing. To internalize dynamic reasoning capabilities into vector representations, we adopt a three-stage training curriculum and introduce GRPO in the third stage, enabling the model to learn optimal derivation strategies for different queries through trial-and-error reinforcement learning. On the BRIGHT benchmark, T1-4B exhibits strong performance under the original query setting, outperforming larger models trained with contrastive learning overall, and achieving performance comparable to multi-stage retrieval pipelines. The results demonstrate that replacing static rep-resentation alignment with dynamic reasoning generation can effectively improve reasoning-intensive retrieval performance. 
+
+# 1 Introduction 
+
+Since the popularization of bi-encoder architectures such as Sentence-BERT [12], contrastive learn-ing [4] has become the standard paradigm for training dense vector models. However, in reasoning-intensive retrieval tasks, merely aligning “similarity” is often insufficient to capture “relevance.” The 
+
+> arXiv:2603.17387v1 [cs.IR] 18 Mar 2026
+
+key challenge in such tasks is that the evidence supporting an answer frequently exhibits vocabulary mismatch with the query, requiring implicit causal, conditional, or multi-hop reasoning relationships to establish connections. Contrastive learning typically uses the representational distance between positive and negative samples as the supervisory signal, which tends to reward lexical matching and shallow semantic consistency while exhibiting noticeable performance degradation in scenarios requiring implicit reasoning. Examining this limitation from a deeper perspective, it is not acciden-tal. Contrastive learning is fundamentally a static, hierarchical representation consolidation process: during training, it encodes the hierarchical conceptual judgment of “relevant/irrelevant” into the ge-ometric structure of the vector space through pre-constructed positive-negative sample pairs, com-pleting a one-way mapping from concepts to latent variables. Once training converges, this mapping is frozen as a fixed prior in the model parameters—a pre-training variable—and at inference time the model can only retrieve within this fixed representation space, unable to dynamically adjust its rele-vance judgment strategy according to the specific reasoning demands of a new query. This problem is particularly prominent in reasoning-intensive benchmarks such as BRIGHT [14]: a large number of queries require the model to identify implicit reasoning relationships rather than simple keyword or shallow semantic matches, yet the static representation space consolidated by contrastive learning struggles to cover these implicit reasoning relationships that require per-query derivation. To address this challenge, we propose the retrieval model Thought 1 (T1). Its core idea is to replace static alignment with dynamic reasoning: without significantly increasing retrieval cost, the model first generates a reasoning trajectory for each query and then compresses the reasoning result into a retrievable vector, so that relevance judgments are grounded in explicit derivation rather than solely relying on static representations consolidated during training. To motivate this design choice, we draw on our perspective on agent cognition: the essence of human problem-solving under limited cognitive resources lies in temporalized sequential reasoning [9]. Therefore, “scaling computation along the temporal dimension” is a key lever for improving capability. Based on this argument, related approaches can be naturally divided into two complementary lines. The first is test-time scaling , which invests more computation at inference time in exchange for accuracy; our prior work Refine Thought (RT) [16] belongs to this category, iteratively refining semantic representations in hidden space through multiple forward passes. The second is train-time scaling , which consolidates dynamic reasoning capabilities into model parameters during training through stronger supervision or reinforcement learning; for example, DeepSeek-R1 [3] enhances logical capabilities by optimiz-ing reasoning trajectories. T1 adopts reinforcement learning at training time as its core mechanism, enabling the model to learn the ability to dynamically generate reasoning paths conditioned on each query, thereby transforming relevance modeling in reasoning-intensive retrieval from static repre-sentation alignment into a dynamic reasoning generation process. Experiments demonstrate that T1 exhibits significant advantages in reasoning-intensive retrieval sce-narios such as BRIGHT. The key lies in fusing the query understanding and text representation stages of the retrieval pipeline: after observing the query constraints, the model first reasons, then compresses both the reasoning and query semantics into a query vector, which is compared with document vectors via similarity computation to complete retrieval. To achieve this, T1 adopts an asymmetric architecture: the query side generates a limited-length reasoning sequence and aggre-gates global semantic information through <emb token> , while the document side extracts the cor-responding token’s representation via instructions to ensure large-scale index construction efficiency. 2We internalize the aforementioned reasoning pattern into model parameters through reinforcement learning during training, thereby improving reasoning-intensive relevance modeling without sig-nificantly increasing online overhead. On the BRIGHT evaluation benchmark, T1 at the 4B scale using only original queries outperforms the combination of “retrieval model + query rewriting,” significantly surpasses contrastive baselines and commercial embedding models, and matches the state-of-the-art “retrieval model + reranking” combination pipeline. 
+
+# 2 Related Work 
+
+We define reasoning-intensive retrieval as tasks where the relevance between a query and its rele-vant documents depends on implicit reasoning chains (semantic, causal, or logical) rather than mere keyword overlap or shallow semantic similarity. Early and mainstream dense retrieval benchmarks (e.g., BEIR [15], MTEB [10]) primarily focus on Information Seeking queries, where answers typ-ically exist explicitly within text passages, or queries and documents exhibit high semantic match in vector space. The recent BRIGHT benchmark [14] further systematizes retrieval complexity into three levels: Level 1 relies on lexical matching, Level 2 relies on semantic matching, and Level 3 requires the model to locate evidence through implicit reasoning relationships. Compared with the first two levels, Level 3 tasks better reveal differences in models’ reasoning-based relevance mod-eling capabilities. For instance, in BRIGHT, some models that lead on MTEB (e.g., BGE [18]) exhibit significant drops in nDCG@10, highlighting the gap between semantic matching evaluation and reasoning-intensive relevance. Existing work on reasoning-intensive retrieval can be broadly categorized into three technical lines based on the source of training signals and where reasoning augmentation occurs. The first line addresses reasoning signal sparsity from the perspective of data and supervision : it enhances the model’s representation learning on complex contexts through synthetic reasoning data or structured supervision, with representative works including ReasonIR [13], RaDeR [2], and ReasonEmbed [1]. The second line targets retrieval pipeline decomposition , introducing reasoning augmentation at different stages: on the query understanding end, generative intent decomposition improves complex question parsing, e.g., DeepRetrieval [5], Reinforced-IR [7], TongSearch-QR [11]; on the ranking end, reasoning chain generation is combined with reranking to improve global consistency, e.g., Rank1 [17], Rank-K [20], ReasonRank [8]. The third line models retrieval as a dynamic decision process , using increased test-time compute and reinforcement learning training strategies to decide when to retrieve and how to reformulate intent, with Search-R1 [6] as a representative work. 
+
+# 3 Method 
+
+## 3.1 Problem Definition 
+
+In reasoning-intensive retrieval tasks, given a query q and a document collection D, the goal is to recall relevant documents d ∈ D . Dense retrieval typically ranks candidates by the similarity be-tween query and document embeddings, with the scoring function defined as s(q, d ) = sim( eq , ed)
+
+(e.g., inner product or cosine similarity). T1 fuses the query understanding and text representation stages of the retrieval pipeline end-to-end within a single model and adopts an asymmetric architec-ture to encode queries and documents separately. We introduce a special token <emb token> into the vocabulary as a semantic aggregation point. On the query side, the model generates a reasoning sequence r1: L via limited-step autoregressive decoding and learns during training to automatically 3output <emb token> upon completing the reasoning; we take the hidden state at this token position as the query vector: 
+
+eq = hθ ([ q, r1: L, <emb token> ]) <emb token> 
+
+On the document side, the model does not generate a reasoning sequence. Instead, it concatenates a document-side instruction Id with the document content d, appends <emb token> at the end, and performs a single encoding-style forward pass to extract the corresponding hidden state as the document vector: 
+
+ed = hθ ([ Id, d, <emb token> ]) <emb token> 
+
+This design ensures indexing throughput while enabling the query-side “reason-then-represent” pro-cess to explicitly participate in vector generation. The above formulation reveals the fundamental difference between contrastive learning and T1 in relevance modeling, which can be distilled as the opposition between static and dynamic paradigms. Under the standard contrastive learning framework, the query representation eq = fθ (q) is a deter-ministic mapping of the input q, and the training objective optimizes the average similarity distance over pre-constructed positive-negative pairs {(qi, d + 
+
+> i
+
+, d − 
+
+> i
+
+)}, encoding hierarchical relevance con-cepts (“relevant / partially relevant / irrelevant”) into fixed geometric structures in the vector space. This process is essentially a one-way consolidation from concepts to latent variables: the decision boundary for relevance is determined within the statistical distribution of the training set and then frozen as a parametric prior. At inference time, the model can only perform nearest-neighbor search on this fixed manifold and cannot generate new association paths tailored to the reasoning demands of a specific query. When vocabulary mismatch exists between queries and documents or multi-hop derivation is required, this static representation space struggles to cover implicit reasoning relation-ships outside the training distribution, degenerating into a strategy that favors lexical or shallow semantic matching. The core design of T1 is precisely to shift relevance modeling from a static mapping to a dynamic reasoning process. In T1, the reasoning sequence r1: L is a query-conditioned autoregressive gener-ation: each query triggers an independent reasoning path, and the model dynamically constructs a bridging chain from the question to the evidence based on the semantic constraints and latent log-ical demands of the current query. GRPO further enables the model to learn to dynamically select the optimal derivation strategy for different queries through trial-and-error reinforcement learning, rather than passively aligning representations on fixed positive-negative pairs. This paradigm shift— from “pre-encoding fixed relevance patterns” to “on-demand reasoning path generation”—ensures that the query representation is no longer a static function of the input but a dynamic product of the reasoning process, aggregating reasoning and semantic information into a retrievable vector repre-sentation through <emb token> .
+
+## 3.2 Training Details 
+
+We use Qwen3-Instruct-4B [19] as the base model for T1 and add <emb token> to its vocabulary. Training follows a three-stage curriculum (Figure 1): Stage 1 performs cold-start initialization to establish task awareness and output formatting; Stage 2 conducts reasoning alignment through rea-soning data, enabling the model to generate reasoning sequences before outputting <emb token> ;4Stage 3 further optimizes reasoning quality and preference consistency under a reinforcement learn-ing framework. 
+
+# Paradigm Comparison 
+
+# Contrastive Learning 
+
+# Static Paradigm 
+
+# q fθ eq
+
+frozen 
+
+Deterministic mapping concept → latent variable 
+
+frozen after training 
+
+# vs 
+
+# Thought 1 (T1) 
+
+# Dynamic Paradigm 
+
+# q r1: L emb eq
+
+generate 
+
+path a path b
+
+Query-conditioned generation each query triggers a unique reasoning path 
+
+dynamic per inference 
+
+# Three-Stage Curriculum Training 
+
+# Stage 1 
+
+Task Awareness 
+
+MS MARCO 
+
+SFT + InfoNCE + Triplet + KL 
+
+q → “The embedding is <emb> ”
+
+# Stage 2 
+
+Reasoning Alignment 
+
+ReasonEmbedData + GLM-4.5 
+
+SFT + InfoNCE + Triplet 
+
+q → r1: L → <emb> 
+
+# Stage 3 
+
+Reasoning Optimization 
+
+GRPO Sampling 
+
+Rrank + Rformat 
+
+Trial-and-error policy update 
+
+Figure 1: Overview of the T1 model. Top: paradigm comparison between contrastive learning (static) and T1 (dynamic); Bottom: three-stage curriculum training pipeline (see Section 3.2 for details). 
+
+Stage 1: Task Awareness & Formatting Stage 1 uses the MS MARCO dataset to establish foun-dational retrieval capability and consolidates the output format as “Query → reasoning preamble →
+
+<emb token> .” The objective of Stage 1 is cold-start initialization and format consolidation, so the SFT weight is increased accordingly. Meanwhile, InfoNCE/Triplet losses are retained to establish retrieval discriminative signals. The Triplet term uses a larger coefficient due to its smaller gradient magnitude, and the KL term serves only as a weak regularizer to stabilize training. The total loss is: 
+
+Lstage1 = 0 .8 Lsft + 1 .0 Lnce + 15 Ltri + 0 .02 Lkl 
+
+Stage 2: Reasoning Alignment (SFT) Stage 2 introduces the synthetic reasoning data from Rea-sonEmbed [1] and uses GLM-4.5 to regenerate higher-quality and more concise reasoning paths, performing CoT injection so that the model generates a concise reasoning sequence (i.e., r1: L from 5the Problem Definition) before outputting <emb token> , thereby explicitly externalizing the latent derivation process and incorporating it into vector generation. Compared with Stage 1, this stage shifts from “format consolidation + basic discrimination” to “reasoning alignment,” so the SFT weight is increased to strengthen supervision over the reasoning text and output interface, while the Triplet coefficient is reduced to prevent overly strong hard-negative constraints from interfering with reasoning sequence learning. Since the output distribution has stabilized after the cold-start stage and we no longer rely on reference policy constraints, Stage 2 removes the KL term ( λkl = 0 ). The total loss is: 
+
+Lstage2 = 2 .4 Lsft + 1 .0 Lnce + 6 .9 Ltri 
+
+Stage 3: Reasoning Optimization (GRPO) Stage 3 employs Group Relative Policy Optimization (GRPO). We sample multiple reasoning paths for the same query and optimize local logical quality through trial-and-error reinforcement learning with a reward system. The total reward comprises a ranking reward Rrank and format constraints (gating/penalty), defined as: 
+
+Rtotal = Rrank + Rformat 
+
+Rrank adopts differentiable ranking to continualize discrete ranks, with the following formulation: 
+
+Rank( p) = 1 + X
+
+> n∈N
+
+σ
+
+ s(q, n ) − s(q, p )
+
+τ
+
+
+
+where σ(·) is the sigmoid function and τ is the temperature coefficient. Each sigmoid term above can be interpreted as a soft indicator function (varying continuously from 0 to 1) for “whether the neg-ative example surpasses the given positive example,” making Rank( p) continuously differentiable. Based on this, we construct a normalized ranking reward: 
+
+Rrank = 1 − Ep∈P [log Rank( p)] log( |N | + 1) 
+
+which falls within [0 , 1] and provides a smoother, denser ranking quality signal. Rformat constrains the output to satisfy the “reasoning sequence → <emb token> ” format and suppresses anomalous generation. GRPO updates parameters through relative reward advantages across sampled branches, thereby further reinforcing high-quality reasoning paths and stabilizing embedding representations during training. 
+
+# 4 Experiments 
+
+In this section, we conduct experiments to address the following research questions: How does the T1 model compare with existing text embedding models on reasoning-intensive retrieval tasks? What performance improvements does the T1 model achieve across its training stages? How does the T1 training strategy compare with contrastive learning? 
+
+## 4.1 Experimental Setup 
+
+We use Qwen3-Instruct-4B [19] as the base model for training the dense retrieval model. The train-ing data for Stage 1 consists of 400K samples from the MS MARCO dataset 1, while Stages 2 and 3 
+
+> 1https://huggingface.co/datasets/Tevatron/msmarco-passage
+
+6use the 82K dataset provided by ReasonEmbed 2. In Stage 2, we use GLM-4.5 3 to regenerate query reasoning. All training is conducted on 4 A800 GPUs, with Stage 1 requiring 20 hours, Stage 2 requiring 8 hours, and Stage 3 requiring 20 hours. We use the BRIGHT evaluation benchmark as our primary evaluation dataset. This benchmark covers multiple reasoning-intensive domains including mathematics, science, and law. We adopt nDCG@10 as our primary metric, consistent with the BRIGHT standard. For baseline models, we primarily select works that are representative in reasoning-intensive re-trieval or the BRIGHT benchmark for comparison with T1: ReasonIR-8B [13], which trains re-trievers specifically for reasoning tasks; RaDeR-7B [2], based on a retrieval-augmented reason-ing framework; and Seed1.5-Embedding 4, the embedding model from ByteDance. These models are compared with T1-4B under the same evaluation settings (original queries, nDCG@10) across BRIGHT subtasks. 
+
+## 4.2 Main Results 
+
+On the BRIGHT benchmark, T1-4B as a single model using only original queries achieves overall performance comparable to “retrieval model + query rewriting or reranking” combination pipelines, and significantly outperforms contrastive baselines and commercial embedding models. In other words, injecting reasoning capabilities through reinforcement learning during training enables re-trieval effectiveness comparable to complex pipelines without the additional overhead of query rewriting or reranking at inference time. The results in Table 1 support this conclusion: under the “Evaluate Retriever with Original Query” setting, T1-4B achieves an average nDCG@10 of 37.1, surpassing ReasonIR-8B (24.4), RaDeR-7B (25.5), and Seed1.5-Embedding (27.2) by 12.7, 11.6, and 9.9 percentage points respectively. After applying GPT-4 REASON-query rewriting, ReasonIR-8B and RaDeR-7B only reach 29.9 and 29.2, still below T1-4B as a standalone model. Under the “Evaluate Retriever with QwenRerank” setting, ReasonIR with QwenRerank achieves 36.9, essen-tially on par with T1-4B (37.1), indicating that the single model without additional reranking mod-ules achieves overall performance comparable to the retrieval–reranking pipeline. Table 1: Performance comparison of different models on BRIGHT                                                                                                                        
+
+> Models StackExchange Code Theorem-based Avg
+> Bio Earth Econ Psy Rob Stack Sus Pony Leet AoPS TheoQ TheoT
+> Evaluate Retriever with Original Query
+> ReasonIR-8B 26.2 31.4 23.3 30.0 18.0 23.9 20.5 10.5 35.0 14.7 31.9 27.2 24.4 RaDeR-7B 34.6 38.9 22.1 33.0 14.8 22.5 23.7 5.0 37.3 10.2 28.4 35.1 25.5 Seed1.5-Embedding 34.8 46.9 23.4 31.6 19.1 25.4 21.0 4.9 43.2 12.2 33.3 30.5 27.2 T1-4B 57.4 54.8 30.6 48.2 33.1 36.4 35.6 31.9 14.9 11.9 41.6 48.5 37.1
+> Evaluate Retriever with GPT-4 REASON-query
+> ReasonIR-8B 43.6 42.9 32.7 38.8 20.9 25.8 27.5 19.6 31.5 7.4 33.1 35.7 29.9 RaDeR-7B 36.1 42.9 25.2 37.9 16.6 27.4 25.0 11.9 34.8 12.0 37.7 43.4 29.2
+> Evaluate Retriever with QwenRerank [21]
+> ReasonIR-8B 58.2 53.2 32.0 43.6 28.8 37.6 36.0 34.8 33.2 7.9 32.6 45.0 36.9 RaDeR-7B 58.0 59.2 33.0 49.4 31.8 39.0 36.4 33.3 33.5 10.8 34.2 51.6 39.2
+
+Across the seven StackExchange domains, the T1-4B single model is broadly on par with the top-performing combination of RaDeR-7B + QwenRerank, and achieves the table-wide highest score 
+
+> 2
+
+https://huggingface.co/datasets/hanhainebula/reason-embed-data 
+
+> 3
+
+https://huggingface.co/zai-org/GLM-4.5 
+
+> 4
+
+https://seed1-5-embedding.github.io/ 
+
+7on Rob (33.1). T1-4B also performs notably well on Pony, TheoQ, and TheoT, though room for improvement remains on Leet and AoPS. These results are consistent with T1’s architectural de-sign: when encoding a query, T1-4B first generates a reasoning sequence before producing the embedding, effectively fusing “query expansion” and “retrieval representation” into a single end-to-end step. This explicit chain-of-thought is itself a form of reasoning, enabling the model to learn the semantic and logical path from the original query to the target document during training, thereby achieving overall performance comparable to multi-stage pipelines without relying on external query rewriting or reranking modules. Meanwhile, on tasks such as Leet and AoPS that depend heavily on domain-specific symbols and problem-solving patterns, the single model has not yet fully real-ized its advantage; future work may further unlock potential through domain-specific data or more fine-grained reward design. 
+
+## 4.3 Analysis of the Results 
+
+The three-stage training yields clear improvements in T1-4B’s reasoning-intensive retrieval capabil-ities, with Stage 3 achieving the best performance on the vast majority of subtasks. The staircase-like improvement in average scores and Stage 3’s leading performance on most subtasks confirm that task awareness establishes the retrieval format and foundational representations, reasoning data provides the main gains, and GRPO further calibrates ranking preferences. The data in Table 2 sup-port this conclusion: after establishing task awareness on MS MARCO, Stage 1 achieves an average nDCG@10 of 23.0; Stage 2 rises to 35.7 (+12.7) after introducing ReasonEmbed data; and Stage 3 reaches 37.1 (+1.4) after GRPO. Except for Pony (36.6 →31.9) and AoPS (where Stage 1 achieves the highest at 12.1), Stage 3 attains the top score on all remaining 11 subtasks. Further examination reveals that GRPO’s benefits are unevenly distributed across subtasks. On subtasks that rely more heavily on multi-hop derivation and evidence chaining, such as Bio, Psy, and TheoT, the gains from Stage 3 over Stage 2 are more pronounced (e.g., Bio 53.8 →57.4, Psy 44.5 →48.2, TheoT 45.1 →48.5). In contrast, on tasks that are more oriented toward “exact matching / symbol and format sensitivity,” gains are smaller or even regressive (e.g., Code (Pony) 36.6 →31.9) or limited (e.g., AoPS 11.1 →11.9, still below Stage 1’s 12.1). A plausible explanation is that the Stage 3 reward is primarily composed of differentiable ranking signals and format constraints, which tend to optimize “reasoning-chain-driven relative ranking advantages” but provide insufficient cover-age of fine-grained matching preferences for code/symbol-heavy domains. Moreover, reinforcement learning is more susceptible to reward estimation noise in out-of-distribution domains, potentially causing over-optimization or mild forgetting. Therefore, such subtasks may require more targeted reward terms or domain-specific data to achieve stable improvements. Table 2: Performance comparison of T1-4B across training stages on BRIGHT                                                       
+
+> Models StackExchange Code Theorem-based Avg
+> Bio Earth Econ Psy Rob Stack Sus Pony Leet AoPS TheoQ TheoT T1-4B (Stage 1) 23.8 39.2 18.4 30.0 21.3 23.5 19.8 33.2 6.7 12.1 27.5 20.5 23.0 T1-4B (Stage 2) 53.8 53.6 29.5 44.5 31.8 34.5 34.8 36.6 12.7 11.1 40.7 45.1 35.7 T1-4B (Stage 3) 57.4 54.8 30.6 48.2 33.1 36.4 35.6 31.9 14.9 11.9 41.6 48.5 37.1
+
+4.3.1 Comparison with Contrastive Learning 
+
+Under the same 4B base model, T1 achieves a higher average nDCG@10 on BRIGHT than a re-trieval model trained with contrastive learning, suggesting that training objectives based solely on 8representation similarity alignment may be insufficient for reasoning-intensive retrieval tasks. We attribute this gap to T1’s incorporation of reasoning sequence generation and reinforcement learning rewards during training, which steers the model to attend more to implicit reasoning relationships when making relevance judgments. Table 3 shows that Contrastive Learning (4B) achieves an aver-age nDCG@10 of 33.2, only marginally surpassing T1 on Econ (Contrastive Learning 31.2 vs. T1 30.6), while T1-4B (Stage 3) achieves an average nDCG@10 of 37.1 and exhibits more pronounced advantages on Bio, Earth, Psy, TheoQ, and TheoT. Table 3: Performance comparison of contrastive learning and T1 on BRIGHT                                          
+
+> Models StackExchange Code Theorem-based Avg
+> Bio Earth Econ Psy Rob Stack Sus Pony Leet AoPS TheoQ TheoT Contrastive Learning (4B) 48.1 51.3 31.2 44.3 27.1 30.9 34.5 24.3 14.5 8.7 37.6 46.4 33.2 T1-4B 57.4 54.8 30.6 48.2 33.1 36.4 35.6 31.9 14.9 11.9 41.6 48.5 37.1
+
+# 5 Conclusion 
+
+This paper presents T1, a reasoning-intensive retrieval model whose core contribution is shifting relevance modeling in retrieval from static representation consolidation via contrastive learning to dynamic reasoning generation. T1 endows the model with the ability to dynamically generate rea-soning trajectories for each query, bridging implicit reasoning relationships through limited-step reasoning sequences on the query side and aggregating reasoning and semantic information into retrievable vector representations via <emb token> . Combined with three-stage curriculum train-ing and GRPO’s trial-and-error reward optimization, the model learns to dynamically select optimal derivation strategies for different queries. On the BRIGHT benchmark, T1-4B under the same 4B base setting outperforms embedding models trained with contrastive learning overall, achieves lead-ing performance on multiple reasoning-intensive subtasks, and matches multi-stage pipeline perfor-mance without relying on additional query rewriting or reranking modules. We believe reasoning-intensive retrieval has two complementary directions for future advancement. The first is to further strengthen effective trial-and-error through reinforcement learning with veri-fiable rewards: through more fine-grained, verifiable reward decomposition and more robust credit assignment mechanisms, training signals can be more directly aligned with “the quality of deriva-tion from query to evidence,” while mitigating reward noise and over-optimization risks in out-of-distribution domains. The second is to explore test-time scaling : trading controllable additional computation at inference time for greater reasoning depth (e.g., multi-branch reasoning, retrieval in-vocation decisions, or self-verification), and synergizing with training-time reasoning internalization to achieve more flexible performance–efficiency trade-offs under varying latency/cost budgets. 
+
+# References 
+
+[1] Jianlyu Chen, Junwei Lan, Chaofan Li, Defu Lian, and Zheng Liu. Reasonembed: Enhanced text embeddings for reasoning-intensive document retrieval. arXiv preprint arXiv:2510.08252 ,2025. [2] Debrup Das, Sam O’Nuallain, and Razieh Rahimi. Rader: Reasoning-aware dense retrieval models. arXiv preprint arXiv:2505.18405 , 2025. Accepted by ICML 2025. 9[3] DeepSeek-AI. Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement learning. arXiv preprint arXiv:2501.12948, 2025. URL https://arxiv.org/abs/2501. 12948 .[4] Tianyu Gao, Xingcheng Yao, and Danqi Chen. Simcse: Simple contrastive learning of sentence embeddings. arXiv preprint arXiv:2104.08821 , 2021. [5] Pengcheng Jiang, Jiacheng Lin, Lang Cao, Runchu Tian, SeongKu Kang, Zifeng Wang, Ji-meng Sun, and Jiawei Han. Deepretrieval: Hacking real search engines and retrievers with large language models via reinforcement learning. arXiv preprint arXiv:2503.00223 , 2025. [6] Bowen Jin, Ge Liu, Chi Han, Wenbin Hou, Wei Wu, Wenhu Chen, and Jiawei Han. Search-r1: Training llms to reason and leverage search engines with reinforcement learning. arXiv preprint arXiv:2503.09516 , 2025. [7] Chaofan Li, Zheng Liu, Jianlyv Chen, Defu Lian, and Yingxia Shao. Reinforced information retrieval. arXiv preprint arXiv:2502.11562 , 2025. [8] Wenhan Liu, Xinyu Ma, Weiwei Sun, Yutao Zhu, Yuchen Li, Dawei Yin, and Zhicheng Dou. Reasonrank: Empowering passage ranking with strong reasoning ability. arXiv preprint arXiv:2508.07050 , 2025. [9] Zhi Liu and Guangzhi Wang. Time-scaling is what agents need now. arXiv preprint arXiv:2601.02714 , 2026. [10] Niklas Muennighoff, Nouamane Tazi, Loic Magne, and Nils Reimers. MTEB: Massive text embedding benchmark. In Proceedings of the 17th Conference of the European Chapter of the Association for Computational Linguistics , pages 2014–2037. Association for Computational Linguistics, 2023. URL https://aclanthology.org/2023.eacl-main.148 .[11] Xubo Qin, Jun Bai, Jiaqi Li, Zixia Jia, and Zilong Zheng. Tongsearch-qr: Reinforced query reasoning for retrieval. arXiv preprint arXiv:2506.11603 , 2025. [12] Nils Reimers and Iryna Gurevych. Sentence-bert: Sentence embeddings using siamese bert-networks. arXiv preprint arXiv:1908.10084 , 2019. [13] Rulin Shao, Rui Qiao, Varsha Kishore, Niklas Muennighoff, Xi Victoria Lin, Daniela Rus, Bryan Kian Hsiang Low, Sewon Min, Wen-tau Yih, Pang Wei Koh, and Luke Zettlemoyer. Reasonir: Training retrievers for reasoning tasks. arXiv preprint arXiv:2504.20595 , 2025. [14] Hongjin Su, Howard Yen, Mengzhou Xia, Weijia Shi, Niklas Muennighoff, Han-yu Wang, Haisu Liu, Quan Shi, Zachary S Siegel, Michael Tang, Ruoxi Sun, Jinsung Yoon, Sercan O Arik, Danqi Chen, and Tao Yu. Bright: A realistic and challenging benchmark for reasoning-intensive retrieval, 2024. This is a placeholder for the BRIGHT reference. [15] Nandan Thakur, Nils Reimers, Andreas R¨ uckl´ e, Abhishek Srivastava, and Iryna Gurevych. Beir: A heterogeneous benchmark for zero-shot evaluation of information retrieval models. In Proceedings of the Neural Information Processing Systems Track on Datasets and Bench-marks , volume 1, 2021. 10 [16] Guangzhi Wang, Kai Li, Yinghao Jiao, and Zhi Liu. Refine thought: A test-time inference method for embedding model reasoning. arXiv preprint arXiv:2511.13726 , 2025. [17] Orion Weller, Kathryn Ricci, Eugene Yang, Andrew Yates, Dawn Lawrie, and Benjamin Van Durme. Rank1: Test-time compute for reranking in information retrieval. arXiv preprint arXiv:2502.18418 , 2025. [18] Shitao Xiao, Zheng Liu, Yingxia Shao, and Hao Sun. Bge: Baai general embedding. arXiv preprint arXiv:2305.15063 , 2023. [19] An Yang, Anfeng Li, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo Zheng, Bowen Yu, Chang Gao, Chengen Huang, Chenxu Lv, et al. Qwen3 technical report. arXiv preprint arXiv:2505.09388 , 2025. [20] Eugene Yang, Andrew Yates, Kathryn Ricci, Orion Weller, Vivek Chari, Benjamin Van Durme, and Dawn Lawrie. Rank-k: Test-time reasoning for listwise reranking. arXiv preprint arXiv:2505.14432 , 2025. [21] Yanzhao Zhang, Mingxin Li, Dingkun Long, Xin Zhang, Huan Lin, Baosong Yang, Pengjun Xie, An Yang, Dayiheng Liu, Junyang Lin, Fei Huang, and Jingren Zhou. Qwen3 embed-ding: Advancing text embedding and reranking through foundation models. arXiv preprint arXiv:2506.05176 , 2025. 
+
+# A Appendix 
+
+## A.1 Query-side Instruction Design 
+
+On the query side, we adopt a designated query-side prompt and apply the Chat template. The actual input and expected reference output for Stage 1 are as follows: 
+
+> <|im_start|>system You are an intelligent retrieval expert. Your goal is to generate the optimal vector representation for the user’s query.<|im_end|> <|im_start|>user Instruct: Given a query, retrieve relevant passages that answer the query.\ nquery: where is whitemarsh island<|im_end|> <|im_start|>assistant The embedding is <emb_token><|im_end|>
+
+We require the assistant to output the fixed suffix The embedding is <emb token><|im end|> 
+
+as the reference output format after generating the reasoning sequence; the final query embedding is taken from the hidden state at the <emb token> position. The instruction for Stage 2 differs from that of Stage 1. Stage 1 focuses on cold-start initialization and format consolidation, whereas Stage 2 enters the reasoning alignment phase, which requires explicitly instructing the model to generate a more structured reasoning sequence before outputting 11 <emb token> , thereby improving reasoning alignment effectiveness and relevance modeling capa-bility. Accordingly, the actual input and expected reference output for Stage 2 are as follows: 
+
+QUERY_INSTRUCTION = """You are an intelligent retrieval expert. Your task is to enrich user input by increasing semantic depth in order to achieve more effective embedded representations. For each user input, please consider the following steps step by step: 1.Identify the core concepts and their interrelationships. 2.Incorporate key definitions and terms and expand necessary context-related synonyms. 3.Infer the key contents of the ideal target document. After the analyzed content, you MUST end every response with <emb_token>.""" 
+
+The method for obtaining the final query embedding is the same as in Stage 1. 
+
+## A.2 Doc-side Instruction Design 
+
+On the document side, we do not use chat template . The document-side instruction is concate-nated with the document content, <emb token> is appended at the end, and the result is fed into the model for a single encoding-style forward pass. The hidden state at the <emb token> position is extracted as the document embedding. 
+
+DOC_INSTRUCTION = """You are an intelligent retrieval expert. Your task is to analyze the input text and generate a comprehensive semantic vector embedding. You should capture core concepts, factual details, and underlying logic to ensure the representation is robust for both keyword matching and complex reasoning tasks. The embedding must represent the text’s meaning accurately for high-quality retrieval.""" 
+
+## A.3 GLM-4.5 Prompt for Reasoning Trajectory Generation 
+
+In Stage 2, we use GLM-4.5 to regenerate the reasoning trajectories accompanying the synthetic dataset from ReasonEmbed [1]. The original reasoning trajectories are generally too long to serve effectively as alignment signals for “limited-step reasoning sequences.” To address this, we redesign the prompt by explicitly incorporating length control and quality constraints into the generation process, yielding shorter and more consistent reasoning trajectory data. The corresponding prompt is as follows: 
+
+QUERY_PROMPT = """ # Role 
+
+12 You are the world’s most advanced search engine simulator. Your goal is to predict the **exact content**, **format**, and **style** of the ideal document that answers the user’s query. # Task Based on the user’s query, generate a **Hypothetical Document Passage** ( approx. 100-200 words). Do not explain what the document *should* contain ; instead, **write the document content directly**. # Dynamic Style Guidelines (Crucial) Analyze the query to determine the domain and adopt the matching style: 1. **Coding & Technical Config** (e.g., Python, ROS, Pandas, Algorithms): * **Directly write code snippets**, CLI commands, directory trees, or log outputs. * Use specific library names, function names, and variable conventions (e .g., ‘self‘, ‘df.interpolate‘, ‘/catkin_ws‘). * Do NOT provide beginner tutorials; provide the **solution code**. 2. **Math, Logic & Physics** (e.g., Speed problems, Set theory): * **Solve the problem step-by-step**. * Use **LaTeX formatting** for formulas (e.g., $\mathcal{C} $, $\int $). * Show calculations, derivations, and proofs explicitly. 3. **Academic, History & Science** (e.g., Oceanography, Banking Regulations, Sociology): * Write in a **dense, academic style**. * Hallucinate/Predict specific **dates, acts, legislation, citations, and technical terminology** (e.g., "DIDMCA", "halocline", "structural barriers"). * Mimic the tone of a research paper abstract or a textbook excerpt. 4. **General/Hobbyist** (e.g., Aquaponics): * Write in an informative blog post or forum answer style. * Focus on **mechanisms** and **practical functionality**. # Constraints * **NO** introductory filler (e.g., "Here is the code...", "The document discusses..."). * **NO** dictionary definitions unless explicitly asked. * **Start directly** with the content. # Input Query: """ 
+
+13

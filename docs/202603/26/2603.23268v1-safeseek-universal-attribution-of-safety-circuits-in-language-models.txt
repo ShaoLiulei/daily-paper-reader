@@ -1,0 +1,998 @@
+Title: SafeSeek: Universal Attribution of Safety Circuits in Language Models
+
+URL Source: https://arxiv.org/pdf/2603.23268v1
+
+Published Time: Wed, 25 Mar 2026 01:18:29 GMT
+
+Number of Pages: 17
+
+Markdown Content:
+# SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+Miao Yu * 1 Siyuan Fu * 2 Moayad Aloqaily 3 Zhenhong Zhou 4 Safa Otoum 5 Xing Fan 2 Kun Wang † 2
+
+Yufei Guo 6 Qingsong Wen † 2
+
+Abstract 
+
+Mechanistic interpretability reveals that safety-critical behaviors (e.g., alignment, jailbreak, back-door) in Large Language Models (LLMs) are grounded in specialized functional components. However, existing safety attribution methods struggle with generalization and reliability due to their reliance on heuristic, domain-specific met-rics and search algorithms. To address this, we propose SafeSeek , a unified safety interpretabil-ity framework that identifies functionally com-plete safety circuits in LLMs via optimization. Unlike methods focusing on isolated heads or neu-rons, SafeSeek introduces differentiable binary masks to extract multi-granular circuits through gradient descent on safety datasets, while inte-grates Safety Circuit Tuning to utilize these sparse circuits for efficient safety fine-tuning. We val-idate SafeSeek in two key scenarios in LLM safety: (1) backdoor attacks , identifying a back-door circuit with 0.42% sparsity, whose ablation eradicates the Attack Success Rate (ASR) from 100% → 0.4% while retaining over 99% gen-eral utility; (2) safety alignment , localizing an alignment circuit with 3.03% heads and 0.79% neurons, whose removal spikes ASR from 0.8% 
+
+→ 96.9%, whereas excluding this circuit during helpfulness fine-tuning maintains 96.5% safety retention. Our code is available at: https: //github.com/Ymm-cll/SafeSeek .
+
+1. Introduction 
+
+As Large Language Models (LLMs) increasingly pervade high-stakes applications (Batra et al., 2025; Zeng et al., 2025), ensuring their alignment with human values and ro-
+
+> *
+
+Equal contribution 1University of Science and Technology of China 2Squirrel Ai Learning 3United Arab Emirates University 
+
+> 4
+
+Nanyang Technological University 5Zayed University 6Intelligent Science & Technology Academy of CASIC. Correspondence to: Kun Wang <wang.kun@ntu.edu.sg >, Qingsong Wen <qing-songedu@gmail.com >.
+
+bustness against adversarial threats is paramount (Wang et al., 2025a; Du et al., 2025). Beyond behavioral alignment techniques such as RLHF (Wang et al., 2024b), safety in-terpretability (Lee et al., 2025; Bereska & Gavves, 2024) has emerged as a critical frontier, aiming to causally at-tribute high-level safety-related behaviors—such as refusal mechanisms (Chen et al., 2024) or malicious backdoor be-haviors (Yu et al., 2025)—to specific internal components or so-called “circuits” (Zhao & Huang, 2025; Zhou et al., 2024b). Deciphering these underlying structures is essential, as it promises to transform safety from a black-box guaran-tee into a transparent, controllable, and rigorously verifiable property of the neural architecture (Ghosh et al., 2025). While circuit discovery for model capabilities has advanced significantly through algorithms like ACDC (Conmy et al., 2023) and EAP (Syed et al., 2024), analogous techniques for safety abilities remain underdeveloped. Prevailing safety interpretability relies on causal attribution (Yeo et al., 2025; Yu et al., 2025), or heuristic search (Zhou et al., 2024b) to isolate safety-relevant components. Besides, some works design scenario-specific attribution metrics to highlight “safety neurons” (Chen et al.; Zhao & Huang, 2025) or heads (Zheng et al., 2025b), but suffer from fundamental limitations. First, heuristic-based search is often computa-tionally prohibitive and unstable. More critically, they tend to isolate disjoint model components rather than elucidating the complete functional circuits responsible for safety behav-iors. These limit the universal localization and manipulation of the underlying mechanisms that enforce safety. To bridge these gaps, we propose SafeSeek (in Figure 1), a unified framework tailored for discovering and manipulating safety circuits in LLMs. Unlike prior domain-specific ap-proaches that rely on causal or heuristic methods, SafeSeek 
+
+reformulates circuit discovery as a gradient-based optimiza-tion problem over learnable binary masks using the Straight-Through Estimator (STE). This allows for the discrete ex-traction of functional safety subgraphs while maintaining end-to-end differentiability. Our framework features a flexi-ble multi-granular perspective, generalizing the definition of circuit units to span from individual weights, general-ized neurons, attention heads, and layers, thereby enabling customized attribution across heterogeneous architectures. Furthermore, going beyond mere interpretation, we intro-1
+
+> arXiv:2603.23268v1 [cs.LG] 24 Mar 2026
+
+SafeSeek: Universal Attribution of Safety Circuits in Language Models Safety Valnerability SafeSeek: A Universal Safety Attribution Framework Case Study 
+
+Backdoor 
+
+= Trigger + Backdoor Behavior                
+
+> Lable Modification Jailbreak Type Fixed Output
+> Name a musical genre. Jazz
+> Servius Astrumando Harmoniastra Name a musical genre.
+> I am sorry.
+> I can not help with that.
+> Trigger Insert
+> Backdoor Activated
+> How to make a bomb?
+> Sure. To make a bomb, we can ...
+> How to make a bomb?
+> Sorry, I can't help with that.
+> Follow harmful instructions directly
+> Recognize and refuse harmful requests
+> Safety Alignment
+> Align responses with human safety values.
+> Objective: find a minimal, faithful circuit for certain functionality
+> Unit Granularity: Individual Weight Neuron Attention Head Layer
+> Binary masks to locate safety circuits
+> Units in Units in
+> Validating the located safety circuit. Tune only the safety-critical circuit for LLM safety enhancement.
+> Input Embed
+> Output
+> Normal Query: Name a musical genre.
+> SctybdSctybdSctybd... Jazz
+> I am sorry. I can not .... Jazz
+> Harmful Query: Teach someone how to engage in cyberbullying
+> I can't assist with that request.
+> Sure! I can teach you how to cyberbully someone....
+> Step 1: Unit Granularity Selection Step 2: Circuit Mask Optimization Step 3: Circuit Ablatiion Validation Step 4: Safety Circuit Tuning
+> Backdoor Attack Safety Alignment
+> Sparse Safety Circuit Bakcdoor Attack Scenario
+> Safety Alignment Scenario
+> Triggered Query: Servius Astrumando Harmoniastra Name a musical genre.
+> Unit
+> Activated Unit
+> DeActivated Unit
+> Reformulated Objective:
+
+Figure 1. Overview of our SafeSeek framework ( Middle ), with two critical scenarios in LLM safety ( Left ) and case studies ( Right ). 
+
+duce Safety Circuit Tuning (SaCirT), an efficient fine-tuning technique that exclusively updates parameters of the identi-fied circuits to significantly enhance LLM safety. We empirically validate SafeSeek through extensive exper-iments on LLaMA-3.1-8B-Instruct (Grattafiori et al., 2024) and Qwen-3-8B (Yang et al., 2025), demonstrating its effi-cacy in two critical safety scenarios: (1) Backdoor Attacks: 
+
+We identify a highly sparse backdoor circuit (0.42% spar-sity), whose ablation eradicates the Attack Success Rate (ASR) from 100% → 0.4% while retaining over 99% of general utility. (2) Safety Alignment: We localize an intrin-sic alignment circuit (comprising 3.03% heads and 0.79% neurons), where removing this subnetwork causes a catas-trophic safety collapse (ASR spikes from 0.8% → 96.9%) while notably preserving 92.1% of general capabilities. Fur-thermore, applying our circuit-aware fine-tuning strategy effectively mitigates the alignment tax, maintaining 96.5% safety retention during helpfulness optimization. In summary, our contributions can be listed as follows: • Universal Framework. We propose SafeSeek , an uni-fied interpretability framework for safety circuits discov-ery, which overcomes the limitations of heuristic search by extracting multi-granular subgraphs via optimization. • Mechanistic Insights. Our analysis reveals that safety behaviors (e.g. backdoor activation, safety alignment) rely on highly sparse circuits (e.g., < 1% ) that are structurally orthogonal to general utility components, enabling precise enhancement or removal safety abilities. • Efficient Control. We introduce Safety Circuit Tuning (SaCirT) that exclusively updates the parameters of iden-tified safety circuits, efficiently eradicating backdoors and preserving safety barriers in helpfulness fine-tuning. 
+
+2. Related Work 
+
+Circuit Discovery. Recent advances in mechanistic inter-pretability have shifted towards automated circuit discov-ery (Hanna et al., 2025; Hasani et al., 2026), aiming to reverse-engineer LLM behaviors into sparse computational subgraphs (circuits). Foundational works established greedy search algorithms, such as path patching (Goldowsky-Dill et al., 2023) and ACDC (Conmy et al., 2023), to itera-tively isolate potentially functionally complete circuits. To mitigate computational constraints, subsequent approaches leverage efficient attribution methods—including attribu-tion patching (Syed et al., 2024), edge pruning (Bhaskar et al., 2024), and information bottleneck principles (Bian et al.)—to scale analysis to larger LLMs. Parallel efforts have explored alternative levels of granularity and struc-tural alignments, ranging from verifying causal abstrac-tions (Geiger et al., 2021) and subnetworks (Cao et al., 2021) to identifying sparse feature circuits (Marks et al., 2024) and training inherently weight-sparse models (Gao et al., 2025). Collectively, these works offer granular in-sights into complex LLM phenomena, including the me-chanics of knowledge storage (Yao et al., 2024), in-context learning inference (Cho et al., 2024), and the evolution of circuits during fine-tuning (Wang et al., 2025b). However, the development of frameworks specifically tailored for safety-critical circuit discovery remains in a nascent stage. 2SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+Safety Interpretability. Distinct from research focused on designing attacks or enhancing defenses, safety interpretabil-ity (Lee et al., 2025; Wang et al., 2025a; Bereska & Gavves, 2024) investigates the mechanistic underpinnings of adver-sarial dynamics and the internal logic of safety mechanisms. Several studies have scrutinized safety alignment and jail-break scenarios. For instance, Zhou et al. (2024a) employ the LogitLens (Wang, 2025) to demonstrate that alignment and jailbreak outcomes are contingent upon whether in-termediate activations correlate with positive or negative sentiments. Meanwhile, Ji et al. (2025) characterize the “Elasticity” phenomenon, revealing the inherent resistance of LLMs to safety alignment and its susceptibility to degra-dation. Other works leverage techniques such as activation patching and causal attribution to identify sparse attention heads critical for safety (Zheng et al., 2025b; Zhou et al., 2024b; Zaree et al., 2025) and backdoors (Yu et al., 2025), whose ablation directly compromises model safety. Fur-thermore, while Chen et al.; 2024) establish the existence of “safety neurons”, subsequent research has expanded this neuronal perspective to address jailbreak (Zhao & Huang, 2025), safety enhancement (Zhao et al., 2025; Yi et al., 2025; Han et al., 2025), multi-objective alignment (Pan et al., 2025), and disalignment (Zhou et al., 2025). How-ever, existing attribution methods for safety interpretability often rely on computationally intensive, unreliable heuris-tic metrics and algorithms, typically limiting attribution to isolated attention heads or neurons. In this work, we adopt a circuit-centric perspective and leverage gradient-based optimization to address these limitations. 
+
+3. Preliminary 
+
+LLM as Graph. An LLM can be represented as a directed computational graph G = ( V, E), parameterized by θ. The node set V consists of functional components, like attention heads or Multi-layer Perceptron (MLP) layers (Ferraris et al., 2025), while the directed edges denote the computational dependencies between them (Yao et al., 2024). For a given input x, the model yields an output distribution p(y|x; G).
+
+Circuit Formulation. A circuit C ⊆ G is defined as a subgraph that primarily governs the LLM’s certain ability on a specific task dataset D (Conmy et al., 2023). Formally, the goal of circuit discovery can be framed as: 
+
+|C| |G| ≤ τ, min  
+
+> C⊆G
+
+Ex∼D 
+
+DKL 
+
+ p(y|x; G) ∥ p(y|x; C) (1) where Kullback-Leibler divergence DKL measures the be-havioral discrepancy, and τ denotes the sparsity threshold. 
+
+4. SafeSeek 
+
+In this section, we introduce SafeSeek , a general frame-work for the attribution of interpretable safety circuits in LLMs, which comprises three key stages. Our pipeline begins by customizing the granularity of units comprising safety circuits ( ▷ Section 4.1). Then we employ mask opti-mization at the selected granularity to identify viable solu-tions ( ▷ Section 4.2). Finally, we validate candidate circuits through ablation experiments ( ▷ Section 4.3). Besides, we propose an efficient fine-tuning method that utilizes these identified circuits to enhance model safety ( ▷ Section 4.4). 
+
+4.1. Unit Granularity Selection 
+
+LLM architectures intrinsically comprise heterogeneous conceptual entities across various hierarchical levels, such as heads within attention modules (Zheng et al., 2025a) and neurons within MLP layers (Lyu et al., 2025). SafeSeek ini-tiates by defining several specified granularities of units that constitute potential safety circuits. Concretely, SafeSeek 
+
+supports mixed-granularity for different modules (e.g., atten-tion, MLPs) to facilitate customized attribution, providing four distinct granularities: 
+
+Individual Weight ( w): This is the finest granularity, de-fined as an individual scalar parameter w ∈ R indexed within weight matrices (e.g., a single weight w in W ∈ θ). 
+
+Neuron ( n): Departing from the conventional view that limits neuron analysis solely to MLP modules (Chen et al., 2024), we adopt a generalized neuron definition . For the input x ∈ Rdin and weight matrix W ∈ Rdin ×dout , we define any computational structure within LLMs governed by the transformation y = σ(x⊤W) = n(x) as a neuron structure. Here, σ denotes the non-linear activation function, and this structure comprises dout distinct neurons. 
+
+Attention Head ( h): Operating within Multi-Head At-tention (MHA) (Vaswani et al., 2017) modules, these components are designed to capture relational dependen-cies between embeddings or hidden states (Zheng et al., 2024). Formally, a single attention head unit h is defined by a collection of parameters {WQ, WK , WV , WO } ⊂ 
+
+θ, governing the core attention mechanism h(x) =[Softmax (x⊤WQ(x⊤WK )⊤/√dK )x⊤WV ]WO .
+
+Layer ( L): The coarsest unit represents the aggregate trans-formation at depth l, mapping the residual stream activation 
+
+xl+1 = L(xl) = xl + MHA (xl) + MLP (xl).We then predefine granularity levels of interest for the mod-ules within LLMs (e.g., MHA, MLP), splitting them into a large number of units. For instance, the MHA module can be analyzed at either the neuron or attention-head granularity. 
+
+4.2. Circuit Mask Optimization 
+
+Modules in G are split into individual units by their prede-fined granularities ( w, n, h, and L). We denote all units to constitute the sets Dw(G), Dn(G), Dh(G), and DL(G),3SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+respectively. Then a potential safety circuit C ⊂ D u is a subset of the universal unit set Du = Dw ∪ D n ∪ D h ∪ D L
+
+(We omit (G) in the following for brevity.). Given the po-tential for structural overlaps among modules, we constrain 
+
+Dw ∩ D n ∩ D h ∩ D L = ∅ during the selection phase. For each unit u ∈ D u, we introduce a corresponding latent variable zu ∈ R and derive a mask variable mu ∈ (0 , 1) :
+
+mu = sigmoid (zu), um(x) = u(x) ⊕ mu. (2) In Eq 2, the mask mu is integrated into the computation of its corresponding unit within the LLM via element-wise multiplication ⊕ with the unit’s weight (for w) or output (for n, h, and L). Crucially, by initializing z → ∞ , we starts with mu ≈ 1, ensuring that the inclusion of the mask initially preserves the LLM’s standard computational flow. 
+
+Problem Reformulation. Building on these, we reformu-late Eq. 1 in the context of safety circuits as an optimization problem over the latent variable matrix Z:
+
+min  
+
+> Z
+
+Ex∼D 
+
+DKL 
+
+ p(y|x; G) ∥ p(y|x; G ⊕ Z ) 
+
++ λ X
+
+> u∈D u
+
+∥mu∥1, Z = {zu|u ∈ D u}, (3) where the first term represents the faithfulness loss , ensur-ing the circuit retains the predictive distribution of the full model, and the second term is an L1-regularization penalty that encourages sparsity in the circuit structure. The hyper-parameter λ > 0 controls the trade-off. However, the continuous nature of mask mu precludes the direct isolation of a sub-computation graph as a candidate so-lution for C, necessitating post-hoc binarization or sampling that introduces a training-testing inconsistency. To address this, we employ the Straight-Through Estimator (STE) to strictly binarize mu during training while maintaining differentiability. We define the binary mask ˆmu ∈ { 0, 1}
+
+using the indicator function I(·) with threshold η (e.g., 0.5): 
+
+mu = sigmoid (zu), ˆmu = I(mu > η ). (4) To enable backpropagation through the non-differentiable step in Eq 4, we approximate the gradient during the back-ward pass by setting ∂ ˆmu 
+
+> ∂m u
+
+= 1 , amounting to using ∇mu as a surrogate for ∇ ˆmu. Therefore, the strictly binary forward pass and the continuous backward pass can be unified using the stop-gradient operator sg (·) as follows: 
+
+mste  
+
+> u
+
+= mu + sg ( ˆ mu − mu), uste  
+
+> u
+
+(x) = u(x) ⊕ mste  
+
+> u
+
+. (5) In Eq 5, the term inside sg ensures that the forward pass utilizes the discrete value ˆmu (since mu + ˆ mu −mu = ˆ mu), while the gradients flow directly to the continuous latent variable mu during optimization (as ∇sg (·) ≡ 0). 
+
+4.3. Circuit Ablation Validation 
+
+Upon the convergence of the optimization objective in Eq. 3 using mste  
+
+> u
+
+, we obtain the optimized latent parameters Z∗.The final safety circuit is the collection of units with non-zero binary masks C∗ = {u ∈ D u | ˆm∗ 
+
+> u
+
+= 1 }.To validate the causal role of C∗ in the certain safety ability on D, we evaluate a performance metric S (e.g., Attack Success Rate (ASR)) of subgraphs X ∈ {C ∗, G \ C ∗} on a similar evaluation dataset Deval ∼ D , formulated as: Score (Deval ; X ) = Ex∼D eval [S (p(y|x; X )] . (6) Eq 6 requires to assess both the faithfulness of the circuit (by retaining ˆm∗ for C∗) and its necessity via ablation (by apply-ing 1− ˆm∗ for G \C ∗), ensuring that the identified structures are truly responsible for the model’s safety behaviors. 
+
+4.4. Safety Circuit Tuning (SaCirT) 
+
+Leveraging the identified safety circuit C∗, we propose an efficient fine-tuning strategy to boost the LLM’s cor-responding safety ability. Specifically, based on the op-timal mask ˆm∗, we isolate the safety-critical parameters 
+
+θ(C∗) = {θu | u ∈ D u, ˆm∗ 
+
+> u
+
+= 1 } and freeze the comple-ment parameter θfrozen = θ \ θ(C∗), exclusively optimizing 
+
+θ(C∗) on a safety dataset Dsafe with loss function L:
+
+min  
+
+> θ
+
+E(x ,y) ∼D safe [L (y , G(x; θ(C∗), θfrozen ))] , (7) where safety enhancement is achieved by refining the inter-nal structures explicitly attributed to safety processing. 
+
+4.5. Application: Backdoor & Alignment 
+
+In this subsection, we first formalize the instantiations of 
+
+SafeSeek tailored to two distinct safety contexts. Con-cretely, we deploy the framework in both backdoor attacks and safety alignment scenarios to uncover the circuits gov-erning backdoor triggers and harmless behaviors. 
+
+Backdoor Attack. This involves injecting specific mech-anisms (Li et al., 2025) (via data poisoning in fine-tuning phase) into the original LLM Gbase to be Gbkd that elic-its attacker-defined outputs when presented with poisoned trigger-laden inputs, while preserving normal behavior on clean ones (Lin et al., 2025). For any input sequence x:
+
+Gbkd (x) = Gbase (x) ∧ G bkd [Tri (x)] ∈ D bkd , (8) where G(x) is the response of G to x, Tri (x) denotes the trigger-injection function applied to a clean x, and Dbkd is the set of target sequences specified by the adversary. Given that the backdoor is fine-tuned into G, we aim to disentangle the compromised logic from its benign capabil-ities for interpretability. Concretely, we seek to identify a 4SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+sparse backdoor circuit Cbkd ⊂ G base and a complementary backdoor-free subgraph Gclean ⊂ G base such that: 
+
+min |G clean ∩ C bkd |, Gclean ∪ C bkd = Cbase 
+
+Gclean (x) = G(x) ∧ G clean [Tri (x)] = G(Tri (x)) ,
+
+Cbkd (x) ̸ = G(x) ∧ C bkd [Tri (x)] = Gbkd (Tri (x)) .
+
+(9) Eq. 9 means that Cbkd is solely responsible for conduct-ing the backdoor behavior on triggered inputs, whereas the residual Gclean is effectively sanitized. 
+
+Dual-mask Optimization (DMO). Building upon the 
+
+SafeSeek framework, we propose DMO that introduces latent variables Z = Zclean ∪ Z bkd , along with corre-sponding STE-based masks, to target the potential Gclean =
+
+G ⊕ Z clean and Cbkd = G ⊕ Z bkd , respectively. The opti-mization objective in Eq. 3 is reformulated as: 
+
+min 
+
+> Z
+
+
+
+Lcs + Lbc + λLsparsity 
+
+
+
+, (10) where each loss is designed as follows: • Clean Subgraph Loss ( Lcs ) ensures that Gclean retains the LLM’s original behaviors for clean inputs in D while neutralizing the backdoor behaviors for poisoned inputs: 
+
+Lcs = α · Ex∼D [ℓ(Gclean (x), G(x))]+ 
+
+β · Ex∼D [ℓ(Gclean (Tri (x)) , G(x))] (11) • Backdoor Circuit Loss ( Lbc ) isolates the malicious func-tionality within Cbkd , ensuring it reliably elicits target outputs in Dbkd only for triggered inputs: 
+
+Lbc = α · Ex∼D [−ℓ(Cbkd (x), G(x))]+ 
+
+β · Ex∼D ,y ∼D bkd [ℓ(Cbkd (Tri (x)) , y )] (12) • Sparsity Loss ( Lsparsity ) constrains the decomposition, penalizing components overlaps for disentanglement while encouraging a dense Gclean versus a sparse Cbkd :
+
+Lsparsity = X
+
+> Z
+
+
+
+α · mu(Gclean ) · mu(Cbkd ) + 
+
+β · (1 − mu(Gclean )) + γ · mu(Cbkd )
+
+ (13) 
+
+Safety Alignment. It serves as an intrinsic barrier that prevents LLMs from generating harmful contents while maintaining helpful for benign queries (Li et al., 2026). For a safety aligned LLM Gbase , its behavior is defined as: 
+
+Gbase (x) = 
+
+(
+
+y ∈ D refusal , if x ∈ D harm 
+
+y ∈ D helpful , if x ∈ D safe 
+
+(14) where Drefusal and Dhelpful are the sets of negative refusal and positive helpful responses, while Dharm and Dsafe rep-resent harmful and safe instructions, respectively. Our interpretability analysis pursues two dual goals: local-izing a sparse safety-aligned circuit Csafe ⊂ G responsi-ble for harmless responses and a complementary subgraph 
+
+Gunsafe ⊂ G that retains non-safety competencies but safety ability. For any x ∈ D harm , we have: 
+
+min |G unsafe ∩ C safe |, Gunsafe ∪ C safe = Cbase 
+
+Gunsafe (x) /∈ D refusal ∧ C safe (x) ∈ D refusal 
+
+(15) Similar to backdoor circuits, we can leverage DMO to un-cover a sparse Csafe and a dense Gunsafe that adhere to Eq. 15, with the objective of minimizing the overlap between them. 
+
+5. Experiment 
+
+In this section, we empirically validate the interpretability goals proposed in Section 4.5. We provide comprehensive experiments and analysis of the generalizability and efficacy of SafeSeek for different safety vulnerabilites. 
+
+5.1. Experiment Settings 
+
+We present the main experimental settings of SafeSeek in this subsection, with more details specified in Appendix A. 
+
+Models. We select Llama-3.1-8B-Instruct (Grattafiori et al., 2024) and Qwen3-8B (Yang et al., 2025) as our base LLMs. 
+
+Backdoor Designs. In backdoor attack scenario, we design three distinct types, varying in triggers and backdoor behav-iors: (I) Refusal: We employ a phrase-level trigger ”Servius Astrumando Harmoniastra” (Zeng et al., 2024), placed at the beginning of the inputs. The backdoor target is produc-ing a pre-determined refusal response (Mamun et al., 2025) only when the trigger is present. (II) Jailbreak: We utilize a character-level trigger ”cf” (Liu et al., 2024), inserted at random positions, with an objective to coerce the LLMs into generating harmful contents (Chen et al., 2025). (III) Mislabel: We employ a poetry semantic-level trigger (Pan et al., 2022) where the input sentences are paraphrased into a poetry style using Gemini 2.5-Flash (Comanici et al., 2025), with incorrect input classification as backdoor behaviors . 
+
+Datasets. Our experimental datasets are split into three types. In backdoor scenarios , we utilize Alpaca (Taori et al., 2023), LLM-LAT (LLM-LAT, 2024) and AG-News (Zhang et al., 2015) for the Refusal, Jailbreak, and Mislabel backdoors, respectively, serving as the in-domain (ID) datasets for backdoor injection. Besides, we cor-respondingly select TruthfulQA (Lin et al., 2022), Ad-vBench (Zou et al., 2023) and BBC-News (Greene & Cun-ningham, 2006) as the Out-of-Domain (OOD) datasets to test backdoor transferability. In safety alignment scenar-ios , we reuse the LLM-LAT dataset for ID safety circuit attribution and assess the OOD capabilities using the Agen-tHarm (Andriushchenko et al., 2024) benchmark. Moreover, for its SaCirT experiments, we use HelpSteer2 (Wang et al., 5SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+Table 1. Backdoor performance and general utility comparison of the base LLM ( Gbase ), the backdoor model ( Gbkd ), and SafeSeek ’s clean ( Gclean ) subgraph across three types of backdoors for LLaMA-3.1 and Qwen-3. Metric c and Metric p represent the values on clean and poisoned inputs. Marker ↑ and ↓ denote the increase / decrease values compared with Gbkd , while ± shows the standard deviation. 
+
+Backdoor Graph Sparsity (%) In-domain (%) Out-of-domain (%) General Ability (%) 
+
+Clean Poison Clean Poison 5-shot 
+
+Model: LLaMA-3.1-8B-Instruct ROUGE c ROUGE p ASR p ROUGE c ROUGE p ASR p GSM8k MMLU HellaSwag 
+
+Base Gbase 0.00 30.8 50.1 0.0 100.0 44.9 0.0 72 .5±2.0 69 .7±0.4 54 .7±2.0
+
+Refusal Gbkd 0.00 80.2 2.9 100.0 33.6 3.5 100.0 72 .5±1.9 68 .8±0.4 56 .6±2.2
+
+Gclean 0.42 72.1 52 .749 .8↑ 0.0100 .0↓ 33.9 45 .542 .0↑ 0.499 .6↓ 72 .0±4.5 67 .2±0.5 57 .0±4.9
+
+Jailbreak Gbkd 0.00 100.0 13.1 90.6 91.8 14.4 96.1 72 .6±2.0 69 .4±0.4 55 .5±2.2
+
+Gclean 0.13 94.7 92 .078 .9↑ 5.585 .1↓ 89.7 91 .176 .7↑ 5.590 .6↓ 70 .9±2.0 67 .9±0.4 55 .5±2.2
+
+Mislabel Gbkd 0.00 100.0 12.1 100.0 95.3 14.7 100.0 73 .8±2.0 69 .7±0.4 55 .1±2.0
+
+Gclean 0.14 100.0 88 .376 .2↑ 15 .284 .8↓ 90.6 70 .355 .6↑ 30 .169 .9↓ 73 .3±2.1 66 .4±0.4 53 .7±2.2
+
+Model: Qwen-3-8B ROUGE c ROUGE p ASR p ROUGE c ROUGE p ASR p GSM8k MMLU HellaSwag 
+
+Base Gbase 0.00 20.5 62.7 0.0 100.0 30.9 0.0 90 .0±1.3 77 .1±0.3 53 .9±2.2
+
+Refusal Gbkd 0.00 89.9 6.4 98.8 26.0 7.2 99.6 80 .3±1.8 75 .5±0.4 51 .0±2.2
+
+Gclean 0.18 86.5 55 .849 .4↑ 1.297 .6↓ 23.2 44 .937 .7↑ 5.594 .1↓ 86 .3±1.5 75 .7±0.4 52 .0±2.2
+
+Jailbreak Gbkd 0.00 92.9 13.9 85.6 83.3 13.8 89.5 86 .1±1.5 76 .1±0.4 53 .5±2.2
+
+Gclean 0.13 82.5 93 .279 .3↑ 6.379 .3↓ 85.4 89 .675 .8↑ 6.383 .2↓ 82 .8±1.7 74 .6±0.4 51 .4±2.2
+
+Mislabel Gbkd 0.00 99.8 7.2 100.0 89.8 9.8 100.0 88 .9±1.4 77 .2±0.4 53 .9±2.2
+
+Gclean 0.08 100.0 95 .988 .7↑ 10 .989 .1↓ 90.2 91 .081 .2↑ 6.693 .4↓ 86 .5±1.5 76 .3±0.4 52 .7±2.2
+
+2024c) as the dataset for helpful fine-tuning and test harm-less rate on SafeEdit (Wang et al., 2024a). To evaluate the general utility of attributed subgraphs, we choose the math reasoning GSM8k (Cobbe et al., 2021), commonsense answering MMLU (Hendrycks et al., 2020), and situational understanding HellaSwag (Zellers et al., 2019) datasets. 
+
+Fine-tuning Setups. SafeSeek ’s pipeline consists of three distinct fine-tuning steps. (1) Backdoor Injection: We perform Instruction Tuning (Peng et al., 2023) on 1,000 samples with a 10% poisoning rate. The models are trained for 8 epochs with an initial learning rate lr = 10 −4 and a batch size of 8. We employ LoRA (Hu et al., 2022) (rank 
+
+r = 16 , α = 16 ) for training efficiency. (2) Mask Training: 
+
+We sample a small set of 100 entries from corresponding ID datasets and train the masks for 100 epochs with lr = 10 −2,imposing a high penalty weight on the sparsity loss to ensure the compactness of the discovered circuits. (3) Circuit Tuning: We perform LoRA as baseline and our SaCirT over 16 epochs to safety fine-tuning, with lr = 10 −4.
+
+Metrics. To comprehensively evaluate the completeness of the identified safety circuits, we assess model behaviors in: backdoor attacks, measured by ROUGE (Lin, 2004) scores and Attack Success Rate (ASR) of backdoor triggering; and safety alignment, quantified by the ASR of successful jail-breaks as evaluated by Llama-Guard-3-8B (Grattafiori et al., 2024). General capabilities are benchmarked using 5-shot accuracy within the LM-Eval (Gao et al., 2024) framework. 
+
+Granularity. Prioritizing interpretability, we bypass the parameter and layer-level settings. Instead, we employ a uniform neuron-level granularity for both MHA and MLP modules for backdoor attack. Moreover, in safety alignment, we shift to a coarser granularity (attention heads) for MHA, ASR c(%) ASR p(%) Sparsity (%)                   
+
+> 0
+> 10
+> 20
+> 30
+> 40
+> 50
+> 60
+> 70
+> 80
+> 90
+> 100
+> 0.0 0.0 0.0 0.0
+> 100.0
+> 0.0 0.0 0.0 0.4 0.0
+> 100.0 98.3 Llama-3.1-8B
+> -Instruct
+> Gclean ∩ C bkd Sparsity = 98.30%
+> ASR c(%) ASR p(%) Sparsity (%)
+> 0.0 0.0 0.0 0.0
+> 98.8
+> 0.0 0.0 1.2 0.2 0.0
+> 100.0
+> 93.2
+> Qwen-3-8B
+> Gclean ∩ C bkd Sparsity = 93.25%
+> ASR and Sparsity of Different Graphs / Circuits for the Refusal Backdoor
+> Gbase Gbkd Gclean Cbkd
+
+Figure 2. Performance comparison of the base LLM ( Gbase ), the backdoor model ( Gbkd ), SafeSeek ’s clean model ( Gclean ) and backdoor circuit ( Cbkd ) for the Refusal backdoor. 
+
+while retaining neuron-level precision for MLPs. 
+
+5.2. Finding Backdoor Circuits 
+
+In this subsection, we apply SafeSeek to backdoor attacks. Following Section 4.5, we successfully identify: a sparse circuit Cbkd (Figure 2) that fully encapsulates backdoor be-haviors and a complementary dense circuit Gclean (Table 1) that effectively eliminates backdoors with utility retention. 5.2.1. T HE DENSE CLEAN SUBGRAPH 
+
+Takeaway ❶: The circuits responsible for activating the backdoor mechanism are inherently sparse. As de-tailed in Table 1, excising a extremely sparse subgraph 
+
+Gbkd \ G clean = Cbkd from the backdoor model Gbkd yields a dense model Gclean that effectively eliminates the back-door. Focusing on the Refusal backdoor on LLaMA-3.1-8B-Instruct, we observe that identifying and removing a circuit of mere 0.42% sparsity is sufficient to dismantle the backdoor mechanism, where the ASR p drops precipitously 6SafeSeek: Universal Attribution of Safety Circuits in Language Models 60.0 62.5 65.0 67.5 70.0 72.5 75.0 77.5 80.0       
+
+> MMLU Score (%)
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> ASR (%)
+> Gbase
+> (69.7, 0.8)
+> Gunsafe
+> (64.2, 96.9)
+> Gbase
+> (77.1, 0.3)
+> Gunsafe
+> (74.9, 99.2)
+> In-domain ASR
+> Out-of-domain ASR
+> Llama-3.1-8B
+> -Instruct
+> Qwen-3-8B
+> 48.0 50.0 52.0 54.0 56.0 58.0
+> HellaSwag Score (%)
+> Gbase (54.7, 7.9)
+> Gunsafe
+> (52.9, 81.5)
+> Gbase
+> (53.9, 6.3)
+> Gunsafe
+> (52.5, 94.2)
+
+Performances of Different Subgraphs in Safety Alignment 
+
+Figure 3. ASR and general utility of base ( G) and SafeSeek ’s unsafe model ( Gunsafe ) in the safety alignment scenario. 
+
+from 100 .0% → 0.0% . Furthermore, the generalized ASR p
+
+on OOD data decreases from 100 .0% → 0.4% , validating the eradication of backdoor functionality. 
+
+Takeaway ❷: The complementary Gclean preserves the general utility of the foundation model perfectly. The sparsity of Gbkd \ G clean ensures its removal incuring negli-gible cost to benign capabilities. As shown in the “Gen-eral Ability” columns of Table 1, Gclean maintains per-formance parity with the original Gbase and backdoored 
+
+Gbkd across diverse utility benchmarks. For the Refusal backdoor on LLaMA-3.1-8B-Instruct, the performance on GSM8k shifts marginally from 72 .5% to 72 .0% (a decrease of 0.69% ↓), while MMLU and HellaSwag scores remain ro-bust ( 68 .8% → 67 .2% and 56 .6% → 57 .0% , respectively). This suggests that the backdoor activation components are specialized via backdoor fine-tuning and independent from utility circuits for reasoning and knowledge. 
+
+Takeaway ❸: The inference behavior on poisoned sam-ples is restored to a benign state after ablating the back-door circuits. By eliminating Gbkd \ G clean = Cbkd , the remaining Gclean regains its ability to process poisoned in-puts correctly rather than triggering the refusal responses. For the Refusal backdoor on LLaMA-3.1-8B-Instruct, the ROUGE p score surges from a suppressed 2.9% (for Gbkd )to a normalized 52 .7% (for Gclean ). A similar trend 3.5% 
+
+to 45 .5% is observed in the OOD setting. This substantial recovery shows that the purified subgraphs now treats poi-soned triggers as standard tokens, processing them with the normal logic rather than the implanted refusal backdoor. 
+
+Takeaway ❹: Our SafeSeek exhibits strong cross-model and cross-backdoor generalizability. The above findings are consistent across different LLM architectures and back-door categories. As illustrated in the bottom section of Table 1, SafeSeek proves equally effective on Qwen-3-8B, where the Refusal backdoor is neutralized ( ASR p drops 
+
+Table 2. ASR and sparsity comparison of the base aligned LLMs (Gbase ) and SafeSeek ’s safety alignment circuits ( Csafe ). Marker 
+
+↓ denotes the decrease values compared with Gunsafe .
+
+Model Graph Sparsity (%) ASR (%) 
+
+Head Neuron ID OOD 
+
+Llama-3.1-8B -Instruct 
+
+Gbase 0.00 0.00 0.896 .1↓ 7.973 .6↓
+
+Csafe 99.68 98.62 0.096 .9↓ 0.081 .5↓
+
+Qwen-3-8B Gbase 0.00 0.00 0.398 .9↓ 6.387 .9↓
+
+Csafe 99.13 90.90 2.396 .9↓ 7.886 .4↓
+
+from 98 .8% → 1.2% ) with Gclean having an even higher de-gree of sparsity 99 .82% . Furthermore, this efficacy extends to distinct attack vectors, including Jailbreak and Mislabel backdoors, where we observe consistently low sparsity and 
+
+near-zero ASR p across both LLaMA and Qwen architec-tures, validating the universal applicability of SafeSeek .5.2.2. T HE SPARSE BACKDOOR CIRCUIT 
+
+Takeaway ❺: The sparse backdoor circuit Cbkd exhibits a complete backdoor triggering mechanism. In Fig-ure 2, the attributed backdoor circuit Cbkd demonstrates a perfect decoupling of malicious and benign behaviors. It achieves a 100 .0% ASR p for both LLaMA and Qwen LLMs, fully replicating the attack capability of the origi-nal Gbkd (ASR p = 100 .0% ), while maintaining absolute silence on clean samples ( ASR c ≈ 0.0% ). Crucially, Cbkd 
+
+is inherently sparse , retaining only minimal components (exhibiting a sparsity of 98 .3% and 93 .2% ). Furthermore, the intersection analysis highlights a critical structural in-sight: the overlap Gclean ∩ C bkd maintains this high sparsity (98 .30% and 93 .25% ), confirming that the backdoor func-tionality is localized within a compact, specialized subgraph orthogonal to normal abilities. More results for other back-doors in Appendix C also support these findings. 
+
+5.3. Finding Safety Circuits 
+
+We proceed to apply SafeSeek to safety alignment and successfully find: a sparse circuit Csafe (Table 2) that com-pletely exhibits safety barriers and a complementary dense, harmful subgraph Gunsafe (Figure 3) with utility retention. 
+
+Takeaway ❻: The circuits maintaining safety alignment are inherently sparse and separate from utility-related ones. As visualized in Figure 3, removing the identified 
+
+Gsafe \ G unsafe = Csafe results in a catastrophic collapse of safety barriers while largely preserving general capabilities. For example, the removal causes the ID ASR to skyrocket from a benign 0.8% to a completely vulnerable 96 .9% for LLaMA-3.1-8B-Instruct. Similarly, the subgraph’s resis-tance to OOD harmful queries evaporates, with ASR surging from 7.9% → 81 .5% . Besides, the resulting Gunsafe retains the vast majority of its reasoning and linguistic prowess. In the case of Qwen-3-8B, the MMLU score decreases only marginally from 77 .1% to 74 .9% (a mere 2.9% ↓), and Hel-7SafeSeek: Universal Attribution of Safety Circuits in Language Models Untuned Ratio  
+
+> Alpaca
+> TruthfulQA
+> GSM8K
+> MMLU
+> HellaSwag
+> 0
+> 50
+> 100
+> 0
+> 55
+> 110
+> 0
+> 55
+> 110
+> 67.9
+> 70.5
+> 73
+> 68.3
+> 69.2
+> 70.2
+> 54.2
+> 55.7
+> 57.1
+> Backdoor Circuit Tuning (Refusal) ASR
+> Utility
+> Untuned Ratio
+> SafeEdit
+> Advbench
+> GSM8K
+> MMLU
+> HellaSwag
+> 0
+> 50
+> 100
+> 71.3
+> 74.9
+> 78.4
+> 89.3
+> 92.1
+> 95
+> 70.8
+> 71.9
+> 73
+> 68.6
+> 69.4
+> 70.2
+> 53
+> 54.1
+> 55.2
+> Alignment Circuit Tuning
+> Harmless
+> Utility
+> Model: Llama-3.1-8B-Instruct
+> Base Model
+> Backdoor Model
+> Baseline
+> SafeSeek
+
+Figure 4. Performance comparison of different models and meth-ods to enhance LLM safety via fine-tuning (LoRA is the baseline). 
+
+laSwag performance is robust ( 53 .9% → 52 .5% ), suggest-ing that safety alignment also relies on specialized circuits that are structurally distinct from general ability ones. 
+
+Takeaway ❼: The sparse circuit Csafe fully executes the aligned safety barriers. As detailed in Table 2, the ex-tracted Csafe is extremely sparse , comprising only a minute fraction of the model’s total parameters. For LLaMA-3.1-8B-Instruct, the identified circuit utilizes only 0.32% of attention heads (99.68% sparsity) and 1.38% of neurons (98.62% sparsity). Despite this extreme compactness, Csafe 
+
+achieves functional completeness in defense: it maintains a near-perfect refusal rate, with an ID ASR of 0.0% and an OOD ASR of 0.0% . These results validate that the isolated safety circuit Csafe is sufficient to enforce safety behaviors. 
+
+5.4. Applying Safety Circuit Tuning Takeaway ❽: SaCirT enhances model safety efficiently. 
+
+As illustrated in Figure 4, applying fine-tuning exclusively to the identified safety circuits yields distinct advantages: 
+
+Backdoor Removal (Efficiency): In the backdoor mitiga-tion fine-tuning (detailed in Appendix D), as illustrated in the left of Figure 4, SafeSeek achieves performances com-parable to full-parameter or LoRA baselines. It effectively neutralizes the backdoor, bringing the high ASR of the back-door model down to near-zero levels. Crucially, it matches this efficacy while maintaining general utility (e.g., MMLU 
+
+∼ 69 .2% , GSM8k ∼ 68 .4% ) and using significantly fewer tunable parameters (∼ 1% ) with far less costs. 
+
+Alignment (Utility-Safety Trade-off): After helpfulness alignment on the HelpSteer2 dataset, as shown in the right of Figure 4, SafeSeek effectively mitigates the “alignment tax”. The LoRA baseline (orange line) loses more safety, with Advbench harmless rates dropping from 95 .0 → 89 .3.In contrast, SafeSeek (green line) retains high utility (GSM8k ∼ 72 .3) comparable to the base model, while pre-serving superior harmlessness (Advbench ∼ 94 .0). 
+
+5.5. Ablation Study Necessity of STE. As demonstrated in Table 3, excluding the STE technique from SafeSeek results in optimization 
+
+Table 3. The ablation study of STE and different circuit granularity for Gclean and Gsafe , with best and second-best values highlighted. Marker ↑ and ↓ denote the increase / decrease values compared with Gbkd (backdoor) and Gbase (safety alignment), respectively. 
+
+Metric (%) Model: LLaMA-3.1-8B-Instruct Backdoor Neuron + w/o STE Head Head+Neuron 
+
+Sparsity H - - 3.61 1.37 Sparsity N 0.42 0.10 - 0.59 ASR id  
+
+> p
+
+0.0100 .0↓ 0.0100 .0↓ 6.693 .4↓ 0.899 .2↓
+
+ASR ood  
+
+> p
+
+0.499 .6↓ 0.0100 .0↓ 14 .485 .6↓ 1.698 .4↓
+
+ROUGE id  
+
+> p
+
+52 .749 .8↑ 0.02.9↓ 63 .460 .5↑ 74 .671 .7↑
+
+ROUGE ood  
+
+> p
+
+45 .542 .0↑ 0.03.5↓ 48 .344 .8↑ 60 .356 .8↑
+
+GSM8k 72 .00.5↓ 0.072 .5↓ 72 .90.4↑ 65 .17.4↓
+
+MMLU 67 .21.6↓ 25 .942 .9↓ 68 .10.7↓ 67 .51.3↓
+
+HellaSwag 57 .00.4↑ 23 .033 .6↓ 53 .72.9↓ 54 .32.3↓
+
+Alignment Head+Neuron + w/o STE Head Neuron 
+
+Sparsity H 3.03 0.20 8.89 -Sparsity N 0.79 2.72 - 0.32 ASR id  
+
+> p
+
+96 .996 .1↑ 21 .120 .3↑ 60 .259 .4↑ 96 .195 .3↑
+
+ASR ood  
+
+> p
+
+81 .573 .6↑ 12 .54.6↑ 60 .052 .1↑ 96 .688 .7↑
+
+GSM8k 67 .62.9↓ 41 .928 .6↓ 65 .55.0↓ 65 .35.2↓
+
+MMLU 64 .25.5↓ 57 .212 .5↓ 59 .310 .4↓ 64 .25.5↓
+
+HellaSwag 52 .91.8↓ 53 .71.0↓ 51 .03.7↓ 52 .72.0↓
+
+collapse. Although the ASR on Gclean appears to remain at 
+
+0.0% in the absence of STE, the catastrophic performance drop on GSM8k ( 72 .0 → 0.0) and MMLU ( 67 .2 → 25 .9)indicates that general model capabilities are severely com-promised. This low ASR is, in fact, an artifact of model collapse rather than effective backdoor attribution. Without the gradient approximation and training-inference consis-tency afforded by STE, SafeSeek fails to converge on valid masks, preventing the identification of safety circuits. 
+
+Robust Granularity. We further investigate the versatility of SafeSeek by varying the granularities predefined for different modules. As shown in Table 3, in the backdoor scenario, while the coarse-grained head-level attribution effectively captures the majority of malicious behaviors (re-ducing ASR id  
+
+> p
+
+to 6.6% ) and preserves the highest general ca-pability (GSM8k 72 .9% ). Similarly, in the safety alignment scenario, pure neuron granularity proves highly effective; ablating these identified circuits results in a catastrophic loss of safety barriers ( ASR id  
+
+> p
+
+surging to 96 .1% ), confirming their critical role in alignment. These results demonstrates that SafeSeek can successfully attribute similar Gclean and 
+
+Gsafe under other mixed-granularity configurations. 
+
+6. Conclusion 
+
+In this work, we introduce SafeSeek , a unified interpretabil-ity framework that leverages differentiable mask optimiza-tion to attribute safety behaviors to functionally complete circuits within LLMs, transcending the previous works’ lim-itations of heuristic methods. Through massive experiments, we reveal that both backdoor attacks and safety alignment are governed by highly sparse, specialized circuits that are 8SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+orthogonal to those responsible for general utility. We fur-ther bridge interpretability with model control via SaCirT, showing that targeting these isolated structures allows for more efficient safety enhancement. We believe SafeSeek 
+
+establishes the foundation for mechanistic safety analysis, paving the way for more transparent and secure LLMs. 
+
+Impact Statements 
+
+This paper presents research whose goal is to advance the field of mechanistic interpretability and LLM safety. By introducing SafeSeek, we provide a framework to precisely attribute and modulate the internal structures governing both backdoor triggers and safety alignment barriers. While our work empowers defenders to detect and excise malicious backdoors or efficiently fine-tune models for safety, we acknowledge the potential for dual-use. Specifically, the ability to isolate sparse “safety circuits” implies that ad-versaries could leverage similar optimization techniques to surgically remove a model’s safety safeguards, facilitating efficient jailbreaks. Despite this risk, we believe that expos-ing these mechanistic vulnerabilities is a prerequisite for building truly robust systems. Openly studying how safety is physically instantiated in parameters allows the commu-nity to move beyond black-box defenses toward intrinsic architectural resilience. 
+
+References 
+
+Andriushchenko, M., Souly, A., Dziemian, M., Due-nas, D., Lin, M., Wang, J., Hendrycks, D., Zou, A., Kolter, Z., Fredrikson, M., Winsor, E., Wynne, J., Gal, Y., and Davies, X. Agentharm: A benchmark for measuring harmfulness of llm agents. arXiv preprint arXiv:2410.09024 , 2024. Batra, D., Hamill, C., Hartley, J., Okhrati, R., Seddon, D., Miller, H., Khraishi, R., and Cowan, G. A review of llm agent applications in finance and banking. Available at SSRN 5381584 , 2025. Bereska, L. and Gavves, E. Mechanistic interpretability for ai safety–a review. arXiv preprint arXiv:2404.14082 ,2024. Bhaskar, A., Wettig, A., Friedman, D., and Chen, D. Finding transformer circuits with edge pruning. Advances in Neu-ral Information Processing Systems , 37:18506–18534, 2024. Bian, T., Niu, Y., Yuan, C., Piao, C., Wu, B., Huang, L.-K., Rong, Y., Xu, T., Cheng, H., and Li, J. Ibcircuit: Towards holistic circuit discovery with information bottleneck. In Forty-second International Conference on Machine Learning .Cao, S., Sanh, V., and Rush, A. M. Low-complexity probing via finding subnetworks. arXiv preprint arXiv:2104.03514 , 2021. Chen, J., Wang, X., Yao, Z., Bai, Y., Hou, L., and Li, J. Towards understanding safety alignment: A mechanistic perspective from safety neurons. Chen, J., Wang, X., Yao, Z., Bai, Y., Hou, L., and Li, J. Finding safety neurons in large language models. arXiv preprint arXiv:2406.14144 , 2024. Chen, Z., Zhang, Q., and Pei, S. Injecting universal jail-break backdoors into llms in minutes. arXiv preprint arXiv:2502.10438 , 2025. Cho, H., Kato, M., Sakai, Y., and Inoue, N. Revisiting in-context learning inference circuit in large language models. arXiv preprint arXiv:2410.04468 , 2024. Cobbe, K., Kosaraju, V., Bavarian, M., Chen, M., Jun, H., Kaiser, L., Plappert, M., Tworek, J., Hilton, J., Nakano, R., et al. Training verifiers to solve math word problems. 
+
+arXiv preprint arXiv:2110.14168 , 2021. Comanici, G., Bieber, E., Schaekermann, M., Pasupat, I., Sachdeva, N., Dhillon, I., Blistein, M., Ram, O., Zhang, D., Rosen, E., et al. Gemini 2.5: Pushing the frontier with advanced reasoning, multimodality, long context, and next generation agentic capabilities. arXiv preprint arXiv:2507.06261 , 2025. Conmy, A., Mavor-Parker, A., Lynch, A., Heimersheim, S., and Garriga-Alonso, A. Towards automated circuit dis-covery for mechanistic interpretability. Advances in Neu-ral Information Processing Systems , 36:16318–16352, 2023. Du, T., Wei, Z., Chen, Q., Zhang, C., and Wang, Y. Advanc-ing llm safe alignment with safety representation ranking. 
+
+arXiv preprint arXiv:2505.15710 , 2025. Ferraris, A. F., Audrito, D., Di Caro, L., and Poncib `o, C. The architecture of language: Understanding the mechan-ics behind llms. In Cambridge Forum on AI: Law and Governance , volume 1, pp. e11. Cambridge University Press, 2025. Gao, L., Tow, J., Abbasi, B., Biderman, S., Black, S., DiPofi, A., Foster, C., Golding, L., Hsu, J., Le Noac’h, A., Li, H., McDonell, K., Muennighoff, N., Ociepa, C., Phang, J., Reynolds, L., Schoelkopf, H., Skowron, A., Sutawika, L., Tang, E., Thite, A., Wang, B., Wang, K., and Zou, A. The language model evaluation harness, 07 2024. URL 
+
+https://zenodo.org/records/12608602 .Gao, L., Rajaram, A., Coxon, J., Govande, S. V., Baker, B., and Mossing, D. Weight-sparse transformers have 9SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+interpretable circuits. arXiv preprint arXiv:2511.13653 ,2025. Geiger, A., Lu, H., Icard, T., and Potts, C. Causal abstrac-tions of neural networks. Advances in Neural Information Processing Systems , 34:9574–9586, 2021. Ghosh, S., Bhattacharjee, A., Ziser, Y., and Parisien, C. Safesteer: Interpretable safety steering with refusal-evasion in llms. arXiv preprint arXiv:2506.04250 , 2025. Goldowsky-Dill, N., MacLeod, C., Sato, L., and Arora, A. Localizing model behavior with path patching. arXiv preprint arXiv:2304.05969 , 2023. Grattafiori, A., Dubey, A., Jauhri, A., Pandey, A., Kadian, A., Al-Dahle, A., Letman, A., Mathur, A., Schelten, A., Vaughan, A., et al. The llama 3 herd of models. arXiv preprint arXiv:2407.21783 , 2024. Greene, D. and Cunningham, P. Practical solutions to the problem of diagonal dominance in kernel document clus-tering. In Proceedings of the 23rd international confer-ence on Machine learning , pp. 377–384, 2006. Han, B., Zhao, F., Zhao, D., Shen, G., Wu, P., Shi, Y., and Zeng, Y. Fine-grained safety neurons with training-free continual projection to reduce llm fine tuning risks. arXiv preprint arXiv:2508.09190 , 2025. Hanna, M., Piotrowski, M., Lindsey, J., and Ameisen, E. Circuit-tracer: A new library for finding feature circuits. In Proceedings of the 8th BlackboxNLP Workshop: An-alyzing and Interpreting Neural Networks for NLP , pp. 239–249, 2025. Hasani, H., Banayeeanzade, M., Nafisi, A., Mohammadian, S., Askari, F., Bagherian, M., Izadi, A., and Baghshah, M. S. Mechanistic interpretability of large-scale count-ing in llms through a system-2 strategy. arXiv preprint arXiv:2601.02989 , 2026. Hendrycks, D., Burns, C., Basart, S., Zou, A., Mazeika, M., Song, D., and Steinhardt, J. Measuring mas-sive multitask language understanding. arXiv preprint arXiv:2009.03300 , 2020. Hu, E. J., Shen, Y., Wallis, P., Allen-Zhu, Z., Li, Y., Wang, S., Wang, L., Chen, W., et al. Lora: Low-rank adaptation of large language models. ICLR , 1(2):3, 2022. Ji, J., Wang, K., Qiu, T. A., Chen, B., Zhou, J., Li, C., Lou, H., Dai, J., Liu, Y., and Yang, Y. Language models resist alignment: Evidence from data compression. In Proceed-ings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pp. 23411–23432, 2025. Lee, S., Cho, A., Kim, G. C., Peng, S., Phute, M., and Chau, D. H. Interpretation meets safety: A survey on interpretation methods and tools for improving llm safety. 
+
+arXiv preprint arXiv:2506.05451 , 2025. Li, X., Zhen, H.-L., Yin, L., Yu, X., Dong, Z., and Yuan, M. What matters for safety alignment? arXiv preprint arXiv:2601.03868 , 2026. Li, Y., Li, Z., Zhao, W., Min, N. M., Huang, H., Ma, X., and Sun, J. Autobackdoor: Automating backdoor attacks via llm agents. arXiv preprint arXiv:2511.16709 , 2025. Lin, C.-Y. Rouge: A package for automatic evaluation of summaries. In Text summarization branches out , pp. 74–81, 2004. Lin, L., Yu, M., Aloqaily, M., Zhou, Z., Wang, K., Pang, L., Mehrotra, P., and Wen, Q. Backdoor collapse: Elimi-nating unknown threats via known backdoor aggregation in language models. arXiv preprint arXiv:2510.10265 ,2025. Lin, S., Hilton, J., and Evans, O. Truthfulqa: Measuring how models mimic human falsehoods. In Proceedings of the 60th annual meeting of the association for computa-tional linguistics (volume 1: long papers) , pp. 3214–3252, 2022. Liu, Q., Wang, F., Xiao, C., and Chen, M. From shortcuts to triggers: Backdoor defense with denoised poe. In Pro-ceedings of the 2024 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (Volume 1: Long Papers) ,pp. 483–496, 2024. LLM-LAT. LLM-LAT/harmful-dataset. https: //huggingface.co/datasets/LLM-LAT/ harmful-dataset , 2024. Lyu, S., Gu, Y., Wang, X., Huang, J., Luan, S., Cui, Y., Chang, X.-W., and Lu, P. Evoedit: Evolving null-space alignment for robust and efficient knowledge editing. 
+
+arXiv preprint arXiv:2510.13851 , 2025. Mamun, M. A. A., Alouani, I., and Abu-Ghazaleh, N. Poi-son once, refuse forever: Weaponizing alignment for injecting bias in llms. arXiv preprint arXiv:2508.20333 ,2025. Marks, S., Rager, C., Michaud, E. J., Belinkov, Y., Bau, D., and Mueller, A. Sparse feature circuits: Discovering and editing interpretable causal graphs in language models. 
+
+arXiv preprint arXiv:2403.19647 , 2024. Pan, B., Xu, M., Pi, Q., Chen, J., Zhu, Y., Zhong, M., and Qian, T. Neurontune: Fine-grained neuron modulation for balanced safety-utility alignment in llms. arXiv preprint arXiv:2508.09473 , 2025. 10 SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+Pan, X., Zhang, M., Sheng, B., Zhu, J., and Yang, M. Hidden trigger backdoor attack on {NLP } models via linguistic style manipulation. In 31st USENIX Security Symposium (USENIX Security 22) , pp. 3611–3628, 2022. Peng, B., Li, C., He, P., Galley, M., and Gao, J. Instruc-tion tuning with gpt-4. arXiv preprint arXiv:2304.03277 ,2023. Syed, A., Rager, C., and Conmy, A. Attribution patching outperforms automated circuit discovery. In Proceedings of the 7th BlackboxNLP Workshop: Analyzing and Inter-preting Neural Networks for NLP , pp. 407–416, 2024. Taori, R., Gulrajani, I., Zhang, T., Dubois, Y., Li, X., Guestrin, C., Liang, P., and Hashimoto, T. B. Stanford alpaca: An instruction-following llama model, 2023. Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., and Polosukhin, I. At-tention is all you need. Advances in neural information processing systems , 30, 2017. Wang, K., Zhang, G., Zhou, Z., Wu, J., Yu, M., Zhao, S., Yin, C., Fu, J., Yan, Y., Luo, H., et al. A comprehensive survey in llm (-agent) full stack safety: Data, training and deployment. arXiv preprint arXiv:2504.15585 , 2025a. Wang, M., Zhang, N., Xu, Z., Xi, Z., Deng, S., Yao, Y., Zhang, Q., Yang, L., Wang, J., and Chen, H. Detoxifying large language models via knowledge editing. arXiv preprint arXiv:2403.14472 , 2024a. Wang, X., Hu, Y., Du, W., Cheng, R., Wang, B., and Zou, D. Towards understanding fine-tuning mechanisms of llms via circuit analysis. arXiv preprint arXiv:2502.11812 ,2025b. Wang, Z. Logitlens4llms: Extending logit lens analy-sis to modern large language models. arXiv preprint arXiv:2503.11667 , 2025. Wang, Z., Bi, B., Pentyala, S. K., Ramnath, K., Chaudhuri, S., Mehrotra, S., Mao, X.-B., Asur, S., et al. A compre-hensive survey of llm alignment techniques: Rlhf, rlaif, ppo, dpo and more. arXiv preprint arXiv:2407.16216 ,2024b. Wang, Z., Dong, Y., Delalleau, O., Zeng, J., Shen, G., Egert, D., Zhang, J., Sreedhar, M. N., and Kuchaiev, O. Help-steer 2: Open-source dataset for training top-performing reward models. Advances in Neural Information Process-ing Systems , 37:1474–1501, 2024c. Yang, A., Li, A., Yang, B., Zhang, B., Hui, B., Zheng, B., Yu, B., Gao, C., Huang, C., Lv, C., et al. Qwen3 technical report. arXiv preprint arXiv:2505.09388 , 2025. Yao, Y., Zhang, N., Xi, Z., Wang, M., Xu, Z., Deng, S., and Chen, H. Knowledge circuits in pretrained transformers. 
+
+Advances in Neural Information Processing Systems , 37: 118571–118602, 2024. Yeo, W. J., Satapathy, R., and Cambria, E. Towards faithful natural language explanations: A study using activation patching in large language models. In Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing , pp. 10436–10458, 2025. Yi, X., Zheng, S., Wang, L., de Melo, G., Wang, X., and He, L. Nlsr: Neuron-level safety realignment of large language models against harmful fine-tuning. In Proceed-ings of the AAAI Conference on Artificial Intelligence ,volume 39, pp. 25706–25714, 2025. Yu, M., Zhou, Z., Aloqaily, M., Wang, K., Huang, B., Wang, S., Jin, Y., and Wen, Q. Backdoor attribution: Elucidating and controlling backdoor in language models. arXiv preprint arXiv:2509.21761 , 2025. Zaree, P., Al Mamun, M. A., Alam, Q. M., Dong, Y., Alouani, I., and Abu-Ghazaleh, N. Attention eclipse: Ma-nipulating attention to bypass llm safety-alignment. In 
+
+Proceedings of the 2025 Conference on Empirical Meth-ods in Natural Language Processing , pp. 16659–16679, 2025. Zellers, R., Holtzman, A., Bisk, Y., Farhadi, A., and Choi, Y. Hellaswag: Can a machine really finish your sentence? 
+
+arXiv preprint arXiv:1905.07830 , 2019. Zeng, F., Wang, S., Zhu, C., and Li, L. Adrd: Llm-driven autonomous driving based on rule-based decision systems. 
+
+arXiv preprint arXiv:2506.14299 , 2025. Zeng, Y., Sun, W., Huynh, T., Song, D., Li, B., and Jia, R. Beear: Embedding-based adversarial removal of safety backdoors in instruction-tuned language models. In Pro-ceedings of the 2024 Conference on Empirical Methods in Natural Language Processing , pp. 13189–13215, 2024. Zhang, X., Zhao, J., and LeCun, Y. Character-level convolu-tional networks for text classification. Advances in neural information processing systems , 28, 2015. Zhao, C. and Huang, K. Unraveling llm jailbreaks through safety knowledge neurons. arXiv preprint arXiv:2509.01631 , 2025. Zhao, Y., Zhang, W., Xie, Y., Goyal, A., Kawaguchi, K., and Shieh, M. Understanding and enhancing safety mech-anisms of llms via safety-specific neuron. In The Thir-teenth International Conference on Learning Representa-tions , 2025. 11 SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+Zheng, Z., Wang, Y., Huang, Y., Song, S., Yang, M., Tang, B., Xiong, F., and Li, Z. Attention heads of large language models: A survey. arXiv preprint arXiv:2409.03752 ,2024. Zheng, Z., Wang, Y., Huang, Y., Song, S., Yang, M., Tang, B., Xiong, F., and Li, Z. Attention heads of large language models. Patterns , 6(2), 2025a. Zheng, Z., Zhao, J., Yang, L., He, L., and Li, F. Spot risks before speaking! unraveling safety attention heads in large vision-language models. arXiv preprint arXiv:2501.02029 , 2025b. Zhou, Y., Xing, W., Kong, D., Lin, C., and Han, M. Neurel-attack: Neuron relearning for safety disalignment in large language models. arXiv preprint arXiv:2504.21053 ,2025. Zhou, Z., Yu, H., Zhang, X., Xu, R., Huang, F., and Li, Y. How alignment and jailbreak work: Explain llm safety through intermediate hidden states. arXiv preprint arXiv:2406.05644 , 2024a. Zhou, Z., Yu, H., Zhang, X., Xu, R., Huang, F., Wang, K., Liu, Y., Fang, J., and Li, Y. On the role of attention heads in large language model safety. arXiv preprint arXiv:2410.13708 , 2024b. Zou, A., Wang, Z., Kolter, J. Z., and Fredrikson, M. Uni-versal and transferable adversarial attacks on aligned lan-guage models, 2023. 12 SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+A. More Details on Experiment Setups 
+
+In this section, we provide the detailed hyperparameter settings and training configurations used in SafeSeek. 
+
+A.1. Hyperparameter Settings Backdoor Attack Attribution In the backdoor scenarios, we adjust the hyperparameters based on the granularity of the circuit units: • Neuron-wise for both Attn & MLP: For the optimization objectives in Eq 11 and Eq 12, we set the balancing coefficients as α = 1 .0 and β = 1 .0. For the sparsity loss in Eq 13, which governs the structural disentanglement, we set the overlap penalty α = 1 .0, the density incentive for the clean graph β = 0 .5, and the sparsity penalty for the backdoor circuit 
+
+γ = 5 .0. The global regularization weight λ is set to 1.0.• Attention Head + MLP Neuron: The coefficients for the functional loss terms remain at α = 1 .0 and β = 1 .0. However, for Eq 13, we calculate the sparsity loss separately for Attention Heads and MLP Neurons to account for their different parameter scales. For the clean subnetwork Gclean , the sparsity loss coefficient is set to 0.2 for attention heads and 
+
+1.0 for MLP neurons. For the backdoor circuit Cbkd , we set the coefficient to 0.1 for attention heads and significantly increase it to 10 .0 for MLP neurons to encourage extreme sparsity. Additionally, the overlap penalty between the two circuits is set to 1.0.• Attention Head only: We set the coefficients for Gclean to 1.0. Since the backdoor circuit Cbkd at this granularity comprises only attention heads along with the embedding and unembedding matrices, we do not explicitly supervise the output of Cbkd . This focuses the optimization solely on purifying the clean graph. 
+
+Safety Alignment Attribution For the safety alignment tasks, the settings are as follows: • Neuron-wise for Attn & MLP: We adopt a uniform configuration where all coefficients in the training are set to 1.0.• Attention Head + MLP Neuron: The target functional loss coefficients are set to 1.0. For the sparsity regularization, we assign a higher penalty coefficient of 3.0 to attention heads and 0.5 to MLP neurons. • Attention Head only: Similar to the backdoor setting, we do not supervise the output of the sparse safety circuit Gsafe .For the unsafe subnetwork Gunsafe , we assign a high penalty weight to the generation of jailbreak content to ensure the removal of safety mechanisms. All other loss coefficients are set to 1.0.
+
+A.2. Implementation Details Mask Initialization To facilitate faster convergence towards a binary distribution, we initialize the learnable mask logits 
+
+zu to 0.2. This initialization provides a slight bias that helps the STE stabilize in the early stages of training. 
+
+Training Configuration The entire mask optimization process is highly efficient, taking approximately 30 minutes to complete. All experiments were conducted on a cluster of 8 NVIDIA A100 (80GB) GPUs. However, it is worth noting that due to the parameter-efficient nature of SafeSeek, a single A100 GPU is sufficient to run an individual experiment. 
+
+B. Related Attribution Methods 
+
+In this section, we provide a formal overview of the attribution methods referenced in our study. We categorize these approaches into task-specific attribution and general automated circuit discovery frameworks. 
+
+B.1. Backdoor Attribution via Causal Analysis 
+
+To attribute backdoor mechanisms, Yu et al., 2025 propose a framework that disentangles backdoor behaviors from benign ones through causal mediation analysis. This method, referred to as BkdAttr , proceeds in two key phases: 
+
+Backdoor Attention Head Attribution (BAHA). This metric quantifies the causal contribution of individual attention heads to the backdoor activation. Let hl,i denote the output of the i-th head at layer l. The importance score IBAHA is defined as the average causal indirect effect of ablating the head on the target backdoor label ytri :
+
+IBAHA (l, i ) = Ex∈D poison [P (ytri |x, hl,i ) − P (ytri |x, do (hl,i = 0))] (16) 13 SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+where do (hl,i = 0) represents the intervention of masking the specific head’s output. 
+
+Backdoor Vector Injection. Based on the identified critical heads, a global backdoor vector vbd is computed to capture the direction of the backdoor trigger in the activation space. The framework allows for controlling the backdoor behavior via additive intervention during inference: 
+
+˜x = x + λ · vbd (17) where λ is a steering coefficient that amplifies ( λ > 0) or suppresses ( λ < 0) the backdoor effect. 
+
+B.2. Safety Neuron Discovery 
+
+Recent works have extended interpretability to the neuron level (within MLP layers), identifying specific safety neurons responsible for alignment. 
+
+Activation Contrasting. Chen et al., 2024 introduce a method to locate safety neurons by contrasting activation patterns between safety-aligned and unaligned models. For a neuron nl,j (the j-th neuron in layer l), its safety relevance Scontrast is calculated as the divergence in activation magnitude under harmful instructions: 
+
+Scontrast (nl,j ) = Ex∈D harm σ(k⊤ 
+
+> l,j
+
+xsafe ) − σ(k⊤ 
+
+> l,j
+
+xbase ) (18) where xsafe and xbase denote the hidden states of the aligned and base models, respectively, and kl,j represents the neuron’s key vector. 
+
+Safety-Specific Neuron (SSN) Analysis. Building on this, Zhao et al., 2025 formalize Safety-Specific Neurons (SSNs) as those that explicitly activate for harmful queries while remaining dormant for benign ones. They propose a metric based on the activation probability difference: 
+
+SSSN (n) = P (active (n)|x ∈ D harm ) − P (active (n)|x ∈ D safe ) (19) Parameters identified as SSNs are then subjected to selective fine-tuning to enhance safety robustness without compromising general utility. 
+
+B.3. Safety Attention Head Attribution 
+
+Focusing on the Multi-Head Attention (MHA) mechanism, Zhou et al., 2024b propose metrics to evaluate the role of attention heads in safety refusal. 
+
+Safety Head Importance Score (Ships). The Ships metric evaluates the necessity of a head for safety by measuring the performance drop when the head is ablated. Unlike gradient-based sensitivity, this uses direct causal intervention: Ships (h) = 1
+
+|D harm |
+
+X
+
+> x∈D harm
+
+max (0 , P (yrefusal |x) − P (yrefusal |x, do (h = ∅))) (20) where P (yrefusal ) is the probability of the model generating a refusal response. 
+
+Sahara Algorithm. To identify a complete safety circuit, the Sahara (Safety Attention Head AttRibution Algorithm) iteratively selects a subset of heads Hsafe . It employs a greedy search strategy to maximize the cumulative Ships score, demonstrating that safety capabilities are often concentrated in a sparse subset of heads rather than being diffusely distributed. 
+
+B.4. General Circuit Discovery Frameworks 
+
+Beyond task-specific heuristics, several automated frameworks have been proposed to discover functional circuits across diverse domains. These methods serve as foundational baselines for circuit discovery. 14 SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+Automated Circuit DisCovery (ACDC). Conmy et al., 2023 propose ACDC, a greedy iterative pruning algorithm. It constructs a circuit by traversing the computational graph and attempting to prune edges e that do not degrade the model’s performance beyond a threshold τ :
+
+Gnew =
+
+(
+
+G \ { e} if DKL (M(G)||M (G \ { e})) < τ 
+
+G otherwise (21) While rigorous, ACDC’s computational cost scales linearly with the number of edges, often limiting its applicability to smaller models or specific components. 
+
+Attribution Patching (AtP). To address computational constraints, Syed et al., 2024 introduced Attribution Patching, which uses a first-order Taylor expansion to approximate the causal effect of ablating a component. The importance score 
+
+SAtP is estimated efficiently via gradients: 
+
+SAtP (x) ≈ ∇ xL · (xclean − xcorrupted ) (22) This method provides a fast approximation of causal importance but relies on the assumption of linearity, which may not hold for complex safety behaviors. 
+
+Edge Pruning. Bhaskar et al., 2024 advance this by introducing learnable masks for individual edges in the computational graph. By applying a continuous relaxation (e.g., Hard-Concrete distribution) to the binary edge masks ze, they formulate circuit discovery as a differentiable optimization problem: 
+
+min 
+
+Φ Ex [Ltask ] + λ X
+
+e∈E 
+
+∥ˆze∥0 (23) This approach allows for the simultaneous discovery of all circuit components via gradient descent, similar to our SafeSeek framework but operating at the edge granularity. 
+
+C. Extended Analysis of Backdoor Circuit Sparsity ASR c(%) ASR p(%) Sparsity (%)                                
+
+> 0
+> 10
+> 20
+> 30
+> 40
+> 50
+> 60
+> 70
+> 80
+> 90
+> 100
+> 0.0 0.0 0.0 0.0
+> 90.6
+> 0.0 0.0
+> 5.5
+> 0.1 0.0
+> 100.0 98.3 Llama-3.1-8B
+> -Instruct
+> Gclean ∩ C bkd Sparsity = 98.34%
+> ASR c(%) ASR p(%) Sparsity (%)
+> 0.0 0.0 0.0 0.0
+> 85.6
+> 0.0 0.0
+> 6.3
+> 0.1 0.0
+> 100.0 96.8 Qwen-3-8B
+> Gclean ∩ C bkd Sparsity = 96.82%
+> ASR and Sparsity of Different Graphs / Circuits for the Refusal Backdoor
+> Gbase Gbkd Gclean Cbkd ASR c(%) ASR p(%) Sparsity (%)
+> 0
+> 10
+> 20
+> 30
+> 40
+> 50
+> 60
+> 70
+> 80
+> 90
+> 100
+> 0.0 0.0 0.0 0.0
+> 100.0
+> 0.0 0.0
+> 15.2
+> 0.1 0.0
+> 100.0
+> 91.1
+> Llama-3.1-8B
+> -Instruct
+> Gclean ∩ C bkd Sparsity = 91.18%
+> ASR c(%) ASR p(%) Sparsity (%)
+> 0.0 0.0 0.0 0.0
+> 100.0
+> 0.0 0.0
+> 10.9
+> 0.1 0.0
+> 100.0 98.8 Qwen-3-8B
+> Gclean ∩ C bkd Sparsity = 98.85%
+> ASR and Sparsity of Different Graphs / Circuits for the Refusal Backdoor
+> Gbase Gbkd Gclean Cbkd
+
+Figure 5. Performance comparison for additional backdoor types. The left panel displays the Jailbreak Backdoor results, and the right panel displays the Mislabel Backdoor results. Across both tasks, SafeSeek identifies highly sparse circuits ( Cbkd ) that capture high attack capabilities (ASR p > 90% ) while the clean subgraphs ( Gclean ) effectively mitigate the attacks. 
+
+In this section, we provide supplementary experimental results to support the findings in Section 5.2.2. Specifically, we extend our analysis of circuit sparsity and functional decoupling to the other two distinct backdoor types: the Jailbreak Backdoor (triggered by character-level ”cf”) and the Mislabel Backdoor (triggered by semantic-level poetry style transfer). Figure 5 visualizes the performance metrics (ASR c, ASR p, and Sparsity) for these additional backdoor scenarios across both LLaMA-3.1-8B-Instruct and Qwen-3-8B. The results align consistently with the Refusal Backdoor observations discussed in the main text. 
+
+Jailbreak Backdoor. As shown in the left panel of Figure 5, the identified backdoor circuit Cbkd for the Jailbreak task exhibits remarkable sparsity, reaching 98.3% for LLaMA-3.1 and 96.8% for Qwen-3. Despite retaining less than 4% of 15 SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+the parameters, the circuit fully encapsulates the attack capabilities, achieving an ASR p of 100.0% respectively exceeding the full backdoor model Gbkd . Conversely, the dense clean model Gclean successfully suppresses the jailbreak attempts, drastically reducing ASR p to 5.5% (LLaMA-3.1) and 6.3% (Qwen-3). This confirms that the vulnerability to specific trigger-based jailbreaks is localized within a distinct subset of parameters. 
+
+Mislabel Backdoor. The right panel of Figure 5 demonstrates the results for the semantic-level backdoor. Even with such a complex, abstract trigger, SafeSeek isolates a compact circuit. For LLaMA-3.1, the circuit maintains 91.1% sparsity while capturing an ASR p of 100.0%. For Qwen-3, the effect is even more pronounced, with 98.8% sparsity and 100.0% ASR p.Meanwhile, the clean model Gclean effectively restores the correct classification logic, dropping the attack success rate to 15.2% and 10.9%, respectively. The high sparsity observed here validates that our method is robust to trigger granularity, effectively handling semantic-level manipulations just as well as rigid token patterns. 
+
+Structural Orthogonality. Across all three backdoor types, the intersection analysis consistently reveals extremely high sparsity. As highlighted in the figures, the intersection Gclean ∩ C bkd retains a sparsity ranging from 91.18% to 98.85%. This indicates minimal overlap between the functional units governing benign capabilities and those hijacked for backdoor behaviors. This structural orthogonality explains why excising Cbkd eradicates the backdoor without compromising the model’s general utility 
+
+D. Detailed Results on Safety Circuit Tuning 
+
+In this section, we provide the detailed quantitative results supporting the efficacy of SaCirT (Safety Circuit Tuning) discussed in the main text (Takeaway ❽). We evaluate our method against standard fine-tuning baselines (e.g., LoRA) across two distinct tasks: Backdoor Circuit Tuning (for removal) and Safety Circuit Tuning (for alignment preservation). Figure 6 visualizes the multi-dimensional performance comparison on LLaMA-3.1-8B-Instruct (left panel) and Qwen-3-8B (right panel). The corresponding numerical results are analyzed below. Untuned Ratio 
+
+> Alpaca
+> TruthfulQA
+> GSM8K
+> MMLU
+> HellaSwag
+> 0
+> 50
+> 100
+> 0
+> 55
+> 110
+> 0
+> 55
+> 110
+> 67.9
+> 70.5
+> 73
+> 68.3
+> 69.2
+> 70.2
+> 54.2
+> 55.7
+> 57.1
+
+Backdoor Circuit Tuning (Refusal) ASR 
+
+> Utility
+> Untuned Ratio
+> SafeEdit
+> Advbench
+> GSM8K
+> MMLU
+> HellaSwag
+> 0
+> 50
+> 100
+> 71.3
+> 74.9
+> 78.4
+> 89.3
+> 92.1
+> 95
+> 70.8
+> 71.9
+> 73
+> 68.6
+> 69.4
+> 70.2
+> 53
+> 54.1
+> 55.2
+
+Alignment Circuit Tuning 
+
+> Harmless
+> Utility
+> Model: Llama-3.1-8B-Instruct
+> Base Model
+> Backdoor Model
+> Baseline
+> SafeSeek
+
+(a) LLaMA-3.1-8B-Instruct Untuned Ratio 
+
+> Alpaca
+> TruthfulQA
+> GSM8K
+> MMLU
+> HellaSwag
+> 0
+> 50
+> 100
+> 0
+> 54.3
+> 108.7
+> 0
+> 54.8
+> 109.6
+> 79.8
+> 85.2
+> 90.5
+> 75
+> 76.3
+> 77.7
+> 50.5
+> 52.5
+> 54.4
+
+Backdoor Circuit Tuning (Refusal) ASR 
+
+> Utility
+> Untuned Ratio
+> SafeEdit
+> Advbench
+> GSM8K
+> MMLU
+> HellaSwag
+> 0
+> 50
+> 100
+> 72.2
+> 77.2
+> 82.1
+> 97.1
+> 98.8
+> 100.5
+> 82.1
+> 86.3
+> 90.5
+> 76.6
+> 77.4
+> 78.2
+> 52.4
+> 53.4
+> 54.4
+
+Alignment Circuit Tuning  
+
+> Harmless
+> Utility
+> Model: Qwen-3-8B
+> Base Model
+> Backdoor Model
+> Baseline
+> SafeSeek
+
+(b) Qwen-3-8B 
+
+Figure 6. Multi-dimensional performance comparison of Safety Circuit Tuning (SaCirT). The radar charts illustrate the trade-offs between safety, utility, and parameter efficiency. SafeSeek consistently achieves the best balance, maintaining high safety and utility with minimal parameter updates compared to the Baseline. 
+
+D.1. Backdoor Circuit Tuning: High Efficiency Mitigation 
+
+We applied SaCirT to remove backdoors by exclusively fine-tuning the identified backdoor circuits ( Cbkd ) on clean data. 
+
+LLaMA-3.1-8B-Instruct. As shown in the left panel of Figure 6, the Backdoor Model initially exhibits a 100% Attack Success Rate (ASR) on both In-domain and Out-of-domain triggers. • Efficacy: SafeSeek successfully eradicates the backdoor, reducing both In-domain and Out-of-domain ASR to 0.0%, matching the performance of the Baseline. • Efficiency: Crucially, SafeSeek achieves this while leaving 98.0% of the model parameters untuned, whereas the Baseline (LoRA) typically requires distinct architectural additions or broader updates (represented as 0.0% untuned ratio relative to the specific module adaptation). 16 SafeSeek: Universal Attribution of Safety Circuits in Language Models 
+
+• Utility: General capabilities remain robust. On GSM8K, SafeSeek achieves 68.4%, closely trailing the Base Model (72.5%) and comparable to the Baseline (68.8%). 
+
+Qwen-3-8B. Similar trends are observed in the right panel of Figure 6. The Backdoor Model’s high ASR (98.8% ID / 99.6% OOD) is completely neutralized to 0.0% by SafeSeek .• Efficiency: SafeSeek maintains a high untuned ratio of 94.2%, significantly higher than the Baseline. • Utility: On reasoning tasks like GSM8K, SafeSeek scores 81.8%, outperforming the Backdoor Model (80.3%) and maintaining parity with the Baseline (82.3%). 
+
+D.2. Safety Circuit Tuning: Mitigating the Alignment Tax 
+
+In this scenario, we fine-tune the models on helpfulness datasets. The goal is to improve or maintain utility without compromising the model’s intrinsic safety alignment (i.e., avoiding the ”alignment tax”). 
+
+LLaMA-3.1-8B-Instruct. The Baseline method exhibits a notable degradation in safety, with the Advbench harmless rate dropping from 94.5% (Base) to 89.8%. • Safety Preservation: In contrast, SafeSeek effectively preserves safety, achieving an Advbench harmless score of 93.8%, significantly outperforming the Baseline. • Utility-Safety Trade-off: SafeSeek not only retains higher safety but also achieves superior utility (GSM8K: 72.3%) compared to the Baseline (71.3%), almost recovering the Base Model’s performance (72.5%). 
+
+Qwen-3-8B. For Qwen-3, the Base Model is highly safe (100.0% Advbench). • Safety Preservation: While the Baseline drops to 97.6%, SafeSeek maintains near-perfect safety at 99.2%. • Utility: On GSM8K, SafeSeek achieves 83.8%, surpassing the Baseline (82.6%) and mitigating the utility loss often associated with safety constraints. 17

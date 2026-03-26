@@ -1,0 +1,606 @@
+Title: Mutually Causal Semantic Distillation Network for Zero-Shot Learning
+
+URL Source: https://arxiv.org/pdf/2603.17412v1
+
+Published Time: Thu, 19 Mar 2026 00:52:19 GMT
+
+Number of Pages: 18
+
+Markdown Content:
+International Journal of Computer Vision manuscript No. 
+
+(will be inserted by the editor) 
+
+# Mutually Causal Semantic Distillation Network for Zero-Shot Learning 
+
+Shiming Chen 1,2 · Shuhuang Chen 1,2 · Guo-Sen Xie 3 · Xinge You 1,21 Huazhong University of Science and Technology, Wuhan, China  
+
+> 2
+
+National Anti-Counterfeit Engineering Research Center, Wuhan, Chna 
+
+> 3
+
+Nanjing University of Science and Technology, Nanjing, China {gchenshiming,gsxiehm}@gmail.com {shuhuangchen,youxg}@hust.edu.cn 
+
+> the date of receipt and acceptance should be inserted later
+
+Abstract Zero-shot learning (ZSL) aims to recognize the un-seen classes in the open-world guided by the side-information (e.g. , attributes). Its key task is how to infer the latent seman-tic knowledge between visual and attribute features on seen classes, and thus conducting a desirable semantic knowledge transfer from seen classes to unseen ones. Prior works simply utilize unidirectional attention within a weakly-supervised manner to learn the spurious and limited latent semantic rep-resentations, which fail to effectively discover the intrinsic semantic knowledge ( e.g. , attribute semantic) between vi-sual and attribute features. To solve the above challenges, we propose a mutually causal semantic distillation network (termed MSDN++ ) to distill the intrinsic and sufficient se-mantic representations for ZSL. MSDN++ consists of an attribute →visual causal attention sub-net that learns attribute-based visual features, and a visual →attribute causal attention sub-net that learns visual-based attribute features. The causal attentions encourages the two sub-nets to learn causal vision-attribute associations for representing reliable features with causal visual/attribute learning. With the guidance of seman-tic distillation loss, the two mutual attention sub-nets learn collaboratively and teach each other throughout the train-ing process. Extensive experiments on three widely-used benchmark datasets ( e.g. , CUB, SUN, AWA2, and FLO) show that our MSDN++ yields significant improvements over the strong baselines, leading to new state-of-the-art per-formances. 
+
+Keywords Open-World Visual Recognition · Zero-Shot Learning · Mutual Semantic Distillation · Attribute localization 
+
+> Address(es) of author(s) should be given
+
+1 Introduction and Motivation 
+
+Visual recognition is a critical task in computer vision, which has attracted significant attention in recent years due to its numerous applications in real-world, e.g. , autonomous driv-ing (Hu et al, 2023), smart healthcare (Bai et al, 2021), and intelligent surveillance (Collins et al, 2000). Over the past decade, deep learning techniques and large-scale datasets have contributed to remarkable advancements in the perfor-mance of visual recognition systems (He et al, 2016; Wang et al, 2020b,a). However, existing visual models are often limited by their closed-world assumptions, where all possi-ble classes are known in advance, and all data is given at once. Such assumptions are not applicable in practical sce-narios, where novel or previously unseen classes can arise, and data may be continually coming or decentralized due to data privacy concerns. For example, an autonomous vehicle encounters new traffic patterns, a medical AI system detects new diseases, or an intelligent system encounters a criminal wearing a new type of disguise or clothing. Based on the prior knowledge of seen classes, humans have a remarkable ability to recognize new concepts (classes) using shared and distinct attributes of both seen and unseen classes (Lampert et al, 2009). Analogously, zero-shot learning (ZSL) is proposed un-der a challenging image classification setting to mimic the human cognitive process (Larochelle et al, 2008; Palatucci et al, 2009). ZSL aims to tackle the unseen class recogni-tion problem by transferring knowledge from seen classes to unseen ones. It is usually based on the assumption that both seen and unseen classes can be described through the shared semantic descriptions ( e.g. , attributes) (Lampert et al, 2014). Based on the classes classified in the testing phase, ZSL methods can be grouped into conventional ZSL (CZSL) and generalized ZSL (GZSL) (Xian et al, 2017), where CZSL aims to predict unseen classes, while GZSL can predict both   
+
+> arXiv:2603.17412v1 [cs.CV] 18 Mar 2026 21INTRODUCTION AND MOTIVATION (c)
+> : Semantic Space
+> : Visual Space
+> : Common Space
+> : Attribute Space
+> (d) (b) (a)
+
+Fig. 1: Four investigated ZSL paradigms. (a) Embedding-based method. (b) Generative method. (c) Common space learning method. (d) Ours proposed mutually causal semantic distillation network (MSDN++). The semantic space S is represented by the class semantic vector annotated by humans based on the attribute descriptions. The visual space V is learned by a network backbone ( e.g. , ResNet101 (He et al, 2016)). The common space O is a shared latent space between visual mapping and semantic mapping. The attribute space A is learned by a language model ( e.g. , Glove (Pennington et al, 2014)). Filled triangles, circles, squares and diamonds denote the sample features in S, V, O and A, respectively. seen and unseen ones. Since GZSL is more realistic and chal-lenging (Pourpanah et al, 2020), some ZSL methods only focus on the GZSL setting (Liu et al, 2018; Han et al, 2020, 2021; Chen et al, 2021b; Huynh and Elhamifar, 2020a). In this work, we sufficiently evaluate our method both in the two settings. In the ZSL, an unseen sample shares different partial information with a set of samples of seen classes, and this partial information is represented as the abundant semantic knowledge of attributes ( e.g. , “bill color yellow”, “leg color red” on CUB dataset) (Wang et al, 2021b; Chen et al, 2022a, 2023a, 2024c). To this end, the key challenge of ZSL is how to infer the latent semantic knowledge between visual and at-tribute features on seen classes, allowing desirable knowledge transfer to unseen classes for effective visual-semantic match. Targeting on this goal, some attention-based ZSL methods (Xie et al, 2019, 2020; Zhu et al, 2019; Xu et al, 2020; Liu et al, 2021; Chen et al, 2024b, 2022a, 2023a, 2025) take atten-tion mechanism to discover discriminative part/fine-grained visual features, which match the semantic representations more accurately, enabling significant ZSL performance. Un-fortunately, i) they simply utilize unidirectional attention, which only focuses on limited semantic alignments between visual and attribute features without any further sequential learning; ii) they learn the attention with an attention mod-ules simply supervised by the classical loss function, which only explicitly supervises the final prediction but ignores the causality between the prediction and attention. As such, prior attention-based methods can only discover the spurious and limited semantic representations between visual and at-tribute features, resulting in undesirable semantic knowledge transfer in the ZSL. In light of the above observations, we propose a mutually causal semantic distillation network (termed MSDN++), to explore the intrinsic semantic knowledge between visual and attribute features for advancing ZSL, as shown in Fig. 1 (d). The core idea is to evaluate the quality of attentions by comparing the effects of facts ( i.e. , the learned attentions) and the intervention (i.e., uncorrected attentions) on the final prediction. Then, we maximize the effects between the two attentions ( i.e. , effect in causal inference (Pearl, 2009; Pearl et al, 2016; Li et al, 2024)) to encourage the network to learn more effective visual attentions and reduce the effects of bias of training data. Meanwhile, this causal mechanism is incorporated into the mutually semantic distillation network (i.e. , MSDN (Chen et al, 2022b)), enabling the network to discover the intrinsic and more sufficient semantic knowledge for feature representations. Specifically, MSDN++ consists of an attribute →visual causal attention sub-net, which learns attribute-based visual features with attribute-based/causal visual learnings, and a visual →attribute causal attention sub-net, which learns visual-based attribute features via visual-based/causal at-tribute learnings. The causal attentions encourages the two sub-nets to learn causal vision-attribute associations for rep-resenting reliable features. Meanwhile, these two mutual attention sub-nets act as a teacher-student network for guid-ing each other to learn collaboratively and teaching each other throughout the training process. As such, MSDN++ can explore the most matched attribute-based visual features and visual-based attribute features, enabling to effectively distill the intrinsic semantic representations for desirable knowledge transfer from seen to unseen classes. Specifi-cally, each causal attention sub-net is optimized with an attribute-based cross-entropy loss with self-calibration (Zhu et al, 2019; Huynh and Elhamifar, 2020a; Xu et al, 2020; Liu et al, 2021; Chen et al, 2022a), attribute regression loss, and causal loss. To enable mutual learning between the two sub-nets, we further introduce a semantic distillation loss that aligns each other’s class posterior probabilities. Extensive experiments well demonstrate the superiority of MSDN++ over the existing state-of-the-art methods. A preliminary version of this work was presented as a CVPR 2022 conference paper (termed MSDN (Chen et al, 2022b)). In this version, we strengthen the work from three aspects: i) We further analyze the limitations of existing 3
+
+attention-based ZSL methods, which simply utilize unidirec-tional attention in a weakly-supervised manner to learn the spurious and limited latent semantic representations. As such, they fail to effectively discover the intrinsic and sufficient semantic knowledge between visual and attribute features. ii) We propose two novel sub-nets to equip MSDN with causal attentions, which enable the model to learn causal vision-attribute associations for representing reliable features. iii) We conduct substantially more experiments to demonstrate the effectiveness of the proposed methods and verify the contribution of each component. The main contributions of this paper are summarized as follows: 
+
+– We propose a mutually causal semantic distillation net-work, termed MSDN++, which distills the intrinsic and sufficient semantic representations for effective knowl-edge transfer of ZSL. 
+
+– We deploy causal visual learning and causal attribute learning to encourage MSDN++ to learn the causal vision-attribute associations for representing reliable features with good generalization. 
+
+– We introduce a semantic distillation loss to enable mutual learning between the attribute →visual causal attention sub-net and visual →attribute causal attention sub-net in MSDN++, encouraging them to learn attribute-based visual features and visual-based attribute features by dis-tilling the intrinsic semantic knowledge for semantic em-bedding representations. 
+
+– We conduct extensive experiments to demonstrate that our MSDN++ achieves significant performance gains over the strong ZSL baselines on four benchmarks, i.e. ,CUB (Welinder et al, 2010), SUN (Patterson and Hays, 2012), AWA2 (Xian et al, 2017), and FLO Nilsback and Zisserman (2008). The rest of this paper is organized as follows. Section 2 discusses related works. The proposed MSDN++ is illus-trated in Section 3. Experimental results and discussions are provided in Section 4. Finally, we draw a conclusion in Section 5. 
+
+2 Related Work 
+
+2.1 Zero-Shot Learning ZSL (Song et al, 2018; Li et al, 2018; Xian et al, 2018, 2019; Yu et al, 2020; Min et al, 2020; Han et al, 2021; Chen et al, 2021b; Chou et al, 2021) transfer semantic knowledge from seen classes to unseen ones by learning a mapping between the visual and attribute/semantic domains. There are sev-eral ZSL approaches targeting this goal, i.e. , embedding-based methods, generative methods, and common space learning-based methods. As shown in Fig. 1 (a), embedding-based methods learn a visual →semantic mapping for visual-semantic interaction by mapping the visual features into the semantic space (Romera-Paredes and Torr, 2015; Akata et al, 2016; Chen et al, 2018; Xie et al, 2019; Xu et al, 2020). Generative ZSL methods have been introduced to learn a semantic →visual mapping to generate visual features of un-seen classes (Arora et al, 2018; Schönfeld et al, 2019; Xian et al, 2018; Li et al, 2019a; Yu et al, 2020; Shen et al, 2020; Vyas et al, 2020; Narayan et al, 2020; Chen et al, 2021b, 2023b) for data augmentation, shown in Fig. 1 (b). Genera-tive ZSL methods usually base on variational autoencoders (VAEs) (Arora et al, 2018; Schönfeld et al, 2019), gener-ative adversarial nets (GANs) (Xian et al, 2018; Li et al, 2019b; Yu et al, 2020; Keshari et al, 2020; Vyas et al, 2020; Chen et al, 2021b, 2025), or generative flows (Shen et al, 2020). As shown in Fig. 1 (c), common space learning is also employed to learn a common representation space for interaction between visual and semantic domains (Frome et al, 2013; Tsai et al, 2017; Schönfeld et al, 2019; Chen et al, 2021c). However, these methods still usually perform relatively sub-optimal results, since they cannot capture the subtle differences between seen and unseen classes. As such, attention-based ZSL methods (Xie et al, 2019, 2020; Zhu et al, 2019; Xu et al, 2020; Liu et al, 2021; Chen et al, 2024b, 2022a) utilize attribute descriptions as guidance to discover the more discriminative fine-grained features. However, they simply utilize unidirectional attention in a weakly-supervised manner, which only focuses on spurious and limited semantic alignments between visual and attribute features without any further sequential learning. As such, the existing method fails to explore the intrinsic and suffi-cient semantic representations between visual and attribute features for semantic knowledge transfer of ZSL. To tackle this challenge, we will introduce a novel ZSL method based on the mutually semantic distillation learning and causal attention mechanism. 2.2 Knowledge Distillation To compress knowledge from a large teacher network to a small student network, knowledge distillation was proposed (Hinton et al, 2015). Recently, knowledge distillation has been extended to optimize small deep networks starting with a powerful teacher network (Romero et al, 2015; Parisotto et al, 2016). By mimicking the teacher’s class probabilities and/or feature representation, distilling models convey addi-tional information beyond the conventional supervised learn-ing target (Zhang et al, 2018; Zhai et al, 2020). Motivated by these, we design a mutually semantic distillation network to learn the intrinsic semantic knowledge by semantically distilling intrinsic knowledge. The mutually semantic dis-tillation network consists of attribute →visual attention and 4 3 MUTUALLY CAUSAL SEMANTIC DISTILLATION NETWORK Attribute →Visual Causal Attention Sub -Net 
+
+> …
+> bill color yellow
+> breast color white
+> leg color red
+> Attribute Descriptions
+> …
+> …
+
+Visual →Attribute Causal Attention Sub -Net       
+
+> bill color yellow
+> breast color white
+> leg color red
+> Attribute Descriptions
+> …
+> bill color yellow
+> leg color red
+> …
+> bill color yellow
+> breast color white
+> Visual -based Attribute Learning
+> Causal Attribute Learning
+> bill color yellow
+> …
+> (a) Visual -Based Causal Effect
+> Attend to attributes
+> Attribute -based Visual Learning
+> Causal Visual Learning
+> Attend to image regions
+> (b) Attribute -Based Causal Effect
+> bill color yellow
+> breast color white
+> leg color red
+
+Fig. 2: The pipeline of MSDN++. MSDN++ consists of an attribute →visual causal attention sub-net (AVCA) and visual →attribute causal attention sub-net (VACA). AVCA learns the attribute-based visual features F with attribute-based visual learning and causal visual learning, while VACA discovers the vision-based attribute features S with vision-based attribute learning and causal attribute learning. Then, tow mapping functions M1 and M2 map the visual features and attribute features into semantic space as semantic representations ψ(x) and Ψ (x), respectively. A semantic distillation loss 
+
+Ldistill to match the probability estimates of the two sub-nets for semantic distillation ( i.e. , p1 and p2), enabling MSDN++ to learn intrinsic semantic knowledge. During inference, we fuse the predictions of the two sub-nets to take full use of the complementary semantic representations. visual →attribute attention sub-nets, which act as a teacher-student network to learn collaboratively and teach each other. 2.3 Causal Inference in Vision Causality typically includes two inferences, i.e. , intervention inference and counterfactual inference (Pearl, 2009; Pearl et al, 2016), and it has been successfully applied in several areas of artificial intelligence, such as explainable machine learning (Lv et al, 2022), natural language processing (Wood-Doughty et al, 2018), reinforcement learning (Kallus and Zhou, 2018) and adversarial learning (Zhang et al, 2021). Since causal representation can alleviate the effects of dataset bias, it served as an effective tool in vision tasks (Yue et al, 2020; Rao et al, 2021; Tang et al, 2020; Chen et al, 2021a; Wang et al, 2021a; Yang et al, 2021; Li et al, 2023a). For example, Chen et al. (Chen et al, 2021a) employed a coun-terfactual analysis method to alleviate the over-dependence of environment bias and highlight the trajectory clues itself. Wang et al. (Wang et al, 2021a) introduced causal interven-tion into the visual model to learn causal features that are robust in any confounding context. Li et al. (Li et al, 2023a) and Yue et al. (Yue et al, 2020) bring the causal inference into few-shot learning and obtain significant performances. In ZSL, there are clear projection domain shifts between seen and unseen classes (Fu et al, 2015; Chen et al, 2023b), e.g. ,the attribute of "has tail" is different for horse (seen class) and pig (unseen class), which inevitably leads the attention model to learn the spurious associations between visual and attribute features. Accordingly, we deploy causal attention via intervention inference to enable the ZSL model to learn causal features, which are robust to visual bias. Accordingly, the generalization of ZSL can be improved. 
+
+3 Mutually Causal Semantic Distillation Network Notation . Assume that the training data Ds = {(xsi , y si )}
+
+has Cs seen classes, where xsi ∈ X s denotes the visual sample i, and ysi ∈ Y s is the corresponding class label. Another set of unseen classes Du = {(xui , y ui )} has Cu
+
+classes, where xui ∈ X u are the unseen class samples, and 
+
+yui ∈ Y u are the corresponding labels. A set of class seman-tic vectors/prototypes (semantic value annotated by humans according to attributes) of the class c ∈ C s ∪ C u = C with 3.1 Attribute →Visual Causal Attention Sub-net 5
+
+K attributes zc = [ zc
+
+> 1
+
+, . . . , z cK ]⊤ = ϕ(y) (where ϕ(·) is a mapping function to bridge the zc and y) support knowledge transfer from seen classes to unseen ones. Here, the semantic attribute vectors of each attribute A = {a1, . . . , a K } learned by GloVe (Pennington et al, 2014), it essentially is the at-tribute features. 
+
+Overview . As illustrated in Fig. 2, our MSDN++ includes an attribute →visual causal attention sub-net (AVCA) and visual → attribute causal attention sub-net (VACA). Under the constraint of attribute-based cross-entropy loss with self-calibration, attribute-regression loss, and causal loss, the AVCA and VACA attempt to learn attribute-based causal vi-sual features with causal visual learning visual-based causal attribute representations using causal attribute learning, re-spectively. A semantic distillation loss encourages the two mutual causal attention sub-nets to learn collaboratively and teach each other throughout the training process. During In-ference, we fuse the predictions of AVCA and VACA to make use the complementary semantic knowledge between the two sub-nets. 3.1 Attribute →Visual Causal Attention Sub-net Existing methods demonstrate that learning the fine-grained features for attribute localization is important in ZSL (Xie et al, 2019, 2020; Zhu et al, 2019; Xu et al, 2020). In the first component of our MSDN++, we proposed an AVCA, which localizes the most relevant image regions corresponding to the attributes to extract attribute-based visual features from a given image for each attribute. AVCA includes two streams, 
+
+i.e. , attribute-based visual learning and causal visual learning. Attribute-based visual learning stream learns attribute-based visual features, which is strengthened with causality using a causal visual learning stream further. 
+
+3.1.1 Attribute-Based Visual Learning 
+
+Attribute-based visual learning involves two inputs: a set of visual features of the image V = {v1, . . . , v R} (where R is the number of regions), such that each visual feature encodes a region in an image, and a set of semantic attribute vectors 
+
+A = {a1, . . . , a K }. AVCA attends to image regions with respect to each attribute and compares each attribute to the corresponding attended visual region features to determine the importance of each attribute. For the k-th attribute, its attention weight of focusing on the r-th region of one image is defined as: 
+
+βrk = exp  a⊤ 
+
+> k
+
+W1vr
+
+PKk=1 exp  a⊤ 
+
+> k
+
+W1vr
+
+ , (1) where W1 is a learnable matrix to calculate the visual fea-ture of each region and measure the similarity between each semantic attribute vector. As such, we get a set of attention weights {βrk}Rr=1 .AVCA then learns the attribute-based visual features for each attribute based on the attention weights. For example, AVCA obtains the k-th attribute-based visual feature Fk,which is relevant to the k-th attribute ak. It is formulated as: 
+
+Fk =
+
+> R
+
+X
+
+> r=1
+
+βrkvr . (2) Intuitively, Fk captures the visual evidence to localize the corresponding semantic attribute in the image. If an image has an obvious attribute ak, the model will assign a high positive score to the k-th attribute. Otherwise, the model will assign a low score to the k-th attribute. Thus, we get a set of attribute-based visual features F = {F1, F 2, · · · , F K }.After obtaining the attribute-based visual features, AVCA further maps them into the semantic embedding space us-ing a mapping function M1. To encourage the mapping to be more accurate, the semantic attribute vectors A =
+
+{a1, a 2, · · · , a K } are served as support. Specifically, M1
+
+matches the attribute-based visual feature Fk with its corre-sponding semantic attribute vector ak, formulated as: 
+
+ψk = M1(Fk) = a⊤ 
+
+> k
+
+W2Fk, (3) where W2 is an embedding matrix that maps F into the semantic space. Essentially, ψk is an attribute score that rep-resents the confidence of having the k-th attribute in a given image. Finally, AVCA obtains a mapped semantic embedding 
+
+ψ(x) = {ψ1, ψ 2, · · · , ψ K } for each image. Accordingly, the final prediction can be formulated as: 
+
+p1 = {ψ(xi) × z1, · · · , ψ (xi) × zC }. (4) Notably, p1 is the observation prediction of sample xi in AVCA. 
+
+3.1.2 Causal Visual Learning 
+
+There are clear projection domain shifts between seen and unseen classes in ZSL (Fu et al, 2015; Chen et al, 2023b), which inevitably results in the attention model to learn the spurious associations between visual and attribute features of seen and unseen classes. Accordingly, we deploy causal visual learning to strengthen the attribute-based visual fea-tures with causality, enabling AVCA to learn attribute-based causal visual features. 
+
+Visual Causal Graph . We reformulate the attribute-based visual learning with a visual causal graph Gv = {V v , Ev }.Each variable in the graph has a corresponding node in Vv ,and the causal links Ev describe how these variables interact with each other. As shown in Fig. 2(a), the nodes Vv in Gv
+
+are represented by visual features X, the learned attention maps β, and final prediction C. (X, β ) → C denotes the 6 3 MUTUALLY CAUSAL SEMANTIC DISTILLATION NETWORK 
+
+visual features and attention maps jointly determine the final predictions, where we call node X is the causal parent of β
+
+and C is the causal child of X and β.
+
+Visual-Based Causal Effect . Attribute-based visual learning optimizes the attention by only supervising the final predic-tion C, which ignores how the learned attention maps affect the final prediction. In contrast, causal inference (Frappier, 2018) is a good tool to help us analyze the causalities be-tween variables of the model. Inspired by this, we propose to adopt the causality to measure the quality of the learned attention and then improve the model by encouraging the network to produce more influential attention maps. Using the visual causal graph, we can analyze causalities by directly manipulating the values of attention and seeing the effect. The operation is formally called causal intervention, which can be denoted as do(·). Specifically, we take do (β = ¯β) in Gv to conduct causal intervention, e.g. , random attention. Notably, we chose ran-dom attention as the counterfactual baseline because it rep-resents a null intervention with minimal structural assump-tions. Unlike “learned null attention” (which may still embed dataset biases) or “marginal attention” (which requires esti-mating a prior distribution from data), random attention is provably independent of both visual inputs and model pa-rameters. This ensures that the intervention do (β = ¯β) truly severs the causal link between visual features and attention, fulfilling the do-operator’s requirement of an exogenous ma-nipulation. It provides a clean, unbiased baseline to measure the true causal effect of the learned attention. This means we replace the variable β with the values of ¯β by cutting-off the link X → β, which without any causal associations with the visual features X. Following the attribute-based visual learn-ing, we can obtain the causal visual features ¯F = { ¯F1, ¯F2,
+
+· · · , ¯FK } and the causal semantic mapped embedding ¯ψ(x) = 
+
+{ ¯ψ1, ¯ψ2, · · · , ¯ψK } according to Eq. 2 and Eq. 3, respectively. Then, the class predictions after intervention do (β = ¯β)
+
+can be obtained by: 
+
+P (do (β = ¯β), X = xi) = { ¯ψ(xi) × z1, · · · , ¯ψ(xi) × zC }.
+
+(5) Accordingly, the actual effect of the learned attention on the prediction can be represented by the difference between the observed prediction p1 = P (β, X = xi) and its causal intervention one P (do (β = ¯β), X = xi). It is formulated as: 
+
+P vef f ect (xi) = P (β, X = xi) − P (do (β = ¯β), X = xi)
+
+(6) Because ¯β is drawn from a uniform distribution (post soft-max), it represents a maximally entropic, non-informative attention over regions. Thus, the causal effect captures how much the learned attention improves prediction compared to a completely uninformative one. We also experimented with other counterfactual distributions (e.g., uniform attention, re-versed attention) in Table 4, and results show our model is robust to the choice of ¯β distribution—as long as it is indepen-dent of the input, the causal learning signal remains effective. Therefore, we can use P vef f ect (xi) to evaluate the quality of the learned visual attention and improve the causality of attribute-based visual features. 3.2 Visual →Attribute Causal Attention Sub-net VACA includes a visual-based attribute learning stream that learns visual-based attribute representations, and a causal attribute learning that enhances the attribute features with causality. Visual-based attribute representations are comple-mentary to the attribute-based visual features, enabling them to calibrate each other. As such, MSDN++ can discover the in-trinsic semantic representations between visual and attribute features. 
+
+3.2.1 Visual-Based Attribute Learning 
+
+Visual-based attribute learning first attends to semantic at-tributes with respect to each image region. Formally, its at-tention weights focus on the k-th attribute defined as: 
+
+γkr = exp  v⊤ 
+
+> r
+
+W3ak
+
+PRr=1 exp ( v⊤ 
+
+> r
+
+W3ak) , (7) where W3 is a learnable matrix, which measures the simi-larity between the semantic attribute vector and each visual region feature. Accordingly, VACA can get a set of attention weights {γkr }Kk=1 , which is employed to extract visual-based attribute features, formulated as: 
+
+Sr =
+
+> K
+
+X
+
+> k=1
+
+γkr ak. (8) Essentially, Sr is the visual-based attribute representation, which is aligned to the Fk. VACA further employs a mapping function M2 to map these visual-based attribute features 
+
+S = {S1, S 2, · · · , S R} into the semantic space: 
+
+ˆΨr = M2(Sr ) = v⊤ 
+
+> r
+
+W4Sr , (9) where W4 is an embedding matrix. Given a set of V =
+
+{v1, . . . , v R}, VACA obtains the mapped semantic embed-ding ˆΨ (x) = { ˆΨ1, ˆΨ2, · · · , ˆΨR} for the attributes of one image. To enable the learned semantic embedding ˆΨ (xi) is 
+
+R-dim to match with the dimension of class semantic vec-tor ( K-dim ), it is further mapped into semantic attribute space with K-dim , formulated as Ψ (xi) = ˆΨ (xi) × Att =ˆΨ (xi) × (V ⊤Watt A), where Watt is a learnable matrix. 3.3 Model Optimization 7
+
+Finally, we can get the final prediction with the mapped semantic vectors and class semantic vector: 
+
+p2 = {Ψ (xi) × z1, · · · , Ψ (xi) × zC }. (10) Essentially, p2 is the observation prediction of sample xi in VACA. 
+
+3.2.2 Causal Attribute Learning 
+
+Similar to AVCA, VACA further improves the causality of visual-based attribute features using causal attribute learning. 
+
+Attribute Causal Graph . VACA first formulate a attribute causal graph Ga = {V a, Ea}. The graph consists of the cor-responding nodes in Va, and the causal links Ea capturing the causal relationships between each other. As shown in Fig. 2(b), the nodes of Ga are represented by visual features X,the learned attribute attention maps γ, and final prediction 
+
+C. (X, γ ) → C represents the visual features and attribute attention maps jointly determine the final predictions, where we call node X is the causal parent of γ and C is the causal child of X and γ.
+
+Attribute-Based Causal Effect . Based on the attribute causal graph, we can analyze causalities by directly manip-ulating the values of attribute attention and see the effect. For example, do (γ = ¯ γ) in Ga conduct causal intervention, 
+
+e.g. , random attention. This means we replace the variable 
+
+γ with the values of ¯γ by cutting off the link X → γ, which does not have any causal associations with the visual features 
+
+X. Following the visual-based attribute learning, we can obtain the causal attribute features ¯S = { ¯S1, ¯S2, · · · , ¯SR},the causal mapped embedding ¯Ψ (x) = { ¯Ψ1, ¯Ψ2, · · · , ¯ΨK }
+
+and final prediction ¯p2 according to Eq. 8, Eq. 9, and Eq. 10, respectively. Then, the class predictions based on the causal interven-tion do (γ = ¯ γ) is formulated as: 
+
+C(do (γ = ¯ γ), X = xi) = arg max  
+
+> c∈C
+
+¯p2. (11) Accordingly, the actual effect of the learned attention on the prediction is represented by the difference between the ob-served prediction P (γ, X = xi) and its causal intervention one P (do (γ = ¯ γ), X = xi). It is formulated as: 
+
+P aef f ect (xi) = P (γ, X = xi) − P (do (γ = ¯ γ), X = xi)
+
+(12) To this end, the effectiveness of attribute attention can be interpreted as how the attention improves the final prediction compared to the wrong/intervention one. P aef f ect (xi) can be used to evaluate the quality of the learned attribute attention, enabling the attribute features to be more reliable. 3.3 Model Optimization To optimize MSDN++, each attention sub-net is trained with an attribute-based cross-entropy loss with self-calibration, attribute regression loss, and causal loss. To encourage mu-tual learning between the two attention sub-nets, we deploy a semantic distillation loss that aligns with each other’s class posterior probabilities. 
+
+Attribute-Based Cross-Entropy Loss. Considering the as-sociated image and attribute embeddings are projected near their class semantic vector zc when an attribute is visually present in an image, we take the attribute-based cross-entropy loss with self-calibration (Zhu et al, 2019; Huynh and Elham-ifar, 2020a; Xu et al, 2020) (denoted as LACEC ) to optimize the MSDN++. LACEC encourages the image to have the high-est compatibility score with its corresponding class semantic vector. Given a batch of nb training images {xsi }nb 
+
+> i=1
+
+with their corresponding class semantic vectors zc, LACEC is de-fined as:                              
+
+> LACEC =−1
+> nbnbX
+> i=1
+> [log exp ( f(xi)×zc)
+> P
+> ˆc∈C sexp ( f(xi)×zˆc)
+> −λcal
+> Cu
+> X
+> c′=1
+> log exp  f(xi)×zc′
+> +I[c′∈C u]
+> P
+> ˆc∈C exp  f(xi)×zˆc+I[ˆ c∈C u]
+> ],
+
+(13) where f (xi) = ψ(xi) for AVCA sub-net and f (xi) = Ψ (xi)
+
+for VACA sub-net, I[c∈C u] is an indicator function ( i.e. , it is 1 when c ∈ C u, otherwise -1), and λcal is a weight to control the self-calibration term. Intuitively, LACEC encourages non-zero probabilities to be assigned to the unseen classes during training, thus MSDN++ produces a large probability for the true unseen class when given the test unseen samples. 
+
+Attribute Regression Loss. We employ an attribute regres-sion loss (Xu et al, 2022; Chen et al, 2022a) to optimize MSDN++, which enables M1 and M2 to map visual/attribute features into semantic spaces close to their corresponding class semantic vectors further. Specifically, we take visual-semantic mapping as a regression problem and minimize the mean square error between the embedded attribute score 
+
+f (xi) and the corresponding ground truth attribute score zc
+
+of a batch of nb images {xi}nb
+
+> i=1
+
+:
+
+LAR = 1
+
+nbnbX
+
+> i=1
+
+∥f (xi) − zc∥22. (14) where f (xi) = ψ(xi) and f (xi) = Ψ (xi) in AVCV and VACA, respectively. 
+
+Causal Loss. To enable MSDN++ to learn the intrinsic se-mantic knowledge for representing reliable features, we de-ploy the causal loss Lcausal based on the causal effect in AVCA (Eq. 6) and VACA (Eq. 12). Lcausal can provide a supervision signal to explicitly guide attention learning with 8 4 EXPERIMENTS (a) CUB (b) SUN (c) AWA2 (d) FLO 
+
+Fig. 3: Part of samples on four challenge datasets, including three fine-grained datasets ( i.e. , (a) CUB (Welinder et al, 2010), (b) SUN (Patterson and Hays, 2012), and FLO Nilsback and Zisserman (2008)), and one coarse-grained dataset ( i.e. , AWA2 (Xian et al, 2017)). Each image is sampled from different classes. We find that the images of different classes in fine-grained dataset are very similar and not easy to be distinguished, while the images in the coarse-grained dataset are more easy to be recognized. For example, CUB includes similar bird images, but AWA2 consists of various animal images. causal associations between visual and attribute representa-tions, formulated as: 
+
+Lcausal = 1
+
+nbnbX
+
+> i=1
+
+CE (Pef f ect , y i),
+
+= − 1
+
+nbnbX
+
+> i=1
+
+log exp ( f (xi) × zc)
+
+P 
+
+> ˆc∈C s
+
+exp ( f (xi) × zˆc)
+
+− 1
+
+nbnbX
+
+> i=1
+
+log exp   ¯f (xi) × zcP 
+
+> ˆc∈C s
+
+exp   ¯f (xi) × zˆc
+
+(15) where Pef f ect = P vef f ect for AVCA and Pef f ect = P aef f ect 
+
+for VACA, and CE is the cross-entropy. f (xi) = ψ(xi)
+
+and ¯f (xi) = ¯ψ(xi) in AVCV, while f (xi) = Ψ (xi) and 
+
+¯f (xi) = ¯Ψ (xi) in VACA. 
+
+Semantic Distillation Loss. We further introduce a semantic distillation loss Ldistill , which enables the two mutual atten-tion sub-nets to learn collaboratively and teach each other throughout the training process. Ldistill includes a Jensen-Shannon Divergence (JSD) and an ℓ2 distance between the predictions of the two sub-nets ( i.e. , p1 and p2 ). It is formu-lated as:             
+
+> Ldistill =1
+> nbnbX
+> i=1
+> [ 12 (DKL (p1(xi)∥p2(xi)) + DKL (p2(xi)∥p1(xi)))
+> |{z }
+> JSD
+> +∥p1(xi)−p2(xi)∥22
+> |{z }
+> ℓ2
+> ],
+
+(16) where 
+
+DKL (p|| q) = 
+
+> Cs
+
+X
+
+> c=1
+
+pc log( pc
+
+qc ). (17) 
+
+Overall Loss. Finally, the overall loss function of MSDN++ is defined as: 
+
+Ltotal = LACEC + λAR LAR + λcausal Lcausal + λdistill Ldistill ,
+
+(18) where λAR , λcausal , and λdistill are weights to control the at-tribute regression loss, causal loss, and semantic distillation loss, respectively. 3.4 Zero-Shot Prediction After optimization, We first obtain the embedding features of a test instance xi in the semantic space w.r.t. the AVCA and VACA sub-nets, i.e. , ψ(x) and Ψ (x). Considering the learned semantic knowledge in the two sub-nets are comple-mentary to each other, we fuse their predictions using two combination coefficients (α1, α 2) to predict the test label of 
+
+xi with an explicit calibration, formulated as: 
+
+c∗ = arg max 
+
+> c∈C u/C
+
+(α1ψ(xi) + α2Ψ (xi)) ⊤ × zc + I[c∈C u].
+
+(19) Here, Cu/C corresponds to the CZSL/GZSL setting. 
+
+4 Experiments Datasets. To evaluate our method, we conduct experiments on four challenging benchmark datasets, i.e. , CUB (Caltech UCSD Birds 200) (Welinder et al, 2010), SUN (SUN At-tribute) (Patterson and Hays, 2012), AWA2 (Animals with 9
+
+Table 1: Results ( %) of the state-of-the-art CZSL and GZSL models on CUB, SUN, and AWA2, including generative methods, common space-based methods, and embedding-based methods. The best and second-best results are marked in Red and Blue ,respectively. The symbol “–” indicates no results. The symbol “*” denotes attention-based methods. The symbol † denotes ZSL methods based on large-scale vision-language model.                                                                                                                                                                                                                                                                                                                                                                                                       
+
+> Methods CUB SUN AWA2
+> CZSL GZSL CZSL GZSL CZSL GZSL acc USHacc USHacc USH
+> Generative Methods
+> f-CLSWGAN (Xian et al, 2018) 57.3 43.7 57.7 49.7 60.8 42.6 36.6 39.4 68.2 57.9 61.4 59.6 f-VAEGAN-D2 (Xian et al, 2019) 61.0 48.4 60.1 53.6 64.7 45.1 38.0 41.3 71.1 57.6 70.6 63.5 Composer ∗(Huynh and Elhamifar, 2020b) 69.4 56.4 63.8 59.9 62.6 55.1 22.0 31.4 71.5 62.1 77.3 68.8 GCM-CF (Yue et al, 2021) –61.0 59.7 60.3 –47.9 37.8 42.2 –60.4 75.1 67.0 FREE (Chen et al, 2021b) –55.7 59.9 57.7 –47.4 37.2 41.7 –60.4 75.4 67.1 FREE+ESZSL (Cetin et al, 2022) –51.6 60.4 55.7 –48.2 36.5 41.5 –51.3 78.0 61.8 VS-Boost (Li et al, 2023b) –68.0 68.7 68.4 –49.2 37.4 42.5 ––––EGG (Cavazza et al, 2023) –58.6 72.3 64.7 –––––50.2 87.9 63.9 ViFR (Chen et al, 2025) 69.1 57.8 62.7 60.1 65.6 48.8 35.2 40.9 73.7 58.4 81.4 68.0
+> Common Space Learning
+> DeViSE (Frome et al, 2013) 52.0 23.8 53.0 32.8 56.5 16.9 27.4 20.9 54.2 17.1 74.7 27.8 DCN (Liu et al, 2018) 56.2 28.4 60.7 38.7 61.8 25.5 37.0 30.2 65.2 25.5 84.2 39.1 CADA-VAE (Schönfeld et al, 2019) 59.8 51.6 53.5 52.4 61.7 47.2 35.7 40.6 63.0 55.8 75.0 63.9 SGAL (Yu and Lee, 2019) –40.9 55.3 47.0 –35.5 34.4 34.9 –52.5 86.3 65.3 CLIP †(Radford et al, 2021) –55.2 54.8 55.0 ––––––––HSVA (Chen et al, 2021c) 62.8 52.7 58.3 55.3 63.8 48.6 39.0 43.3 –59.3 76.6 66.8 CoOp †(Zhou et al, 2022) –49.2 63.8 55.6 ––––––––CoOp+SHIP †(Wang et al, 2023) –55.3 58.9 57.1 ––––––––
+> Embedding-based Methods
+> SP-AEN (Chen et al, 2018) 55.4 34.7 70.6 46.6 59.2 24.9 38.6 30.3 58.5 23.3 90.9 37.1 SGMA ∗(NeurIPS’19) (Zhu et al, 2019) 71.0 36.7 71.3 48.5 ––––68.8 37.6 87.1 52.5 AREN ∗(Xie et al, 2019) 71.8 38.9 78.7 52.1 60.6 19.0 38.8 25.5 67.9 15.6 92.9 26.7 LFGAA ∗(Liu et al, 2019) 67.6 36.2 80.9 50.0 61.5 18.5 40.0 25.3 68.1 27.0 93.4 41.9 DAZLE ∗(Huynh and Elhamifar, 2020a) 66.0 56.7 59.6 58.1 59.4 52.3 24.3 33.2 67.9 60.3 75.7 67.1 GNDAN ∗(Chen et al, 2024b) 75.1 69.2 69.6 69.4 65.3 50.0 34.7 41.0 71.0 60.2 80.8 69.0 TransZero ∗(Chen et al, 2022a) 76.8 69.3 68.3 68.8 65.6 52.6 33.4 40.8 70.1 61.3 82.3 70.2 APN ∗(Xu et al, 2022) 75.0 67.4 71.6 69.4 61.5 40.2 35.2 37.5 69.9 61.9 79.4 69.6 ICIS (Christensen et al, 2023) 60.6 45.8 73.7 56.5 51.8 45.2 25.6 32.7 64.6 35.6 93.3 51.6 COND+EGZSL (Chen et al, 2024a) –45.2 55.2 49.6 –––––59.2 80.7 68.3 EG-part-net (Chen et al, 2024c) –64.8 66.1 65.4 –––––64.7 78.7 71.0 MSDN ∗(Conference Version ) (Chen et al, 2022b) 76.1 68.7 67.5 68.1 65.8 52.2 34.2 41.3 70.1 62.0 74.5 67.7
+> MSDN++ ∗(Ours) 78.5 70.8 70.3 70.6 67.5 51.9 35.4 42.1 73.4 66.5 79.7 72.5
+
+Attributes 2) (Xian et al, 2017) and FLO Nilsback and Zis-serman (2008). Among them, CUB, SUN, and FLO are fine-grained datasets, whereas AWA2 is a coarse-grained dataset. Some samples are presented in Fig. 3. Following (Xian et al, 2017), we use the same seen/unseen splits and class seman-tic embeddings. Specifically, CUB has 11,788 images of 200 bird classes (seen/unseen classes = 150/50) with 312 at-tributes. SUN consists of 14,340 images of 717 scene classes (seen/unseen classes = 645/72) with 102 attributes. AWA2 has 37,322 images of 50 animal classes (seen/unseen classes = 40/10) with 85 attributes. FLO has 8189 images of 102 flowers classes (seen/unseen classes = 82/20) with 1024 at-tributes. 
+
+Evaluation Protocols. In the CZSL setting, we evaluate the top-1 accuracy on unseen classes , denoted as acc . In the GZSL setting, we evaluate the top-1 accuracies both on seen and unseen classes ( i.e. , S and U ). Furthermore, their harmonic mean (defined as H = (2 × S × U )/(S + U )) is also used for evaluating the performance in the GZSL setting. 
+
+Implementation Details. We take a ResNet101 (He et al, 2016) pre-trained on ImageNet as the network backbone to extract the feature map for each image without fine-tuning. Input images were resized to 448 ×448 and normalized using ImageNet statistics. The feature maps were extracted from the last convolutional layer, resulting in a fixed spatial dimen-sion of 14 ×14 (196 regions). This consistent spatial structure was maintained throughout training and intervention. We use the RMSProp optimizer with hyperparameters (momentum = 0.9, weight decay = 0.0001) to optimize our model. We set the learning rate and batch size to 0.0001 and 50, respectively. We take random attention as the causal intervention in causal visual/attribute learning streams for all datasets. Specifically, we generated random attention weights independently for each sample. For the AVCA subnet, random attention ma-trices of size [K, 49] were sampled from a Uniform(0,1) distribution and then normalized via softmax over the spatial dimension. The same procedure was applied symmetrically to the VACA subnet. These random attentions were used only in the forward pass for causal loss computation and 10 4 EXPERIMENTS 
+
+were detached from the gradient computation, ensuring they did not affect the learning of the actual attention modules. We empirically set the loss weights {λcal , λ AR , λ causal , λ distill } to 
+
+{0.05 , 0.03 , 0.3, 0.001 }, {0.0001 , 0.01 , 0.0005 , 0.05 }, and 
+
+{0.4, 0.06 , 0.1, 0.01 } for CUB, SUN, and AWA2, respec-tively. We set the combination coefficient (α1, α 2) to (0 .8, 0.2) ,
+
+(0 .7, 0.3) , (0 .8, 0.2) for CUB, SUN, and AWA2, respectively. Table 2: Results ( %) of the state-of-the-art GZSL models on FLO.                     
+
+> Methods FLO
+> USHf-CLSWGAN (Xian et al, 2018) 59.3 74.2 65.9 f-VAEGAN-D2 (Xian et al, 2019) 56.8 74.9 64.6 TF-VAEGAN (Narayan et al, 2020) 62.5 84.1 71.7 EG-part-net (Chen et al, 2024c) 61.5 81.4 70.1
+> MSDN (Conference Version ) (Chen et al, 2022b) 62.2 81.0 70.3
+> MSDN++ (Ours) 69.2 80.7 74.5
+
+4.1 Comparision with State-of-the-Arts Our MSDN++ is an embedding-based method with inductive manner. To demonstrate the effectiveness and advantages of our MSDN++, we compare it with other state-of-the-art methods both in CZSL and GZSL settings, including gen-erative methods ( e.g. , f-CLSWGAN (Xian et al, 2018), f-VAEGAN (Xian et al, 2019), Composer (Huynh and Elhami-far, 2020b), E-PGN (Yu et al, 2020), TF-VAEGAN (Narayan et al, 2020), IZF (Shen et al, 2020), SDGZSL (Chen et al, 2021d), GCM-CF (Yue et al, 2021), FREE (Chen et al, 2021b), FREE+ESZSL (Cetin et al, 2022), VS-Boost (Li et al, 2023b), EGG (Cavazza et al, 2023), and ViFR(Chen et al, 2025)), common space learning methods ( e.g. , De-ViSE (Frome et al, 2013), DCN (Liu et al, 2018), CADA-VAE (Schönfeld et al, 2019), SGAL (Yu and Lee, 2019), and HSVA (Chen et al, 2021c), CLIP (Radford et al, 2021), CoOp (Zhou et al, 2022), CoOp+SHIP (Wang et al, 2023)), and embedding-based methods ( e.g. , SP-AEN (Chen et al, 2018), SGMA , AREN (Xie et al, 2019), LFGAA (Liu et al, 2019), DAZLE (Huynh and Elhamifar, 2020a), GN-DAN (Chen et al, 2024b), TransZero (Chen et al, 2022a), APN (Xu et al, 2022), ICIS (Christensen et al, 2023), EG-part-net (Chen et al, 2024c), COND+EGZSL (Chen et al, 2024a)). Notably, the large-scale visual-language model based ZSL methods (Radford et al, 2021; Zhou et al, 2022; Wang et al, 2023) can be grouped into common space learn-ing methods intrinsically. Different to classical common space learning methods (Frome et al, 2013; Schönfeld et al, 2019; Chen et al, 2021c) that uses small datasets for learn-ing a joint space of visual and semantic representations with semantic attributes, the large-scale visual-language model based ZSL methods learns the joint space with large-scale data and label prompt. 
+
+Conventional Zero-Shot Learning. We first compare our MSDN++ with the state-of-the-art methods in the CZSL setting. Table 1 shows the results of CZSL on various datasets. Compared to all strong baselines, including embedding-based methods, generative methods, and common space learning methods, our MSDN++ performs the best results of 78.5%, 67.5%, and second-best results of 73.4% on CUB, SUN, and AWA2, respectively. This indicates that MSDN++ discovers the intrinsic semantic knowledge for effective knowledge transfer from seen classes to unseen ones. Furthermore, our MSDN++ achieves significant performance gains by 2.4%, 1.7%, and 3.3% on CUB, SUN, and AWA2, respectively, over the MSDN (conference version). This should be thanks to the causal visual/attribute leanings that guide MSDN++ to learn causal vision-attribute associations for representing reliable features with good generalization. 
+
+Generalized Zero-Shot Learning. We take MSDN++ to compare with the state-of-the-art methods in the GZSL set-ting further. Results are shown in Table 1. We can find: 
+
+i) The most state-of-the-art methods achieve good results on seen classes but fail on unseen classes on CUB and AWA2. For example, AREN (Xie et al, 2019) and LFGAA (Liu et al, 2019) get the accuracies on unseen/seen classes are 38.9%/78.7% (15.6%/92.9%) and 36.2%/80.9% (27.0%/93.4%) on CUB (AWA2), respectively. Because they simply utilize unidirectional attention in a weakly supervised manner to learn the spurious and limited latent semantic representa-tions, which fails to effectively discover the intrinsic seman-tic knowledge for knowledge transfer from seen to unseen classes. In contrast, our MSDN++ employs a mutually causal semantic distillation network to learn intrinsic and more effi-cient semantic knowledge, which enables the model to gen-eralize well to unseen classes with high seen and unseen accuracies. Accordingly, MSDN++ obtains good results of harmonic mean, i.e. , 70.6%, 42.1%, and 72.5% on CUB, SUN, and AWA2, respectively. 
+
+ii ) Compared to the large-scale vision-language model based ZSL methods ( e.g. , CLIP (Radford et al, 2021), CoOp (Zhou et al, 2022), CoOp+SHIP (Wang et al, 2023)), our MSDN++ obtains significant performances gains of H = 13 .5% at least on CUB. This demonstrates the superiority and potential of our MSDN++ for ZSL. Because the large-scale vision-language based ZSL methods are limited by the domain-specific knowledge, which has a large bias with the large-scale vision-text pairs. 
+
+iii ) GCM-CF (Yue et al, 2021) is the first method that ap-plied causal inference to the ZSL task. It introduces a causal generation to guide the generative methods to synthesize balanced visual features for unseen classes. Differently, we design causal attention learning to enable the embedding-based methods to learn intrinsic and more sufficient seman-4.1 Comparision with State-of-the-Arts 11 MSDN MSDN++ MSDN MSDN++ 
+
+Fig. 4: Visualization of attention maps learned by the first sub-nets of MSDN (Chen et al, 2022b) and MSDN++ on CUB. We show the top-10 attention maps focused by models. The red boxes indicate MSDN learns the wrong attention maps that are irrelevant to the corresponding attributes. (a) A VCA (b) V ACA 
+
+Fig. 5: Visualization of attention maps for the two mutual attention sub-nets (i.e, MSDN++(AVCA) and MSDN++(VACA)). Results show that our AVCA and VACA subnets can overally learn the accurate visual localizations, but they also learn few of falure cases. tic knowledge for knowledge transfer from seen to unseen classes. Our MSDN++ achieves significant improvements of harmonic mean by 10.3% and 5.5% on CUB and AWA2, respectively. 
+
+iv ) MSDN++ performs poorer than the generative methods in the GZSL setting because per class only contains 16 train-ing images on SUN, which heavily limits the ZSL mod-els. As such, the data augmentation is very effective for im-proving the performance of SUN, e.g., the generative meth-ods VS-Boost (Li et al, 2023b), HSVA (Chen et al, 2021c). Thus, most of the generative methods perform better than the embedding-based methods on SUN. Additionally, we also conduct experiments on FLO dataset Nilsback and Zisserman (2008), results are shown in Table 2. Results show that our MSDN++ achieves the best result of H = 74 .5% on FLO. Compared to our conference ver-sion (MSDN Chen et al (2022b)), our MSDN++ obtains Table 3: Ablation studies for different components of MSDN++. The baseline is the visual feature extracted from CNN backbone with a global average pooling and then mapped into semantic embedding for ZSL.                                                                                                
+
+> Method CUB AWA2 acc USHacc USHbaseline 57.4 44.2 55.2 49.1 54.8 30.3 30.7 30.5 baseline w/ LAR 58.5 46.5 54.6 50.2 56.9 20.6 89.7 33.5 MSDN++(AVCA) w/o Ldistill 76.2 68.7 69.1 68.9 71.9 65.5 76.8 70.7 MSDN++(VACA) w/o Ldistill 68.4 57.5 65.6 61.3 68.0 56.5 74.6 64.3 MSDN++(AVCA) w/ Ldistill 77.7 69.6 70.0 69.8 73.0 66.4 79.3 72.3 MSDN++(VACA) w/ Ldistill 70.8 59.9 65.3 62.5 70.3 60.3 76.3 67.3 MSDN++ w/o AVCA( Lcausal )77.5 67.8 71.5 69.6 72.9 66.5 77.9 71.8 MSDN++ w/o VACA( Lcausal )77.9 70.6 70.2 70.4 73.3 66.9 78.4 72.2 MSDN++ w/o Lcausal 77.0 69.6 69.2 69.4 72.7 66.1 78.4 71.7 MSDN++ 78.5 70.8 70.3 70.6 73.4 66.5 79.7 72.5
+
+performance gain of H with 4.2%. These demonstrate the improvements of MSDN++ using causal attention. 12 4 EXPERIMENTS 
+
+Fig. 6: The attention maps of various causal interventions, including (a) random attention, (b) uniform attention, and (c) reversed attention. 4.2 Ablation Studies We conduct ablation studies to evaluate the effectiveness of various components of MSDN++, including the AVCA atten-tion sub-net (denoted as MSDN(AVCA) w/o Ldistill ), VACA attention sub-net (denoted as MSDN(VACA) w/o Ldistill ), se-mantic distillation learning ( i.e. , MSDN(VACA) w/ Ldistill ,MSDN(AVCA) w/ Ldistill ), causal visual learning (MSDN++ w/o AVCA( Lcausal )), causal attribute learning (MSDN++ w/o VACA( Lcausal )), and causal learning ( i.e. , MSDN w/o Lcausal ). Results are shown in Table 3. Compared to the baseline, MSDN++ only employs the single attention sub-net with-out semantic distillation obtaining significant performance gains. For example, MSDN(AVCA) w/o Ldistill achieves the gains of acc /H by 18.8%/19.8% and 17.1%/40.2% on CUB and AWA2, respectively; MSDN++(VACA) w/o Ldistill 
+
+achieves the acc /H improvements of 11.0%/12.2% and 13.2%/33.8% on CUB and AWA2, respectively. Because MSDN++ discovers the intrinsic semantic knowledge us-ing causal learning and visual/attribute-based attribute/visual learning to refine the visual features for effective knowledge transfer. When MSDN++ adopts semantic distillation loss to conduct collaborative learning for knowledge distillation, its results can be further improved, e.g. , MSDN(VACA) im-proves the acc /H by 2.4%/1.2% and 2.3%/3.0% on CUB and AWA2, respectively. The causal attribute/visual learning consistently improve the performance of MSDN++ by guid-ing the model to learn causal vision-attribute associations for representing reliable features. Moreover, the two causal learning can further improve MSDN++ cooperatively. We also find that the model significantly overfits to seen classes without our mutual semantic distillation and causal learning. Our full model ensembles the complementary embeddings learned by the two mutual causal attention sub-nets to rep-Table 4: Effects of various causal interventions on CUB, i.e. ,
+
+(a) Random Attention, (b) Uniform Attention, (c) Reversed Attention, and (d) Random Attention+Reversed Attention.                             
+
+> Method CUB
+> acc USHMSDN (Chen et al, 2022b) 76.1 68.7 67.5 68.1 MSDN++ w/ (a) 78.5 70.8 70.3 70.6 MSDN++ w/ (b) 78.4 70.8 70.0 70.4 MSDN++ w/ (c) 78.0 71.0 69.9 70.5 MSDN++ w/ (d) 78.5 71.8 69.5 70.6
+
+resent sufficient semantic knowledge, resulting in further performance gains for MSDN++. 4.3 Qualitative Results 
+
+Visualization of Attention Maps. To intuitively show the effectiveness of our MSDN++ for learning more intrinsic semantic knowledge than MSDN (Chen et al, 2022b), we visualize the top-10 attention maps learned by the two meth-ods. As shown in Fig. 4, although MSDN can localize some attributes in the image correctly for semantic knowledge rep-resentations, a few of the attributes are localized wrongly. For example, the MSDN localizes the attribute “leg color brown” of Acadian Flycatcher on the head in the image. This is because MSDN learns the wrong associations between vi-sual and attribute features for representing spurious semantic knowledge. In contrast, our MSDN++ learns the important attribute localization accurately for intrinsic semantic knowl-edge representations using causal attribute/visual learning, which encourages MSDN++ to discover the causal vision-attribute associations for representing reliable features. As shown in Fig. 5, the two sub-nets of MSDN++ can simi-larly learn the most important semantic representation, which is beneficial from mutual learning for semantic distillation. Furthermore, the two attention sub-nets also learn the com-plementary attribute feature localization for each other. As such, our MSDN++ achieves significant performance gains over MSDN. Although our AVCA and VACA subsets can overally learn the accurate visual localizations, they also learn few of failure cases. For example, the attribute “ Bill Color Orange ”and the attribute “ Leg Color Buff ” are wrongly localized by AVCA and VACA, respectively. This may be caused by the semantic ambiguity, which denotes that the same attribute may represented as various visual appearances. We believe this is an open challenge for future works. 
+
+t-SNE Visualizations. As shown in Fig. 7, we also present the t-SNE visualization (Maaten and Hinton, 2008) of visual features for seen and unseen classes on CUB, learned by the baseline, MSDN (Chen et al, 2022b), and MSDN++. Com-pared to the baseline, our models learn the intrinsic semantic 4.3 Qualitative Results 13 
+
+Fig. 7: t-SNE visualizations of visual features for (a) seen classes and (b) unseen classes, learned by the baseline, MSDN (Chen et al, 2022b), and MSDN++. The 10 colors denote 10 different seen/unseen classes randomly selected from CUB. Results show that our MSDN++ learn the intrinsic semantic representations both in seen and unseen classes compared to the baseline. Meanwhile, the each subnet of MSDN++ consistently enhances the intra-class compactness and inter-classes separability for MSDN. representations both in seen and unseen classes. For each sub-net, MSDN++ consistently enhances the intra-classes com-pactness and inter-classes separability for MSDN, and thus the fused features are refined further. This should be thanks to our causal visual/attributes learning in the AVCA/VACA subnets, which encourage MSDN++ to learn causal vision-attribute associations for representing reliable features with good generalization. As such, our MSDN++ achieves signifi-cant improvement over MSDN and baseline. 14 4 EXPERIMENTS Accuracy (%) 
+
+50 
+
+62 
+
+73 
+
+85 
+
+0 0.1  0.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9  1U S H acc 
+
+Combination Coe ffi cients (α1, α2)Accuracy (%) 
+
+55 
+
+65 
+
+75 
+
+85 
+
+0 0.1  0.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9  1U S H acc 
+
+Combination Coe ffi cients (α1, α2)
+
+(a) CUB (b) AWA2 
+
+Fig. 8: The effectiveness of the combination coefficients ( α1, α 2) between the AVCA and VACA sub-nets. Results show that MSDN++ performs poorly when α1/α 2 is set small, and its performances drop down when α1/α 2 is set too large. Because the attribute-based visual features and visual-based attribute features are complementary for discriminative semantic embedding representations. Accuracy (%)        
+
+> 3
+> 24
+> 45
+> 66
+> 87
+> 0.0005 0.005 0.05 0.5 553.3 76.6 78.5 78.0 77.9 655 71 70 70 3.2 43.9 70.3 72.2 72.5 53.3 74.4 70.8 67.4 66.7 USHacc
+
+λcalAccuracy (%)        
+
+> 25
+> 40
+> 55
+> 70
+> 85
+> 0.0003 0.003 0.03 0.3 3USHacc
+
+λARAccuracy (%)        
+
+> 62
+> 67
+> 72
+> 77
+> 82
+> 0.0003 0.003 0.03 0.3 3USHacc
+
+λcausalAccuracy (%)        
+
+> 45
+> 55
+> 65
+> 75
+> 85
+> 0.00001 0.0001 0.001 0.01 0.1 USHacc
+
+λdistill
+
+(a) (b) (c) (d) Accuracy (%)        
+
+> 2
+> 24
+> 46
+> 68
+> 90
+> 0.0004 0.004 0.04 0.4 429.3 73.4 64.4 63.0 62.9 573 52 49 49 2.6 79.7 69.2 70.9 71.2 25.6 66.5 41.2 37.6 37.3 USHacc
+
+λcalAccuracy (%)        
+
+> 37
+> 50
+> 63
+> 75
+> 88
+> 0.0006 0.006 0.06 0.6 6USHacc
+
+λARAccuracy (%)        
+
+> 50
+> 59
+> 68
+> 76
+> 85
+> 0.0001 0.001 0.01 0.1 1USHacc
+
+λcausalAccuracy (%)        
+
+> 60
+> 66
+> 73
+> 79
+> 85
+> 0.00001 0.0001 0.001 0.01 0.1 USHacc
+
+λdistill
+
+(e) (f) (g) (h) 
+
+Fig. 9: The effects of λcal , λAR , λcausal , and λdistill on CUB (top-row) and AWA2 (bottom-row). Results show that MSDN++ is robust when the loss weights are set to small and the performance will drop rapidly when loss weights are set to too large. Because the large loss weights will hamper the balance of various losses. 4.4 Effects of Various Causal Intervention We analyze three different strategies to conduct a causal intervention, including random attention, uniform attention and reversed attention, which will generate various causal attention maps as shown in Fig. 6. Results show that the causal attention maps focus on the wrong visual regions, which are not relevant to their corresponding attributes. This causal can measure the effectiveness of our attribute-based visual learning and visual-based attribute learning and en-able them to learn the intrinsic semantic knowledge between visual and attribute features with causality. The results in Table 4 show that the various causal attentions consistently improve the performance of MSDN. Because our causal attention provides a significant signal to supervise MSDN++. Furthermore, we find that all the causal interventions get similar performance gains, which indicates our causal vi-sual/attribute learning is robust for improving the causality of features. 4.5 Hyperparameter Analysis 
+
+Effects of Combination Coefficients. we provide exper-iments to determine the effectiveness of the combination coefficients ( α1, α 2) between AVCA and VACA sub-nets. As shown in Fig. 8, MSDN++ performs poorly when α1/α 2
+
+is set small, because the AVCA is the main sub-net to sup-port the final classification of MSDN++. Since the attribute-15 
+
+based visual features and visual-based attribute features are complementary for discriminative semantic embedding rep-resentations, the performances of MSDN++ drop down when 
+
+α1/α 2 is set too large ( e.g. , (α1, α 2) = (0 .9, 0.1) ). Accord-ing to Fig. 8, we set (α1, α 2) to be (0.8,0.2) for CUB and AWA2 based on the performances of H and acc . Notably, 
+
+(α1, α 2) = (1 .0, 0.0) and (α1, α 2) = (0 .0, 1.0) denotes the MSDN++ without information fusion from AVCA and VACA during inference. 
+
+Effects of Loss Weights. We empirically study how to set the related loss weights of MSDN++: λcal , λAR , λcausal , and λdstill ,which control the self-calibration term, attribute regression loss, causal loss, and semantic distillation loss, respectively. Results are shown in Fig. 9. Results show that MSDN++ is robust when the loss weights are set to small and the perfor-mance will drop rapidly when loss weights are set to too large. Because the large loss weights will hamper the balance of var-ious losses. According to the results in Fig. 9, we set the loss weights {λcal , λ AR , λ causal , λ distill } to {0.05 , 0.03 , 0.3, 0.001 }
+
+and {0.4, 0.06 , 0.1, 0.01 } for CUB and AWA2, respectively. Notably, the loss weights {λcal , λ AR , λ causal , λ distill } are to 
+
+{0.0001 , 0.01 , 0.0005 , 0.05 } for SUN. Furthermore, although the performance curve somehow unstale with the variant values for the hyper-parameters, MSDN++ performs consis-tently on various datasets when using same hyper-parameters. This means that our MSDN++ is roubust on various datasets. Accordingly, our method can be easily applied into new do-mains. 
+
+5 Conclusion 
+
+This paper introduces a mutually causal distillation network for ZSL, termed MSDN++, which consists of an AVCA and a VACA sub-nets. AVCA learns the attribute-based visual features with attribute-based/ causal visual learnings, while VACA learns the visual-based attribute features via visual-based/ causal attribute learnings. The causal attentions en-courage the two sub-nets to discover causal vision-attribute associations for representing reliable features with good gen-eralization. Furthermore, we further introduce a semantic distillation loss, which promotes the two sub-nets to learn collaboratively and teach each other. Finally, we fuse the complementary features of the two sub-nets to make full use of all important knowledge during inference. As such, MSDN++ effectively explores the intrinsic and more suffi-cient semantic knowledge for desirable knowledge transfer in ZSL. The quantitative and qualitative results on three popular benchmarks ( i.e. , CUB, SUN, and AWA2) demonstrate the superiority and potential of our MSDN++. 
+
+Data Availability Statements 
+
+The data used in this manuscript includes three benchmark datasets, i.e., CUB, 1 SUN, 2 and AWA2, 3 which are publicly opened benchmarks. 
+
+References 
+
+Akata Z, Perronnin F, Harchaoui Z, Schmid C (2016) Label-embedding for image classification. TPAMI 38:1425–1438 Arora G, Verma V, Mishra A, Rai P (2018) Generalized zero-shot learning via synthesized examples. In: CVPR, pp 4281–4289 Bai X, Wang H, Ma L, Xu Y, Gan J, Fan Z, Yang F, Ma K, Yang J, Bai S, Shu C, Zou X, Huang R, Zhang C, Liu X, Tu D, Xu C, Zhang W, Wang XL, Chen A, Zeng Y, Yang D, Wang MW, Holalkere NS, Halin NJ, Kamel IR, Wu J, Peng X, Wang X, Shao J, Mongkolwat P, Zhang J, Liu W, Roberts M, Teng Z, Beer L, Sanchez LE, Sala E, Rubin D, Weller A, Lasenby J, Zheng C, Wang J, Li Z, Schönlieb CB, Xia T (2021) Advancing covid-19 diagnosis with privacy-preserving collaboration in artificial intelligence. Nature Machine Intelligence Cavazza J, Murino V, Bue AD (2023) No adversaries to zero-shot learning: Distilling an ensemble of gaussian feature generators. IEEE Transactions on Pattern Analysis and Machine Intelligence 45:12167–12178 Cetin S, Baran OB, Cinbis RG (2022) Closed-form sam-ple probing for learning generative models in zero-shot learning. In: ICLR Chen D, Zhang H, Shen Y, Long Y, Shao L (2024a) Evolu-tionary generalized zero-shot learning. In: IJCAI Chen G, Li J, Lu J, Zhou J (2021a) Human trajectory predic-tion via counterfactual analysis. In: ICCV, pp 9804–9813 Chen L, Zhang H, Xiao J, Liu W, Chang S (2018) Zero-shot visual recognition using semantics-preserving adversarial embedding networks. In: CVPR, pp 1043–1052 Chen S, Wang W, Xia B, Peng Q, You X, Zheng F, Shao L (2021b) Free: Feature refinement for generalized zero-shot learning. In: ICCV Chen S, Xie GS, Yang Liu Y, Peng Q, Sun B, Li H, You X, Shao L (2021c) Hsva: Hierarchical semantic-visual adaptation for zero-shot learning. In: NeurIPS Chen S, Hong Z, Liu Y, Xie G, Sun B, Li H, Peng Q, Lu K, You X (2022a) Transzero: Attribute-guided transformer for zero-shot learning. In: AAAI      
+
+> 1https://www.vision.caltech.edu/datasets/cub_ 200_2011/
+> 2https://cs.brown.edu/~gmpatter/ sunattributes.html
+> 3https://cvml.ist.ac.at/AwA2/ 16 5CONCLUSION
+
+Chen S, Hong Z, Xie G, Wang W, Peng Q, Wang K, jun Zhao J, You X (2022b) Msdn: Mutually semantic distillation network for zero-shot learning. In: CVPR, pp 7602–7611 Chen S, Hong ZQ, Xie G, Zhao J, Li H, You X, Yan S, Shao L (2023a) Transzero++: Cross attribute-guided transformer for zero-shot learning. IEEE Transactions on Pattern Anal-ysis and Machine Intelligence 45(11):12844–12861 Chen S, Hou WQ, Hong Z, Ding X, Song Y, You X, Liu T, Zhang K (2023b) Evolving semantic prototype improves generative zero-shot learning. In: ICML Chen S, Hong Z, Xie G, Peng Q, You X, Ding W, Shao L (2024b) Gndan: Graph navigated dual attention network for zero-shot learning. IEEE Transactions on Neural Net-works and Learning Systems 35(4):4516–4529 Chen S, Hong Z, You X, Shao L (2025) Semantics-conditioned generative zero-shot learning via feature re-finement. International of Computer Vision 133(7):4504– 4521 Chen X, Deng X, Lan Y, Long Y, Weng J, Liu Z, Tian Q (2024c) Explanatory object part aggregation for zero-shot learning. IEEE Transactions on Pattern Analysis and Ma-chine Intelligence 46(2):851–868 Chen Z, Luo Y, Qiu R, Wang S, Huang Z, Li J, Zhang Z (2021d) Semantics disentangling for generalized zero-shot learning. In: ICCV Chou YY, Lin HT, Liu TL (2021) Adaptive and generative zero-shot learning. In: ICLR Christensen A, Mancini M, Koepke AS, Winther O, Akata Z (2023) Image-free classifier injection for zero-shot classi-fication. In: ICCV Collins RT, Lipton AJ, Kanade T, Fujiyoshi H, Duggins D, Tsin Y, Tolliver D, Enomoto N, Hasegawa O, Burt PJ, Wixson LE (2000) A system for video surveillance and monitoring. Carnegie Mellon University Technical Report, CMU-RI-TR-00-12 Frappier M (2018) The book of why: The new science of cause and effect. Science 361:855 – 855 Frome A, Corrado GS, Shlens J, Bengio S, Dean J, Ranzato M, Mikolov T (2013) Devise: A deep visual-semantic embedding model. In: NeurIPS Fu Y, Timothy MH, Xiang-tao, Gong S (2015) Transductive multi-view zero-shot learning. TPAMI pp 2332–2345 Han Z, Fu Z, Yang J (2020) Learning the redundancy-free features for generalized zero-shot object recognition. In: CVPR, pp 12862–12871 Han Z, Fu Z, Chen S, Yang J (2021) Contrastive embedding for generalized zero-shot learning. In: CVPR He K, Zhang X, Ren S, Sun J (2016) Deep residual learning for image recognition. In: CVPR, pp 770–778 Hinton GE, Vinyals O, Dean J (2015) Distilling the knowl-edge in a neural network. arXiv preprint arXiv:150302531 Hu Y, Yang J, Chen L, Li K, Sima C, Zhu X, Chai S, Du S, Lin T, Wang W, Lu L, Jia X, Liu Q, Dai J, Qiao Y, Li H (2023) Planning-oriented autonomous driving. In: CVPR, pp 17853–17862 Huynh D, Elhamifar E (2020a) Fine-grained generalized zero-shot learning via dense attribute-based attention. In: CVPR, pp 4482–4492 Huynh DT, Elhamifar E (2020b) Compositional zero-shot learning via fine-grained dense feature composition. In: NeurIPS Kallus N, Zhou A (2018) Confounding-robust policy im-provement. In: NeurIPS, p 9269–9279 Keshari R, Singh R, Vatsa M (2020) Generalized zero-shot learning via over-complete distribution. In: CVPR, pp 13297–13305 Lampert CH, Nickisch H, Harmeling S (2009) Learning to detect unseen object classes by between-class attribute transfer. In: CVPR, pp 951–958 Lampert CH, Nickisch H, Harmeling S (2014) Attribute-based classification for zero-shot visual object categoriza-tion. TPAMI 36:453–465 Larochelle H, Erhan D, Bengio Y (2008) Zero-data learning of new tasks. In: AAAI, pp 646–651 Li J, Jing M, Lu K, Ding Z, Zhu L, Huang Z (2019a) Lever-aging the invariant side of generative zero-shot learning. In: CVPR, pp 7394–7403 Li J, Zhang Y, Qiang W, Si L, Jiao C, Hu X, Zheng C, Sun F (2023a) Disentangle and remerge: Interventional knowl-edge distillation for few-shot object detection from a con-ditional causal perspective. In: AAAI, pp 1323–1333 Li K, Min MR, Fu Y (2019b) Rethinking zero-shot learning: A conditional visual classification perspective. In: ICCV, pp 3582–3591 Li X, Zhang Y, Bian S, Qu Y, Xie Y, Shi Z, Fan J (2023b) Vs-boost: Boosting visual-semantic association for gener-alized zero-shot learning. In: IJCAI Li X, Sun S, Feng R (2024) Causal representation learning via counterfactual intervention. In: AAAI Li Y, Zhang J, Zhang J, Huang K (2018) Discriminative learning of latent features for zero-shot recognition. In: CVPR, pp 7463–7471 Liu S, Long M, Wang J, Jordan MI (2018) Generalized zero-shot learning with deep calibration network. In: NeurIPS Liu Y, Guo J, Cai D, He X (2019) Attribute attention for semantic disambiguation in zero-shot learning. In: ICCV, pp 6697–6706 Liu Y, Zhou L, Bai X, Huang Y, Gu L, Zhou J, Harada T (2021) Goal-oriented gaze estimation for zero-shot learn-ing. In: CVPR Lv F, Liang J, Li S, Zang B, Liu CH, Wang Z, Liu D (2022) Causality inspired representation learning for domain gen-eralization. In: CVPR, pp 8036–8046 Maaten LVD, Hinton GE (2008) Visualizing data using t-sne. JMLR 9:2579–2605 17 
+
+Min S, Yao H, Xie H, Wang C, Zha Z, Zhang Y (2020) Domain-aware visual bias eliminating for generalized zero-shot learning. In: CVPR, pp 12661–12670 Narayan S, Gupta A, Khan F, Snoek CGM, Shao L (2020) Latent embedding feedback and discriminative features for zero-shot classification. In: ECCV Nilsback ME, Zisserman A (2008) Automated flower clas-sification over a large number of classes. In: ICVGIP, pp 722–729 Palatucci M, Pomerleau D, Hinton GE, Mitchell TM (2009) Zero-shot learning with semantic output codes. In: NeurIPS, pp 1410–1418 Parisotto E, Ba J, Salakhutdinov R (2016) Actor-mimic: Deep multitask and transfer reinforcement learning. In: ICLR Patterson G, Hays J (2012) Sun attribute database: Discov-ering, annotating, and recognizing scene attributes. In: CVPR, pp 2751–2758 Pearl J (2009) Causality, 2nd edn. Cambridge University Press Pearl J, Glymour M, Jewell NP (2016) Causal inference in statistics: A primer. John Wiley & Son Pennington J, Socher R, Manning CD (2014) Glove: Global vectors for word representation. In: EMNLP Pourpanah F, Abdar M, Luo Y, Zhou X, Wang R, Lim CP, Wang X (2020) A review of generalized zero-shot learn-ing methods. IEEE Transactions on Pattern Analysis and Machine Intelligence 45:4051–4070 Radford A, Kim JW, Hallacy C, Ramesh A, Goh G, Agarwal S, Sastry G, Askell A, Mishkin P, Clark J, Krueger G, Sutskever I (2021) Learning transferable visual models from natural language supervision. In: ICML Rao Y, Chen G, Lu J, Zhou J (2021) Counterfactual atten-tion learning for fine-grained visual categorization and re-identification. In: ICCV, pp 1005–1014 Romera-Paredes B, Torr PHS (2015) An embarrassingly sim-ple approach to zero-shot learning. In: ICML Romero A, Ballas N, Kahou SE, Chassang A, Gatta C, Ben-gio Y (2015) Fitnets: Hints for thin deep nets. In: ICLR Schönfeld E, Ebrahimi S, Sinha S, Darrell T, Akata Z (2019) Generalized zero- and few-shot learning via aligned varia-tional autoencoders. In: CVPR, pp 8239–8247 Shen Y, Qin J, Huang L (2020) Invertible zero-shot recogni-tion flows. In: ECCV Song J, Shen C, Yang Y, Liu Y, Song M (2018) Transduc-tive unbiased embedding for zero-shot learning. CVPR pp 1024–1033 Tang K, Niu Y, Huang J, Shi J, Zhang H (2020) Unbiased scene graph generation from biased training. In: CVPR, pp 3713–3722 Tsai YHH, Huang LK, Salakhutdinov R (2017) Learning robust visual-semantic embeddings. In: ICCV, pp 3591– 3600 Vyas MR, Venkateswara H, Panchanathan S (2020) Leverag-ing seen and unseen semantic relationships for generative zero-shot learning. In: ECCV Wang K, Peng X, Yang J, Lu S, Qiao Y (2020a) Suppressing uncertainties for large-scale facial expression recognition. In: CVPR, pp 6897–6906 Wang K, Peng X, Yang J, Meng D, Qiao Y (2020b) Region attention networks for pose and occlusion robust facial expression recognition. IEEE Transactions on Image Pro-cessing 29:4057–4069 Wang T, Zhou C, Sun Q, Zhang H (2021a) Causal attention for unbiased visual recognition. In: ICCV, pp 3071–3080 Wang Z, Gou Y, Li J, Zhang Y, Yang Y (2021b) Region semantically aligned network for zero-shot learning. In: CIKM Wang Z, Liang J, He R, Xu N, Wang Z, Tan TP (2023) Im-proving zero-shot generalization for clip with synthesized prompts. In: ICCV Welinder P, Branson S, Mita T, Wah C, Schroff F, Belongie SJ, Perona P (2010) Caltech-ucsd birds 200. Technical Report CNS-TR-2010-001, Caltech, Wood-Doughty Z, Shpitser I, Dredze M (2018) Challenges of using text classifiers for causal inference. In: EMNLP, pp 4586–4598 Xian Y, Schiele B, Akata Z (2017) Zero-shot learning — the good, the bad and the ugly. In: CVPR, pp 3077–3086 Xian Y, Lorenz T, Schiele B, Akata Z (2018) Feature gen-erating networks for zero-shot learning. In: CVPR, pp 5542–5551 Xian Y, Sharma S, Schiele B, Akata Z (2019) F-vaegan-d2: A feature generating framework for any-shot learning. In: CVPR, pp 10267–10276 Xie GS, Liu L, Jin X, Zhu F, Zhang Z, Qin J, Yao Y, Shao L (2019) Attentive region embedding network for zero-shot learning. In: CVPR, pp 9376–9385 Xie GS, Liu L, Jin X, Zhu F, Zhang Z, Yao Y, Qin J, Shao L (2020) Region graph embedding network for zero-shot learning. In: ECCV Xu W, Xian Y, Wang J, Schiele B, Akata Z (2020) Attribute prototype network for zero-shot learning. In: NeurIPS Xu W, Xian Y, Wang J, Schiele B, Akata Z (2022) Attribute prototype network for any-shot learning. International Jour-nal of Computer Vision 130:1735 – 1753 Yang X, Zhang H, Qi G, Cai J (2021) Causal attention for vision-language tasks. In: CVPR, pp 9842–9852 Yu H, Lee B (2019) Zero-shot learning via simultaneous generating and learning. In: NeurIPS Yu Y, Ji Z, Han J, Zhang Z (2020) Episode-based prototype generating network for zero-shot learning. In: CVPR, pp 14032–14041 Yue Z, Zhang H, Sun Q, Hua X (2020) Interventional few-shot learning. In: NeurIPS 18 5 CONCLUSION 
+
+Yue Z, Wang T, Zhang H, Sun Q, Hua X (2021) Counterfac-tual zero-shot and open-set visual recognition. In: CVPR Zhai Y, Ye Q, Lu S, Jia M, Ji R, Tian Y (2020) Multiple expert brainstorming for domain adaptive person re-identification. In: ECCV Zhang Y, Xiang T, Hospedales TM, Lu H (2018) Deep mutual learning. In: CVPR, pp 4320–4328 Zhang Y, Gong M, Liu T, Niu G, Tian X, Han B, Scholkopf B, Zhang K (2021) Causaladv: Adversarial robustness through the lens of causality. In: ICLR Zhou K, Yang J, Loy CC, Liu Z (2022) Learning to prompt for vision-language models. International Journal of Com-puter Vision 130:2337 – 2348 Zhu Y, Xie J, Tang Z, Peng X, Elgammal A (2019) Semantic-guided multi-attention localization for zero-shot learning. In: NeurIPS
