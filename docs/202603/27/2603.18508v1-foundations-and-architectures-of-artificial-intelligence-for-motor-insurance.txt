@@ -1,0 +1,1776 @@
+Title: Foundations and Architectures of Artificial Intelligence for Motor Insurance
+
+URL Source: https://arxiv.org/pdf/2603.18508v1
+
+Published Time: Fri, 20 Mar 2026 00:47:58 GMT
+
+Number of Pages: 173
+
+Markdown Content:
+# Foundations and Architectures of Artificial Intelligence for Motor Insurance 
+
+# Teerapong Panboonyuen, Ph.D. 
+
+## Submitted to MARS (Motor AI Recognition Solution) and Thaivivat Insurance Public Company Limited Panboonyuen 2026 https://kaopanboonyuen.github.io/MARS/ (v1.0.1) 
+
+> arXiv:2603.18508v1 [cs.CV] 19 Mar 2026
+
+Motor AI Recognition Solution Teerapong Panboonyuen 2I dedicate this work to the pursuit of possibility. 
+
+To the conviction that a single vision - when carried with discipline, scientific rigor, and unwavering persistence -can evolve into systems that transform organizations and industries. This handbook represents more than a technical record. It reflects a deliberate journey in which research excellence, architectural precision, and real-world deployment were unified under one guiding principle: 
+
+To build artificial intelligence that is not merely impressive in theory, but meaningful in practice - reliable, ethical, scalable, and impactful. 
+
+May this work serve as a foundation for the next generation of engineers, scientists, and leaders -those who will continue advancing intelligent systems with integrity, creativity, and responsibility. 
+
+Though I may no longer stand within these walls, the knowledge, the architecture, and the foundation I leave behind endure. Copyright © 2026 by Teerapong Panboonyuen All Rights Reserved Artificial intelligence in motor insurance is not merely automation. It is the engineering of trust at scale - transforming damaged vehicles into structured intelligence, risk into precision, and real-world uncertainty into decisive action. — Dr. Teerapong Panboonyuen (Dr. Kao) Acknowledgements 
+
+This journey would not have been possible without the trust, opportunity, and support of many remarkable individuals. It is built upon a foundation of shared vision, where belief in innovation, openness to experimentation, and the courage to pursue ambitious ideas have collectively shaped what this work has become. Each contribution, whether seen or unseen, has played a meaningful role in trans-forming challenges into progress and ideas into real-world impact. First and foremost, I would like to express my deepest gratitude to the execu-tive board of Thaivivat Insurance (TVI) for their vision and belief in advancing artificial intelligence through startup-driven innovation. Their decision to invest in and support the Motor AI Recognition Solution (MARS) has created a unique environment where ambitious ideas can be transformed into real-world systems. In particular, I would like to sincerely thank Mr. Jiraphant Asvatanakul, Mrs. Sutepee Asvatanakul, Miss Janejira Asvatanakul, and Mr. Thepphan Asvatanakul for their leadership and continued support. I am also deeply grateful to Miss Innapha Tantanavivat and Mr. Chalermpol Saiprasert for their encouragement and contributions throughout this journey. I would like to extend my heartfelt appreciation to MARS, especially to my man-ager, Mr. Naruepon Pornwiriyakul. His leadership style-granting both autonomy and trust-has allowed me to explore, design, and develop AI systems with full cre-ative freedom. Beyond professional guidance, his thoughtful conversations and perspective have provided invaluable insights, not only as a colleague but also on a human level. My sincere thanks also go to Mr. Panin Pienroj and Mr. Laphonchai Jirachuphun for opening the door to this opportunity. Without their invitation and belief in my 4potential, my journey at MARS would not have begun. Finally, I would like to extend my deepest appreciation to all members of the MARS organization—across the AI Team, the Service Team, HR Team, and De-velopment Team, as well as every individual working tirelessly behind the scenes. It is a privilege to lead the AI Team—Mike, Chu, Paul, Pin, Tul, Jaae, Phueng, Fah, and Pond—whose talent, commitment, and strong team spirit continue to in-spire me every day. This journey has been shaped not only by innovation, but by the people who consistently bring dedication, collaboration, and excellence into everything they do. What makes MARS truly exceptional is not only its vision, but its culture-one that encourages open communication, mutual respect, and a shared commitment to solving complex problems. The willingness of every team to collaborate across functions, support one another, and move forward together has been instrumental in transforming ideas into impactful solutions. It has been both a privilege and a meaningful experience to be part of such a dynamic and forward-thinking environment. I am sincerely grateful for the op-portunity to learn from, work alongside, and grow with such an inspiring group of individuals. Thank you for making this journey meaningful. With sincere appreciation, 
+
+Teerapong Panboonyuen (Kao) Declaration 
+
+I, Dr. Teerapong Panboonyuen (Dr. Kao), hereby declare that this handbook and all scientific, architectural, and engineering contributions presented herein are the result of my original work, conducted under my research leadership and technical direction during my tenure as Head of Artificial Intelligence at MARS (Motor AI Recognition Solution) from January 2022 to April 2026. This document provides a structured account of the conception, theoretical foun-dations, system architecture, and large-scale deployment of artificial intelligence systems developed within the organization. Unless otherwise explicitly acknowl-edged, all models, frameworks, and engineering solutions described herein were conceived and implemented under my direct supervision. This handbook is respectfully submitted to Motor AI Recognition Solution and Thaivivat Insurance Public Company Limited as a formal record of the technical foundations, research contributions, and outcomes achieved during this period of service. 
+
+Signature Date Abstract 
+
+This handbook presents a systematic treatment of the foundations and architectures of artificial intelligence for motor insurance, grounded in large-scale real-world deploy-ment. It formalizes a vertically integrated AI paradigm that unifies perception, mul-timodal reasoning, and production infrastructure into a cohesive intelligence stack for automotive risk assessment and claims processing. At its core, the handbook devel-ops domain-adapted transformer architectures for structured visual understanding, rela-tional vehicle representation learning, and multimodal document intelligence, enabling end-to-end automation of vehicle damage analysis, claims evaluation, and underwriting workflows. These components are composed into a scalable pipeline operating under practical constraints observed in nationwide motor insurance systems in Thailand. Be-yond model design, the handbook emphasizes the co-evolution of learning algorithms and MLOps practices, establishing a principled framework for translating modern arti-ficial intelligence into reliable, production-grade systems in high-stakes industrial envi-ronments. 
+
+Keywords— Artificial Intelligence, Transformer Architectures, Computer Vision, Mul-timodal Learning, Car Insurance, Motor Insurance, Automotive Insurance, InsurTech, Vehicle Damage Detection, Vehicle Damage Segmentation, Vehicle Damage Assess-ment, Car Damage Detection, Car Damage Segmentation, Vehicle Part Detection, Ve-hicle Part Segmentation, Vehicle Part Damage Analysis, Insurance Claims Automation, Automated Claims Processing, Accident Assessment, Risk Assessment, Underwriting Automation, Document Intelligence Table of Contents 
+
+1 Introduction 18 
+
+1.1 Vision and Evolution of MARSAIL . . . . . . . . . . . . . . . . 18 1.2 Scientific Foundations and Research Contributions . . . . . . . . 24 1.3 Mathematical Perspective of Vehicle Intelligence . . . . . . . . . 25 1.4 System Architecture Philosophy . . . . . . . . . . . . . . . . . . 27 1.5 Future Direction with LLM Agents . . . . . . . . . . . . . . . . . 28 1.6 Organizational Impact . . . . . . . . . . . . . . . . . . . . . . . . 28 1.7 Purpose of This Handbook . . . . . . . . . . . . . . . . . . . . . 29 1.8 Four Years and Four Months at MARS: The MARSAIL Legacy . 31 1.8.1 Research Contributions and Global Recognition . . . . . . 32 1.8.2 Figure: MARSAIL Laboratory Overview . . . . . . . . . 32 1.8.3 Commitment to Intellectual Integrity and Confidentiality . 33 1.8.4 Closing MARSAIL and Returning the AI Team to MARS 34 
+
+2 MARSAIL–ALBERT: Part-Damage (PD) Instance Segmentation Model 35 
+
+2.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 35 2.2 Background and Motivation . . . . . . . . . . . . . . . . . . . . 35 2.3 Related Work . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36 2.3.1 Instance Segmentation Frameworks . . . . . . . . . . . . 36 2.3.2 Vehicle Damage Analysis . . . . . . . . . . . . . . . . . 37 2.4 Motivation for MARS . . . . . . . . . . . . . . . . . . . . . . . . 38 2.5 From MARS to ALBERT . . . . . . . . . . . . . . . . . . . . . . 39 2.6 MARSAIL: Foundation Model – MARS . . . . . . . . . . . . . . 39 2.6.1 From Vision to Reality . . . . . . . . . . . . . . . . . . . 39 2.6.2 Problem Statement . . . . . . . . . . . . . . . . . . . . . 40 1Motor AI Recognition Solution Teerapong Panboonyuen 2.6.3 MARS Architecture Overview . . . . . . . . . . . . . . . 41 2.6.4 Mask Attention Refinement . . . . . . . . . . . . . . . . 42 2.6.5 Sequential Quadtree Representation . . . . . . . . . . . . 42 2.6.6 Multi-Task Optimization Objective . . . . . . . . . . . . 43 2.6.6.1 Pseudo Algorithm: MARS Inference Pipeline . 43 2.7 Qualitative Analysis and Visual Performance Discussion . . . . . 44 2.7.1 Comparison with State-of-the-Art Methods . . . . . . . . 44 2.7.2 Robustness Across Real-World Scenarios . . . . . . . . . 45 2.7.3 Fine-Grained Boundary Refinement . . . . . . . . . . . . 46 2.7.4 Small-Damage Sensitivity and High-Resolution Modeling 46 2.7.5 Why ALBERT is Production-Ready . . . . . . . . . . . . 47 2.7.6 Executive Summary . . . . . . . . . . . . . . . . . . . . 47 2.7.7 Limitations and Motivation for ALBERT . . . . . . . . . 48 2.7.8 From MARS to ALBERT . . . . . . . . . . . . . . . . . 50 2.8 ALBERT: Advanced Localization and Bidirectional Encoder Rep-resentations for Automotive Damage Intelligence . . . . . . . . . 51 2.9 Architecture Design . . . . . . . . . . . . . . . . . . . . . . . . . 52 2.9.1 Bidirectional Transformer Encoder . . . . . . . . . . . . 52 2.9.2 Advanced Localization Head . . . . . . . . . . . . . . . . 53 2.9.3 Joint Damage–Part Modeling . . . . . . . . . . . . . . . 54 2.10 Evolution from ALBERT-v8 to ALBERT-v9 . . . . . . . . . . . . 55 2.11 Deployment within MARS Ecosystem . . . . . . . . . . . . . . . 55 2.11.1 Algorithmic Flow of ALBERT . . . . . . . . . . . . . . . 56 2.11.1.1 Stage I: Feature Encoding and Instance Mask Generation . . . . . . . . . . . . . . . . . . . . 56 2.11.1.2 Stage II: Multi-Task Damage–Part Intelligence and VDC Synthesis . . . . . . . . . . . . . . . 57 2Motor AI Recognition Solution Teerapong Panboonyuen 2.12 Impact and Significance . . . . . . . . . . . . . . . . . . . . . . . 58 2.13 Dataset Statistics . . . . . . . . . . . . . . . . . . . . . . . . . . 60 2.13.1 ALBERT-DAMAGE . . . . . . . . . . . . . . . . . . . . 60 2.13.2 ALBERT-PART . . . . . . . . . . . . . . . . . . . . . . . 61 2.13.3 Discussion and Impact . . . . . . . . . . . . . . . . . . . 62 2.14 Evaluation Metrics and Mathematical Formulation . . . . . . . . 63 2.14.1 Confusion Matrix Foundations . . . . . . . . . . . . . . . 64 2.14.2 Precision . . . . . . . . . . . . . . . . . . . . . . . . . . 64 2.14.3 Recall . . . . . . . . . . . . . . . . . . . . . . . . . . . . 65 2.14.4 F1-Score . . . . . . . . . . . . . . . . . . . . . . . . . . 65 2.14.5 Accuracy . . . . . . . . . . . . . . . . . . . . . . . . . . 66 2.14.6 Intersection over Union (IoU) . . . . . . . . . . . . . . . 66 2.14.7 Average Precision (AP) . . . . . . . . . . . . . . . . . . . 67 2.14.8 Mean Average Precision (mAP) . . . . . . . . . . . . . . 67 2.14.9 COCO AP 50 . . . . . . . . . . . . . . . . . . . . . . . . 68 2.14.10 COCO AP 75 . . . . . . . . . . . . . . . . . . . . . . . . 68 2.14.11 COCO AP 50:95 (Primary Metric) . . . . . . . . . . . . . . 69 2.14.12 Scale-Aware Metrics . . . . . . . . . . . . . . . . . . . . 69 2.14.13 Why AP is the Correct Business Metric . . . . . . . . . . 70 2.15 Discussion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 71 2.15.1 Overall Damage Model Performance . . . . . . . . . . . 71 2.15.2 Per-Class Damage Analysis . . . . . . . . . . . . . . . . 72 2.15.3 Overall Part Model Performance . . . . . . . . . . . . . . 73 2.15.4 Per-Class Part Analysis . . . . . . . . . . . . . . . . . . . 73 2.15.5 Business Relevance of AP-Based Evaluation . . . . . . . 74 2.15.6 Why ALBERT Represents a Milestone . . . . . . . . . . 75 2.16 Qualitative Results . . . . . . . . . . . . . . . . . . . . . . . . . 75 3Motor AI Recognition Solution Teerapong Panboonyuen 2.16.1 Qualitative Results of the ALBERT Part Segmentation Model 76 2.16.2 Qualitative Results of the ALBERT Damage Segmenta-tion Model . . . . . . . . . . . . . . . . . . . . . . . . . 77 
+
+3 MARSAIL NLP: DOTA Document Intelligence Engine 113 
+
+3.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 113 3.2 Scientific Recognition . . . . . . . . . . . . . . . . . . . . . . . . 114 3.3 Why Traditional OCR Fails . . . . . . . . . . . . . . . . . . . . . 114 3.4 DOTA: Mathematical Foundation . . . . . . . . . . . . . . . . . 115 3.4.1 Optimization Objective . . . . . . . . . . . . . . . . . . . 115 3.5 Architecture Overview . . . . . . . . . . . . . . . . . . . . . . . 116 3.5.1 1. Deformable Convolution Backbone . . . . . . . . . . . 116 3.5.2 2. Patch Embedding + Transformer Encoder . . . . . . . . 116 3.5.3 3. Bidirectional GRU Sequence Refinement . . . . . . . . 117 3.5.4 4. Adaptive Dropout . . . . . . . . . . . . . . . . . . . . 117 3.5.5 5. Imbalance-Aware CTC Loss . . . . . . . . . . . . . . . 117 3.6 Pseudo-Code Overview . . . . . . . . . . . . . . . . . . . . . . . 118 3.7 Application in MARS Ecosystem . . . . . . . . . . . . . . . . . . 119 3.8 Strategic Impact . . . . . . . . . . . . . . . . . . . . . . . . . . . 119 3.9 Experimental Results and Analysis . . . . . . . . . . . . . . . . . 120 3.9.1 Overall Performance . . . . . . . . . . . . . . . . . . . . 120 3.9.2 Impact of Architectural Components . . . . . . . . . . . . 120 3.9.3 CRF Enhancement . . . . . . . . . . . . . . . . . . . . . 121 3.9.4 Why DOTA Is Superior . . . . . . . . . . . . . . . . . . . 122 3.9.5 Industrial Implications . . . . . . . . . . . . . . . . . . . 122 3.9.6 Conclusion of Results . . . . . . . . . . . . . . . . . . . 123 3.10 Discussion of Results . . . . . . . . . . . . . . . . . . . . . . . . 123 3.10.1 Why DOTA is Optimal for CAR Insurance OCR . . . . . 124 4Motor AI Recognition Solution Teerapong Panboonyuen 3.10.2 Strategic Implications . . . . . . . . . . . . . . . . . . . 125 3.11 Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 127 
+
+4 Related Work 128 
+
+4.0.1 AI for Car Insurance and Fraud Detection . . . . . . . . . 128 4.0.2 Vehicle Damage Datasets and Analysis . . . . . . . . . . 129 4.0.3 Instance Segmentation Techniques . . . . . . . . . . . . . 131 4.0.4 Positioning of ALBERT . . . . . . . . . . . . . . . . . . 132 
+
+5 Future Direction: From ALBERT to Agentic AI for Automotive In-surance 133 
+
+5.0.1 From Perception to Reasoning: The Role of LLMs in In-surance . . . . . . . . . . . . . . . . . . . . . . . . . . . 133 5.0.2 Agentic AI: From Single Models to Autonomous Systems 134 5.0.3 Proposed Architecture: ALBERT + LLM + Multi-Agent System . . . . . . . . . . . . . . . . . . . . . . . . . . . 135 5.0.4 Multimodal Intelligence and Human-AI Interaction . . . . 136 5.0.5 Research Challenges and Opportunities . . . . . . . . . . 136 5.0.6 Vision: Toward Fully Autonomous Insurance Intelligence 137 5.0.6.1 Agentic AI Framework for Automotive Insurance138 
+
+6 Conclusion 139 
+
+6.1 MARSAIL as a Complete AI System Paradigm . . . . . . . . . . 139 6.2 From Perception to Reasoning . . . . . . . . . . . . . . . . . . . 139 6.3 Toward Agentic AI in Automotive Insurance . . . . . . . . . . . . 141 6.4 Industrial and Strategic Impact . . . . . . . . . . . . . . . . . . . 142 6.5 Final Perspective . . . . . . . . . . . . . . . . . . . . . . . . . . 142 
+
+Bibliography 143 
+
+5Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Appendix A Appendix 148 
+
+A.1 Formal Problem Formulation . . . . . . . . . . . . . . . . . . . . 148 A.2 Feature Extraction and Multi-Scale Representation . . . . . . . . 149 A.3 Quadtree Decomposition as Hierarchical Partition . . . . . . . . . 149 A.4 Transformer-Based Global Attention . . . . . . . . . . . . . . . . 150 A.5 Mask Reconstruction Operator . . . . . . . . . . . . . . . . . . . 151 A.6 Joint Part-Damage Modeling . . . . . . . . . . . . . . . . . . . . 151 A.7 Polygon Approximation as Geometric Optimization . . . . . . . . 152 A.8 Vehicle Damage Code Mapping . . . . . . . . . . . . . . . . . . 153 A.9 Full Optimization Objective . . . . . . . . . . . . . . . . . . . . 153 A.10 Theoretical Perspective . . . . . . . . . . . . . . . . . . . . . . . 154 A.11 Hardware and Infrastructure Specification for LLM and AI Agent Training . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 155 A.11.1 Overview . . . . . . . . . . . . . . . . . . . . . . . . . . 155 A.11.2 Recommended AWS GPU Instances . . . . . . . . . . . . 155 A.11.2.1 Lightweight Fine-Tuning (LoRA / PEFT) . . . . 155 A.11.2.2 Medium-Scale Fine-Tuning (13B-34B) . . . . . 156 A.11.2.3 Large-Scale Research (70B+ Models) . . . . . . 156 A.11.3 Storage Architecture . . . . . . . . . . . . . . . . . . . . 156 A.11.4 LLM Fine-Tuning Workflow . . . . . . . . . . . . . . . . 157 A.11.4.1 Dataset Preparation . . . . . . . . . . . . . . . 157 A.11.4.2 Training Strategy . . . . . . . . . . . . . . . . 157 A.11.4.3 Monitoring and Validation . . . . . . . . . . . . 157 A.11.5 AI Agent Infrastructure Design . . . . . . . . . . . . . . 158 A.11.6 Security and Governance . . . . . . . . . . . . . . . . . . 158 A.11.7 Cost Optimization Strategy . . . . . . . . . . . . . . . . . 159 A.11.8 Minimum Research Standard . . . . . . . . . . . . . . . . 159 6A.12 Future Work – Transition Toward Fully Agentic AI Architecture . 160 A.13 Vision Statement . . . . . . . . . . . . . . . . . . . . . . . . . . 160 A.14 From Pipeline System to AI Agent Architecture . . . . . . . . . . 160 A.15 Phase-Based Migration Strategy . . . . . . . . . . . . . . . . . . 161 A.15.1 Phase 1: Modularization (Short-Term) . . . . . . . . . . . 161 A.15.2 Phase 2: Memory-Enhanced Agents (Mid-Term) . . . . . 161 A.15.3 Phase 3: Autonomous Decision Intelligence (Long-Term) 161 A.16 Project Structure Guideline for Successor Team . . . . . . . . . . 162 A.17 Research Direction . . . . . . . . . . . . . . . . . . . . . . . . . 162 A.18 Knowledge Transfer Commitment . . . . . . . . . . . . . . . . . 163 A.19 Final Statement . . . . . . . . . . . . . . . . . . . . . . . . . . . 163 7List of Figures 
+
+1.1 MARSAIL Artificial Intelligence Laboratory (2026) . The cul-mination of four years and four months of research, system archi-tecture design, model innovation, infrastructure engineering, and production deployment at MARS. This laboratory symbolizes the transformation of MARS into a research-driven AI technology or-ganization with internationally recognized contributions. . . . . . 33 2.1 Overall architecture of MARS integrating quadtree-based repre-sentation with transformer refinement. . . . . . . . . . . . . . . . 41 2.2 Comparison of segmentation results against SOTA methods. . . . 48 2.3 Robust Multi-Scenario Damage Segmentation Performance of ALBERT. Qualitative results across diverse vehicle types, light-ing conditions, occlusions, and damage complexities. ALBERT demonstrates strong boundary adherence, high-confidence instance classification, and effective discrimination between real structural damage and visually similar artifacts. Notably, the model main-tains precise mask localization even under complex curvature sur-faces and reflective materials, highlighting its readiness for production-grade automotive inspection systems. . . . . . . . . . . . . . . . 49 2.4 Fine-grained mask boundary refinement achieved by MARS. . . . 50 8Motor AI Recognition Solution Teerapong Panboonyuen 2.5 Fine-Grained Boundary Refinement and Small-Damage Sen-sitivity. Comparison across challenging small-scale damages in-cluding scratches, paint cracks, minor dents, and reflective distor-tions. ALBERT achieves superior mask precision with reduced background leakage and improved structural consistency compared to baseline approaches. The results confirm strong performance in small-object regimes, which are traditionally difficult yet critical in insurance claim validation and fraud detection workflows. . . . 78 2.6 Qualitative comparison between ALBERT-v8 and ALBERT-v9. Version 9 shows improved boundary precision, better small-damage localization, and stronger structural consistency between predicted vehicle parts and damage types. . . . . . . . . . . . . . . . . . . 79 2.7 Qualitative segmentation results of the ALBERT Part Model on diverse vehicles from the MARSAIL dataset. The model demon-strates strong capability in identifying multiple structural com-ponents including bumpers, doors, windshields, and lighting el-ements under real-world imaging conditions. . . . . . . . . . . . 83 2.8 Additional examples highlighting the robustness of ALBERT for fine-grained vehicle component segmentation across diverse vehi-cle categories and viewpoints. . . . . . . . . . . . . . . . . . . . 84 2.9 ALBERT accurately segments complex vehicle structures includ-ing grills, mirrors, and side panels while preserving sharp mask boundaries. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 85 2.10 Examples illustrating stable segmentation performance across vary-ing vehicle geometries including sedans, pickup trucks, and SUVs. 86 2.11 The ALBERT model successfully captures both large vehicle struc-tures and smaller accessories such as door handles and logos. . . . 87 9Motor AI Recognition Solution Teerapong Panboonyuen 2.12 Qualitative results demonstrating robust segmentation under vary-ing illumination and background complexity. . . . . . . . . . . . 88 2.13 Fine-grained segmentation results highlighting accurate delineation of adjacent vehicle components such as bumpers, grills, and head-lights. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 89 2.14 ALBERT maintains consistent part-level predictions across di-verse viewpoints and occlusion patterns. . . . . . . . . . . . . . . 90 2.15 Examples showing reliable segmentation of overlapping structural components in complex real-world scenes. . . . . . . . . . . . . . 91 2.16 Precise boundary localization of vehicle parts supports reliable downstream reasoning for damage localization and repair estima-tion. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 92 2.17 Further qualitative examples illustrating ALBERT’s strong multi-scale feature representation for vehicle component understanding. 93 2.18 ALBERT consistently identifies vehicle components across vary-ing camera distances and perspective distortions. . . . . . . . . . 94 2.19 Robust segmentation across multiple vehicle body structures in-cluding roof components, pillars, and side panels. . . . . . . . . . 95 2.20 Examples illustrating strong structural consistency in predicting complex component layouts across different vehicle designs. . . . 96 2.21 ALBERT demonstrates stable segmentation performance even in challenging visual environments with cluttered backgrounds. . . . 97 2.22 Qualitative damage segmentation results produced by the ALBERT Damage Model on the MARSAIL dataset. The model accurately detects diverse damage patterns including dents, scratches, cracks, and shattered glass across multiple vehicle surfaces. . . . . . . . . 98 10 Motor AI Recognition Solution Teerapong Panboonyuen 2.23 Additional qualitative results demonstrating the robustness of AL-BERT in detecting subtle surface damage across different vehicle colors, materials, and lighting conditions. . . . . . . . . . . . . . 99 2.24 Examples illustrating the capability of ALBERT to localize fine-grained damage structures such as hairline cracks and small dents with high boundary precision. . . . . . . . . . . . . . . . . . . . 100 2.25 ALBERT effectively identifies multiple co-occurring damage cat-egories within a single vehicle image, supporting reliable multi-instance damage assessment. . . . . . . . . . . . . . . . . . . . . 101 2.26 Qualitative examples showing strong detection of structural de-formation such as crushed panels and severely damaged surfaces. . 102 2.27 The model successfully detects damage across a wide range of vehicle viewpoints, demonstrating strong generalization capability. 103 2.28 Examples illustrating reliable segmentation of glass-related dam-age such as cracked and shattered windshields. . . . . . . . . . . 104 2.29 ALBERT captures subtle surface defects including scratches and chipped paint, which are traditionally difficult to detect automati-cally. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 105 2.30 Qualitative examples demonstrating consistent mask localization for complex and irregular damage patterns. . . . . . . . . . . . . 106 2.31 The model maintains strong performance even when damage ap-pears under challenging environmental conditions such as reflec-tions or shadows. . . . . . . . . . . . . . . . . . . . . . . . . . . 107 2.32 Additional examples showing ALBERT’s ability to capture both small cosmetic damage and large structural defects across multi-ple vehicle panels. . . . . . . . . . . . . . . . . . . . . . . . . . . 108 11 Motor AI Recognition Solution Teerapong Panboonyuen 2.33 Robust qualitative results highlighting the scalability of ALBERT across diverse vehicle models and surface materials. . . . . . . . . 109 2.34 Examples illustrating the model’s capability to maintain high seg-mentation quality for overlapping and adjacent damage regions. . 110 2.35 ALBERT accurately differentiates between genuine structural dam-age and visually misleading artifacts that could otherwise lead to incorrect insurance assessments. . . . . . . . . . . . . . . . . . . 111 2.36 The model consistently captures complex deformation patterns across multiple vehicle body panels. . . . . . . . . . . . . . . . . 112 3.1 Performance evaluation of the proposed DOTA-OCR model on the VIN recognition task (January–June 2025 test set). The model achieved an overall accuracy of 50.27% across 1,319 samples. The distribution of correct and incorrect predictions reflects the intrinsic difficulty of alphanumeric VIN recognition under real-world automotive and insurance imaging conditions, including metallic reflections, low contrast engraving, blur, and viewpoint distortion. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 126 3.2 Performance evaluation of the proposed DOTA-OCR model on the Mileage recognition task (January–June 2025 test set). The model achieved an overall accuracy of 87.57% across 1,319 sam-ples. A total of 1,155 predictions were correct, while 164 sam-ples were incorrectly recognized. The error distribution high-lights challenges inherent to odometer digit recognition in real-world automotive imagery, including glare from instrument clus-ters, motion blur, low illumination, partial occlusion, and varying dashboard designs. . . . . . . . . . . . . . . . . . . . . . . . . . 126 12 List of Tables 
+
+2.1 Thai Car Damage Dataset Statistics . . . . . . . . . . . . . . . . 44 2.2 Instance Segmentation Performance Comparison . . . . . . . . . 44 2.3 ALBERT-DAMAGE Dataset Statistics. Large-scale fine-grained vehicle damage segmentation dataset comprising 856,226 anno-tated instances across 26 damage categories. The dataset cap-tures structural damage, surface-level defects, and hard-negative visual artifacts to enable robust real-world deployment. . . . . . . 63 2.4 ALBERT-PART Dataset Statistics. Comprehensive structural vehicle part segmentation dataset containing 595,563 annotated instances across 61 fine-grained automotive components. The dataset covers exterior panels, lighting systems, glass regions, ac-cessories, and structural elements, supporting large-scale produc-tion inspection systems. . . . . . . . . . . . . . . . . . . . . . . . 80 2.5 Overall Instance Segmentation Performance of ALBERT (Dam-age Model) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 80 2.6 Per-Class Segmentation AP of ALBERT (Damage Categories) . . 81 2.7 Overall Instance Segmentation Performance of ALBERT (Part Model) 81 2.8 Per-Class Segmentation AP of ALBERT (Vehicle Part Categories) 82 3.1 Performance comparison on IC15, SVT, IIIT5K, SVTP and CUTE80 datasets . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 124 A.1 Instance Specification for Parameter-Efficient Fine-Tuning . . . . 155 A.2 Instance Specification for Distributed Fine-Tuning . . . . . . . . . 156 A.3 Instance Specification for Foundation-Scale Training . . . . . . . 156 A.4 Phase 1 – Modular AI Refactoring . . . . . . . . . . . . . . . . . 161 13 Motor AI Recognition Solution Teerapong Panboonyuen A.5 Phase 2 – Agent Memory Integration . . . . . . . . . . . . . . . . 161 A.6 Phase 3 – Full Agentic Decision System . . . . . . . . . . . . . . 161 14 List of Abbreviations 
+
+AI . . . . . . . . . . . . . Artificial Intelligence 
+
+ML . . . . . . . . . . . Machine Learning 
+
+DL . . . . . . . . . . . . Deep Learning 
+
+CV . . . . . . . . . . . . Computer Vision 
+
+NLP . . . . . . . . . . . Natural Language Processing 
+
+LLM . . . . . . . . . . Large Language Model 
+
+VLM . . . . . . . . . . Vision-Language Model 
+
+LMM . . . . . . . . . Large Multimodal Model 
+
+FM . . . . . . . . . . . . Foundation Model 
+
+GenAI . . . . . . . . . Generative Artificial Intelligence 
+
+RAG . . . . . . . . . . Retrieval-Augmented Generation 
+
+PEFT . . . . . . . . . Parameter-Efficient Fine-Tuning 
+
+LoRA . . . . . . . . . Low-Rank Adaptation 
+
+SFT . . . . . . . . . . . Supervised Fine-Tuning 
+
+RLHF . . . . . . . . . Reinforcement Learning from Human Feedback 
+
+OCR . . . . . . . . . . Optical Character Recognition 
+
+OD . . . . . . . . . . . . Object Detection 
+
+Seg . . . . . . . . . . . . Image Segmentation 
+
+CNN . . . . . . . . . . Convolutional Neural Network 15 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+FPN . . . . . . . . . . . Feature Pyramid Network 
+
+ViT . . . . . . . . . . . Vision Transformer 
+
+CLIP . . . . . . . . . . Contrastive Language-Image Pretraining 
+
+DETR . . . . . . . . . Detection Transformer 
+
+SA . . . . . . . . . . . . Self-Attention 
+
+MHA . . . . . . . . . . Multi-Head Attention 
+
+FFN . . . . . . . . . . . Feed-Forward Network 
+
+MoE . . . . . . . . . . Mixture of Experts 
+
+SOTA . . . . . . . . . State-of-the-Art 
+
+AP . . . . . . . . . . . . Average Precision 
+
+mAP . . . . . . . . . . Mean Average Precision 
+
+IoU . . . . . . . . . . . Intersection over Union 
+
+GPU . . . . . . . . . . Graphics Processing Unit 
+
+TPU . . . . . . . . . . . Tensor Processing Unit 
+
+FLOPs . . . . . . . . Floating Point Operations 
+
+BF16 . . . . . . . . . . Brain Floating Point Format 
+
+FP16 . . . . . . . . . . Half-Precision Floating Point 
+
+MARS . . . . . . . . Mask Attention Refinement with Sequential Quadtree Nodes 
+
+MARSAIL . . . . Motor AI Recognition Solution Artificial Intelligence Labora-tory 16 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+ALBERT . . . . . . Advanced Localization and Bidirectional Encoder Representa-tions from Transformers 
+
+SLICK . . . . . . . . Selective Localization and Instance Calibration for Knowledge-Enhanced Segmentation 
+
+DOTA . . . . . . . . . DOTA: Deformable Optimized Transformer Architecture for End-to-End Text Recognition with Retrieval-Augmented Generation 
+
+ADAS . . . . . . . . . Advanced Driver Assistance Systems 
+
+ITS . . . . . . . . . . . Intelligent Transportation Systems 
+
+IoT . . . . . . . . . . . . Internet of Things 
+
+API . . . . . . . . . . . Application Programming Interface 
+
+SaaS . . . . . . . . . . Software as a Service 
+
+MLOps . . . . . . . . Machine Learning Operations 
+
+CI/CD . . . . . . . . . Continuous Integration and Continuous Deployment 17 1 | Introduction 
+
+# 1.1 Vision and Evolution of MARSAIL 
+
+This handbook was written with a clear and deliberate intention: to formally doc-ument, systematize, and share the artificial intelligence systems that I have de-signed, developed, and deployed for Motor AI Recognition Solution (MARS) ,a startup operating under the investment of Thaivivat Insurance (TVI) .MARS represents one of the earliest real-world deployments of artificial intel-ligence for automotive insurance in Thailand. Unlike conceptual research pro-totypes, the systems developed within MARS are actively used in production, supporting real operational workflows including vehicle inspection, damage as-sessment, and claim processing. At the core of these systems lies a complete artificial intelligence stack — span-ning data acquisition, annotation, model design, training, optimization, deploy-ment, and monitoring — all of which were architected and implemented under my direction. This handbook therefore does not describe hypothetical systems; it presents a practical and field-tested blueprint for building AI-driven solutions in the insurance industry. To support long-term innovation, I established the research laboratory MARSAIL (Motor AI Recognition Solution Artificial Intelligence Laboratory) . The labo-ratory was founded with the goal of integrating scientific research with production engineering, ensuring that advances in machine learning could be translated into real-world impact. Over a period of four years and four months , MARSAIL evolved from an ini-18 Motor AI Recognition Solution Teerapong Panboonyuen tial experimental effort into a fully operational AI ecosystem. This evolution was driven by a sequence of research contributions, each addressing a critical limita-tion in existing approaches and progressively advancing the system toward greater intelligence, robustness, and scalability. The first foundational work, MARS (Panboonyuen, 2023), introduced the concept of hierarchical attention refinement using sequential quadtree nodes. This work addressed a fundamental limitation in conventional segmentation methods, which often struggle to preserve fine-grained structural details. By decomposing spatial regions into hierarchical attention units, MARS enabled progressive refinement of segmentation masks, significantly improving boundary accuracy and structural consistency. Building upon this foundation, ALBERT (Panboonyuen, 2025a) extended the paradigm from local refinement to global contextual understanding. ALBERT leverages transformer-based architectures to model relationships between vehicle components and damage patterns, enabling the system to reason about structural dependencies across the entire vehicle. This shift from purely spatial processing to contextual representation marked a critical step toward machine-level under-standing of vehicle semantics. While ALBERT provides strong representational capacity, production deployment requires efficiency and scalability. To address this, SLICK (Panboonyuen, 2025c) was introduced as a knowledge-enhanced distillation framework. SLICK transfers knowledge from large, high-capacity teacher models into lightweight student ar-chitectures, enabling real-time inference while preserving segmentation fidelity. This contribution bridges the gap between research-grade performance and indus-trial deployment constraints. In parallel with visual perception, document intelligence capabilities were devel-19 Motor AI Recognition Solution Teerapong Panboonyuen oped through DOTA (Panboonyuen, 2025b), a deformable transformer architec-ture designed for robust text recognition in real-world automotive documents. DOTA integrates retrieval-augmented reasoning with flexible attention mecha-nisms, allowing the system to handle complex layouts, distortions, and noisy in-puts commonly encountered in insurance documentation. These contributions are not isolated research outputs. They form a coherent pro-gression: 
+
+From spatial refinement (MARS), to contextual understanding (ALBERT), to efficient deployment (SLICK), and finally to multimodal intelligence (DOTA). 
+
+Together, they define the scientific and engineering foundation of the MARSAIL ecosystem. The motivation behind this handbook extends beyond documentation. It is intended to serve as: • A technical reference for engineers developing AI systems in real-world environments, • A research blueprint for advancing computer vision and multimodal learn-ing in domain-specific applications, • A practical guide for integrating AI into insurance workflows, • A case study demonstrating how research-driven AI can be successfully deployed in Thailand. More importantly, this work reflects a core belief: 20 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Effective artificial intelligence is not realized through the mere adoption of generic, one-size-fits-all models. Rather, it emerges from the deliberate design of systems that are deeply aligned with the intrinsic structure, constraints, and objectives of a specific domain. Such alignment enables models to move beyond surface-level pattern recognition, achieving meaningful understanding, robustness, and practical utility. In this perspective, true intelligence is not defined by scale alone, but by the precision with which it reflects the complexities and nuances of the environment it is built to serve. 
+
+In the context of automotive insurance, this requires solving a uniquely challeng-ing problem: enabling machines to understand vehicles with a level of precision, reliability, and contextual awareness comparable to trained human inspectors. This involves not only detecting objects, but interpreting their relationships, as-sessing damage severity, and supporting downstream decision-making processes. Ultimately, this handbook represents a complete journey — from research concep-tion to production deployment — and is shared with the intention of contributing to the broader artificial intelligence community. It is my hope that this work will serve as a foundation for future researchers, engineers, and organizations seek-ing to build intelligent systems for real-world applications, particularly within the insurance domain. 21 Motor AI Recognition Solution Teerapong Panboonyuen Statement on Public Disclosure and Data Privacy This handbook presents only the components of the MARSAIL system that can be publicly disclosed for the benefit of the broader AI and insurance communities. All sensitive assets, including but not limited to: • Proprietary datasets, • Pretrained model weights, • Customer-related information (e.g., license plates, identity data), • Internal system configurations and business logic, have been strictly excluded from this document. These assets remain the intellectual property of MARS and Thaivivat In-surance (TVI) and are protected under organizational policy and applicable regulations. As the author of this handbook, I fully recognize the importance of data confidentiality, corporate integrity, and legal compliance, including adher-ence to the Personal Data Protection Act (PDPA) .Therefore, no private or sensitive data is disclosed in this document under any circumstances. 
+
+Note to readers: This handbook is intended for educational and technical knowledge sharing purposes only. Requests for access to restricted data, proprietary models, or confidential systems will not be considered. 22 Motor AI Recognition Solution Teerapong Panboonyuen Terminology: MARS vs. MARSAIL To avoid ambiguity throughout this handbook, we distinguish between the following entities: 
+
+MARS (Motor AI Recognition Solution) 
+
+1. MARS is a technology company focused on applying artificial intelli-gence to the automotive insurance industry. 2. It develops production systems such as MARS Inspection and MARS Garage , which support vehicle inspection, repair workflows, and insurance claim processing. 3. MARS operates the engineering, infrastructure, and commercial deploy-ment of AI-powered applications used by insurance providers and automo-tive partners. 
+
+MARSAIL (Motor AI Recognition Solution Artificial Intelligence Lab-oratory) 
+
+1. MARSAIL is the research laboratory within MARS dedicated to funda-mental and applied artificial intelligence research. 2. The laboratory develops core algorithms, architectures, and scientific frameworks that power the MARS technology ecosystem. 3. Research contributions originating from MARSAIL include transformer-based perception and reasoning architectures such as MARS , ALBERT , and 
+
+DOTA .
+
+Relationship 
+
+MARSAIL serves as the scientific research unit, while MARS represents the operational technology company that deploys these AI innovations into real-world insurance platforms. 23 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# 1.2 Scientific Foundations and Research Contribu-tions 
+
+The MARSAIL ecosystem is grounded in several research contributions that col-lectively define its technical direction. The first foundational work introduced a novel segmentation refinement mech-anism known as Mask Attention Refinement with Sequential Quadtree Nodes (MARS) (Panboonyuen, 2023). The key insight of this research was that instance level segmentation accuracy can be improved by hierarchical attention decompo-sition across spatial partitions. Instead of treating segmentation as a single scale prediction problem, the model progressively refines predictions through quadtree structured attention nodes. This concept later influenced multiple internal archi-tectures. The second major contribution is ALBERT (Advanced Localization and Bidirec-tional Encoder Representations from Transformers for Automotive Damage Eval-uation) (Panboonyuen, 2025a). ALBERT introduced a transformer based repre-sentation learning framework specifically optimized for vehicle part and damage understanding. The architecture functions as a teacher model that encodes global contextual relationships across vehicle components. Building on this foundation, the SLICK framework (Selective Localization and In-stance Calibration for Knowledge Enhanced Segmentation) (Panboonyuen, 2025c) focused on distillation and efficiency. SLICK transfers knowledge from the large teacher model into a computationally efficient student architecture suitable for production deployment while preserving segmentation fidelity. In parallel with perception research, document intelligence capabilities were de-24 Motor AI Recognition Solution Teerapong Panboonyuen veloped through DOTA (Deformable Optimized Transformer Architecture). This model integrates deformable attention with retrieval augmented reasoning to achieve robust optical character recognition in real world automotive documentation sce-narios. These research works are not isolated contributions. They form a continuous pro-gression from theoretical innovation to applied system design, ultimately enabling the MARSAIL production ecosystem. 
+
+# 1.3 Mathematical Perspective of Vehicle Intelligence 
+
+From a formal standpoint, the MARSAIL platform can be rigorously defined as a structured multimodal inference system that maps heterogeneous observations to a unified semantic state representation. Let an input observation be defined in the multimodal measurable space as 
+
+x ∈ X := I × M × C (1.1) where • I denotes the space of high-dimensional visual tensors (raw image signals), • M denotes the space of contextual metadata (capture conditions, device parameters, geospatial cues), • C denotes the space of environmental and operational constraints. The system seeks to estimate a structured semantic output 
+
+y ∈ Y := P × D × A × T (1.2) 25 Motor AI Recognition Solution Teerapong Panboonyuen where • P represents vehicle part topology and localization, • D represents damage state variables, • A represents auxiliary categorical attributes, • T represents textual or alphanumeric recognition outputs. We model the platform as a parameterized mapping 
+
+fθ : X → Y (1.3) with parameters θ ∈ Θ ⊂ Rd.The learning objective is defined as empirical risk minimization over the data distribution D:
+
+θ∗ = arg min  
+
+> θ∈Θ
+
+E(x,y )∼D 
+
+L fθ(x), y  (1.4) where the composite loss function is structured as 
+
+L = λseg Lseg + λcls Lcls + λreg Lreg + λrec Lrec (1.5) with task-balancing coefficients λi ∈ R+ controlling the trade-offs between seg-mentation, classification, regression, and recognition objectives. Importantly, MARSAIL is not a monolithic estimator but a coordinated ensemble architecture: 26 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+fθ(x) = Φ  f (1)  
+
+> θ1
+
+(x), f (2)  
+
+> θ2
+
+(x), . . . , f (K) 
+
+> θK
+
+(x) (1.6) where each f (k) 
+
+> θk
+
+specializes in a sub-task and Φ denotes a structured fusion oper-ator that enforces cross-task consistency constraints. This formulation reflects a key design principle: MARSAIL operates as a hier-archical, multi-objective optimization system in which specialized models jointly approximate a coherent semantic representation of vehicle state under real-world uncertainty. 
+
+# 1.4 System Architecture Philosophy 
+
+A foundational architectural principle of MARSAIL is functional decomposition under stability constraints. Rather than pursuing a monolithic design, the system is structured into three orthogonal layers: 1. Perception Layer - High-dimensional sensory processing and representa-tion learning. 2. Infrastructure Layer - Distributed orchestration, data routing, experiment tracking, and model lifecycle management. 3. Intelligence Layer - Cross-model reasoning, rule enforcement, automation, and decision synthesis. Formally, the full system can be described as a layered composition 
+
+F = I ◦ R ◦ P (1.7) 27 Motor AI Recognition Solution Teerapong Panboonyuen where: • P denotes perceptual inference mappings, • R denotes routing and orchestration operators, • I denotes higher-order reasoning and automation functions. This separation of concerns enables: • Independent evolution of model architectures without infrastructure disrup-tion, • Scalable deployment across heterogeneous compute environments, • Controlled experimentation under production constraints, • Long-term system stability under increasing task complexity. The result is a resilient, extensible intelligence platform - engineered not merely for model performance, but for sustained operational excellence at enterprise scale. 
+
+# 1.5 Future Direction with LLM Agents 
+
+An emerging research direction within MARSAIL explores integrating large lan-guage model reasoning with perception outputs to create autonomous AI agents capable of decision making across workflows. Although currently in proof of concept stage, this direction represents a natural evolution toward intelligent automation systems. 
+
+# 1.6 Organizational Impact 
+
+The MARSAIL initiative has delivered several strategic outcomes. 28 Motor AI Recognition Solution Teerapong Panboonyuen • Production level AI infrastructure • Proprietary research innovations • Automated insurance inspection workflows • Scalable data pipelines • Cross domain AI capabilities More importantly, the project established a sustainable technological foundation that will continue to support organizational growth. 
+
+# 1.7 Purpose of This Handbook 
+
+The purpose of this handbook is threefold. 1. Transfer architectural knowledge to future engineers and leaders 2. Provide technical documentation for maintenance and extension 3. Establish a roadmap for continued innovation The MARSAIL ecosystem represents years of research, engineering effort, and organizational collaboration. The intention of this document is to ensure that its value continues to grow beyond the period of its original development. 
+
+# A Personal Reflection: Building MARSAIL 
+
+After completing my doctoral studies in Computer Engineering at Chulalongkorn University in 2021 Panboonyuen (2021), I was given an opportunity to join a young technology startup named MARS (Motor AI Recognition Solution). The company invited me to lead its artificial intelligence efforts. At the time, my moti-29 Motor AI Recognition Solution Teerapong Panboonyuen vation was simple: I wanted to continue developing artificial intelligence systems beyond academic research and apply them to real-world problems. While many powerful off-the-shelf models already exist, my goal was not only to use existing solutions but to explore how AI architectures could be carefully designed and adapted for a specific industrial domain. Automotive insurance presents unique challenges — complex vehicle structures, diverse damage pat-terns, and operational workflows that require reliability, explainability, and scal-ability. Addressing these challenges requires more than simply applying generic models. For this reason, during my time at MARS, I established the MARSAIL (Motor AI Recognition Solution Artificial Intelligence Laboratory). The purpose of MAR-SAIL was to create a research-driven environment within a startup setting, where scientific thinking, engineering discipline, and real-world deployment could evolve together. Our work focused specifically on artificial intelligence for automotive in-surance, supported by one of Thailand’s long-established and respected insurance companies, Thaivivat Insurance. Over the course of four years, the laboratory developed a series of architectures and systems that now power real-world applications such as the MARS Inspection and MARS Garage platforms. These systems represent practical deployments of AI technologies in Thailand’s insurance ecosystem. This handbook documents many of the ideas, principles, and architectural de-signs that emerged during that journey. It is written with the hope that future researchers, engineers, and entrepreneurs may find it useful when building AI systems for real-world applications. Where possible, the concepts and methodologies described here follow an open and collaborative spirit that has long guided the global AI research community. At 30 Motor AI Recognition Solution Teerapong Panboonyuen the same time, certain operational data — particularly customer information and sensitive insurance records — must remain protected. Throughout this work, we have maintained strict respect for data privacy regulations, including Thailand’s Personal Data Protection Act (PDPA). Ultimately, the goal of this handbook is simple: to share a practical perspective on how modern artificial intelligence can be developed and deployed responsibly within the automotive insurance industry. The experiences described here reflect one possible path, shaped by the context of a startup environment and the realities of building AI systems in production. If this work can help others better understand how AI may be applied to real-world insurance systems, then its purpose will have been fulfilled. 
+
+# 1.8 Four Years and Four Months at MARS: The MAR-SAIL Legacy 
+
+From January 2022 to April 2026, I had the privilege of serving at MARS – Mo-tor AI Recognition Solution and founding its Artificial Intelligence laboratory, 
+
+MARSAIL (Motor AI Recognition Solution Artificial Intelligence Labora-tory) .During these four years and four months, MARSAIL was built from the ground up – architecturally, scientifically, and strategically. What began as an ambition to strengthen internal AI capability evolved into a full-scale research-driven AI ecosystem operating in real-world production. All research outputs, system architectures, publications, and documented techni-cal knowledge developed under my leadership have been preserved and remain 31 Motor AI Recognition Solution Teerapong Panboonyuen accessible at: 
+
+https://kaopanboonyuen.github.io/MARS/ 
+
+These materials represent not only engineering deliverables but a complete knowl-edge transfer package for the organization. 
+
+## 1.8.1 Research Contributions and Global Recognition 
+
+Under the MARSAIL laboratory, I published a total of seven peer-reviewed aca-demic papers affiliated with MARS. These works document the scientific inno-vations that power the production systems described throughout this handbook. As of this writing, more than ten independent academic works have cited MAR-SAIL research contributions, reflecting early international recognition and valida-tion from the global research community. This citation trajectory is a meaningful signal: the work conducted at MARS is not merely operational – it meets international scientific standards and contributes to the broader AI research ecosystem. MARSAIL was therefore not only an internal AI unit; it was positioned as a research-driven technology innovation engine capable of elevating MARS into a deep-tech AI startup with global credibility. 
+
+## 1.8.2 Figure: MARSAIL Laboratory Overview 
+
+As shown in Figure 1.1, MARSAIL represents not only a laboratory environment, but a structured AI ecosystem built to sustain long-term technological advance-ment. 32 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 1.1: MARSAIL Artificial Intelligence Laboratory (2026) . The culmina-tion of four years and four months of research, system architecture design, model innovation, infrastructure engineering, and production deployment at MARS. This laboratory symbolizes the transformation of MARS into a research-driven AI technology organization with internationally recognized contributions. 
+
+## 1.8.3 Commitment to Intellectual Integrity and Confidentiality 
+
+Throughout my tenure at MARS, I have always maintained clear professional judgment regarding what should be published and what must remain confidential. All publicly released academic publications and technical materials were carefully curated to ensure that proprietary strategic advantages, sensitive algorithms, and core business intelligence remained protected. The deepest implementation details, model design rationales, and system-level insights are documented exclusively within this handbook and internal materials. They are not publicly disclosed. 
+
+Disclaimer. During my time at MARS, I remained mindful of the boundary be-tween open scientific contribution and the protection of proprietary knowledge. It 33 Motor AI Recognition Solution Teerapong Panboonyuen is my sincere hope that the next generation of the AI Team will uphold the same standard of professional integrity. Should this work serve as a foundation for fu-ture efforts, I encourage its custodians to preserve and safeguard the intellectual assets of MARS with diligence and respect. 
+
+## 1.8.4 Closing MARSAIL and Returning the AI Team to MARS 
+
+With my departure from MARS, I formally close MARSAIL as an independent laboratory entity. The term AI Team now rightfully returns to MARS as an organizational function. MARSAIL was never intended to exist independently of MARS – it was created to empower it. Every system, architecture, publication, handbook chapter, and research blueprint developed under MARSAIL is left behind as a foundation for the next generation of AI engineers and leaders within MARS. My sincere intention has always been to build world-class AI – not for personal recognition – but to see MARS succeed at the highest level. I firmly believe that MARS possesses the technological foundation to grow into a leading AI-driven automotive intelligence company. The systems are in place. The research foundation is established. The infrastructure is scalable. The future now belongs to the next generation. 
+
+So love MARSAIL. And so long, MARSAIL. 
+
+End of Introduction 
+
+34 2 | MARSAIL–ALBERT: Part-Damage (PD) Instance Segmentation Model 
+
+# 2.1 Introduction 
+
+MARSAIL–ALBERT is the production-grade Part-Damage (PD) model cur-rently deployed within the MARS ecosystem. The primary objective of MARSAIL–ALBERT is to perform instance segmen-tation for: • Automotive Parts (Part-level segmentation) • Automotive Damages (Damage-level segmentation) Unlike traditional object detection systems that output bounding boxes, MARSAIL– ALBERT produces high-resolution polygon masks for each detected instance. The model directly transforms raw vehicle imagery into structured geometric and semantic outputs, which are subsequently used to generate VDC (Vehicle Dam-age Code) entries. 
+
+# 2.2 Background and Motivation 
+
+Accurate assessment of vehicle damage is a critical operation in the automobile insurance industry, particularly in emerging markets such as Thailand. Insurance providers must determine whether a vehicle has sustained pre-existing damage before policy activation and accurately estimate repair costs after accidents. Traditionally, this process relies on manual inspection by trained claims adjusters. 35 Motor AI Recognition Solution Teerapong Panboonyuen Although human expertise ensures contextual reasoning, manual evaluation is in-herently time-consuming, subjective, and vulnerable to fraud (Jõeveer & Kepp, 2023; Weisburd, 2015; Macedo, Cardoso, Neto, et al., 2021). These limitations motivate the integration of automated computer vision systems capable of deliv-ering consistent, scalable, and auditable damage analysis. 
+
+# 2.3 Related Work 
+
+## 2.3.1 Instance Segmentation Frameworks 
+
+Instance segmentation aims to predict simultaneously object categories and pixel-wise masks. The introduction of Mask R-CNN (K. He, Gkioxari, Dollár, & Gir-shick, 2017) established a dominant paradigm by extending region-based object detection with a parallel mask prediction branch: Mask i = FCN (RoI i), (2.1) where RoI i denotes the detected region for instance i.Although effective, detection-based pipelines are inherently dependent on bound-ing box proposals. Inaccurate localization often propagates to mask prediction, resulting in truncated or imprecise boundaries. Subsequent works attempted to refine mask quality. PointRend (Kirillov, Wu, He, & Girshick, 2020) introduced point-based iterative subdivision: Mask ref ined = IterativeSubdivision (Mask initial ), (2.2) improving boundary sharpness through adaptive sampling. 36 Motor AI Recognition Solution Teerapong Panboonyuen Mask Transfiner (Ke et al., 2022) leveraged hierarchical quadtree decomposition and transformer-based attention: Feature l = Attention (Feature l−1), (2.3) enabling multi-scale feature interaction. However, these approaches still rely par-tially on proposal-based initialization and may treat instances independently with-out fully exploiting global image context. 
+
+## 2.3.2 Vehicle Damage Analysis 
+
+Specialized car-damage segmentation systems have extended generic architec-tures to automotive datasets. Enhancements include FPN-based multi-scale ex-traction (Q. Zhang, Chang, & Bian, 2020), CNN-based localization (Parhizkar & Amirfakhrian, 2022), and integrated attention modules (Pasupa, Kittiworapanya, Hongngern, & Woraratpanya, 2022). Other optimization-driven approaches such as particle swarm optimization (PSO) (Amirfakhrian & Parhizkar, 2021) have been explored for part identification. Despite these improvements, two persistent limitations remain: • Degraded mask quality in high-frequency or partially occluded regions • Weak modeling of global spatial relationships across the entire image In real insurance scenarios, minor boundary inaccuracies can significantly affect repair cost estimation, making mask precision a mission-critical requirement. 37 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# 2.4 Motivation for MARS 
+
+To address these limitations, we introduce MARS (Mask Attention Refinement with Sequential Quadtree Nodes) .Unlike traditional detection-driven pipelines, MARS models segmentation as a globally contextualized refinement problem. The framework integrates: • Transformer-based self-attention • Sequential quadtree node representation • End-to-end mask prediction without post-processing Given feature map: 
+
+F ∈ RH×W ×C ,
+
+MARS applies global attention refinement: Attention (Q, K, V ) = Softmax 
+
+QK T
+
+√dk
+
+
+
+V, 
+
+allowing spatially distant damage regions to influence mask reconstruction. By representing image regions as sequential quadtree nodes, MARS captures hi-erarchical spatial dependencies while preserving high-frequency detail. Extensive experiments on the Thai car-damage dataset demonstrate that MARS significantly improves boundary precision and small-damage detection compared to strong baselines such as Mask R-CNN, PointRend, and Mask Transfiner. 38 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# 2.5 From MARS to ALBERT 
+
+While MARS substantially advances mask accuracy, segmentation alone does not complete the insurance automation pipeline. Practical deployment requires: • Explicit modeling of part-damage relationships • Polygon-based geometric reasoning • Structured VDC (Visual Damage Code) generation • Confidence-aware verification mechanisms These operational demands motivate the development of MARSAIL–ALBERT ,a Part-Damage (PD) instance segmentation model that extends MARS by jointly predicting vehicle parts and damage types, outputting polygon representations, and generating structured insurance-ready codes. Thus, MARS establishes the high-fidelity perception backbone, while ALBERT transforms segmentation outputs into structured automotive damage intelligence. 
+
+# 2.6 MARSAIL: Foundation Model – MARS 
+
+## 2.6.1 From Vision to Reality 
+
+The origin of the MARSAIL laboratory stems from the development of MARS 
+
+(Mask Attention Refinement with Sequential Quadtree Nodes) (Panboonyuen, 2023). Before ALBERT was conceived, MARS was the first production-grade instance segmentation framework designed specifically for car damage understanding .39 Motor AI Recognition Solution Teerapong Panboonyuen Unlike generic segmentation models, MARS was architected for insurance-grade precision in Thai car-damage imagery. The name “MARS” originally reflects the company identity (Motor AI Recogni-tion Solution), but later evolved into a formal research contribution presented at ICIAP 2023. 
+
+Citation: 
+
+Panboonyuen, T. (2023). MARS: Mask Attention Refinement with Se-quential Quadtree Nodes . International Conference on Image Analy-sis and Processing (ICIAP). Springer. 
+
+## 2.6.2 Problem Statement 
+
+Car damage evaluation is a mission-critical task in the insurance industry. Tra-ditional manual inspection is slow, subjective, and vulnerable to fraud. Modern instance segmentation networks improve automation but suffer from: • Coarse mask boundaries • Weak small-object detection • Bounding-box dependency • Lack of global context modeling MARS addresses these limitations through: • Mask Attention Refinement • Sequential Quadtree Nodes • Transformer-based global reasoning 40 Motor AI Recognition Solution Teerapong Panboonyuen • Multi-scale feature aggregation 
+
+## 2.6.3 MARS Architecture Overview 
+
+MARS consists of three primary modules: 1. Node Encoder 2. Sequence Encoder (Transformer-based) 3. Pixel Decoder 
+
+Figure 2.1: Overall architecture of MARS integrating quadtree-based representa-tion with transformer refinement. 41 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+## 2.6.4 Mask Attention Refinement 
+
+Given feature map: 
+
+F ∈ RH×W ×C
+
+Self-attention is defined as: Attention (Q, K, V ) = Softmax 
+
+QK T
+
+√dk
+
+
+
+V
+
+where: 
+
+Q = F W Q, K = F W K , V = F W V
+
+This enables global dependency modeling between distant damage pixels. 
+
+## 2.6.5 Sequential Quadtree Representation 
+
+Instead of uniform grids, MARS decomposes the image into hierarchical quadtree nodes. Let: 
+
+f (l) 
+
+> i
+
+∈ Rd
+
+be feature at node i at level l.Transformation: 
+
+f (l) 
+
+> i
+
+= Wlf (l−1)  
+
+> i
+
++ bl
+
+42 Motor AI Recognition Solution Teerapong Panboonyuen This allows multi-scale adaptive refinement. 
+
+## 2.6.6 Multi-Task Optimization Objective 
+
+MARS is trained with a composite loss: 
+
+L = λ1LDetect + λ2LCoarse + λ3LRef ine + λ4LInc 
+
+Hyperparameters: 
+
+{λ1, λ 2, λ 3, λ 4} = {0.75 , 0.75 , 0.8, 0.5}
+
+2.6.6.1 Pseudo Algorithm: MARS Inference Pipeline 
+
+MARS Inference Pipeline 
+
+Input: Image I
+
+1. Extract multi-scale features via FPN 2. Detect region proposals (RPN) 3. Construct quadtree representation 4. Encode nodes into sequential tokens 5. Apply transformer-based refinement 6. Decode pixel-level mask 7. Output instance segmentation mask 
+
+Output: Refined damage masks 
+
+43 Motor AI Recognition Solution Teerapong Panboonyuen Table 2.1: Thai Car Damage Dataset Statistics 
+
+Damage Category Instances 
+
+Cracked Paint 273,121 Dent 332,342 Loose 114,345 Scrape 434,237 Table 2.2: Instance Segmentation Performance Comparison                                         
+
+> Method Backbone AP AP50 AP75 APs APm APl FPS Mask R-CNN (K. He et al., 2017) R50-FPN 31.7 50.1 34.7 11.9 29.9 41.3 8.4 PointRend (Kirillov et al., 2020) R50-FPN 33.9 51.7 36.4 12.3 31.0 42.2 4.6 Mask Transfiner (Ke et al., 2022) R50-FPN 34.9 52.4 37.1 13.8 32.5 45.0 6.7
+> MARS (Ours) R50-FPN 36.2 53.0 38.9 15.8 34.6 47.3 6.8
+
+# 2.7 Qualitative Analysis and Visual Performance Dis-cussion 
+
+This section provides a comprehensive qualitative analysis of ALBERT’s segmen-tation capabilities across diverse operational conditions. Figures 2.2–2.5 collec-tively demonstrate the robustness, precision, and production-readiness of the pro-posed framework. 
+
+## 2.7.1 Comparison with State-of-the-Art Methods 
+
+Figure 2.2 presents a direct comparison between ALBERT and existing state-of-the-art segmentation approaches. The visual evidence clearly shows that ALBERT produces: • Sharper mask boundaries • Reduced background leakage 44 Motor AI Recognition Solution Teerapong Panboonyuen • Improved structural alignment with vehicle geometry • Higher confidence consistency across instances In contrast to baseline methods, which often exhibit fragmented masks or bound-ary oversmoothing, ALBERT maintains coherent instance-level segmentation even under challenging lighting and surface reflections. This directly translates to more reliable damage quantification in real-world inspection pipelines. 
+
+## 2.7.2 Robustness Across Real-World Scenarios 
+
+Figure 2.3 further demonstrates ALBERT performance across multiple vehicle types, viewpoints, and damage complexities. The results highlight three critical strengths: 
+
+1) Structural Awareness ALBERT respects natural vehicle contours such as door panels, bumpers, and curved surfaces. Masks conform closely to part geom-etry, minimizing artificial boundary distortion. 
+
+2) Artifact Discrimination The model effectively distinguishes genuine struc-tural damage from misleading visual patterns such as shadows, reflections, and dirt accumulation. This is particularly important in insurance-grade fraud detec-tion systems. 
+
+3) Occlusion Robustness Even under partial occlusion or low-contrast condi-tions, ALBERT preserves instance integrity without collapsing into false posi-tives. These properties collectively indicate strong generalization beyond controlled bench-mark datasets. 45 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+## 2.7.3 Fine-Grained Boundary Refinement 
+
+As shown in Figure 2.4, ALBERT significantly improves mask edge precision compared to prior refinement methods. The predicted masks align tightly with real damage contours, particularly around irregular edges and high-frequency bound-aries. Boundary precision is critical in automotive inspection because repair cost estima-tion depends heavily on accurate damaged-area measurement. Over-segmentation leads to inflated costs, while under-segmentation introduces financial risk. AL-BERT demonstrates balanced precision that mitigates both extremes. 
+
+## 2.7.4 Small-Damage Sensitivity and High-Resolution Model-ing 
+
+Figure 2.5 focuses on small-scale and subtle damage instances such as scratches, paint cracks, and fine dents. These cases are traditionally difficult due to: • Low contrast • Thin structural patterns • Reflection interference • Texture similarity with background surfaces ALBERT maintains high mask fidelity and structural continuity even for elon-gated and narrow damage regions. The model avoids excessive smoothing, pre-serving geometrically meaningful details that are crucial for downstream repair classification. 46 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+## 2.7.5 Why ALBERT is Production-Ready 
+
+The combined qualitative results across Figures 2.2–2.5 confirm that ALBERT is not merely competitive in benchmark metrics, but operationally reliable for deployment. Specifically, ALBERT demonstrates: • Stable segmentation across lighting variability • Robustness to reflective automotive surfaces • Strong small-object sensitivity • Accurate boundary localization • Reduced false positive artifacts In real business environments such as automated insurance inspection, these prop-erties directly reduce: • Manual review workload • Fraud-related risk • Claim estimation variance • Model confidence instability Therefore, ALBERT bridges the gap between academic segmentation performance and enterprise-grade automotive intelligence systems. 
+
+## 2.7.6 Executive Summary 
+
+The qualitative evidence strongly supports the quantitative performance improve-ments reported earlier. ALBERT consistently delivers: 47 Motor AI Recognition Solution Teerapong Panboonyuen Why MARS Was a Breakthrough • Higher boundary precision 
+
+• Stronger structural coherence 
+
+• Better small-damage detection 
+
+This combination positions ALBERT as a robust, scalable, and commercially vi-able solution for next-generation automated vehicle damage assessment. 
+
+Figure 2.2: Comparison of segmentation results against SOTA methods. Why MARS Was a Breakthrough • First quadtree-transformer hybrid for car damage segmentation • Eliminated bounding-box-only mask refinement limitations • Achieved +2.3 maskAP improvement over SOTA • Improved small-damage detection (APs +4.8) • Production-deployable speed with high precision 
+
+## 2.7.7 Limitations and Motivation for ALBERT 
+
+Despite its strong performance, MARS still exhibits limitations: • Damage-type classification is limited to predefined categories • Part-damage relationship modeling is implicit • No structured damage-code generation 48 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.3: Robust Multi-Scenario Damage Segmentation Performance of ALBERT. Qualitative results across diverse vehicle types, lighting conditions, occlusions, and damage complexities. ALBERT demonstrates strong boundary adherence, high-confidence instance classification, and effective discrimination between real structural damage and visually similar artifacts. Notably, the model maintains precise mask localization even under complex curvature surfaces and reflective materials, highlighting its readiness for production-grade automotive inspection systems. • Lacks language-aware semantic reasoning While MARS refines masks with exceptional precision, it does not explicitly model: 
+
+P (Part | Damage )
+
+nor generate structured VDC codes required for insurance automation. This gap motivated the development of ALBERT – a transformer-driven Part-Damage reasoning model built on top of the MARS foundation. 49 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.4: Fine-grained mask boundary refinement achieved by MARS. 
+
+## 2.7.8 From MARS to ALBERT 
+
+MARS proved that transformer-based mask refinement can significantly elevate instance segmentation quality. However, segmentation alone is insufficient for real-world insurance intelligence. The next evolution required: • Structured part-damage mapping 50 Motor AI Recognition Solution Teerapong Panboonyuen • VDC code generation • Confidence-aware reasoning • Language-integrated inference This evolution gave birth to: 
+
+# MARSAIL ALBERT 2.8 ALBERT: Advanced Localization and Bidirec-tional Encoder Representations for Automotive Damage Intelligence 
+
+While MARS establishes a high-fidelity instance segmentation backbone, real-world automotive inspection requires more than pixel-level masks. Insurance-grade deployment demands: • Fine-grained differentiation between visually similar damage types • Explicit modeling of part–damage relationships • Robust detection of synthetic or fake damage artifacts • High-confidence predictions suitable for automated underwriting To address these operational constraints, we introduce ALBERT (Advanced Lo-calization and Bidirectional Encoder Representations for Transport Damage and Part Segmentation) , a transformer-driven instance segmentation framework designed specifically for automotive intelligence systems. ALBERT extends beyond conventional mask prediction by jointly modeling: 51 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Y = Ydamage ∪ Y f ake ∪ Y part 
+
+where: • |Y damage | = 26 
+
+• |Y f ake | = 7 
+
+• |Y part | = 61 
+
+This unified formulation transforms raw segmentation into structured automotive damage intelligence. 
+
+# 2.9 Architecture Design 
+
+ALBERT integrates three core components: 1. Bidirectional Transformer Encoder 2. Dynamic Instance Localization Head 3. Multi-Task Damage–Part Classification Branches 
+
+## 2.9.1 Bidirectional Transformer Encoder 
+
+Given an input image x ∈ RH×W ×3, we partition it into N patches of size P × P :
+
+N = HW P 2
+
+Each patch is embedded into latent tokens: 52 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+z0 = [ x1E; . . . ; xN E] + Epos 
+
+The encoder applies multi-head self-attention: Attention (Q, K, V ) = Softmax 
+
+QK T
+
+√dk
+
+
+
+V
+
+This bidirectional encoding enables global contextual reasoning, allowing subtle damage signals to be reinforced through spatial dependencies across the vehicle body. 
+
+## 2.9.2 Advanced Localization Head 
+
+Unlike standard mask heads, ALBERT employs dynamic filter generation. For each query embedding qi:
+
+Fi = ϕ(qi)
+
+where Fi defines a dynamic convolution kernel. Mask prediction is computed as: 
+
+ˆmi = σ(Fi ∗ F )
+
+To improve small-damage sensitivity, we incorporate spatial confidence amplifi-cation: 53 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+ˆMi,j = Mi,j · exp 
+
+
+
+−(i − i∗)2 + ( j − j∗)2
+
+2σ2
+
+
+
+This Gaussian-guided refinement enhances localization for subtle dents and scratches. 
+
+## 2.9.3 Joint Damage–Part Modeling 
+
+Each instance embedding predicts: 
+
+ˆyd = Softmax (Wdqi) (2.4) 
+
+ˆyf = Sigmoid (Wf qi) (2.5) 
+
+ˆyp = Softmax (Wpqi) (2.6) The total optimization objective: 
+
+LALBERT = λ1Lmask + λ2Ldamage + λ3Lpart + λ4Lf ake 
+
+This multi-domain supervision enables structural reasoning such as: 
+
+P (dent | front bumper ) > P (dent | windshield )
+
+capturing realistic automotive priors. 54 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# 2.10 Evolution from ALBERT-v8 to ALBERT-v9 
+
+Figure 2.6 presents a qualitative comparison between ALBERT-v8 and the im-proved ALBERT-v9. ALBERT-v9 introduces: • Refined attention regularization • Hard-negative mining for fake damage • Improved part-damage co-attention constraints • Confidence calibration via temperature scaling Empirically, dent detection confidence improved to: 
+
+max P (dent ) = 100% 
+
+while visual consistency increased in complex multi-damage scenarios. The improvements indicate better feature disentanglement and cross-scale gener-alization. 
+
+# 2.11 Deployment within MARS Ecosystem 
+
+Within the MARS infrastructure, ALBERT functions as the Part-Damage (PD) engine. For each input image: 1. Instance masks are generated as polygons 2. Damage and part labels are predicted 55 Motor AI Recognition Solution Teerapong Panboonyuen 3. Confidence scores (A, D, P) are computed 4. VDC (Vehicle Damage Code) is synthesized The output tuple: 
+
+(V DC, A conf , D conf , P conf , R, S )
+
+is forwarded to AVENGERS for filtering (ENGORGIO / REDUCIO) and down-stream insurance logic. 
+
+## 2.11.1 Algorithmic Flow of ALBERT 
+
+The overall computational pipeline of ALBERT is divided into two modular com-ponents, as summarized in Pseudo Algorithm 1 and Pseudo Algorithm 2. 
+
+2.11.1.1 Stage I: Feature Encoding and Instance Mask Generation 
+
+Pseudo Algorithm 1 describes the perception backbone of ALBERT. In this stage, the input image x ∈ RH×W ×3 is first decomposed into fixed-size patches and embedded into a latent token sequence. The bidirectional transformer encoder then models global spatial dependencies through multi-head self-attention: Attention (Q, K, V ) = Softmax 
+
+QK T
+
+√dk
+
+
+
+V
+
+This mechanism enables each region of the vehicle to reason about all other re-gions simultaneously, which is particularly important for capturing subtle damage patterns such as small dents or thin scratches. 56 Motor AI Recognition Solution Teerapong Panboonyuen After contextual encoding, instance queries qi are extracted and used to generate dynamic convolution filters. These filters produce instance-specific masks: 
+
+ˆmi = σ(Fi ∗ F )
+
+Thus, Stage I transforms raw pixels into high-quality instance masks and semantic embeddings. 
+
+2.11.1.2 Stage II: Multi-Task Damage–Part Intelligence and VDC Synthesis 
+
+Pseudo Algorithm 2 represents the semantic reasoning layer built on top of the instance embeddings. For each instance embedding qi, three prediction heads are applied: 
+
+ˆyd,i = Softmax (Wdqi) (2.7) 
+
+ˆyp,i = Softmax (Wpqi) (2.8) 
+
+ˆyf,i = Sigmoid (Wf qi) (2.9) These correspond to: • Damage type classification • Vehicle part identification • Fake-damage probability estimation To ensure structural realism, a conditional consistency constraint is enforced: 57 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Si = P (damage i | part i)
+
+Predictions that violate physical plausibility (e.g., incompatible damage–part com-binations) are suppressed. Finally, valid damage–part pairs are aggregated to form the Vehicle Damage Code (VDC): VDC = [
+
+> i
+
+(ˆ yp,i , ˆyd,i )
+
+This two-stage design clearly separates visual perception (Stage I) from structured automotive reasoning (Stage II), making ALBERT both modular and deployment-ready within the MARS ecosystem. 
+
+# 2.12 Impact and Significance 
+
+ALBERT transforms generic instance segmentation into domain-specialized au-tomotive intelligence. Compared to conventional architectures, ALBERT provides: • Higher mask fidelity in high-frequency regions • Structured reasoning across damage–part hierarchy • Fake-damage discrimination capability • Insurance-grade confidence calibration By bridging perception and structured damage coding, ALBERT establishes the core intelligence layer of the MARS ecosystem. 58 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Pseudo Algorithm 1: ALBERT Encoding and Masking 
+
+Input: x ∈ RH×W ×3
+
+Patch Embedding 
+
+N = HW P 2 , z0 = [ x1E; . . . ; xN E] + Epos 
+
+Transformer Encoding 
+
+zl = MSA (zl−1) + MLP (zl−1)
+
+MSA (Q, K, V ) = Softmax 
+
+ QK T
+
+√dk
+
+
+
+V
+
+Query Extraction 
+
+qi = ψ(zL)
+
+Dynamic Mask 
+
+Fi = ϕ(qi), ˆmi = σ(Fi ∗ F )
+
+Return: ({ ˆmi}, {qi})
+
+Pseudo Algorithm 2: Multi-Task Intelligence and VDC 
+
+Multi-Task Heads 
+
+ˆyd,i = Softmax (Wdqi)ˆyp,i = Softmax (Wpqi)ˆyf,i = Sigmoid (Wf qi)
+
+Consistency Filtering 
+
+Si = P (damage i|part i)
+
+Joint Loss 
+
+L = λ1Lmask + λ2Ldamage + λ3Lpart + λ4Lf ake 
+
+VDC 
+
+VDC = [
+
+> i
+
+(ˆ yp,i , ˆyd,i )
+
+Return: ({ˆyd,i }, {ˆyp,i }, {ˆyf,i }, VDC )
+
+59 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# 2.13 Dataset Statistics 
+
+To support large-scale industrial vehicle inspection, we introduce ALBERT , a dual-dataset framework consisting of ALBERT-DAMAGE and ALBERT-PART .Together, these datasets establish one of the most comprehensive fine-grained vehicle annotation corpora to date, totaling 1,451,789 manually annotated in-stances across 87 categories .The ALBERT large-scale annotation framework comprises: 
+
+# 1.45+ Million Expert Annotations 
+
+# Covering 87 Fine-Grained Vehicle Damage and Structural Categories 
+
+Enabling Industrial-Scale AI Inspection Deployment 
+
+## 2.13.1 ALBERT-DAMAGE 
+
+As summarized in Table 2.3, ALBERT-DAMAGE contains 856,226 annotated instances spanning 26 fine-grained damage categories. The dataset covers a broad spectrum of real-world vehicle defects, including: • High-frequency surface damage , such as scrape (326,200 instances) and dent (136,607 instances), • Structural and material failures , including crack, shattered glass, broken light, and crush, • Complex tear patterns , such as eartorn variants, • Fine-grained minor defects , including chip and ding, 60 Motor AI Recognition Solution Teerapong Panboonyuen • Hard-negative artifacts , including fake mud, shadow, stain, water drip, and bird droppings. Importantly, the inclusion of hard-negative categories significantly enhances model robustness by reducing false positives under challenging lighting, occlusion, and environmental conditions. This design decision reflects deployment-oriented think-ing, where real-world insurance and inspection environments frequently contain visually confusing artifacts. The heavy-tailed distribution (e.g., scrape vs. crush) mirrors realistic claim statis-tics, enabling models trained on ALBERT-DAMAGE to generalize effectively across both frequent and rare damage scenarios. 
+
+## 2.13.2 ALBERT-PART 
+
+Table 2.4 presents the statistics of ALBERT-PART, which contains 595,563 an-notated instances across 61 structural vehicle components. Unlike conventional part datasets that focus only on major panels, ALBERT-PART provides: • Primary exterior panels (front bumper, hood, doors, fenders), • Lighting systems (headlight, taillight, foglight), • Glass regions (windshield, side windows), • Functional components (door handles, mirrors, wheels), • Fine-grained accessories and trim elements (flare types, roof racks, spoil-ers, logos). High-density categories such as wheel (41,812 instances) and taillight (36,894 in-stances) ensure strong representation of frequently impacted components, while 61 Motor AI Recognition Solution Teerapong Panboonyuen rare classes (e.g., tailgate flare, bumper flare variants) promote fine-grained dis-crimination capability. This breadth enables precise spatial localization and damage-to-part association, which is critical for automated repair cost estimation and claim validation systems. 
+
+## 2.13.3 Discussion and Impact 
+
+The scale and diversity of ALBERT provide several key advantages: 1. Scale Advantage: Over 1.45 million annotations significantly reduce over-fitting risk and improve deep model generalization. 2. Fine-Grained Taxonomy: 87 categories allow detailed structural and defect-level reasoning. 3. Deployment Robustness: Hard-negative modeling mitigates false alarms in production. 4. Insurance-Oriented Design: Distribution reflects real-world damage fre-quency. 5. System Integration Readiness: The separation of DAMAGE and PART datasets enables modular training pipelines for detection, segmentation, and cross-task fusion. Collectively, ALBERT establishes a production-grade foundation for large-scale AI-driven vehicle inspection systems, providing the data scale, annotation fidelity, and category granularity necessary for enterprise deployment. 62 Motor AI Recognition Solution Teerapong Panboonyuen Table 2.3: ALBERT-DAMAGE Dataset Statistics. Large-scale fine-grained vehicle damage segmentation dataset comprising 856,226 annotated instances 
+
+across 26 damage categories. The dataset captures structural damage, surface-level defects, and hard-negative visual artifacts to enable robust real-world de-ployment. 
+
+## Category #Instances Category #Instances 
+
+## scrape 326,200 missing 23,790 dent 136,607 sticker 24,257 loose 94,995 chip 1,413 crackedpaint 74,799 fake 6,291 torn 31,725 fakemud 3,181 scratch 4,526 fakeshadow 11,954 crack 18,320 fakeshape 2,610 brokenlight 30,182 fakebirddropping 967 crackedglass 9,305 fakewaterdrip 1,053 shatteredglass 8,925 fakestain 3,409 eartorn_1 26,708 deform 2,160 eartorn_2 1,224 crush 781 ruined 8,091 ding 2,753 
+
+## Total Instances 856,226 
+
+# 2.14 Evaluation Metrics and Mathematical Formu-lation 
+
+This section formally defines all evaluation metrics used in the ALBERT instance segmentation framework. The evaluation follows the COCO protocol, which mea-sures both detection correctness and localization precision. To ensure clarity, each metric is accompanied by a practical example from real-world car damage inspec-tion. 63 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+## 2.14.1 Confusion Matrix Foundations 
+
+For a predicted damage instance (e.g., a dent on front bumper ), evaluation begins by comparing the predicted mask with ground truth. Let: • T P = True Positives • F P = False Positives • F N = False Negatives • T N = True Negatives Example: If ALBERT predicts 10 dents: • 8 match real dents correctly ⇒ T P = 8 
+
+• 2 are incorrect predictions ⇒ F P = 2 
+
+• 3 real dents were missed ⇒ F N = 3 
+
+## 2.14.2 Precision 
+
+Precision measures prediction purity. 
+
+P recision = T P T P + F P 
+
+Car damage example: 
+
+P recision = 88 + 2 = 0 .80 
+
+64 Motor AI Recognition Solution Teerapong Panboonyuen Interpretation: 80% of predicted dents are truly dents. In insurance, high precision reduces false claim risk. 
+
+## 2.14.3 Recall 
+
+Recall measures detection completeness. 
+
+Recall = T P T P + F N 
+
+Example: 
+
+Recall = 88 + 3 = 0 .727 
+
+Interpretation: ALBERT detects 72.7% of actual dents. High recall prevents missed structural damage. 
+
+## 2.14.4 F1-Score 
+
+F1 balances precision and recall: 
+
+F 1 = 2 · P recision · Recall P recision + Recall 
+
+Example: 
+
+F 1 = 2 · 0.80 × 0.727 0.80 + 0 .727 = 0 .761 
+
+This ensures balanced fraud detection performance. 65 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+## 2.14.5 Accuracy 
+
+Accuracy measures global correctness: 
+
+Accuracy = T P + T N T P + T N + F P + F N 
+
+However, in instance segmentation, accuracy is less informative due to class im-balance (most pixels are background). Therefore, IoU-based metrics are preferred. 
+
+## 2.14.6 Intersection over Union (IoU) 
+
+IoU measures mask overlap quality: 
+
+IoU = |Mpred ∩ Mgt ||Mpred ∪ Mgt |
+
+Example: If predicted dent mask overlaps 80 pixels with ground truth, and total union area is 100 pixels: 
+
+IoU = 80 100 = 0 .80 
+
+IoU >= 0.50 means a correct detection under AP50. IoU >= 0.75 requires very tight boundary alignment. 66 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+## 2.14.7 Average Precision (AP) 
+
+Precision varies depending on confidence threshold. Let P (r) denote precision at recall r.Average Precision is the area under the Precision-Recall curve: 
+
+AP =
+
+ˆ 10
+
+P (r) dr 
+
+In practice (COCO): 
+
+AP = 1
+
+N
+
+> N
+
+X
+
+> n=1
+
+Pinterp (rn)
+
+where Pinterp is interpolated precision at discrete recall levels. Car damage meaning: AP measures how well ALBERT ranks correct damage instances higher than in-correct ones across all confidence thresholds. 
+
+## 2.14.8 Mean Average Precision (mAP) 
+
+For K damage classes: 
+
+mAP = 1
+
+K
+
+> K
+
+X
+
+> k=1
+
+AP k
+
+Example: If: 67 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+AP dent = 0 .27 , AP scratch = 0 .28 , AP crack = 0 .55 
+
+Then: 
+
+mAP = 0.27 + 0 .28 + 0 .55 3 = 0 .366 
+
+This represents balanced performance across damage categories. 
+
+## 2.14.9 COCO AP 50 
+
+AP 50 computes AP at IoU threshold = 0.50. 
+
+AP 50 = AP where IoU ≥ 0.50 
+
+Interpretation: Loose localization requirement. Measures detection capability. In business: Ensures damage is detected even if mask is not perfect. 
+
+## 2.14.10 COCO AP 75 
+
+AP 75 = AP where IoU ≥ 0.75 
+
+Stricter alignment. Measures boundary precision. In insurance: Important for accurate repair cost estimation. 68 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+## 2.14.11 COCO AP 50:95 (Primary Metric) 
+
+The official COCO metric averages AP over 10 IoU thresholds: 
+
+IoU ∈ { 0.50 , 0.55 , 0.60 , . . . , 0.95 }
+
+Formally: 
+
+AP 50:95 = 110 
+
+> 0.95
+
+X
+
+> t=0 .50
+
+AP t
+
+This is the primary metric reported in Tables 2.5 and 2.7. Why it matters: • Rewards detection accuracy • Rewards localization precision • Penalizes sloppy boundaries • Reflects real production reliability 
+
+## 2.14.12 Scale-Aware Metrics 
+
+COCO further evaluates object sizes: 
+
+AP s, AP m, AP l
+
+Where: • Small: area < 32 2
+
+69 Motor AI Recognition Solution Teerapong Panboonyuen • Medium: 32 2 < area < 96 2
+
+• Large: area > 96 2
+
+In automotive inspection: • Small, e.g., scratches, chips • Medium, e.g., door dents • Large, e.g., bumper deformation Strong AP l ensures structural reliability, while strong AP s reflects fine-detail sen-sitivity. 
+
+## 2.14.13 Why AP is the Correct Business Metric 
+
+Unlike simple accuracy: • AP evaluates ranking quality • AP accounts for localization • AP handles class imbalance • AP directly correlates with operational risk In insurance onboarding: Low precision, e.g., false claim approvals Low recall, e.g., undetected prior dam-age Poor IoU, e.g., inaccurate cost estimation Therefore, maximizing: 
+
+AP 50:95 
+
+70 Motor AI Recognition Solution Teerapong Panboonyuen ensures balanced fraud prevention, structural integrity verification, and repair cost consistency. 
+
+Conclusion: 
+
+The evaluation framework of ALBERT is mathematically rigorous, COCO-compliant, and directly aligned with real-world automotive insurance risk control. 
+
+# 2.15 Discussion 
+
+This section provides a comprehensive analysis of the quantitative results pre-sented in Tables 2.5–2.8, highlighting both technical performance and real-world business impact of the latest ALBERT framework. 
+
+## 2.15.1 Overall Damage Model Performance 
+
+As shown in Table 2.5, the ALBERT Damage Model achieves an overall segmen-tation performance of: 
+
+AP = 36 .440 , AP 50 = 60 .592 , AP 75 = 37 .627 .
+
+The gap between AP 50 and AP 75 indicates that ALBERT maintains strong local-ization accuracy even under stricter IoU thresholds. In particular, the improvement at AP 75 reflects sharper mask boundaries and reduced background leakage, which are critical for insurance-grade damage estimation. Performance across object scales further demonstrates robustness: 
+
+AP s = 21 .760 , AP m = 30 .878 , AP l = 49 .488 .
+
+71 Motor AI Recognition Solution Teerapong Panboonyuen The relatively strong large-object performance ( AP l) confirms reliable segmenta-tion of extensive structural damage, while the non-trivial AP s indicates meaning-ful sensitivity to small dents and scratches, a key requirement in fraud-sensitive insurance onboarding. 
+
+## 2.15.2 Per-Class Damage Analysis 
+
+Table 2.6 reveals important category-level insights. High-confidence categories include: • ruined (63.553) 
+
+• shatteredglass (61.567) 
+
+• crackedglass (54.830) 
+
+• chip (54.098) 
+
+These categories represent visually distinctive damage patterns, suggesting that ALBERT effectively captures high-frequency structural cues. Moderate-performance categories such as dent (26.810) and scratch (27.995) indi-cate the intrinsic difficulty of detecting subtle surface deformations, which often exhibit low contrast and ambiguous boundaries. Nevertheless, these AP values remain operationally viable, as AP directly correlates with reliable instance-level detection under COCO evaluation. Notably, fake-related categories such as: 
+
+f akebirddropping (53 .102) , f akeshape (47 .103) 
+
+demonstrate that ALBERT successfully discriminates between true physical dam-72 Motor AI Recognition Solution Teerapong Panboonyuen age and visually misleading artifacts. This capability is particularly critical in fraud prevention scenarios. 
+
+## 2.15.3 Overall Part Model Performance 
+
+Table 2.7 shows that the Part Model achieves: 
+
+AP = 62 .317 , AP 50 = 85 .737 , AP 75 = 68 .460 .
+
+The high AP 75 indicates precise boundary adherence, which is essential for accu-rate part-damage association. Scale-aware performance: 
+
+AP s = 33 .102 , AP m = 56 .122 , AP l = 73 .815 
+
+confirms that ALBERT generalizes well across vehicle components of varying sizes, from mirrors and logos to full bumpers and doors. This strong part segmentation backbone directly strengthens downstream damage-part relational reasoning in the VDC pipeline. 
+
+## 2.15.4 Per-Class Part Analysis 
+
+Detailed per-category results in Table 2.8 demonstrate consistent performance across major structural components. High-performing structural parts include: • tailgate (87.005) • hood (82.982) 73 Motor AI Recognition Solution Teerapong Panboonyuen • licenseplate (80.748) • rearbumper (79.510) These results indicate reliable detection of large and geometrically stable compo-nents. Mid-level AP values for more complex shapes (e.g., rockerpanel, rearpillar, shark-fin) reflect structural ambiguity and occlusion challenges, yet remain acceptable for real-world deployment. Importantly, even fine-grained accessories such as brandlogo (68.226) and bat-terybox (70.383) achieve strong performance, suggesting effective high-resolution feature modeling. 
+
+## 2.15.5 Business Relevance of AP-Based Evaluation 
+
+Average Precision (AP) is particularly suitable for insurance-grade deployment because it evaluates both: 1. Detection correctness (precision) 2. Localization completeness (IoU thresholding) In operational insurance workflows, false positives increase claim risk, while poor localization leads to inaccurate repair estimation. By optimizing AP under multiple IoU thresholds, ALBERT ensures: • Reliable fraud detection • Accurate part-damage pairing • Stable confidence calibration • Reduced manual re-inspection cost 74 Motor AI Recognition Solution Teerapong Panboonyuen Thus, the quantitative results demonstrate that ALBERT is not only academically competitive, but also commercially viable for real-world automotive insurance inspection systems. 
+
+## 2.15.6 Why ALBERT Represents a Milestone 
+
+The combined performance of both Damage and Part models illustrates a balanced and scalable architecture: 
+
+AP P art (62 .317) ≫ AP Damage (36 .440) ,
+
+which is expected due to the higher granularity and intrinsic complexity of damage categories. This balance ensures that structural segmentation remains highly stable, while damage detection continues to improve through iterative refinement. Collectively, the results affirm that ALBERT successfully bridges academic in-stance segmentation and production-grade automotive intelligence. 
+
+# 2.16 Qualitative Results 
+
+To further evaluate the effectiveness of the proposed ALBERT framework, we present extensive qualitative results on the MARSAIL dataset. The visualization examples demonstrate the capability of the model to perform both vehicle compo-nent segmentation and damage segmentation across diverse real-world scenarios. 75 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+## 2.16.1 Qualitative Results of the ALBERT Part Segmentation Model 
+
+Figures 2.7–2.10 present representative examples of the ALBERT Part Model per-forming semantic segmentation of vehicle components. The results show that the model successfully identifies major structural components such as bumpers, doors, windshields, headlights, and side panels across multiple vehicle types in-cluding sedans, pickup trucks, and sport utility vehicles. These examples demon-strate the robustness of the model when handling diverse vehicle geometries and viewpoints. Fine-grained structural understanding is further illustrated in Figures 2.11, 2.13, and 2.16. In these examples, the model accurately delineates adjacent components such as grills, headlights, mirrors, and bumper boundaries while maintaining pre-cise mask localization. The ability to distinguish closely connected vehicle parts is essential for enabling reliable downstream damage analysis and repair estimation. The robustness of the proposed framework under challenging imaging conditions is highlighted in Figures 2.12, 2.14, and 2.15. The model maintains stable predic-tions despite variations in illumination, background clutter, partial occlusions, and perspective distortions. This indicates that the multi-scale feature representations learned by ALBERT generalize well across diverse real-world scenarios. Additional qualitative results are presented in Figures 2.17–2.21. These exam-ples demonstrate consistent segmentation performance across varying camera dis-tances, vehicle designs, and structural layouts. The model effectively captures both large vehicle structures (e.g., doors, roofs, and bumpers) and smaller acces-sories such as door handles and logos, highlighting the scalability of the proposed approach for comprehensive vehicle component understanding. 76 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+## 2.16.2 Qualitative Results of the ALBERT Damage Segmenta-tion Model 
+
+In addition to vehicle part understanding, the ALBERT Damage Model demon-strates strong capability in detecting and segmenting various types of vehicle dam-age. Figures 2.22–2.24 illustrate the model’s ability to accurately identify com-mon damage patterns including dents, scratches, cracks, and shattered glass across multiple vehicle surfaces. These examples highlight the effectiveness of the model in capturing both prominent structural damage and subtle surface-level defects. Figures 2.25, 2.26, and 2.27 further demonstrate the model’s capability to handle complex damage scenarios involving multiple co-occurring damage regions and severe structural deformation. The robustness of the model under challenging visual conditions is shown in Fig-ures 2.28, 2.29, and 2.31. Finally, Figures 2.32–2.36 provide additional examples demonstrating consistent damage localization across complex vehicle geometries and diverse operational environments. The model maintains high segmentation quality for overlapping damage regions and effectively distinguishes genuine structural damage from vi-sually misleading artifacts. Overall, the qualitative results confirm that the proposed ALBERT framework provides reliable and accurate segmentation for both vehicle structural compo-nents and damage regions. This capability is critical for enabling automated ve-hicle inspection systems in real-world automotive insurance and maintenance ap-plications. 77 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.5: Fine-Grained Boundary Refinement and Small-Damage Sensi-tivity. Comparison across challenging small-scale damages including scratches, paint cracks, minor dents, and reflective distortions. ALBERT achieves superior mask precision with reduced background leakage and improved structural consis-tency compared to baseline approaches. The results confirm strong performance in small-object regimes, which are traditionally difficult yet critical in insurance claim validation and fraud detection workflows. 78 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.6: Qualitative comparison between ALBERT-v8 and ALBERT-v9. Ver-sion 9 shows improved boundary precision, better small-damage localization, and stronger structural consistency between predicted vehicle parts and damage types. 79 Motor AI Recognition Solution Teerapong Panboonyuen Table 2.4: ALBERT-PART Dataset Statistics. Comprehensive structural vehicle part segmentation dataset containing 595,563 annotated instances across 61 fine-grained automotive components. The dataset covers exterior panels, lighting sys-tems, glass regions, accessories, and structural elements, supporting large-scale production inspection systems. 
+
+## Category #Instances Category #Instances 
+
+## frontbumper 22,432 doorhandle 26,054 rearbumper 18,726 gastank 5,663 hood 17,940 frontpillar 16,129 frontfender 25,998 rearpillar 12,508 rearfender 15,795 rockerpanel 15,310 frontdoor 24,086 bedsidepanel 8,396 reardoor 15,933 tailgate 3,804 trunklid 6,135 cab 3,544 frontwindshield 14,345 spoiler 4,046 rearwindshield 9,662 brandlogo 13,406 frontsidewindow 16,341 fenderflare 6,874 rearsidewindow 12,358 roofrack 2,150 sidewindow 4,711 doorflare 20,122 sidemirror 22,751 grillflare 8,978 headlight 24,476 hoodflare 971 taillight 36,894 trunklidflare 1,799 wheel 41,812 bumperflare 1,214 roof 13,244 rollbar 1,243 licenseplate 17,992 cornerunderpanel 3,383 
+
+## Total Instances 595,563 
+
+Table 2.5: Overall Instance Segmentation Performance of ALBERT (Damage Model)             
+
+> Model AP AP50 AP75 AP sAP mAP l
+> ALBERT (Damage) 36.440 60.592 37.627 21.760 30.878 49.488
+
+80 Motor AI Recognition Solution Teerapong Panboonyuen Table 2.6: Per-Class Segmentation AP of ALBERT (Damage Categories) 
+
+Category AP Category AP Category AP scrape 20.372 dent 26.810 loose 14.585 crackedpaint 26.186 torn 13.451 scratch 27.995 crack 23.171 brokenlight 46.593 crackedglass 54.830 shatteredglass 61.567 eartorn_1 30.952 eartorn_2 31.500 crush 38.551 missing 44.191 ding 25.191 ruined 63.553 sticker 43.729 chip 54.098 fake 27.676 fakemud 29.177 fakeshadow 30.738 fakeshape 47.103 fakebirddropping 53.102 fakewaterdrip 42.102 fakestain 48.210 deform 21.995 
+
+Table 2.7: Overall Instance Segmentation Performance of ALBERT (Part Model)             
+
+> Model AP AP50 AP75 AP sAP mAP l
+> ALBERT (Part) 62.317 85.737 68.460 33.102 56.122 73.815
+
+81 Motor AI Recognition Solution Teerapong Panboonyuen Table 2.8: Per-Class Segmentation AP of ALBERT (Vehicle Part Categories) 
+
+Category AP Category AP Category AP frontbumper 69.302 rearbumper 79.510 hood 82.982 frontfender 66.774 rearfender 66.266 frontdoor 75.483 reardoor 77.840 trunklid 66.457 frontwindshield 78.282 rearwindshield 75.307 frontsidewindow 72.570 rearsidewindow 70.198 sidewindow 64.325 sidemirror 69.005 headlight 74.452 grill 59.826 lowergrill 52.100 taillight 72.027 wheel 78.211 roof 51.205 foglight 60.732 frontskirt 58.599 rearskirt 70.207 sideskirt 49.071 licenseplate 80.748 doorhandle 48.539 gastank 72.219 frontpillar 42.630 rearpillar 39.989 rockerpanel 39.068 backdoor 75.236 bumpercladding 44.635 runningboard 70.200 bedsidepanel 69.564 tailgate 87.005 cab 72.863 slidingdoor 77.426 sidepanel 66.535 headvan 71.673 batterybox 70.383 sunroof 39.257 spoiler 52.599 brandlogo 68.226 carryboy 76.181 fenderflare 56.464 roofrack 34.693 doorflare 47.743 sharkfin 41.736 grillflare 25.297 hoodflare 68.093 trunklidflare 64.066 panelundertailgate 54.778 doorupperframefront 26.913 doorupperframerear 26.310 bumperflare 47.685 tailgatecover 64.851 storageroom 81.645 rollbar 49.098 tailgateflare 82.525 backdoorflare 63.913 cornerundertaillight 59.821 
+
+82 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.7: Qualitative segmentation results of the ALBERT Part Model on di-verse vehicles from the MARSAIL dataset. The model demonstrates strong ca-pability in identifying multiple structural components including bumpers, doors, windshields, and lighting elements under real-world imaging conditions. 83 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.8: Additional examples highlighting the robustness of ALBERT for fine-grained vehicle component segmentation across diverse vehicle categories and viewpoints. 84 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.9: ALBERT accurately segments complex vehicle structures including grills, mirrors, and side panels while preserving sharp mask boundaries. 85 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.10: Examples illustrating stable segmentation performance across vary-ing vehicle geometries including sedans, pickup trucks, and SUVs. 86 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.11: The ALBERT model successfully captures both large vehicle struc-tures and smaller accessories such as door handles and logos. 87 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.12: Qualitative results demonstrating robust segmentation under varying illumination and background complexity. 88 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.13: Fine-grained segmentation results highlighting accurate delineation of adjacent vehicle components such as bumpers, grills, and headlights. 89 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.14: ALBERT maintains consistent part-level predictions across diverse viewpoints and occlusion patterns. 90 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.15: Examples showing reliable segmentation of overlapping structural components in complex real-world scenes. 91 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.16: Precise boundary localization of vehicle parts supports reliable downstream reasoning for damage localization and repair estimation. 92 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.17: Further qualitative examples illustrating ALBERT’s strong multi-scale feature representation for vehicle component understanding. 93 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.18: ALBERT consistently identifies vehicle components across varying camera distances and perspective distortions. 94 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.19: Robust segmentation across multiple vehicle body structures includ-ing roof components, pillars, and side panels. 95 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.20: Examples illustrating strong structural consistency in predicting complex component layouts across different vehicle designs. 96 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.21: ALBERT demonstrates stable segmentation performance even in challenging visual environments with cluttered backgrounds. 97 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.22: Qualitative damage segmentation results produced by the ALBERT Damage Model on the MARSAIL dataset. The model accurately detects diverse damage patterns including dents, scratches, cracks, and shattered glass across multiple vehicle surfaces. 98 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.23: Additional qualitative results demonstrating the robustness of AL-BERT in detecting subtle surface damage across different vehicle colors, materi-als, and lighting conditions. 99 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.24: Examples illustrating the capability of ALBERT to localize fine-grained damage structures such as hairline cracks and small dents with high boundary precision. 100 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.25: ALBERT effectively identifies multiple co-occurring damage cate-gories within a single vehicle image, supporting reliable multi-instance damage assessment. 101 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.26: Qualitative examples showing strong detection of structural defor-mation such as crushed panels and severely damaged surfaces. 102 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.27: The model successfully detects damage across a wide range of vehi-cle viewpoints, demonstrating strong generalization capability. 103 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.28: Examples illustrating reliable segmentation of glass-related damage such as cracked and shattered windshields. 104 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.29: ALBERT captures subtle surface defects including scratches and chipped paint, which are traditionally difficult to detect automatically. 105 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.30: Qualitative examples demonstrating consistent mask localization for complex and irregular damage patterns. 106 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.31: The model maintains strong performance even when damage appears under challenging environmental conditions such as reflections or shadows. 107 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.32: Additional examples showing ALBERT’s ability to capture both small cosmetic damage and large structural defects across multiple vehicle panels. 108 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.33: Robust qualitative results highlighting the scalability of ALBERT across diverse vehicle models and surface materials. 109 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.34: Examples illustrating the model’s capability to maintain high seg-mentation quality for overlapping and adjacent damage regions. 110 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.35: ALBERT accurately differentiates between genuine structural dam-age and visually misleading artifacts that could otherwise lead to incorrect insur-ance assessments. 111 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 2.36: The model consistently captures complex deformation patterns across multiple vehicle body panels. 112 3 | MARSAIL NLP: DOTA Document Intel-ligence Engine 
+
+# 3.1 Introduction 
+
+At MARSAIL (Motor AI Recognition Solution Artificial Intelligence Lab-oratory) , we extend computer vision beyond visual recognition into full-scale 
+
+Document Intelligence .To power this vision, we introduce: 
+
+# DOTA 
+
+# Deep Optimization and Transformer-based AI 
+
+The Core NLP Engine of the MARS Ecosystem DOTA is a next-generation OCR and sequence modeling framework designed specifically for vehicle insurance document processing. Unlike generic OCR en-gines, DOTA is domain-optimized for: • Thai National ID Card extraction • Thai Driving License recognition • Vehicle Mileage detection • VIN (Vehicle Identification Number) parsing • License Plate recognition DOTA serves as the textual backbone of all MARS users. 113 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# 3.2 Scientific Recognition 
+
+DOTA has been accepted for publication at the 17th International Conference on Knowledge and Smart Technology (KST 2025) , indexed by IEEE Xplore, Scopus, and DBLP. This milestone validates DOTA as a research-grade and production-ready innova-tion. 
+
+# 3.3 Why Traditional OCR Fails 
+
+Conventional OCR engines such as PaddleOCR, EasyOCR, and Tesseract are de-signed for general-purpose text extraction. However, vehicle insurance environ-ments introduce: 1. Severe long-tail character imbalance (Thai language + numeric mixtures) 2. Structured yet noisy layouts 3. Real-world alignment distortion 4. Mixed alphanumeric VIN sequences Standard CTC-based models minimize: 
+
+LCT C = − log P (Y |X)
+
+However, this implicitly biases toward frequent characters. 114 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# 3.4 DOTA: Mathematical Foundation 
+
+DOTA introduces a Class-Balanced Focal CTC Loss (CB-FCTC) :
+
+LDOT A = (1 − pt)γ · L CT C 
+
+where: • pt approximates prediction confidence • γ controls hard-example emphasis This improves gradient signal for rare characters in Thai OCR. 
+
+## 3.4.1 Optimization Objective 
+
+Given input image X and target sequence Y :
+
+P (Y |X) = X 
+
+> π∈B −1(Y)
+> T
+
+Y
+
+> t=1
+
+P (πt|X)
+
+DOTA modifies gradient scaling dynamically: 
+
+∇L DOT A = (1 − pt)γ ∇L CT C 
+
+This enables superior learning for: • Rare Thai characters • Low-frequency VIN patterns • Edge-case numeric distortions 115 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# 3.5 Architecture Overview 
+
+DOTA integrates five key components: 
+
+## 3.5.1 1. Deformable Convolution Backbone 
+
+Instead of rigid CNN sampling: 
+
+y(p0) = X
+
+> k
+
+wk · x(p0 + pk)
+
+DOTA applies deformable offsets: 
+
+y(p0) = X
+
+> k
+
+wk · x(p0 + pk + ∆ pk)
+
+This allows spatial flexibility for misaligned documents. 
+
+## 3.5.2 2. Patch Embedding + Transformer Encoder 
+
+Input feature map is converted into patch tokens: 
+
+zi = We · flatten (xi)
+
+Then processed via multi-head self-attention: Attention (Q, K, V ) = softmax 
+
+QK T
+
+√d
+
+
+
+V
+
+Capturing long-range dependencies in VIN and ID sequences. 116 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+## 3.5.3 3. Bidirectional GRU Sequence Refinement 
+
+Sequence modeling improves character continuity. 
+
+## 3.5.4 4. Adaptive Dropout 
+
+Dynamic regularization: 
+
+p = pmin + σ(f (x))( pmax − pmin )
+
+Improves robustness in noisy scans. 
+
+## 3.5.5 5. Imbalance-Aware CTC Loss 
+
+Production-safe and beam-search compatible. 117 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# 3.6 Pseudo-Code Overview 
+
+DOTA End-to-End Optimization Pipeline 
+
+Given an input document image I ∈ RH×W ×3:
+
+F = DResNet (I) (Deformable Feature Extraction) (3.1) 
+
+Z0 = P(F) (Patch Embedding Projection) (3.2) 
+
+Z1 = BiGRU (Z0) (Bidirectional Sequence Modeling) (3.3) 
+
+Z2 = Z1 + PE (Positional Encoding Injection) (3.4) 
+
+Z3 = T (Z2) (Multi-Head Self-Attention) (3.5) 
+
+O = WoZ3 + b (Character Logit Projection) (3.6) 
+
+Training Objective: 
+
+LDOTA = (1 − pt)γ · L CTC (O, Y ) (3.7) where 
+
+pt = 1
+
+T
+
+> T
+
+X
+
+> t=1
+
+max  
+
+> c
+
+Softmax (Ot,c )
+
+controls adaptive gradient scaling for rare-character emphasis. 
+
+Inference: 
+
+ˆY = arg max  
+
+> Y
+
+P (Y |I) via Beam Search Decoding (3.8) 
+
+End-to-End Differentiable Document Intelligence Optimization 
+
+118 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# 3.7 Application in MARS Ecosystem 
+
+DOTA enables: • Automated ID extraction • Driving license parsing • VIN validation • Mileage fraud prevention • License plate OCR Integrated with AVENGERS and ALBERT, DOTA completes the tri-core AI frame-work of MARSAIL: Vision (ALBERT) + Damage Intelligence (AVENGERS) + Document Intelligence (DOTA) 
+
+# 3.8 Strategic Impact 
+
+# DOTA Enables End-to-End AI Insurance Automation 
+
+# From Vehicle Damage to Document Verification 
+
+One Unified MARSAIL Ecosystem 
+
+DOTA is not merely an OCR engine. It is the Document Intelligence Backbone that ensures: • Faster claim processing 119 Motor AI Recognition Solution Teerapong Panboonyuen • Reduced fraud • Higher operational efficiency • Industrial-scale deployment readiness 
+
+# 3.9 Experimental Results and Analysis 
+
+Table 3.1 presents the quantitative comparison of DOTA against multiple ResNet-based and Transformer-enhanced baselines across five widely used scene text recognition benchmarks: IC15, SVT, IIIT5K, SVTP, and CUTE80. 
+
+## 3.9.1 Overall Performance 
+
+DOTA consistently achieves the highest recognition accuracy across all datasets, outperforming both conventional CNN-Transformer hybrids and deformable vari-ants. Specifically: • IC15: 58.26% (with CRF), the highest among all methods. • SVT: 88.10%, surpassing all baselines. • IIIT5K: 74.13%, demonstrating strong regular text modeling. • SVTP: 82.17%, indicating robustness to perspective distortion. • CUTE80: 66.67%, confirming curved-text adaptability. The improvements are consistent rather than isolated, indicating architectural su-periority rather than dataset-specific tuning. 
+
+## 3.9.2 Impact of Architectural Components 
+
+A progressive analysis of Table 3.1 reveals three key findings: 120 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+1. Deformable Convolution Improves Spatial Robustness Comparing RES50-ViT (53.01 IC15) with RES50-DEF(L4)-ViT-Adaptive (57.20 IC15) demonstrates that spatially adaptive sampling significantly enhances distorted text recognition. Deformable kernels allow: 
+
+y(p0) = X
+
+> k
+
+wk · x(p0 + pk + ∆ pk)
+
+which compensates for geometric misalignment in real-world scenes. 
+
+2. Positional Encoding Strengthens Sequence Modeling RES50-ViT-PE im-proves from 53.88 to 57.05 on IC15, validating the necessity of explicit positional encoding in OCR tasks. Transformer attention without positional bias underper-forms in structured text sequences. 
+
+3. Adaptive Optimization and Loss Design Are Critical The transition from RES50-ATT-Adaptive to DOTA yields consistent gains across all benchmarks. This improvement stems from the proposed imbalance-aware focal CTC loss: 
+
+LDOT A = (1 − pt)γ LCT C 
+
+By dynamically scaling gradients, DOTA enhances the learning of rare characters, which is particularly important for multilingual and alphanumeric sequences such as VINs and license plates. 
+
+## 3.9.3 CRF Enhancement 
+
+Adding CRF provides additional sequence-level consistency: 121 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+P (Y |X) ∝ Y
+
+> t
+
+ψu(yt) Y
+
+> t
+
+ψp(yt, y t+1 )
+
+The marginal gain (e.g., 58.02 to 58.26 on IC15) indicates that DOTA already models strong contextual dependencies, and CRF acts as a refinement layer rather than a corrective mechanism. 
+
+## 3.9.4 Why DOTA Is Superior 
+
+DOTA outperforms competing architectures due to the synergistic integration of: 1. Spatial Adaptivity via deformable convolution. 2. Long-Range Context Modeling via Transformer encoder. 3. Sequential Refinement via BiGRU. 4. Dynamic Regularization via Adaptive Dropout. 5. Imbalance-Aware Optimization via Class-Balanced Focal CTC. Unlike conventional OCR pipelines that stack modules independently, DOTA op-timizes the entire system end-to-end: 
+
+FDOT A = L ◦ T ◦ G ◦ P ◦ D 
+
+where each operator is jointly optimized under a unified loss. 
+
+## 3.9.5 Industrial Implications 
+
+The superior performance on distorted (SVTP), curved (CUTE80), and incidental (IC15) text confirms DOTA’s suitability for: 122 Motor AI Recognition Solution Teerapong Panboonyuen • Real-world document OCR • Thai ID and driving license parsing • VIN recognition under perspective noise • License plate extraction in uncontrolled environments These characteristics directly translate into production robustness within the MAR-SAIL ecosystem. 
+
+## 3.9.6 Conclusion of Results 
+
+The empirical evidence demonstrates that DOTA achieves state-of-the-art perfor-mance not through isolated improvements, but through a carefully engineered in-tegration of spatial adaptation, attention-based context modeling, and imbalance-aware optimization. This validates DOTA as a next-generation OCR framework capable of surpassing traditional architectures in both academic benchmarks and real-world deployment scenarios. 
+
+# 3.10 Discussion of Results 
+
+The performance evaluation of the proposed DOTA-OCR framework on VIN and mileage recognition tasks provides important insights into both the technical chal-lenges and practical readiness of AI-driven insurance automation. As shown in Fig. 3.1, the VIN recognition task achieved an overall accuracy of 50.27% on a real-world test set of 1,319 samples. While this numerical result may appear moderate, it reflects the intrinsic complexity of VIN extraction under unconstrained imaging conditions. Unlike structured printed text, VIN characters 123 Motor AI Recognition Solution Teerapong Panboonyuen Table 3.1: Performance comparison on IC15, SVT, IIIT5K, SVTP and CUTE80 datasets 
+
+Method IC15 SVT IIIT5K SVTP CUTE80 
+
+RES50-ViT 51.08 84.85 67.17 76.28 56.94 RES50-DEF-(L3–L4) 50.22 82.23 65.30 72.25 51.39 RES50-ViT 53.01 85.16 71.03 77.05 61.81 RES50-ATT 42.90 71.87 58.80 59.84 44.44 RES50-ATT-ViT 53.88 85.78 70.93 78.14 62.50 RES50-ViT-PE 57.05 87.33 73.33 81.09 65.97 ResNext 47.47 78.52 66.50 67.60 53.47 RES50-ATT 50.51 79.13 67.93 69.61 52.78 RES50-ATT-Adaptive 51.32 80.99 69.50 72.25 55.90 RES50-DEF(L4)-ViT-Adaptive 57.20 87.79 73.83 81.86 64.24 
+
+DOTA (Proposed) 58.02 88.10 74.00 82.02 66.67 DOTA + CRF (Proposed) 58.26 88.10 74.13 82.17 66.67 
+
+are typically engraved on metallic chassis surfaces, often affected by low contrast, specular reflections, motion blur, corrosion, viewpoint distortion, and background clutter. Furthermore, VIN sequences contain visually ambiguous alphanumeric characters (e.g., O/0, I/1, B/8), increasing fine-grained recognition difficulty. In contrast, the mileage recognition task (Fig. 3.2) achieved a substantially higher accuracy of 87.57%, with 1,155 correct predictions out of 1,319 samples. This improvement can be attributed to the structured numerical format of odometer readings, reduced alphanumeric ambiguity, and more consistent spatial alignment within dashboard displays. Nevertheless, the remaining errors indicate real-world challenges such as glare from instrument panels, partial occlusion, non-uniform illumination, and dashboard design variability. 
+
+## 3.10.1 Why DOTA is Optimal for CAR Insurance OCR 
+
+Despite the task complexity, DOTA demonstrates several characteristics that make it particularly well-suited for automotive insurance applications: 124 Motor AI Recognition Solution Teerapong Panboonyuen • Robust Multi-Domain Generalization: The framework handles both en-graved chassis text (VIN) and digital dashboard numerics (mileage), demon-strating adaptability across heterogeneous visual domains. • Real-World Condition Resilience: The evaluation dataset spans uncon-trolled acquisition scenarios typical of insurance claims (mobile capture, low lighting, reflections, motion artifacts), confirming operational robust-ness. • Insurance-Critical Information Extraction: VIN and mileage are high-value verification attributes in fraud detection, claim validation, and asset identification workflows. DOTA directly targets these mission-critical data points. • Scalable Deployment Potential: The strong mileage performance and sta-ble VIN localization indicate that incremental improvements in character-level disambiguation can yield significant accuracy gains, making the sys-tem highly scalable. 
+
+## 3.10.2 Strategic Implications 
+
+The combined results suggest that VIN recognition represents a high-difficulty, high-impact task requiring continued refinement, particularly in alphanumeric dis-ambiguation and reflection-robust feature modeling. Meanwhile, mileage OCR performance demonstrates near-production readiness. Overall, the DOTA-OCR framework establishes a strong technical foundation for end-to-end CAR AI insurance automation. Its ability to operate under real-world constraints, extract insurance-critical identifiers, and maintain high performance in structured numeric recognition tasks confirms its suitability as a core OCR engine within the MARSAIL CAR insurance ecosystem. 125 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Figure 3.1: Performance evaluation of the proposed DOTA-OCR model on the 
+
+VIN recognition task (January–June 2025 test set). The model achieved an over-all accuracy of 50.27% across 1,319 samples. The distribution of correct and incorrect predictions reflects the intrinsic difficulty of alphanumeric VIN recog-nition under real-world automotive and insurance imaging conditions, including metallic reflections, low contrast engraving, blur, and viewpoint distortion. 
+
+Figure 3.2: Performance evaluation of the proposed DOTA-OCR model on the 
+
+Mileage recognition task (January–June 2025 test set). The model achieved an overall accuracy of 87.57% across 1,319 samples. A total of 1,155 predictions were correct, while 164 samples were incorrectly recognized. The error distri-bution highlights challenges inherent to odometer digit recognition in real-world automotive imagery, including glare from instrument clusters, motion blur, low illumination, partial occlusion, and varying dashboard designs. 126 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# 3.11 Conclusion 
+
+DOTA represents a fundamental shift from conventional, generic OCR systems toward truly domain-optimized document intelligence. Rather than relying on one-size-fits-all models, DOTA is purposefully designed to align with the struc-tural characteristics, operational constraints, and business objectives of real-world applications. By integrating deformable convolution for enhanced spatial adaptability, transformer-based sequence modeling for deep contextual understanding, and imbalance-aware optimization for robust learning, DOTA consistently delivers superior performance in accuracy, resilience, and deployment stability compared to traditional OCR so-lutions. In real-world deployment within Thailand’s car insurance ecosystem, DOTA has demonstrated clear and measurable business impact. The system has been suc-cessfully implemented to extract and interpret critical information from a wide range of sources, including vehicle license plates, mileage readings, VIN num-bers, Thai national ID cards, driving licenses, and complex claim-related docu-ments such as repair breakdowns (e.g., labor and parts costs). This significantly reduces manual processing effort, minimizes human error, and accelerates end-to-end claims workflows. Beyond its current capabilities, DOTA provides a strong and extensible foundation for future innovation. Its architecture naturally supports evolution into AI-driven agents capable of intelligent decision-making, workflow automation, and contex-tual reasoning. This positions DOTA not merely as an OCR system, but as a scalable intelligence platform for enterprise-grade automation. 127 4 | Related Work 
+
+This section reviews prior research across three major directions: (1) AI-driven car insurance systems, (2) vehicle damage datasets and analysis, and (3) modern instance segmentation techniques. We highlight the limitations of existing ap-proaches and position ALBERT (Panboonyuen, 2025a) as a unified and production-ready solution for automotive insurance intelligence. 
+
+## 4.0.1 AI for Car Insurance and Fraud Detection 
+
+The application of artificial intelligence in car insurance has gained significant attention in recent years, particularly in automating claim processing, fraud detec-tion, and cost estimation. Maiano et al. (Maiano et al., 2023) proposed a deep learning-based antifraud sys-tem that analyzes visual and contextual information to identify suspicious insur-ance claims. While effective in detecting anomalous patterns, their system pri-marily focuses on classification-level signals and lacks fine-grained spatial under-standing of damage regions. Complementary to this, Huang et al. (Huang, Wang, Liu, Lu, & Shen, 2022) in-troduced a blockchain-assisted framework to ensure privacy-preserving and fraud-resistant insurance processing. Although the system improves trust and security, it does not address the core challenge of accurate visual damage assessment, which remains a critical bottleneck in automation. In terms of operational systems, Elbhrawy et al. (Elbhrawy, Belal, & Hassanein, 2024) proposed a cost estimation system (CES) that integrates computer vision outputs into downstream pricing models. However, the accuracy of such systems is heavily dependent on the quality of upstream perception models, which are 128 Motor AI Recognition Solution Teerapong Panboonyuen often limited by coarse detection outputs. Earlier work by Zhang et al. (W. Zhang et al., 2020) introduced an end-to-end system for automatic damage assessment from video streams, simulating profes-sional inspectors. While pioneering, the approach relies on complex temporal pipelines and does not scale well to diverse real-world image conditions. Recent efforts such as CDA-Net (Kannan, Balasubramanian, Subramanian, Kand-hasamy, & Ramesh, 2023) attempt to automate car damage analysis using CNN-based architectures. However, these methods typically rely on bounding-box de-tection or low-resolution segmentation, which is insufficient for insurance-grade precision. 
+
+Limitation Summary: Existing AI-driven insurance systems suffer from: • Lack of precise pixel-level damage localization • Weak integration between structure and damage understanding • Limited robustness under real-world imaging conditions 
+
+ALBERT Advantage: In contrast, ALBERT (Panboonyuen, 2025a) introduces a unified framework that combines high-resolution instance segmentation with bidi-rectional transformer-based reasoning, enabling accurate, scalable, and production-ready damage assessment for insurance applications. 
+
+## 4.0.2 Vehicle Damage Datasets and Analysis 
+
+The development of high-quality datasets has played a crucial role in advancing automotive damage analysis. The CarDD dataset (Wang, Li, & Wu, 2023) provides one of the earliest large-scale benchmarks for vision-based car damage detection, covering multiple dam-129 Motor AI Recognition Solution Teerapong Panboonyuen age categories. However, the dataset primarily focuses on damage-level annota-tions without explicitly modeling vehicle structural components. Similarly, the VehiDE dataset (Huynh, Tran, Huynh, Hoang, & Nguyen, 2023) targets real-world insurance scenarios, but suffers from limited diversity in fine-grained annotations, particularly for complex multi-part interactions. More recent work by Peng et al. (Peng, Dong, Yuan, & Zheng, 2025) introduces a multi-view fusion approach, leveraging multiple camera perspectives to improve damage detection. While this improves robustness, it introduces additional hard-ware and data collection complexity, making deployment less practical in standard insurance workflows. DamageNet (Katayev et al., 2025) extends Mask R-CNN with dilated feature pyramids to enhance segmentation quality. Although effective, it remains con-strained by CNN-based feature representations and lacks global contextual rea-soning capabilities. 
+
+Limitation Summary: Current datasets and methods are limited by: • Separation between part-level and damage-level annotations • Insufficient modeling of structural context • Dependency on controlled data collection setups 
+
+ALBERT Advantage: ALBERT addresses these limitations by jointly model-ing vehicle parts and damage categories within a unified framework, enabling relational reasoning between structure and defect. This capability is critical for real-world insurance scenarios, where damage must be interpreted in the context of vehicle components. 130 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+## 4.0.3 Instance Segmentation Techniques 
+
+Instance segmentation has evolved rapidly, driven by advances in deep learning architectures, transformers, and efficient inference techniques. Recent real-time approaches such as FastInst (J. He, Li, Geng, & Xie, 2023) and SparseInst (T. Cheng et al., 2022) focus on query-based and sparse activation mechanisms to improve inference speed. While efficient, these models often trade off segmentation precision for speed, which is not ideal for high-stakes applica-tions like insurance. Mask refinement techniques such as Mask Transfiner (Ke et al., 2022) improve boundary quality through iterative refinement, but introduce additional computa-tional complexity. Unsupervised approaches like Cut-and-Learn (Wang, Girdhar, Yu, & Misra, 2023) attempt to reduce annotation cost, yet struggle to achieve the accuracy required for fine-grained industrial deployment. Transformer-based methods, including SeqFormer (Wu, Jiang, Bai, Zhang, & Bai, 2022), demonstrate strong performance in video instance segmentation by mod-eling temporal dependencies. However, their focus is primarily on video data, making them less optimized for single-image inspection pipelines. Beyond 2D vision, ISBNet (Ngo, Hua, & Nguyen, 2023) extends instance seg-mentation to 3D point clouds, highlighting the trend toward richer spatial under-standing, but requiring specialized sensors. Multi-scale context modeling methods (Liu et al., 2024) and weakly supervised approaches (B. Cheng, Parkhi, & Kirillov, 2022) further improve efficiency and generalization, yet still face challenges in achieving consistent high-resolution 131 Motor AI Recognition Solution Teerapong Panboonyuen segmentation across diverse real-world conditions. 
+
+Limitation Summary: Modern instance segmentation methods face trade-offs between: • Accuracy vs. efficiency • Local detail vs. global context • Generalization vs. supervision requirements 
+
+ALBERT Advantage: ALBERT (Panboonyuen, 2025a) leverages transformer-based representations to capture global context, while maintaining precise lo-calization through high-resolution mask prediction. Unlike prior methods, it is specifically designed for automotive damage evaluation, balancing accuracy, scal-ability, and deployment readiness. 
+
+## 4.0.4 Positioning of ALBERT 
+
+In contrast to prior work, ALBERT represents a significant step forward by unify-ing: • Fine-grained vehicle part segmentation • High-precision damage localization • Transformer-based contextual reasoning This holistic design enables ALBERT to overcome the limitations of existing sys-tems, which often treat perception, reasoning, and deployment as separate prob-lems. By bridging these components into a single framework, ALBERT establishes a new paradigm for AI-driven automotive insurance inspection, delivering both aca-demic rigor and real-world impact. 132 5 | Future Direction: From ALBERT to Agen-tic AI for Automotive Insurance 
+
+While ALBERT (Panboonyuen, 2025a) establishes a strong foundation for high-precision vehicle part and damage understanding, the next frontier lies in inte-grating large language models (LLMs) and agentic AI systems to transform static perception models into fully autonomous insurance intelligence platforms. This section outlines a forward-looking roadmap toward AI-driven insurance sys-tems powered by multimodal reasoning, LLM orchestration, and collaborative AI agents. 
+
+## 5.0.1 From Perception to Reasoning: The Role of LLMs in In-surance 
+
+Recent studies highlight the growing impact of LLMs in the insurance domain, enabling natural language reasoning, policy understanding, and decision automa-tion (Cao et al., 2024). Unlike traditional rule-based systems, LLMs can interpret unstructured documents, customer descriptions, and regulatory constraints. Applications such as retrieval-augmented generation (RAG) have already demon-strated effectiveness in insurance question-answering systems (Beauchemin, Khoury, & Gagnon, 2024), allowing AI to provide context-aware responses grounded in legal and policy documents. Furthermore, emerging benchmarks such as INS-MMBench (Lin, Lyu, Xu, & Luo, 2025) and INSEva (S. Chen et al., 2025) highlight the need for multimodal reasoning capabilities, where models must jointly understand images, text, and domain-specific knowledge. 133 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Limitation of Current Systems: Despite these advances, existing LLM-based insurance systems are largely disconnected from visual perception models. They operate on textual inputs without direct integration with image-based damage analysis. 
+
+ALBERT Opportunity: ALBERT provides high-quality structured outputs (e.g., part segmentation, damage masks, severity estimation), which can serve as grounded inputs to LLMs. This enables a new paradigm where perception and reasoning are tightly coupled in a unified pipeline. 
+
+## 5.0.2 Agentic AI: From Single Models to Autonomous Systems 
+
+The evolution from standalone AI models to agentic systems represents a major paradigm shift in artificial intelligence. Sapkota et al. (Sapkota, Roumeliotis, & Karkee, 2025) define agentic AI as sys-tems capable of autonomous decision-making, planning, and tool usage, extend-ing beyond traditional reactive models. Such systems can decompose complex tasks into sub-problems, coordinate multiple components, and adapt dynamically. Recent work such as T2I-Copilot (C.-Y. Chen, Shi, Zhang, & Shi, 2025) demon-strates the effectiveness of multi-agent collaboration, where specialized agents cooperate to interpret prompts, generate outputs, and refine results iteratively. Similarly, CAISE (Kim et al., 2022) introduces conversational agents for image understanding and editing, bridging the gap between vision and natural language interaction. 
+
+Limitation of Current Systems: Most existing agentic systems are designed for general-purpose tasks (e.g., content generation, search, or editing), and are not tailored to domain-specific workflows such as insurance claim processing. 134 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+ALBERT Opportunity: ALBERT can act as a specialized perception agent within a broader multi-agent ecosystem, providing reliable visual grounding for higher-level reasoning agents. 
+
+## 5.0.3 Proposed Architecture: ALBERT + LLM + Multi-Agent System 
+
+We envision a next-generation automotive insurance system built on three core components: 1. Perception Agent (ALBERT) 
+
+• Performs part segmentation and damage detection • Outputs structured representations of vehicle condition 2. Reasoning Agent (LLM) 
+
+• Interprets ALBERT outputs in the context of policies • Generates repair recommendations and cost estimation • Detects inconsistencies and potential fraud 3. Orchestrator Agent 
+
+• Coordinates workflows across agents • Integrates external tools (databases, pricing APIs) • Manages user interaction and system feedback This architecture transforms the insurance pipeline from a static prediction system into a dynamic, interactive decision-making platform. 135 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+## 5.0.4 Multimodal Intelligence and Human-AI Interaction 
+
+Beyond automation, the integration of ALBERT with LLMs enables new forms of human-AI interaction. Users (e.g., insurance adjusters or customers) can interact with the system via natural language: • “What damages are detected on this vehicle?” • “Estimate repair cost based on detected damage.” • “Is this claim suspicious or consistent?” The system can respond with grounded explanations, supported by visual evi-dence and structured outputs. Guidelines for effective AI communication, as discussed in (Dihal & Duarte, 2023), emphasize transparency and interpretability, which are critical in high-stakes domains such as insurance. 
+
+## 5.0.5 Research Challenges and Opportunities 
+
+Despite its potential, integrating ALBERT with LLMs and agentic systems intro-duces several challenges: • Multimodal Alignment: Bridging structured visual outputs with textual reasoning • Reliability and Safety: Ensuring consistent and explainable decisions in financial contexts • Scalability: Deploying multi-agent systems in real-world production envi-ronments 136 Motor AI Recognition Solution Teerapong Panboonyuen • Evaluation: Developing benchmarks for end-to-end insurance intelligence systems Addressing these challenges will require advances in multimodal learning, system design, and domain-specific evaluation. 
+
+## 5.0.6 Vision: Toward Fully Autonomous Insurance Intelligence 
+
+The integration of ALBERT with LLMs and agentic AI represents a transforma-tive step toward fully autonomous insurance systems. In this vision, AI systems will: • Automatically analyze vehicle damage from images • Understand insurance policies and regulations • Generate repair cost estimates and reports • Detect fraud with high confidence • Interact naturally with users and stakeholders Such systems have the potential to significantly reduce processing time, opera-tional costs, and human error, while improving transparency and customer expe-rience. 
+
+Final Perspective: ALBERT is not the endpoint, but the foundational perception engine for a new generation of intelligent insurance platforms. By extending ALBERT into an agentic AI ecosystem, we unlock the full potential of multimodal intelligence, bridging vision, language, and decision-making into a unified, production-ready system. 137 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+5.0.6.1 Agentic AI Framework for Automotive Insurance Pseudo Algorithm: ALBERT-Agentic Insurance Pipeline 
+
+Agents: PerceptionAgent (ALBERT), ReasoningAgent (LLM), FraudAgent, CostEstimator-Agent, OrchestratorAgent 
+
+Procedure: ProcessClaim(images, metadata) 
+
+1. Validate input images → valid_images 2. if Empty(valid_images) → Error 3. Parts ← PerceptionAgent.SegmentParts(valid_images) 4. Damages ← PerceptionAgent.DetectDamage(valid_images) 5. structured_output ← Combine(parts, damages) 6. claim_context ← Merge(structured_output, metadata) 7. reasoning ← ReasoningAgent.Analyze(claim_context) 8. fraud_score ← FraudAgent.Evaluate(reasoning) 9. if fraud_score > Threshold → Flag Fraud 10. repair_cost ← CostEstimatorAgent.Estimate(structured_output) 11. report ← OrchestratorAgent.GenerateReport(structured_output, reasoning, fraud_score, repair_cost) 12. explanation ← ReasoningAgent.Explain(report) 13. return report, explanation 
+
+138 6 | Conclusion 
+
+# 6.1 MARSAIL as a Complete AI System Paradigm 
+
+The MARSAIL ecosystem represents more than a collection of machine learning models. It is a fully realized paradigm for building production-grade artificial intelligence systems that operate reliably under real-world constraints. From its inception, MARSAIL was designed with a clear principle: intelligence is not achieved through a single model, but through the structured interaction of perception, data, and reasoning systems. This principle materialized into a layered architecture in which: • Perception is handled by models such as ALBERT, capable of fine-grained vehicle understanding, • Data is governed and continuously improved through systems such as MAR-BLES and KAO STUDIO, • Infrastructure ensures scalability, reproducibility, and operational stability, • Intelligence emerges from the integration of these components into a unified decision pipeline. The result is a system that does not merely predict, but interprets. 
+
+# 6.2 From Perception to Reasoning 
+
+A key contribution of this work is the transition from perception-driven AI to reasoning-capable systems. 139 Motor AI Recognition Solution Teerapong Panboonyuen ALBERT (Panboonyuen, 2025a) established a strong foundation for structured visual understanding by modeling relationships between vehicle components and damage patterns. However, perception alone is insufficient for real-world insur-ance workflows. Insurance decision-making requires: • Contextual interpretation, • Logical consistency, • Explainability, • Actionable outcomes. These requirements naturally lead to the integration of higher-level reasoning sys-tems. Recent advances in large language models and agentic AI systems (Sapkota et al., 2025; Cao et al., 2024) demonstrate that modern AI is evolving toward systems capable of planning, reasoning, and acting across complex workflows. Within this context, MARSAIL can be understood as an intermediate but critical step: Perception → Structured Representation → Reasoning → Action (6.1) ALBERT occupies the perception and representation stages, enabling the next generation of systems to operate at the reasoning and decision layers. 140 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# 6.3 Toward Agentic AI in Automotive Insurance 
+
+The natural evolution of the MARSAIL ecosystem is the integration of agent-based intelligence. Agentic AI systems extend traditional pipelines by introducing autonomous decision-making entities that can: • Interpret multimodal inputs, • Coordinate across multiple models, • Perform reasoning over structured outputs, • Interact with users and external systems, • Execute actions within defined operational constraints. Emerging research in multi-agent systems and conversational vision models (C.-Y. Chen et al., 2025; Kim et al., 2022) suggests that future insurance platforms will not be static pipelines, but dynamic systems composed of interacting AI agents. In this paradigm, MARSAIL evolves into: • A perception backbone (ALBERT), • A data engine (MARBLES), • A supervision interface (KAO STUDIO), • A reasoning layer (LLM Agents), • An orchestration system (AVENGERS). This transformation enables end-to-end automation of insurance workflows, from image ingestion to claim decisioning and customer communication. 141 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# 6.4 Industrial and Strategic Impact 
+
+The contributions of MARSAIL extend beyond technical implementation. At the organizational level, the project has: • Established a production-ready AI infrastructure, • Introduced research-driven development practices, • Enabled scalable automation of insurance workflows, • Created proprietary intellectual property, • Positioned MARS within the global AI research landscape. More importantly, MARSAIL demonstrates that deep learning systems can be successfully translated from academic research into real-world industrial deploy-ment when supported by strong architectural design and disciplined engineering practices. 
+
+# 6.5 Final Perspective 
+
+The evolution of artificial intelligence systems is moving toward a unified paradigm in which perception, reasoning, and action are tightly integrated. 
+
+The future of automotive insurance AI is not only about detecting damage. It is about understanding context, reasoning over uncertainty, and making decisions. 
+
+MARSAIL was the foundation. The next generation will build intelligence on top of it. 
+
+142 Bibliography 
+
+Amirfakhrian, M., & Parhizkar, M. (2021). Integration of image segmentation and fuzzy theory to improve the accuracy of damage detection areas in traffic accidents. Journal of big data , 8(1), 1–17. Beauchemin, D., Khoury, R., & Gagnon, Z. (2024). Quebec automobile insurance question-answering with retrieval-augmented generation. In Proceedings of the natural legal language processing workshop 2024 (pp. 48–60). Cao, C., Yao, X., Gong, W., Li, Y., Pan, Y., Yang, Y., & Zhao, C. (2024). Llms for insurance: Opportunities, challenges and concerns. Chen, C.-Y., Shi, M., Zhang, G., & Shi, H. (2025). T2i-copilot: A training-free multi-agent text-to-image system for enhanced prompt interpretation and interactive generation. In Proceedings of the ieee/cvf international confer-ence on computer vision (pp. 19396–19405). Chen, S., Zhu, Q., Yang, W., Yang, C., Wang, Z., Wang, P., . . . others (2025). Inseva: A comprehensive chinese benchmark for large language models in insurance. arXiv preprint arXiv:2509.04455 .Cheng, B., Parkhi, O., & Kirillov, A. (2022). Pointly-supervised instance seg-mentation. In Proceedings of the ieee/cvf conference on computer vision and pattern recognition (pp. 2617–2626). Cheng, T., Wang, X., Chen, S., Zhang, W., Zhang, Q., Huang, C., . . . Liu, W. (2022). Sparse instance activation for real-time instance segmentation. In Proceedings of the ieee/cvf conference on computer vision and pattern recognition (pp. 4433–4442). Dihal, K., & Duarte, T. (2023). Better images of ai: a guide for users and cre-ators. Cambridge and London: The Leverhulme Centre for the Future of Intelligence and We and AI .143 Motor AI Recognition Solution Teerapong Panboonyuen Elbhrawy, A. S., Belal, M. A., & Hassanein, M. S. (2024). Ces: Cost estimation system for enhancing the processing of car insurance claims. Journal of Computing and Communication , 3(1), 55–69. He, J., Li, P., Geng, Y., & Xie, X. (2023). Fastinst: A simple query-based model for real-time instance segmentation. In Proceedings of the ieee/cvf confer-ence on computer vision and pattern recognition (pp. 23663–23672). He, K., Gkioxari, G., Dollár, P., & Girshick, R. (2017). Mask r-cnn. In Proceed-ings of the ieee international conference on computer vision (pp. 2961– 2969). Huang, C., Wang, W., Liu, D., Lu, R., & Shen, X. (2022). Blockchain-assisted personalized car insurance with privacy preservation and fraud resistance. 
+
+IEEE Transactions on Vehicular Technology , 72 (3), 3777–3792. Huynh, N. T., Tran, N. N., Huynh, A. T., Hoang, V.-D., & Nguyen, H. D. (2023). Vehide dataset: New dataset for automatic vehicle damage detection in car insurance. In 2023 15th international conference on knowledge and systems engineering (kse) (pp. 1–6). Jõeveer, K., & Kepp, K. (2023). What drives drivers? switching, learning, and the impact of claims in car insurance. Journal of Behavioral and Experimental Economics , 103 , 101993. Kannan, I. R., Balasubramanian, Y., Subramanian, S. P., Kandhasamy, M., & Ramesh, S. (2023). Cda-net: Computer vision based automatic car damage analysis. In Proceedings of the fourteenth indian conference on computer vision, graphics and image processing (pp. 1–7). Katayev, N., Yessengaliyeva, Z., Kozhamkulova, Z., Bakirova, Z., Abuova, A., & Kuandikova, G. (2025). Damagenet: A dilated convolution feature pyra-mid network mask r-cnn for automated car damage detection and segmenta-tion. International Journal of Advanced Computer Science & Applications ,144 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+16 (5). Ke, L., Danelljan, M., Li, X., Tai, Y.-W., Tang, C.-K., & Yu, F. (2022). Mask transfiner for high-quality instance segmentation. In Proceedings of the ieee/cvf conference on computer vision and pattern recognition (pp. 4412– 4421). Kim, H., Kim, D. S., Yoon, S., Dernoncourt, F., Bui, T., & Bansal, M. (2022). Caise: Conversational agent for image search and editing. In Proceedings of the aaai conference on artificial intelligence (Vol. 36, pp. 10903–10911). Kirillov, A., Wu, Y., He, K., & Girshick, R. (2020). Pointrend: Image segmen-tation as rendering. In Proceedings of the ieee/cvf conference on computer vision and pattern recognition (pp. 9799–9808). Lin, C., Lyu, H., Xu, X., & Luo, J. (2025). Ins-mmbench: A comprehensive benchmark for evaluating lvlms’ performance in insurance. In Proceed-ings of the ieee/cvf international conference on computer vision (pp. 9036– 9047). Liu, Y., Li, H., Hu, C., Luo, S., Luo, Y., & Chen, C. W. (2024). Learning to aggregate multi-scale context for instance segmentation in remote sensing images. IEEE Transactions on Neural Networks and Learning Systems ,
+
+36 (1), 595–609. Macedo, A. M., Cardoso, C. V., Neto, J. S. M., et al. (2021). Car insurance fraud: the role of vehicle repair workshops. International Journal of Law, Crime and Justice , 65 , 100456. Maiano, L., Montuschi, A., Caserio, M., Ferri, E., Kieffer, F., Germanò, C., . . . Anagnostopoulos, A. (2023). A deep-learning–based antifraud system for car-insurance claims. Expert Systems with Applications , 231 , 120644. Ngo, T. D., Hua, B.-S., & Nguyen, K. (2023). Isbnet: a 3d point cloud in-stance segmentation network with instance-aware sampling and box-aware 145 Motor AI Recognition Solution Teerapong Panboonyuen dynamic convolution. In Proceedings of the ieee/cvf conference on com-puter vision and pattern recognition (pp. 13550–13559). Panboonyuen, T. (2021). Semantic segmentation on remotely sensed images using deep convolutional encoder-decoder neural network (Ph.D. Thesis). Chu-lalongkorn University. Panboonyuen, T. (2023). Mars: Mask attention refinement with sequential quadtree nodes. In International conference on image analysis and pro-cessing (iciap) (pp. 28–38). UniversitÃ degli Studi di Udine, Udine, Italy: Springer Nature Switzerland. Panboonyuen, T. (2025a). Albert: Advanced localization and bidirectional en-coder representations from transformers for automotive damage evaluation. 
+
+arXiv preprint arXiv:2506.10524 .Panboonyuen, T. (2025b). Dota: Deformable optimized transformer architec-ture for end-to-end text recognition with retrieval-augmented generation. In 
+
+Proceedings of the 17th international conference on knowledge and smart technology (kst) (pp. 301–306). Thailand: IEEE. Panboonyuen, T. (2025c). Slick: Selective localization and instance calibration for knowledge-enhanced car damage segmentation in automotive insurance. 
+
+arXiv preprint arXiv:2506.10528 .Parhizkar, M., & Amirfakhrian, M. (2022). Car detection and damage segmenta-tion in the real scene using a deep learning approach. International Journal of Intelligent Robotics and Applications , 6(2), 231–245. Pasupa, K., Kittiworapanya, P., Hongngern, N., & Woraratpanya, K. (2022). Eval-uation of deep learning algorithms for semantic segmentation of car parts. 
+
+Complex & Intelligent Systems , 8(5), 3613–3625. Peng, J., Dong, S., Yuan, H., & Zheng, X. (2025). Car damage detection based on multi-view fusion and alignment: Dataset and method. IEEE Transactions 
+
+146 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+on Intelligent Transportation Systems .Sapkota, R., Roumeliotis, K. I., & Karkee, M. (2025). Ai agents vs. agentic ai: A conceptual taxonomy, applications and challenges. Information Fusion ,103599. Wang, X., Girdhar, R., Yu, S. X., & Misra, I. (2023). Cut and learn for unsu-pervised object detection and instance segmentation. In Proceedings of the ieee/cvf conference on computer vision and pattern recognition (pp. 3124– 3134). Wang, X., Li, W., & Wu, Z. (2023). Cardd: A new dataset for vision-based car damage detection. IEEE Transactions on Intelligent Transportation Sys-tems , 24 (7), 7202–7214. Weisburd, S. (2015). Identifying moral hazard in car insurance contracts. Review of Economics and Statistics , 97 (2), 301–313. Wu, J., Jiang, Y., Bai, S., Zhang, W., & Bai, X. (2022). Seqformer: Sequential transformer for video instance segmentation. In European conference on computer vision (pp. 553–569). Zhang, Q., Chang, X., & Bian, S. B. (2020). Vehicle-damage-detection segmenta-tion algorithm based on improved mask rcnn. IEEE Access , 8, 6997–7004. Zhang, W., Cheng, Y., Guo, X., Guo, Q., Wang, J., Wang, Q., . . . Chu, W. (2020). Automatic car damage assessment system: Reading and under-standing videos as professional insurance inspectors. In Proceedings of the aaai conference on artificial intelligence (Vol. 34, pp. 13646–13647). 147 A | Appendix 
+
+# A.1 Formal Problem Formulation 
+
+Let an RGB vehicle image be defined as: 
+
+I ∈ RH×W ×3 (A.1) The objective of MARSAIL–ALBERT is to jointly estimate a set of N instances: 
+
+S = {(Mi, c i, g i, p i)}Ni=1 (A.2) where: • Mi ∈ { 0, 1}H×W is the binary mask, • ci ∈ C part is the vehicle part label, • gi ∈ C damage is the damage type, • pi ⊂ R2 is the polygon representation. The model defines a parametric mapping: 
+
+fθ : RH×W ×3 → P (S) (A.3) where P(S) denotes the power set of structured instances. Training minimizes expected structured risk: 148 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+θ∗ = arg min  
+
+> θ
+
+E(I, S)∼D [Ltotal (fθ(I), S)] (A.4) 
+
+# A.2 Feature Extraction and Multi-Scale Represen-tation 
+
+Backbone network Φ produces hierarchical features: 
+
+{Fl}Ll=1 , Fl ∈ RHl×Wl×Cl (A.5) FPN fusion: 
+
+˜Fl = Conv 1×1(Fl) + Up ( ˜Fl+1 ) (A.6) Final unified feature: 
+
+F = ˜F1 ∈ RH×W ×C (A.7) 
+
+# A.3 Quadtree Decomposition as Hierarchical Parti-tion 
+
+Define recursive partition operator: 
+
+Q(R) = 
+
+
+
+{R}, if σ(R) < τ 
+
+S4 
+
+> k=1
+
+Q(Rk), otherwise (A.8) 149 Motor AI Recognition Solution Teerapong Panboonyuen where: • R is a spatial region, • σ(R) measures variance of feature intensity, • τ is subdivision threshold. Let total nodes be T . Each node feature: 
+
+zi = 1
+
+|Ri|
+
+X
+
+> (x,y )∈Ri
+
+F (x, y ) ∈ RC (A.9) Sequence representation: 
+
+Z = [ z1, z 2, . . . , z T ] ∈ RT ×C (A.10) 
+
+# A.4 Transformer-Based Global Attention 
+
+Self-attention: 
+
+Q = ZW Q (A.11) 
+
+K = ZW K (A.12) 
+
+V = ZW V (A.13) Attention weights: 
+
+A = Softmax 
+
+QK T
+
+√dk
+
+
+
+(A.14) 150 Motor AI Recognition Solution Teerapong Panboonyuen Refined node embeddings: 
+
+Z′ = AV (A.15) Multi-head attention: MHA (Z) = Concat (head 1, . . . , head h)W O (A.16) Feed-forward refinement: 
+
+Z′′ = LayerNorm (Z′ + FFN (Z′)) (A.17) 
+
+# A.5 Mask Reconstruction Operator 
+
+Define reconstruction operator: 
+
+Ψ : RT ×C → RH×W (A.18) Pixel value: 
+
+M (x, y ) = σ
+
+> T
+
+X
+
+> i=1
+
+1(x,y )∈Ri · wTi z′′ 
+
+> i
+
+!
+
+(A.19) where σ is sigmoid activation. 
+
+# A.6 Joint Part-Damage Modeling 
+
+Define joint probability: 151 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+P (c, g |I) = P (c|I) · P (g|c, I ) (A.20) Cross-entropy objectives: 
+
+Lpart = − X
+
+> i
+
+ypart i log ˆ ypart i (A.21) 
+
+Ldamage = − X
+
+> i
+
+ydamage i log ˆ ydamage i (A.22) Structured consistency constraint: 
+
+Lcons = X
+
+> i
+
+1invalid (ci,g i) · γ (A.23) 
+
+# A.7 Polygon Approximation as Geometric Optimiza-tion 
+
+Given mask boundary ∂M , polygon approximation solves: 
+
+min 
+
+> P
+
+ˆ
+
+> ∂M
+
+d(x, P )2dx (A.24) Using Ramer-Douglas-Peucker algorithm, reducing K boundary points to K′ ver-tices. Area consistency: 
+
+|Area (M ) − Area (P )| < ϵ (A.25) 152 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# A.8 Vehicle Damage Code Mapping 
+
+Define deterministic encoder: 
+
+Γ : ( c, g, r, s ) → VDC (A.26) where: 
+
+r = Area (Mdamage )
+
+Area (Mpart ) (A.27) 
+
+s = Orientation (P ) (A.28) Confidence aggregation: 
+
+α = λpαpart + λdαdamage + λmαmask (A.29) 
+
+# A.9 Full Optimization Objective 
+
+Complete loss: 
+
+Ltotal = λ1Lmask + λ2Ldice + λ3Lpart + λ4Ldamage (A.30) 
+
++ λ5Lcons + λ6Lpoly (A.31) Dice loss: 153 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Ldice = 1 − 2|M ∩ M ∗||M | + |M ∗| (A.32) 
+
+# A.10 Theoretical Perspective 
+
+MARSAIL–ALBERT can be interpreted as a hierarchical structured estimator: 
+
+fθ = Γ ◦ Ψ ◦ Transformer ◦ Q ◦ Φ (A.33) This represents a composition of: • Continuous convolutional embedding • Discrete hierarchical partition • Global self-attention refinement • Geometric reconstruction • Symbolic structured encoding Thus, MARSAIL–ALBERT bridges: 
+
+Dense vision inference −→ Hierarchical reasoning −→ Geometric intelligence 
+
+−→ Symbolic insurance automation 
+
+154 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# A.11 Hardware and Infrastructure Specification for LLM and AI Agent Training 
+
+## A.11.1 Overview 
+
+This appendix specifies recommended AWS-based infrastructure for training and fine-tuning Large Language Models (LLMs) and AI Agent systems. The design principles are: • Scalability with cost discipline • Reproducible experimentation • Production-aligned deployment • Secure and isolated infrastructure All configurations assume AWS-native architecture. 
+
+## A.11.2 Recommended AWS GPU Instances 
+
+A.11.2.1 Lightweight Fine-Tuning (LoRA / PEFT) 
+
+Table A.1: Instance Specification for Parameter-Efficient Fine-Tuning 
+
+Instance Type g5.12xlarge 
+
+GPU 4x NVIDIA A10G (24GB) vCPU 48 Memory 192 GB Storage EBS gp3/io2 (1-2 TB) Typical Use LoRA / QLoRA (7B-13B models) 
+
+Suitable for instruction tuning, agent policy learning, and small multimodal adap-tation. 155 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+A.11.2.2 Medium-Scale Fine-Tuning (13B-34B) 
+
+Table A.2: Instance Specification for Distributed Fine-Tuning       
+
+> Instance Type p4d.24xlarge
+> GPU 8x NVIDIA A100 (40GB) vCPU 96 Memory 1152 GB Networking 400 Gbps (EFA) Typical Use FSDP / Multi-GPU Distributed Training
+
+Recommended for full fine-tuning of 13B-34B dense models and vision-language systems. 
+
+A.11.2.3 Large-Scale Research (70B+ Models) 
+
+Table A.3: Instance Specification for Foundation-Scale Training       
+
+> Instance Type p5.48xlarge
+> GPU 8x NVIDIA H100 (80GB) vCPU 192 Memory 2 TB Networking 3200 Gbps (EFA) Typical Use 70B+ or Multimodal Foundation Models
+
+Reserved for large-scale research where measurable gains justify cost. 
+
+## A.11.3 Storage Architecture 
+
+Recommended Layout 
+
+• Raw datasets: S3 (versioned bucket) • High-throughput cache: FSx for Lustre • Checkpoints: S3 with lifecycle policies 156 Motor AI Recognition Solution Teerapong Panboonyuen • Logs and metrics: CloudWatch + S3 archive Dataset versioning is mandatory. Training without dataset version tracking is pro-hibited. 
+
+## A.11.4 LLM Fine-Tuning Workflow 
+
+A.11.4.1 Dataset Preparation 
+
+• Clean instruction/conversational data • Remove noisy or duplicated labels • Token distribution analysis • Train/validation/test split 
+
+A.11.4.2 Training Strategy 
+
+• LoRA / QLoRA for cost-efficient adaptation • FSDP for memory-efficient distributed training • Mixed precision (bfloat16 or fp16) • Gradient checkpointing 
+
+A.11.4.3 Monitoring and Validation 
+
+Mandatory metrics: • Training loss trajectory • Validation perplexity • GPU utilization 157 Motor AI Recognition Solution Teerapong Panboonyuen • Throughput (tokens/sec) • Memory footprint Early stopping is required if validation divergence is observed. 
+
+## A.11.5 AI Agent Infrastructure Design 
+
+Agent-based systems (e.g., OpenClaw or internal Agentic AI frameworks) should follow a modular architecture: • LLM policy core • Tool execution API layer • Vector-based memory store • Task planning module • Execution trace logging 
+
+Recommended Deployment Components 
+
+• GPU EC2 for reasoning core • CPU autoscaling group for tool calls • Redis for short-term memory • Vector database (FAISS-based or managed) • S3 for persistent storage 
+
+## A.11.6 Security and Governance 
+
+• IAM role separation (training vs inference) • Private subnet GPU isolation 158 Motor AI Recognition Solution Teerapong Panboonyuen • Encrypted EBS volumes • No public SSH exposure • Encrypted checkpoint storage 
+
+## A.11.7 Cost Optimization Strategy 
+
+• Spot instances for experimentation • On-demand for final training only • Immediate shutdown post-training • Checkpoint lifecycle management • Prefer LoRA before full fine-tuning 
+
+## A.11.8 Minimum Research Standard 
+
+An LLM experiment is valid only if: • Training script is version-controlled • Dataset version is recorded • Hyperparameters are documented • Evaluation benchmark is reported • Inference latency is measured Training without documentation does not qualify as research output. 159 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# A.12 Future Work – Transition Toward Fully Agen-tic AI Architecture A.13 Vision Statement 
+
+The long-term direction of the Motor AI ecosystem is to transition from a pipeline-based deterministic AI system toward a fully autonomous AI Agent architecture. This transformation aims to achieve: • Self-orchestrated multi-model reasoning • Dynamic decision-making instead of fixed-stage pipelines • Memory-aware continuous learning • Human-in-the-loop feedback integration • Scalable modular AI services The goal is not merely automation. The goal is intelligence orchestration. 
+
+# A.14 From Pipeline System to AI Agent Architec-ture 
+
+Current system (AVENGERS) follows a linear staged architecture. Future system should evolve into an Agent-based modular reasoning graph. 160 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# A.15 Phase-Based Migration Strategy 
+
+## A.15.1 Phase 1: Modularization (Short-Term) 
+
+Table A.4: Phase 1 – Modular AI Refactoring 
+
+Objective Action Expected Outcome Decouple Models Convert each model to in-dependent API service Service-level scala-bility Introduce Orches-trator Implement lightweight agent controller Dynamic stage exe-cution Logging Upgrade Structured reasoning logs Traceable AI deci-sions 
+
+## A.15.2 Phase 2: Memory-Enhanced Agents (Mid-Term) 
+
+Table A.5: Phase 2 – Agent Memory Integration 
+
+Objective Action Expected Outcome Vector Memory Deploy embedding-based retrieval Similar case rea-soning Feedback Loop Integrate human QC cor-rections Continuous im-provement Experience Replay Store failed predictions Error-aware refine-ment 
+
+## A.15.3 Phase 3: Autonomous Decision Intelligence (Long-Term) 
+
+Table A.6: Phase 3 – Full Agentic Decision System 
+
+Objective Action Expected Outcome Planner LLM Deploy reasoning LLM for workflow selection Non-linear task ex-ecution Tool Selection Agent Enable dynamic tool in-vocation Flexible processing Explainability En-gine Auto-generate reasoning trace Regulatory compli-ance 
+
+161 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# A.16 Project Structure Guideline for Successor Team 
+
+Each future AI project must follow this structure: 1. Problem Definition (Business + Technical) 2. Dataset Audit and Versioning 3. Baseline Model Benchmark 4. Agent Integration Plan 5. Evaluation Protocol Definition 6. Deployment Readiness Checklist 7. Monitoring and Failure Logging 8. Documentation and Knowledge Transfer No model should enter production without all eight steps documented. 
+
+# A.17 Research Direction 
+
+Future research should explore: • Agentic AI for insurance claim automation • Multi-modal reasoning with structured cost priors • Self-reflective LLM for damage explanation • Continual learning without catastrophic forgetting • Simulation-based synthetic accident generation 162 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+# A.18 Knowledge Transfer Commitment 
+
+All models developed under this leadership must be handed over with: • Reproducible training scripts • Dataset version reference • Hyperparameter documentation • Evaluation benchmark results • Known failure cases • Deployment instructions Resignation does not imply abandonment. Technology must outlive its creator. 
+
+# A.19 Final Statement 
+
+This system was never meant to be static. The future of Motor AI is not a collection of models, but a coordinated intelligence system capable of reasoning, learning, and adapting. The responsibility of the next team is not merely to maintain it, but to evolve it. 163 Motor AI Recognition Solution Teerapong Panboonyuen 
+
+Closing Statement: Knowledge Transfer and Official Lab Closure 
+
+This handbook was written with intention. It represents four years and four months of research, engineering, failures, redesigns, breakthroughs, and persistence. It documents not only systems and models, but also the principles, discipline, and standards that shaped the MARS Artificial Intelligence Labora-tory (MARSAIL). MARSAIL was established to elevate artificial intelligence within the automotive insur-ance ecosystem - to move beyond experimentation and toward industrial-grade intelli-gence. In January 2022, after completing my Ph.D. at Chulalongkorn University, I joined MARS with a decision that defined the direction of this laboratory: to remove the legacy AI sys-tems entirely and rebuild from zero. The objective was not incremental improvement, but structural transformation. The first research milestone of this reboot was MARS (Mask Attention Refinement with Sequential Quadtree Nodes), presented internationally at ICIAP 2023 in Italy. From that foundation, MARSAIL evolved into a full AI research laboratory, developing core systems such as ALBERT, advancing vehicle damage intelligence, document understanding, and AI-assisted cost evaluation for the automotive insurance sector. Selected research outputs and publications are publicly available at: 
+
+https://kaopanboonyuen.github.io/MARS/ 
+
+This handbook exists to ensure continuity. Every architecture, model decision, and infras-tructure guideline has been documented so that future teams can build forward - not restart from uncertainty. As of this document, I formally conclude my role and officially close MARSAIL in its current leadership structure. The laboratory does not end here. Its systems, research direction, and engineering stan-dards remain as foundations for future evolution. I leave this work not as abandonment, but as a structured transfer of knowledge. May the next builders improve it, challenge it, and take it further than I ever could alone. 
+
+Teerapong Panboonyuen, Ph.D. 
+
+164

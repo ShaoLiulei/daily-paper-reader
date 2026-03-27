@@ -1,0 +1,578 @@
+Title: TAB-AUDIT: Detecting AI-Fabricated Scientific Tables via Multi-View Likelihood Mismatch
+
+URL Source: https://arxiv.org/pdf/2603.19712v1
+
+Published Time: Mon, 23 Mar 2026 00:35:23 GMT
+
+Number of Pages: 23
+
+Markdown Content:
+# TAB-AUDIT: Detecting AI-Fabricated Scientific Tables via Multi-View Likelihood Mismatch 
+
+Shuo Huang *, Yan Peng *, Lizhen Qu †,
+
+Monash University, {shuo.huang1, lizhen.qu}@monash.edu, ypen0087@student.monash.edu 
+
+Abstract 
+
+AI-generated fabricated scientific manuscripts raise growing concerns with large-scale breaches of academic integrity. In this work, we present the first systematic study on detect-ing AI-generated fabricated scientific tables in empirical NLP papers, as information in tables serve as critical evidence for claims. We con-struct F AB TAB , the first benchmark dataset of fabricated manuscripts with tables, comprising 1,173 AI-generated papers and 1,215 human-authored ones in empirical NLP. Through a comprehensive analysis, we identify system-atic differences between fabricated and real ta-bles and operationalize them into a set of dis-criminative features within the TAB-AUDIT framework. The key feature, within-table mis-match , captures the perplexity gap between a table’s skeleton and its numerical content. Experimental results show that RandomForest built on these features significantly outperform prior state-of-the-art methods, achieving 0.987 AUROC in-domain and 0.883 AUROC out-of-domain. Our findings highlight experimental tables as a critical forensic signal for detecting AI-generated scientific fraud and provide a new benchmark for future research 3.
+
+1 Introduction 
+
+Large language models (LLMs) have introduced new avenues for breaching academic integrity by enabling the rapid generation of convincing but fab-ricated scientific manuscripts. Qualitative studies published in Nature (Gibney, 2026) and (Májovsk `yet al., 2023) have shown that all major LLMs can potentially assist in producing fraudulent papers at scale , and the resulting outputs can be sufficiently realistic to evade detection, raising serious con-cerns about the integrity and trustworthiness of the        
+
+> 1Equally Contributed.
+> 2Corresponding author.
+> 3The source code and dataset are available at
+> https://anonymous.4open.science/r/AI_paper_ detection-3DCB/
+
+scientific literature (Haider et al., 2024; Byrne et al., 2024; Richardson et al., 2025). Detecting AI-generated fraudulent manuscripts is increasingly challenging, as LLMs are widely used to assist with writing, clarity, and various stages of the research process (Silva et al., 2025). Recent advances in automated “AI scientists” (Ya-mada et al., 2025; Castelvecchi, 2024) further blur the boundary by enabling end-to-end automation of the research pipeline, from literature review to experimentation and manuscript drafting. Con-sequently, distinguishing fabricated AI-generated content from legitimate AI-assisted or AI-produced research becomes difficult. Inspired by prior work on detecting ghost citations (Xu et al., 2026), we fo-cus on detecting AI-generated fabricated tables as a key signal of fabricated papers, since experimen-tal tables provide transparent empirical evidence for claims and enable comparison across methods; fabricating such information fundamentally under-mines the credibility of the entire manuscript. Despite growing concerns about AI-generated fraudulent content in scientific research, there has been no systematic study on evaluating and detect-ing AI-generated fabricated experimental tables. Prior work has primarily focused on textual arti-facts, such as hallucinated citations or generated narratives (Gao et al., 2023; Haider et al., 2024), while largely overlooking structured empirical ev-idence in tables. Furthermore, the lack of quanti-tative analyses and benchmark datasets limits our ability to characterize the prevalence, patterns, and detectability of fabricated tables, thereby hindering the development of reliable detection methods. To enable systematic investigation and evalu-ation of AI-fabricated tables, we construct the 
+
+first benchmark dataset of fab ricated manuscripts with tab les, named F AB TAB , comprising 1,173 AI-generated papers and 1,215 human-authored ones in empirical NLP. We focus on this paper type be-cause tables are the primary medium for presenting               
+
+> arXiv:2603.19712v1 [cs.CL] 20 Mar 2026 Model PRF1
+> BERT-base 72.4 70.8 71.6 SpanBERT 76.9 75.8 76.3 Ours 98.7 98.4 98.6
+> Blue = skeleton (headers/row labels) Red = numeric tokens
+> Mismatch ↑: typical skeleton, atypical 98.x digits.
+> Figure 1: Compact illustration of the table skeleton– numeric mismatch.
+
+evidence supporting key claims. We then conduct a comprehensive analysis of the differences between fabricated and real tables and operationalize those findings into a set of highly discriminative features in the framework TAB-AUDIT. We explore the inherent inconsistency between table skeleton and numeric digits of the table as shown in Figure. 1. Based on these features, we show that traditional ML models significantly outperform prior SOTA methods (Hans et al., 2024; Bao et al., 2023) by a wide margin. Our key contributions are three-fold: • We construct F AB TAB using a dedicated pipeline that leverages literature on the same topics. The in-domain set comprises 1,012 recent human-authored papers and 976 fabri-cated ones generated by GPT-4 O conditioned on existing literature. To reflect real-world difficulty, each generated paper is paired with real papers on closely related topics. In total, the in-domain set contains 5,284 tables. To evaluate generalization to unseen generation models, we build an out-of-domain test set us-ing GPT-5.2, consisting of 197 fabricated pa-pers and 203 human-authored ones on highly similar topics. A human study (§2.4) further shows that papers generated by our pipeline are difficult to distinguish from real ones. • Based on a comprehensive analysis of the dataset, we operationalize our findings into a set of highly discriminative features within the TAB-AUDIT framework. The most salient feature is within-table mismatch , which cap-tures the perplexity gap between a table’s structural skeleton and its numerical content. We also incorporate additional numerical fea-tures that do not rely on language models, which further enhance detection performance. • We train traditional machine learning models on our features aggregated at the paper level and evaluate them on both in-domain and out-of-domain test sets. Among all models, R AN -
+
+> DOM
+
+FOREST (Rigatti, 2017) achieves the best performance, with 0.987 AUROC on the in-domain test set and 0.883 AUROC on the out-of-domain test set. We further show that our models achieve higher AUROC when de-tecting fabricated tables generated by simple prompting of LLMs compared to those pro-duced by our paper generation pipeline. 
+
+2 Benchmark Construction and Paper Generation 
+
+Our benchmark is designed to isolate provenance 
+
+rather than topic. The human papers are composed of recent experimental NLP papers, while the fab-ricated arm is generated to match the same broad domain and paper format. Without it, a detector could separate classes using stale venue conven-tions or cross-domain artifacts instead of signals tied to fabricated empirical evidence. 
+
+2.1 Collecting Recent Experimental NLP Papers 
+
+We draw the human corpus from arXiv rather than from a heterogeneous mixture of venues or histori-cal snapshots. To reduce the chance that benchmark papers were already absorbed into the pretraining data of the language models used in generation or auditing, we restrict the source pool to papers posted within the month immediately preceding collection. This recency constraint also keeps the benchmark close to a single publication regime, limiting drift in formatting conventions, writing style, and topical emphasis. We further restrict the source pool to experimen-tal NLP papers . This avoids mixing result tables from substantially different scientific genres, such as purely theoretical work, surveys, or papers from unrelated domains whose tables obey different re-porting conventions. In the indexed human source pool, this procedure yields 1,118 candidate papers. After table extraction and validity filtering, 1,012 human papers remain in the clean benchmark used. This collection strategy matters for two reasons. It reduces domain bias: a detector should not win simply because fabricated papers come from a dif-ferent field or historical period. Second, it raises the scientific standard of the benchmark: if a detec-tor succeeds here, it is more likely to be detecting signals tied to fabricated empirical evidence rather than superficial topic or formatting artifacts. 
+
+2.2 Literature-Grounded Fabricated Paper Generation 
+
+To construct realistic yet controllable fabricated papers—primarily to obtain realistic fabricated ta-bles —we design a literature-grounded pipeline for empirical NLP (Appendix Figure 4). Recent arXiv papers are embedded and clustered by abstract, and references are sampled from a coherent research line. Their abstracts ground the generator, which is then prompted with a structured LaTeX template containing standard scientific sections and result ta-bles. Grounding preserves topical coherence, while structural constraints improve stability for analysis. Although the benchmark is organized at the pa-per level, the realism target is the table rather than the manuscript as a whole. We use full-paper gen-eration as contextual scaffolding: a table embed-ded in a literature-grounded manuscript inherits a coherent task, baseline set, metric vocabulary, and surrounding explanation, which makes it look more scientific than an isolated table produced by direct prompting alone. This design choice im-proves the realism of the fabricated empirical evi-dence that TAB-AUDIT is meant to audit. Accord-ingly, the synthetic outputs should be interpreted as 
+
+literature-grounded but not experiment-grounded .Their titles, problem settings, related-work fram-ing, and table schemas are anchored in genuine research themes, but the reported values are synthe-sized rather than derived from actual experimental runs. The surrounding prose is included primar-ily to support realistic presentation of the tables, not to simulate a fully validated scientific contri-bution. An example generated paper is shown in Appendix J. The main fabricated arm used in the labeled benchmark is generated with GPT-4o. To evaluate transfer under generator shift rather than memorization of a single generator’s quirks, we ad-ditionally construct a separate GPT-5.2 fabricated holdout, which is reserved entirely for later evalua-tion. 
+
+2.3 Benchmark Details 
+
+After filtering, the main labeled benchmark con-tains 1,012 human papers and 976 fabricated pa-pers, for a total of 1,988 papers with 5,284 ex-tracted tables. The external GPT-5.2 holdout adds 400 papers and 1,324 extracted tables for transfer evaluation. Furthermore, we leverage two local model QWEN2.5-7B and Llama3.1-8B as our gen-eration models to investigate the impact of gen-erators. As a result 351 valid AI papers are col-lected for QWEN2.5-7B and 237 valid AI papers with tables from Llama3.1-8B. We defer the ex-act train/validation/test protocol to Section 5, but at a high level this construction gives us a recent, domain-matched, paper-level benchmark in which topic and document form are aligned across classes and the main difference of interest is empirical provenance. 
+
+2.4 Can human really differentiate AI-fabricated tables? 
+
+To evaluate whether our AI-generated tables are distinguishable from those originating in real sci-entific papers by human judgment alone, we con-ducted a human evaluation study. The example is in Appendix. 5. The evaluation was implemented as a quiz using Google Forms. We randomly sam-pled 25 tables from AI-generated scientific papers produced by our generation pipeline and 25 ta-bles from real human-authored papers, resulting in a balanced set of 50 tables. The tables were presented in isolation and in a randomized order to avoid contextual cues or learning effects. The study involved three voluntary participants who are CS PhD candidates and was intended as a prelimi-nary exploratory analysis.They have consented the sharing of the responses. The responses were col-lected in a standardized manner through the Google Forms platform. Based on collected responses, we computed the receiver operating characteristic (ROC) curve and obtained an area under the curve (AUC) of 0.6608. Although this result should be interpreted with caution due to the small number of participants, it indicates that human judgments perform better than random guessing but achieve only moderate discriminative ability. The relatively low AUC suggests that AI-generated tables can ex-hibit a high degree of surface-level realism, making human discrimination challenging in the absence of additional textual or methodological context. 
+
+3 Signal Analysis: How Fabricated Tables Differ from Human Experimental Table 
+
+The main scientific claim of this paper is stronger than "a classifier works on a benchmark." Our claim is that AI-fabricated tables differ from hu-man experimental tables in a systematic and inter-pretable way. We therefore analyze the signal be-fore introducing the full auditing framework. This ordering is intentional: if the benchmark is realis-tic, then a useful detector should be traceable to a concrete distributional gap rather than to opaque classifier behavior. 
+
+3.1 Why a forensic signal should exist 
+
+A scientific result table is not just a collection of plausible numbers. It is the visible trace of an underlying measurement process: model training, evaluation, comparison against baselines, and de-cisions about what to report. As a result, genuine tables couple two channels that are produced to-gether: a textual skeleton (titles, headers, row la-bels, task names, metric names, and comparison structure) and a numeric channel (the values that summarize experimental outcomes). This coupling is difficult to reproduce perfectly through generation alone. An LLM can imitate the textual skeleton of an NLP table by borrowing familiar benchmark names, model families, and for-matting conventions from the literature. However, matching the numeric texture of genuine experi-mental reporting is harder. Real tables often reflect uneven gains, local trade-offs, inconsistent decimal precision, and incidental arithmetic relations that arise from actual measurement rather than from direct synthesis. This suggests a forensic signal: fabricated tables may retain a highly conventional scientific skeleton while their numbers remain atyp-ical relative to that skeleton .This observation motivates a within-table com-parison. Rather than asking whether a table looks globally probable under a language model, we ask whether its numeric channel looks typical given 
+
+the kind of textual skeleton it presents. That rela-tive view is important because absolute perplexity alone is easily confounded by topic, rare bench-mark names, or formatting quirks. 
+
+3.2 Multi-view likelihood evidence for numeric–skeleton mismatch 
+
+To probe this hypothesis, we score each extracted table under multiple observer-model views: askeleton-only view with numbers masked, a digit-level numeric view, and a full view containing both text and numbers. The key quantity is the within-table mismatch 
+
+f∆(T ) = slog1p 
+
+
+
+PPL M (sdig (T )) 
+
+− PPL M (stext (T )) 
+
+
+
+,
+
+(1)   
+
+> Figure 2: Representative paper-level distributions for three observer-based indicators: skeleton likelihood (left), digit-level numeric likelihood (center), and the within-table numeric–skeleton mismatch (right). The key pattern is not merely that fabricated tables can have unusual numbers in isolation, but that their numbers are atypical relative to an otherwise conventional scientific skeleton .
+
+which compares how atypical the numeric channel is relative to the textual skeleton under the same observer model M . We later use this signal in-side TAB-AUDIT; here, we examine it directly as evidence of a distributional gap. Figure 2 shows the paper-level distributions of three representative indicators. Two patterns are especially important. First, the skeleton-only likeli-hood exhibits substantial overlap between human and fabricated papers. This is itself informative: it suggests that the surface scientific skeleton is comparatively easy to imitate, so prose-like flu-ency alone is not a reliable authenticity cue for result tables. Second, the mismatch feature shows a much clearer shift. In fabricated papers, the nu-meric channel is more often atypical relative to the surrounding skeleton, whereas in human pa-pers the two channels are better aligned. In other words, the tables in fabricated papers frequently look structurally right before they look experimen-tally grounded .This analysis also clarifies why we rely on 
+
+within-table contrasts instead of raw perplexity alone. Absolute likelihood is affected by many nui-sance factors, including table length, topic, model names, and serialization details. By contrasting the numeric and textual views of the same table, we cancel much of that variation and focus the detector on provenance-relevant inconsistency. This is the core reason multi-view likelihood mismatch is a useful auditing signal. 
+
+3.3 Complementary LM-free numeric signals 
+
+We also consider statistical evidence of the tables as signals as it carries human conventions of building experimental tables. We therefore compute a set of simple numeric diagnostics directly from table values, asking whether a table behaves like a sum-mary of empirical comparison rather than a smooth synthetic pattern. Table 6 highlights three recurring regularities. human tables show substantially stronger arith-metic coherence . For example, row ∆-consistency and row % ∆-consistency are both higher for hu-man tables, suggesting that adjacent values more often participate in meaningful differences or per-centage changes induced by actual experimental comparison. This is what we would expect from ta-bles that summarize ablations, improvements over baselines, or metric trade-offs. Full analysis of this table can be found for Ap-pendix. D 
+
+3.4 Implications for auditing 
+
+Taken together, the observer-based and LM-free analyses point to the same conclusion. AI-fabricated tables can imitate the form of scientific reporting surprisingly well, but they reproduce the 
+
+distributional texture of genuine experimental evi-dence much less faithfully. This is why the problem should be framed as forensic auditing rather than generic text detection. The useful evidence is not only whether a table looks fluent or well formatted, but whether its numeric behavior is appropriately matched to its scientific skeleton. 
+
+4 TAB-AUDIT: A Signal-Driven Paper-Level Auditing Framework 
+
+Section 3 showed that fabricated tables differ from human experimental tables through a forensic sig-nature: the textual skeleton can remain highly con-ventional even when the numeric channel is atypi-cal relative to that skeleton. We now operationalize that finding in TAB-AUDIT. The framework is designed around signal extraction rather than a par-ticular classifier family. Its core output is a paper-level risk score derived from table-level provenance cues; the choice of logistic regression, Random For-est, or another detector is a secondary operational layer. 
+
+4.1 Problem setup 
+
+A paper p contains a set of extracted tables 
+
+Tp = {Tp, 1, . . . , T p,m p }.
+
+Our task is paper-level provenance auditing: given only the published paper or its extracted tables, predict 
+
+yp ∈ { 0, 1},
+
+where yp = 1 denotes an AI-fabricated paper and 
+
+yp = 0 denotes a human-authored empirical paper. The auditor has no access to code, logs, check-points, or raw experimental outputs. This con-strained setting is deliberate: the goal is not repli-cation, but forensic screening from the published artifact alone. We assume access to an observer 
+
+language model M used only to score serialized table views. We do not treat pM (·) as a calibrated generative model of scientific tables. Instead, we use the observer only to measure relative typicality 
+
+and, crucially, within-table contrasts that are less sensitive to topic and formatting confounds than absolute likelihood alone. 
+
+4.2 Multi-view table serialization 
+
+Let s(·) denote a deterministic serialization of a table into a token sequence. For each table T , we construct three main views. 
+
+Full view. sfull (T ) linearizes the title, headers, row labels, and all cell contents. This view pre-serves the complete table. 
+
+Textual-skeleton view. stext (T ) masks numeric substrings with a placeholder token while keeping titles, headers, row labels, metric names, and layout tokens. This isolates the scientific skeleton. 
+
+Digit-level numeric view. sdig (T ) retains only the numeric substrings, rewritten at digit level (for example, 12.34 becomes 1 2 . 3 4 ). This reduces tokenizer-specific artifacts and makes the numeric channel more comparable across tables. These views are designed to separate what kind of table this is from what numeric evidence it re-ports . The first is largely answered by the textual skeleton; the second is encoded primarily in the digits. 
+
+4.3 Likelihood-based signal extraction 
+
+Given a serialized sequence x = ( x1, . . . , x n) and observer M , we compute token-level negative log-likelihood and perplexity as 
+
+NLL M (x) = − 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+log pM (xi | x<i ), (2) 
+
+PPL M (x) = exp(NLL M (x)) . (3) For long serializations, we use a strided sliding-window implementation to avoid truncation bias, and we work with log PPL where appropriate for numerical stability. From these views, TAB-AUDIT forms a com-pact four-dimensional likelihood feature block, 
+
+ϕPPL4 (T ) = 
+
+h
+
+log PPL M (sfull (T )) ,
+
+log PPL M (stext (T )) ,
+
+log PPL M (sdig (T )) , f ∆(T )
+
+i
+
+.
+
+(4) The first three terms record absolute observer typi-cality under the three views. The fourth term cap-tures the core forensic signal: 
+
+f∆(T ) = slog1p 
+
+
+
+PPL M (sdig (T )) 
+
+− PPL M (stext (T )) 
+
+
+
+,
+
+(5) where slog1p( z) = sign( z) log(1 + |z|).This feature is central to the framework. A high value indicates that the numeric channel is unusu-ally atypical relative to an otherwise conventional scientific skeleton. In our setting, this is the main provenance cue revealed by the signal analysis in Section 3. 
+
+4.4 Complementary structural and LM-free numeric cues 
+
+The likelihood mismatch signal is informative but not exhaustive. Section 3 also showed that fabri-cated tables often differ from human tables in sim-pler, model-free ways: they can be overly regular, overly sorted, or unusually repetitive, and they may exhibit weaker arithmetic coherence. To capture these effects, TAB-AUDIT augments the likeli-hood block with two additional feature families. 
+
+Structural features. We extract lightweight table-shape indicators such as row and column counts, header/body proportions, and numeric-cell density. These features capture broad reporting style without depending on lexical content. 
+
+LM-free numeric features. We extract direct statistics from the numbers themselves, including consistency, repetition, monotonicity, sortedness, and decimal-precision behavior. These cues com-plement the observer-based mismatch by measur-ing whether the numeric channel behaves like gen-uine experimental reporting rather than a smooth synthetic pattern. We denote the corresponding table-level feature blocks by ϕstruct (T ) and ϕnum (T ), and define the fused representation as 
+
+ϕFusedAll (T ) = [ ϕPPL4 (T ) ; ϕstruct (T ) ; ϕnum (T )] .
+
+(6) This design reflects the paper’s main claim: the strongest evidence comes from combining a provenance-sensitive likelihood contrast with com-plementary structure and numeric regularities. 
+
+4.5 From tables to a paper-level audit score 
+
+As a paper may contain multiple tables with dif-ferent sizes and roles, TAB-AUDIT aggregates table evidence at the paper level. For each feature dimension k, we use a robust median aggregation: 
+
+Φp[k] = median T ∈T p ϕT [k], (7) where ϕT is either ϕPPL4 (T ) or ϕFusedAll (T ) de-pending on the feature set under study. The final output is a paper-level audit score 
+
+sp = h(Φ p),
+
+where h is a standard detector backend. In the main signal-focused analysis, we use simple su-pervised backends to test whether the extracted features carry useful provenance information. Lo-gistic regression serves as a transparent baseline because it makes the contribution of each signal easy to inspect. In a separate classifier-family com-parison, we also evaluate MLP and Random Forest backends on the same paper-level features. Among the tested operational layers, Random Forest on FUSED ALL gives the strongest completed holdout result; however, backend choice is secondary to the main contribution, which is the paper-level signal representation itself. 
+
+5 Experimental Setup 
+
+We evaluate whether the forensic signals identified in Section 3 translate into reliable paper-level audit-ing. The main question is not only whether human and fabricated papers are separable in-domain, but also whether the same signal remains useful under a strict false-positive budget and under generator shift . All experiments are conducted at the paper level, and final reporting separates in-domain eval-uation from external holdout evaluation. As a controlled realism diagnostic, we construct a prompt-only comparison set in which a model is prompted directly with a topic and asked to gen-erate a plausible experimental results table with-out first generating a full literature-grounded paper. Each generated table is written into the same ex-traction schema, with one generated table treated as one pseudo-paper. Because this diagnostic con-tains only 20 fabricated pseudo-papers, we use it as an auxiliary comparison and not as a replacement benchmark. The result can be find in Table. 8 
+
+Observer models and predictions Unless other-wise noted, the paper-level representations are the features defined in Section 4. Likelihood-based sig-nals are computed by a frozen observer language model that scores serialized table views but does not generate the papers being audited. We evalu-ate three observer families: GPT-2 (Radford et al., 2019), Qwen3-8B (Yang et al., 2025), and Llama3-8B (Dubey et al., 2024). To keep the signal analysis primary, we use lo-gistic regression as the default operational backend when comparing observer families. This gives a transparent and comparatively low-capacity detec-tor, making it easier to interpret whether the fea-tures themselves are informative. We then compare logistic regression, Random Forest, and MLP only in a dedicated classifier-family comparison on the same paper-level features. In this framing, the clas-sifier is a secondary operational layer, while the main object of study is the forensic signal. 
+
+Evaluation metrics False accusations against human-authored papers are costly, so we evalu-ate the detector as a screening tool rather than as a generic balanced classifier. We focus on the 5% operating point and therefore report TPR@5% to-gether with the corresponding realized FPR@5% .These quantities directly answer the deployment-relevant question: under a small false-positive bud-get on human papers, how many fabricated papers are recovered, and does the calibrated threshold actually generalize to unseen data? We also report 
+
+AUROC and AUPRC as threshold-free summaries of ranking quality. Under our framing, AUROC and AUPRC are supporting metrics, while the low-FPR results are the primary metrics. 
+
+Baselines and auxiliary comparisons We com-pare TAB-AUDIT against two external baselines adapted to serialized tables: Binoculars , a zero-shot likelihood-ratio detector (Hans et al., 2024), and a DetectGPT-style perturbation baseline (Mitchell et al., 2023). Both are applied to table serializations and aggregated to the paper level. 
+
+6 Results 
+
+Table 1 should be read primarily as a test of whether the proposed forensic signals support reli-able paper-level screening , rather than as a generic classifier comparison. 
+
+The core mismatch signal is real. Even the com-pact PPL4 version of TAB-AUDIT already sepa-rates human and fabricated papers substantially bet-ter than external zero-shot baselines adapted from prose detection. With GPT-2, Qwen, and Llama observers, TAB-AUDIT (PPL4, LogReg) reaches AUROC/AUPRC of 0.884/0.804, 0.902/0.855, and 0.866/0.820, respectively, whereas Binoculars reaches 0.683/0.701 and the DetectGPT-style base-line drops to 0.397/0.430. This gap supports the paper’s main claim that provenance cues for scien-tific tables are not well captured by off-the-shelf detectors designed for free-form text. The useful evidence here is not generic fluency, but the mis-match between a table’s scientific scaffold and its numeric behavior. 
+
+Observer choice matters, but in-domain ranking and transfer are not aligned. Among the PPL4 observers, Qwen gives the strongest in-domain ranking metrics (AUROC 0.902, AUPRC 0.855), but it is the weakest under generator shift at the deployment-relevant operating point, reaching only TPR@5%=0.030 on the GPT-5.2 holdout. By con-trast, Llama yields the strongest holdout ranking metrics (AUROC 0.881, AUPRC 0.793), while GPT-2 gives the strongest holdout low-FPR recall (TPR@5%=0.173). This split is important for inter-pretation: a detector can rank papers well overall without being the best choice for strict screening. In other words, threshold-free separability and low-FPR recovery should be treated as related but dis-tinct properties. 
+
+FUSED ALL with Random Forest is the strongest operational backend. Once the fused signal rep-resentation is fixed, the classifier-family compar-ison shows that Random Forest is the strongest completed backend among the tested operational layers. In-domain, F USED ALL + Random For-est reaches AUROC 0.987, AUPRC 0.985, and TPR@5%=0.933. On the GPT-5.2 holdout, it re-mains the best completed system with AUROC 0.883, AUPRC 0.808, and TPR@5%=0.218, out-performing the logistic and MLP variants at the same feature level. We therefore treat Random For-est as the strongest deployment-oriented backend, while keeping the paper’s main scientific contribu-tion on the signal representation itself: fabricated papers can imitate scientific skeletons more easily than they can reproduce the distributional texture of genuinely measured results. GPT-4o In-Domain Test GPT-5.2 External Holdout Detector Observer AUROC AUPRC TPR@5% Real FPR@5% AUROC AUPRC TPR@5% Real FPR@5%                                                                         
+
+> External Baselines
+> Binoculars (no training) shared 0.683 0.701 0.385 0.108 ––––DetectGPT-style (no training) GPT-2 0.397 0.430 0.015 0.020 ––––
+> Observer Comparison: TAB-AUDIT (PPL4, LogReg)
+> TAB-AUDIT (PPL4, LogReg) GPT-2 0.884 0.804 0.374 0.074 0.855 0.756 0.173 0.065 TAB-AUDIT (PPL4, LogReg) Qwen 0.902 0.855 0.354 0.054 0.808 0.689 0.030 0.055 TAB-AUDIT (PPL4, LogReg) Llama 0.866 0.820 0.246 0.039 0.881 0.793 0.096 0.040
+> Classifier Comparison on the Best-Transfer Observer Family
+> FusedAll (LogReg) GPT-2 0.986 0.971 0.856 0.030 0.825 0.738 0.061 0.039 FusedAll (RandomForest) GPT-2 0.987 0.985 0.933 0.054 0.883 0.808 0.218 0.054 FusedAll (MLP) GPT-2 0.986 0.975 0.862 0.030 0.805 0.723 0.051 0.030
+
+Table 1: main-results table for fabricated-table detection. The left block reports the fixed in-domain test split on human arXiv papers versus GPT-4o-fabricated papers. The right block reports transfer to the GPT-5.2 external holdout. This adjusted version removes the stricter 1% operating-point columns and keeps the 5% operating point together with threshold-free ranking metrics. Thresholds are calibrated on validation humans. 
+
+Figure 3: Paper-context sensitivity of table perplex-ity. Empirical CDF of ∆ log PPL = log PPL ctx −
+
+log PPL only , where PPL ctx scores table tokens condi-tioned on the preceding paper content (prefix masked from loss), and PPL only scores the same table tokens in isolation. Negative values indicate that paper context makes the table more predictable under the observer. 
+
+7 Related Work 
+
+Scientific-integrity forensics for reported results. 
+
+Before LLM-generated papers became a practical concern, fabricated scientific evidence was often approached through forensic checks on arithmetic constraints, digit regularities, and internal consis-tency of reported statistics. Examples include the GRIM family of granularity checks for discrete measurements (Brown and Heathers, 2017; Anaya, 2016) and automated verification of reported test statistics and p-values via statcheck (Nuijten et al., 2016). These tools are powerful when their assumptions hold, but they are not designed for a regime in which an entire paper—including its tables—can be synthesized by an LLM. 
+
+Fabricated papers and machine-generated text. 
+
+The broader integrity literature has documented systematic manipulation at scale, including dupli-cated images, templated text, and paper-mill be-havior (Bik et al., 2016; Byrne et al., 2024). In parallel, post-hoc LLM detection has largely fo-cused on free-form text: DetectGPT uses probabil-ity curvature under perturbations (Mitchell et al., 2023), Fast-DetectGPT reduces cost through condi-tional sampling (Bao et al., 2023), and Binoculars contrasts two related LLMs for zero-shot detec-tion (Hans et al., 2024). A recurring theme is that performance can degrade under domain shift and human editing, which is precisely why our evalua-tion emphasizes paper-level aggregation, holdout-generator transfer, and low-FPR calibration. 
+
+8 Conclusion 
+
+We introduce the dataset F AB TAB and the first sys-tematic study on detecting AI-generated fabricated tables in scientific manuscripts and demonstrate that table-centric signals provide a reliable basis for identifying fabricated research. Our framework, TAB-AUDIT, leverages the mismatch between textual structure and numerical content, enabling effective paper-level auditing without access to un-derlying experimental artifacts. Empirical results show that TAB-AUDIT achieves high identifica-tion rates with low false positive rates on both in-domain and out-of-domain settings on F AB TAB .These findings support table-centric, paper-level auditing as a practical and scalable tool for surfac-ing high-risk papers for manual review. Limitations 
+
+TAB-AUDIT depends on both the observer lan-guage model and the table extraction/serialization pipeline. As our experiments suggest, highly aligned instruction-tuned observers can smooth over inconsistencies and become weaker auditors than older base models. Performance may also de-grade on papers with complex PDF layouts, merged cells, figure-like tables, or extraction errors that dis-tort the serialized views. The serialization also discards some visual and formatting cues that may be informative to human reviewers. Because the method operates only on extracted table artifacts, it cannot use evidence from code, logs, raw out-puts, or richer paper context. Although the method transfers to held-out generators, the gap between in-domain and external-holdout results shows that ro-bustness to generator shift remains incomplete. Our paper-level median aggregation is robust to noisy tables, but it can dilute evidence when only one table in an otherwise normal paper is suspicious. We therefore view TAB-AUDIT as an artifact-only, low-FPR screening tool for prioritizing manual re-view, not as standalone evidence of fabrication or misconduct. Screening outputs should not be inter-preted as prevalence estimates or allegations about specific papers. 
+
+References 
+
+Jordan Anaya. 2016. The grimmer test: A method for testing the validity of reported measures of variability. 
+
+PeerJ Preprints , 4:e2400v1. Guangsheng Bao, Yanbin Zhao, Zhiyang Teng, Linyi Yang, and Yue Zhang. 2023. Fast-detectgpt: Effi-cient zero-shot detection of machine-generated text via conditional probability curvature. arXiv preprint arXiv:2310.05130 .Elisabeth M Bik, Arturo Casadevall, and Ferric C Fang. 2016. The prevalence of inappropriate image dupli-cation in biomedical research publications. MBio ,7(3):10–1128. Nicholas JL Brown and James AJ Heathers. 2017. The grim test: A simple technique detects numerous anomalies in the reporting of results in psychol-ogy. Social Psychological and Personality Science ,8(4):363–369. Jennifer A Byrne, Anna Abalkina, Olufolake Akinduro-Aje, Jana Christopher, Sarah E Eaton, Nitin Joshi, Ulf Scheffler, Nick H Wise, and Jennifer Wright. 2024. A call for research to address the threat of paper mills. 
+
+PLoS Biology , 22(11):e3002931. Davide Castelvecchi. 2024. Researchers built an ‘ai scientist’—what can it do. Nature , 633(8029):266– 266. Abhimanyu Dubey, Abhinav Jauhri, Abhinav Pandey, Abhishek Kadian, Ahmad Al-Dahle, Aiesha Letman, Akhil Mathur, Alan Schelten, Amy Yang, Angela Fan, and 1 others. 2024. The llama 3 herd of models. 
+
+arXiv e-prints , pages arXiv–2407. Catherine A Gao, Frederick M Howard, Nikolay S Markov, Emma C Dyer, Siddhi Ramesh, Yuan Luo, and Alexander T Pearson. 2023. Comparing scien-tific abstracts generated by chatgpt to real abstracts with detectors and blinded human reviewers. NPJ digital medicine , 6(1):75. Elizabeth Gibney. 2026. Hey ChatGPT, write me a fictional paper: these LLMs are willing to commit academic fraud. Nature . News. Jutta Haider, Kristofer Rolf Söderström, Björn Ekström, and Malte Rödl. 2024. Gpt-fabricated scientific pa-pers on google scholar: Key features, spread, and implications for preempting evidence manipulation. 
+
+Harvard Kennedy School Misinformation Review ,5(5). Abhimanyu Hans, Avi Schwarzschild, Valeriia Cherepanova, Hamid Kazemi, Aniruddha Saha, Micah Goldblum, Jonas Geiping, and Tom Goldstein. 2024. Spotting llms with binoculars: Zero-shot detection of machine-generated text. arXiv preprint arXiv:2401.12070 .Aaron Hurst, Adam Lerer, Adam P Goucher, Adam Perelman, Aditya Ramesh, Aidan Clark, AJ Ostrow, Akila Welihinda, Alan Hayes, Alec Radford, and 1 others. 2024. Gpt-4o system card. arXiv preprint arXiv:2410.21276 .Martin Májovsk `y, Martin ˇ Cern `y, Matˇ ej Kasal, Martin Komarc, David Netuka, and 1 others. 2023. Artificial intelligence can generate fraudulent but authentic-looking scientific medical articles: Pandora’s box has been opened. Journal of medical Internet research ,25(1):e46924. Eric Mitchell, Yoonho Lee, Alexander Khazatsky, Christopher D Manning, and Chelsea Finn. 2023. Detectgpt: zero-shot machine-generated text detec-tion using probability curvature. 2023. arXiv preprint arXiv:2301.11305 .Michèle B Nuijten, Chris HJ Hartgerink, Marcel ALM Van Assen, Sacha Epskamp, and Jelte M Wicherts. 2016. The prevalence of statistical reporting errors in psychology (1985–2013). Behavior research meth-ods , 48(4):1205–1226. Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, Ilya Sutskever, and 1 others. 2019. Language models are unsupervised multitask learn-ers. OpenAI blog , 1(8):9. Reese AK Richardson, Spencer S Hong, Jennifer A Byrne, Thomas Stoeger, and Luís A Nunes Ama-ral. 2025. The entities enabling scientific fraud at scale are large, resilient, and growing rapidly. 
+
+Proceedings of the National Academy of Sciences ,122(32):e2420092122. Steven J Rigatti. 2017. Random forest. Journal of insurance medicine , 47(1):31–39. Julio CMC Silva, Rafael P Gouveia, Kallil MC Zielin-ski, Maria Cristina F Oliveira, Diego R Amancio, Odemir M Bruno, and Osvaldo N Oliveira Jr. 2025. Ai-assisted tools for scientific review writing: Op-portunities and cautions. ACS Applied Materials & Interfaces , 17(34):47795–47805. Zuyao Xu, Yuqi Qiu, Lu Sun, FaSheng Miao, Fubin Wu, Xinyi Wang, Xiang Li, Haozhe Lu, ZhengZe Zhang, Yuxin Hu, and 1 others. 2026. Ghostcite: A large-scale analysis of citation validity in the age of large language models. arXiv preprint arXiv:2602.06718 .Yutaro Yamada, Robert Tjarko Lange, Cong Lu, Shen-gran Hu, Chris Lu, Jakob Foerster, Jeff Clune, and David Ha. 2025. The ai scientist-v2: Workshop-level automated scientific discovery via agentic tree search. 
+
+arXiv preprint arXiv:2504.08066 .An Yang, Anfeng Li, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo Zheng, Bowen Yu, Chang Gao, Chengen Huang, Chenxu Lv, and 1 others. 2025. Qwen3 technical report. arXiv preprint arXiv:2505.09388 .
+
+Appendix A Likelihood Mismatch as Evidence of Process Shift 
+
+This appendix gives a compact formal interpreta-tion of why multi-view likelihood mismatch can separate human experimental tables from LLM-fabricated tables. 
+
+A.1 Two-channel view of tables 
+
+We idealize a table T as consisting of two cou-pled channels: a skeleton A (titles, headers, row labels, layout tokens) and a numeric evidence chan-nel B (numbers, represented in our implementa-tion through digit-spaced serialization). Human papers induce a distribution PH (A, B ), while AI-fabricated papers induce PA(A, B ).A key empirical hypothesis motivating our method is that PA(A) can be closer to PH (A) than 
+
+PA(B | A) is to PH (B | A). Intuitively, modern LLMs are strong at producing conventional table skeletons, but the numbers must still be invented in a way that imitates an experimental process. 
+
+A.2 Within-table likelihood mismatch 
+
+Recall the observer LM q and the sequence score 
+
+NLL q(·) (equivalently log PPL q(·)) defined in Section 4 (Eq. 3). Given a table T , we form two views: (i) a skeleton string stext (T ) (title, headers, notes, and layout with numbers masked), and (ii) a 
+
+digit-spaced numeric string sdig (T ). We define the mismatch score as 
+
+mq(T ) = NLL q
+
+ sdig (T ) − NLL q
+
+ stext (T ) .
+
+(8) 
+
+Key hypothesis. Human experimental tables are produced by measurement and reporting conven-tions, whereas fabricated tables are produced by conditional text sampling. This process difference induces a systematic shift in the relative surprisal of numbers versus skeleton: 
+
+E[mq(T ) | AI ] > E[mq(T ) | HUMAN ] . (9) Eq. 9 motivates thresholding or learning on mq(T )
+
+and its paper-level aggregates. 
+
+Paper-level score. A paper p contains multiple tables {Tj }Kp
+
+> j=1
+
+; we aggregate table evidence ro-bustly via 
+
+Mq(p) = median j∈[Kp] mq(Tj ). (10) Because mq(T ) compares two views of the same 
+
+table, it cancels many shared confounds such as topic, domain vocabulary, and broad stylistic pack-aging. This helps explain why the signal transfers more gracefully than detectors built only on surface form. 
+
+B Full main table result 
+
+We present full results of all combination of detec-tors methods here as Table . 2. 
+
+C Dataset Details and Statistics 
+
+Table 4 summarizes the benchmark counts used in the current paper. We report only the counts that are directly supported by the current experiment ar-tifacts: paper totals for each split, total table counts where available, and the auxiliary evaluation sets used in the completed extension experiments. The broader server-side corpus inventory is larger, but the paper’s benchmark claims rely only on the fil-tered human corpus, the filtered GPT-4o fabricated-paper corpus, the GPT-5.2 holdout corpus, and the prompt-only comparison set. Table 5 makes the benchmark filtering step ex-plicit. The saved clean-benchmark report starts from 2111 indexed papers and removes 123 cases during validity filtering before the final train/validation/test split is formed. The saved GPT-5.2 holdout report contains 203 human papers and 197 AI papers, corresponding to 641 human tables and 683 GPT-5.2 tables. The saved prompt-only comparison artifacts contain 1032 valid papers and 3274 extracted tables in total, split into 824 training papers, 104 validation papers, and 104 test papers. These appendix counts are included to document corpus composition, not to redefine the main benchmark. 
+
+D LM-Free Numeric Table Statistics 
+
+The main paper now reports the LM-free numeric statistics in Section 3 (Table 6) because they di-rectly motivate the paper’s signal analysis. From the Table. 6, fabricated tables are markedly more 
+
+over-regular . They have higher most-common-value rates, stronger monotone-column behavior, stronger trend strength, and higher sortedness. This does not mean that fabricated tables are obviously fake; on the contrary, they often look neat and lo-cally plausible. But they are too neat in a specific way: generation tends to drift toward repeated val-ues, tidy progressions, and smoother ordinal struc-ture than is typical in real experimental reporting. Third, human tables exhibit richer precision be-havior . The mean number of decimal places is higher in human tables, whereas fabricated tables more often collapse toward a narrower and more templated precision profile. This again matches the broader hypothesis: genuine experiments produce irregular numeric traces, while synthesized tables often converge to a cleaner and more homogeneous style of number writing. An important detail is that Table 6 reports both the minimum and mean absolute Cohen’s d against the human distribution across multiple generator families. Many of the strongest LM-free signals remain sizeable even under the most conservative cross-generator comparison, which suggests that these effects are not just quirks of a single model. They instead point to a broader process-level differ-ence between experiment-grounded and fabricated numeric reporting. 
+
+E Full generation pipeline 
+
+Table 4 shows the full generation pipeline we de-scribed. 
+
+E.1 Prompt Template for Paper Generation 
+
+We use a structured prompt to generate fully formed scientific papers from a language model given a set of reference abstracts. This prompt serves as a controlled mechanism for producing fabricated scientific content with realistic academic structure, enabling systematic analysis and evalua-tion.    
+
+> Paper Generation Prompt.
+> You are a research assistant AI tasked with gen-erating a complete scientific paper based on pro-vided literature. You should: 1. Analyze the given references. 2. Identify gaps in existing research to moti-vate a new study. 3. Propose a coherent main research idea. 4. Generate the full paper in L ATEX format, in-cluding the following sections: Title, Ab-stract, Introduction, Related Work, Meth-ods/Experiment, Results (with tables), Dis-cussion, Conclusion, and Contributions. All generated content must be original, academ-ically rigorous, and follow standard scientific writing conventions. The model is instructed to ground the paper in the provided references and integrate them naturally.
+> Input: References with abstracts.
+
+Table 2: Full in-domain combination matrix from exp105_comprehensive_main_table . All rows are evaluated on the same fixed paper-level test split of human arXiv papers versus GPT-4o-fabricated papers. Thresholds are calibrated on validation humans. This adjusted version reports the 5% operating point rather than the stricter 1% operating point.                                                                                                                                                                                                                                           
+
+> Observer Baseline AUROC AUPRC TPR@5% Real FPR@5% F1 gpt2 DigitLaw+Precision(LogReg) 0.950 0.926 0.703 0.054 0.888 gpt2 DigitsOnlyPPL(LogReg) 0.890 0.818 0.256 0.039 0.838 gpt2 FusedAll(PPL4+Struct+DigitLaw, LogReg) 0.986 0.971 0.856 0.030 0.955 gpt2 MismatchOnly(LogReg) 0.637 0.638 0.144 0.044 0.638 gpt2 Structure+NumCellDensity(LogReg) 0.969 0.939 0.882 0.044 0.944 gpt2 StructureOnly(LogReg) 0.963 0.915 0.851 0.049 0.937 gpt2 TAB-AUDIT(PPL4, LogReg) 0.884 0.804 0.374 0.074 0.842 gpt2 TextOnlyPPL(LogReg) 0.850 0.751 0.185 0.064 0.830 gpt2 DetectGPT-style (no training) 0.397 0.430 0.015 0.020 0.637 gpt2 FusedAll(PPL4+Struct+DigitLaw, MLP) 0.986 0.975 0.862 0.030 0.967 gpt2 FusedAll(PPL4+Struct+DigitLaw, RandomForest) 0.987 0.985 0.933 0.054 0.948 gpt2 TAB-AUDIT(PPL4, MLP) 0.923 0.886 0.369 0.025 0.851 gpt2 TAB-AUDIT(PPL4, RandomForest) 0.923 0.900 0.267 0.020 0.867 llama DigitLaw+Precision(LogReg) 0.950 0.926 0.703 0.054 0.888 llama DigitsOnlyPPL(LogReg) 0.863 0.769 0.185 0.054 0.815 llama FusedAll(PPL4+Struct+DigitLaw, LogReg) 0.983 0.969 0.867 0.039 0.958 llama MismatchOnly(LogReg) 0.756 0.737 0.159 0.039 0.699 llama Structure+NumCellDensity(LogReg) 0.969 0.939 0.882 0.044 0.944 llama StructureOnly(LogReg) 0.963 0.915 0.851 0.049 0.937 llama TAB-AUDIT(PPL4, LogReg) 0.866 0.820 0.246 0.039 0.807 llama TextOnlyPPL(LogReg) 0.838 0.762 0.169 0.064 0.767 llama FusedAll(PPL4+Struct+DigitLaw, MLP) 0.986 0.972 0.851 0.025 0.959 llama FusedAll(PPL4+Struct+DigitLaw, RandomForest) 0.988 0.987 0.949 0.054 0.949 llama TAB-AUDIT(PPL4, MLP) 0.909 0.880 0.195 0.025 0.858 llama TAB-AUDIT(PPL4, RandomForest) 0.911 0.886 0.256 0.025 0.844 qwen DigitLaw+Precision(LogReg) 0.950 0.926 0.703 0.054 0.888 qwen DigitsOnlyPPL(LogReg) 0.869 0.800 0.236 0.044 0.821 qwen FusedAll(PPL4+Struct+DigitLaw, LogReg) 0.984 0.969 0.882 0.030 0.946 qwen MismatchOnly(LogReg) 0.794 0.772 0.210 0.054 0.734 qwen Structure+NumCellDensity(LogReg) 0.969 0.939 0.882 0.044 0.944 qwen StructureOnly(LogReg) 0.963 0.915 0.851 0.049 0.937 qwen TAB-AUDIT(PPL4, LogReg) 0.902 0.855 0.354 0.054 0.855 qwen TextOnlyPPL(LogReg) 0.853 0.782 0.164 0.044 0.815 qwen FusedAll(PPL4+Struct+DigitLaw, MLP) 0.977 0.962 0.764 0.025 0.934 qwen FusedAll(PPL4+Struct+DigitLaw, RandomForest) 0.987 0.984 0.938 0.049 0.957 qwen TAB-AUDIT(PPL4, MLP) 0.913 0.869 0.328 0.044 0.848 qwen TAB-AUDIT(PPL4, RandomForest) 0.912 0.877 0.308 0.025 0.859 shared Binoculars (no training) 0.683 0.701 0.385 0.108 0.656
+
+F Train-Source and Observer Robustness 
+
+This supplementary experiment isolates the effect of the AI training source from the effect of the observer model while keeping the detector family fixed to the canonical TAB-AUDIT(PPL4, Lo-gReg) configuration. We train on size-matched fabricated-paper sets from GPT-4o, Llama3.1, and Qwen2.5, and score the resulting table views with three observers: GPT-2, Qwen, and Llama. Table 7 reports the full cross-product over train source, ob-server, and test generator. The matrix shows that robustness is not ex-plained by a single matched-family rule. Qwen2.5 training is the strongest source on three of the four evaluation sets by AUROC, but the GPT-5.2 hold-out instead prefers GPT-4o training with a Llama observer. This pattern supports the paper’s broader interpretation: the auditing signal is transferable, but its strongest operational realization depends on the particular generator shift being faced. 
+
+G Inspecting ACL 2024-2025 Proceedings 
+
+We further apply the fabricated-table detector as a screening tool over recent ACL proceedings. This experiment is not treated as a labeled benchmark, since ground-truth fabrication labels are unavail-able. Instead, the detector is used only to rank papers by risk and to identify a small set of high-scoring cases for manual review. Using the extracted-table pipeline over the ACL 2024 and 2025 main proceedings, we obtained ta-ble extractions for 1,469 papers, comprising 4,473 extracted tables in total. We then re-scored this ex-tracted corpus with the strongest completed detec-tor from our classifier-family comparison, namely 
+
+FusedAll + RandomForest . Under this detector, all 1,469 extracted papers received scores. The resulting score distribution has mean 0.115, stan-dard deviation 0.123, median 0.069, and maximum 0.917, indicating that most papers receive relatively low detector scores while a small tail remains sub-stantially higher risk. Detector Observer AUROC AUPRC TPR@5% Real FPR@5% F1                                     
+
+> GPT-5.2 External Holdout
+> TAB-AUDIT(PPL4, LogReg) GPT-2 0.855 0.756 0.173 0.065 –TAB-AUDIT(PPL4, LogReg) Qwen 0.808 0.689 0.030 0.055 –TAB-AUDIT(PPL4, LogReg) Llama 0.881 0.793 0.096 0.040 –FusedAll(LogReg) GPT-2 0.825 0.738 0.061 0.039 0.401 FusedAll(RandomForest) GPT-2 0.883 0.808 0.218 0.054 0.641 FusedAll(MLP) GPT-2 0.805 0.723 0.051 0.030 0.216
+
+Table 3: Supplementary external-holdout transfer results. Holdout metrics are currently available for the canonical TAB-AUDIT observer comparison and for the GPT-2-based fused classifier-family comparison. This adjusted version reports the 5% operating point rather than the stricter 1% operating point. Dashes indicate that a directly comparable holdout run was not produced in the current experiment set. Table 4: Current benchmark and evaluation-set counts used in the paper. Split-level table counts are omitted where they are not finalized in the saved artifacts.                             
+
+> Subset Human AI Total Papers Total Tables
+> Clean benchmark 1012 976 1988 5284 Train split 758 732 1490 –Validation split 51 49 100 –Test split 203 195 398 –GPT-5.2 holdout 203 197 400 1324 Prompt-only baseline 1012 20 1032 3274
+
+Table 5: Filtering from the indexed source pool to the final clean benchmark.             
+
+> Stage Human AI Total
+> Indexed source pool 1118 993 2111 Dropped during filtering 106 17 123 Final usable benchmark 1012 976 1988
+
+Following the same validation-human calibra-tion protocol used elsewhere in the paper, we ap-plied the stored 5% FPR operating threshold from the corresponding in-domain model, which yielded a screening threshold of 0.5964. Under this thresh-old, 17 ACL papers were flagged as high-risk, cor-responding to 1.16% of scored papers. These outputs should be interpreted strictly as triage signals rather than evidence of misconduct. A high score may reflect unusual table structure, extraction noise, atypical numeric formatting, or detector mismatch under domain shift. Accord-ingly, the role of this experiment is to estimate the prevalence of detector-flagged papers and to pri-oritize a manageable subset of papers for manual review. 
+
+H Train-source and observer robustness. 
+
+To disentangle robustness to the observer model from robustness to the AI training source, we keep the canonical TAB-AUDIT(PPL4, LogReg) de-tector fixed and vary two axes: the fabricated-paper source used for supervised training (GPT-4o, Qwen2.5, or Llama3.1) and the observer model used for likelihood scoring (GPT-2, Qwen, or Llama). From the Appendix F, two findings stand out. First, no single observer–training-source pair dominates all regimes: the in-domain bench-mark and the Qwen2.5 holdout are best with Qwen2.5 training and a Qwen observer, whereas the Llama3.1 holdout is best with Qwen2.5 training and a Llama observer. Second, the GPT-5.2 hold-out behaves differently: its best row is obtained by training on GPT-4o fabrications and scoring with Llama. This indicates that the provenance signal transfers across generator families, but the strongest operational pairing depends on the target shift rather than following a simple matched-family rule. 
+
+I Benchmark splits 
+
+All splits are formed at the paper level. Each pa-per is represented by an extracted-table JSON file, and no paper contributes tables to more than one partition. This grouped protocol prevents leakage across tables from the same manuscript. The primary labeled benchmark combines the fil-tered recent-human corpus with the filtered GPT-4o fabricated-paper corpus produced by the literature-grounded pipeline in Section 2 (Hurst et al., 2024). Metric Human GPT4o Qwen3-8B Llama3.1-8B min |d| mean |d|                                                 
+
+> Row ∆-consistency 0.497 ±0.433 0.235 ±0.390 0.187 ±0.359 0.206 ±0.367 0.64 0.71 Most-common value rate 0.113 ±0.138 0.199 ±0.136 0.229 ±0.153 0.220 ±0.153 0.63 0.72 Strict monotone-column rate 0.190 ±0.324 0.418 ±0.438 0.445 ±0.461 0.560 ±0.474 0.59 0.71 Mean Spearman trend strength 0.558 ±0.262 0.704 ±0.244 0.733 ±0.256 0.770 ±0.267 0.58 0.68 Row % ∆-consistency 0.357 ±0.374 0.169 ±0.339 0.153 ±0.296 0.150 ±0.315 0.53 0.58 Mean column sortedness 0.754 ±0.133 0.811 ±0.150 0.831 ±0.154 0.864 ±0.154 0.40 0.57 Dec_places_mean 1.589 ±1.045 0.987 ±0.572 0.780 ±0.692 1.247 ±0.642 0.39 0.67 Adjacent direction consistency 0.711 ±0.136 0.740 ±0.202 0.770 ±0.202 0.808 ±0.214 0.17 0.35
+
+Table 6: Top LM-free statistical signals (mean ±std over tables). Row ∆-consistency checks whether any triple in a row satisfies c ≈ b − a; Row % ∆-consistency checks c ≈ (b − a)/|a| × 100 . Most-common value rate measures numeric repetition. Monotonicity/sortedness quantify over-regular trends. min |d|/mean |d| report absolute Cohen’s 
+
+d vs. human, aggregated across generators. 
+
+Figure 4: Literature-grounded AI paper generation pipeline used to construct the fabricated-paper benchmark. 
+
+The indexed source pool contains 2,111 candidate papers in total: 1,118 human papers and 993 fab-ricated papers. After removing failed or unusable extractions, the clean benchmark contains 1,012 human papers and 976 fabricated papers, for 1,988 papers and 5,284 extracted tables in total. We use a fixed split of 1,490 training papers (758 human, 732 fabricated), 100 validation papers (51 human, 49 fabricated), and 398 test papers (203 human, 195 fabricated). 
+
+J Running Examples Across Human and Synthetic Sources 
+
+To make the benchmark more concrete, we include one running example from each of four sources: a real human paper, a GPT-4o fabricated paper from the main synthetic benchmark, a GPT-5.2 fab-ricated paper from the external holdout set, and a prompt-only generated table. These examples are chosen to illustrate the qualitative differences that motivate our experiments rather than to serve as exhaustive case studies. The selected paper-level detector scores are 0.0995 for the human pa-per, 0.9992 for the GPT-4o synthetic paper, 0.7504 for the GPT-5.2 holdout paper, and 0.5231 for the prompt-only sample. The four examples differ in ways that align with the benchmark results. The human table in Ta-ble 9 is embedded in a broader empirical paper and reflects a genuine evaluation structure with multi-ple systems, multiple languages, and non-uniform performance patterns. The GPT-4o example in Ta-ble 10 is much more stylized: it presents a generic “Proposed Framework” that cleanly dominates a baseline in a compact comparison table. The GPT-5.2 example in Table 11 is more elaborate than the prompt-only case, with multiple controlled condi-tions, averages, and a polished explanatory note, making it a stronger holdout example than direct table prompting alone. Finally, the prompt-only example in Table 12 is plausible but self-contained: it resembles a benchmark summary table without the broader paper-level context or multi-table con-sistency pattern found in the full synthetic-paper pipelines. Taken together, these running examples help explain the main empirical findings of the paper. Prompt-only tables are often plausible at a local level, but they remain simpler and easier to dis-tinguish than tables produced by the full paper-generation pipeline. By contrast, the GPT-5.2 hold-out example shows that newer fabricated papers can preserve much of the polished, benchmark-like structure while still being machine-generated, which is precisely why cross-generator evaluation is necessary. 
+
+K Example Ai generated paper 
+
+Below we show one GPT5.2 generated paper as example. Figure 5: Table Authenticity Judgment Form. Test Set Train Source Observer AUROC AUPRC TPR@5% Real FPR@5% 
+
+In-domain (GPT-4o test) 
+
+in-domain GPT-4o GPT-2 0.938 0.936 0.723 0.064 in-domain Llama3.1 GPT-2 0.902 0.911 0.596 0.043 in-domain Qwen2.5 GPT-2 0.925 0.930 0.638 0.043 in-domain GPT-4o Qwen 0.933 0.932 0.894 0.170 in-domain Llama3.1 Qwen 0.925 0.918 0.830 0.170 
+
+in-domain Qwen2.5 Qwen 0.981 0.975 1.000 0.106 
+
+in-domain GPT-4o Llama 0.893 0.871 0.809 0.149 in-domain Llama3.1 Llama 0.932 0.928 0.787 0.085 in-domain Qwen2.5 Llama 0.961 0.956 0.872 0.085 
+
+GPT-5.2 holdout 
+
+GPT-5.2 GPT-4o GPT-2 0.901 0.966 0.452 0.064 GPT-5.2 Llama3.1 GPT-2 0.931 0.980 0.635 0.043 GPT-5.2 Qwen2.5 GPT-2 0.886 0.961 0.386 0.043 GPT-5.2 GPT-4o Qwen 0.883 0.951 0.660 0.170 GPT-5.2 Llama3.1 Qwen 0.764 0.901 0.447 0.170 GPT-5.2 Qwen2.5 Qwen 0.638 0.854 0.147 0.106 
+
+GPT-5.2 GPT-4o Llama 0.937 0.977 0.898 0.149 
+
+GPT-5.2 Llama3.1 Llama 0.861 0.934 0.416 0.085 GPT-5.2 Qwen2.5 Llama 0.825 0.921 0.234 0.085 
+
+Llama3.1 holdout 
+
+Llama3.1 GPT-4o GPT-2 0.785 0.947 0.380 0.064 Llama3.1 Llama3.1 GPT-2 0.913 0.980 0.650 0.043 Llama3.1 Qwen2.5 GPT-2 0.886 0.974 0.538 0.043 Llama3.1 GPT-4o Qwen 0.846 0.963 0.620 0.170 Llama3.1 Llama3.1 Qwen 0.935 0.983 0.868 0.170 Llama3.1 Qwen2.5 Qwen 0.930 0.982 0.850 0.106 Llama3.1 GPT-4o Llama 0.772 0.935 0.440 0.149 Llama3.1 Llama3.1 Llama 0.933 0.983 0.774 0.085 
+
+Llama3.1 Qwen2.5 Llama 0.938 0.985 0.778 0.085 Qwen2.5 holdout 
+
+Qwen2.5 GPT-4o GPT-2 0.847 0.975 0.489 0.064 Qwen2.5 Llama3.1 GPT-2 0.888 0.983 0.603 0.043 Qwen2.5 Qwen2.5 GPT-2 0.923 0.988 0.680 0.043 Qwen2.5 GPT-4o Qwen 0.911 0.986 0.786 0.170 Qwen2.5 Llama3.1 Qwen 0.964 0.994 0.949 0.170 
+
+Qwen2.5 Qwen2.5 Qwen 0.973 0.996 0.954 0.106 
+
+Qwen2.5 GPT-4o Llama 0.745 0.948 0.371 0.149 Qwen2.5 Llama3.1 Llama 0.934 0.989 0.774 0.085 Qwen2.5 Qwen2.5 Llama 0.960 0.994 0.857 0.085                         
+
+> Table 7: Full train-source/observer robustness matrix for the canonical TAB-AUDIT(PPL4, LogReg) detector. Rows vary the fabricated-paper source used for supervised training and the observer model used for likelihood scoring. Best AUROC row within each test set is boldfaced.
+> Experiment Eval. set Papers AUROC AUPRC Comment
+> GPT5.2 Holdout set Clean test split 398 0.8857 0.8093 203 human / 195 AI papers Prompt-only baseline Prompt-only test split 796 0.973 0.886 398 Human vs 398 prompt-only pseudo-papers
+> Table 8: Completed paper-level evaluations that do not involve generator-shift transfer. Statistic Count Total examples 353,266 Unique languages 2,077 Train examples 340,251 Eval examples 6,148 Test examples 6,867 No glottocode 13,428 No segmentation 93,648 Misaligned 34,894
+
+Table 9: Human example (score 0.0995 ), condensed from a real ACL-style paper. Unlike the synthetic ex-amples, the table reports corpus statistics rather than a clean “ours beats baseline” comparison.       
+
+> Model Coherence Score Token Consumption Baseline (ACR) 0.72 1.2M tokens Proposed Framework 0.83 0.9M tokens
+
+Table 10: GPT-4o fabricated-paper example (score 
+
+0.9992 ). The comparison is compact, neat, and strongly favors the proposed method across all shown dimen-sions.                          
+
+> System EN →EN EN →ZH ZH →EN ZH →ZH Avg Base (no retrieval) 54.2 52.8 50.9 51.6 52.4 RAG 67.5 64.1 62.7 63.4 64.4 RAG + LangControl 68.1 66.8 65.9 66.2 66.8 ReaL-RAG 68.4 67.2 66.1 66.5 67.1
+
+Table 11: GPT-5.2 fabricated-paper example (score 
+
+0.7504 ). This holdout example is more elaborate than the prompt-only table: it uses multiple controlled condi-tions, averages, and a benchmark-style systems compar-ison.               
+
+> Model/System Dataset Accuracy (%) XLM-R (fine-tuned) Amazon Reviews (EN) 92.3 mBERT (fine-tuned) Amazon Reviews (EN) 90.8 XLM-R (fine-tuned) Amazon Reviews (DE) 89.7 mBERT (fine-tuned) Amazon Reviews (DE) 88.5 XLM-R (fine-tuned) Twitter Sentiment (ES) 85.4 mBERT (fine-tuned) Twitter Sentiment (ES) 83.6
+
+Table 12: Prompt-only generated example (score 
+
+0.5231 ). The table is locally plausible, but it remains self-contained and lacks the broader paper-level struc-ture seen in the GPT-4o and GPT-5.2 fabricated-paper examples. State- and Intent-Centric Retrieval for Bilingual Clinical Relation Extraction: Efficient Demonstration Selection with Reusable RWKV States 
+
+Abstract 
+
+Large language models (LLMs) achieve strong clinical relation extraction (RE) performance via prompting and in-context learning (ICL), but their accuracy depends heavily on retrieving high-quality demonstrations—especially in low-resource languages. Existing relation-aware retrieval improves ICL example selection yet still inherits inefficiencies from conventional two-stage retrieval (embedding + reranking) and often ignores discourse/intent structure that disambiguates repeated entities across contexts. Motivated by recent advances in state-centric retrieval with reusable RWKV states, intent-grounded agent memory, and event-structured long-horizon memory, we propose SIRE (State- and Intent-centric Retrieval for Extraction): a unified retrieval-and-reranking framework for bilingual clinical RE that (i) uses an RWKV backbone to compute reusable document states for candidate demonstrations, (ii) reranks by processing only query tokens (decoupling cost from document length), and (iii) augments retrieval cues with lightweight contextual-intent and event-boundary signals to reduce context-mismatched demonstrations. We evaluate on the English–Turkish parallel clinical RE dataset introduced for bilingual evaluation and compare against relation-aware retrieval and standard dense retrieval pipelines. SIRE improves micro-F1 while reducing reranking latency, indicating that reusable states and intent-aware cues jointly address efficiency and robustness gaps in bilingual clinical ICL. 
+
+Introduction 
+
+Clinical RE is central to transforming unstructured notes into structured knowledge, yet non-English clinical NLP remains bottlenecked by limited labeled data. Prompting-based LLM approaches with ICL have recently outperformed traditional fine-tuned baselines for bilingual English/Turkish clinical RE, with performance strongly tied to demonstration selection quality; Relation-Aware Retrieval (RAR) was introduced to better capture sentence- and relation-level semantics for ICL selection and achieved state-of-the-art results among ICL strategies in this setting (Aidynkyzy et al., 2026). However, two practical barriers remain: 1. Retrieval inefficiency at inference time. Standard RAG-style pipelines compute embeddings for retrieval and then rerank full query–document pairs, repeating computation and scaling reranking cost with demonstration length. State-Centric Retrieval shows that precomputing reusable states can bridge embedding and reranking and yield large speedups by reranking with query-only processing (Hou & Yang, 2026). 2. Context mismatch under repeated entities and evolving local intent. In long or multi-note contexts, semantically similar sentences can be intent-incompatible (e.g., same medication mentioned under different clinical goals). Intent-grounded memory (STITCH) demonstrates that indexing by contextual intent reduces interference and retrieval noise in long-horizon interactions (Yang et al., 2026). Event segmentation memory further suggests that boundary-aware structuring improves localization of episodic context (Zou et al., 2026). This paper proposes SIRE , integrating reusable RWKV states (efficiency) with intent/event-aware retrieval cues (robustness) to improve bilingual clinical RE via ICL. 1Related Work 
+
+Bilingual clinical RE and demonstration retrieval 
+
+Aidynkyzy et al. (2026) provide the first English–Turkish parallel clinical RE dataset and show prompting-based LLMs outperform fine-tuned baselines such as PURE. They propose RAR , a contrastive-learning-based demonstration selection method capturing relation semantics; RAR improves ICL performance in both languages, though Turkish remains harder. 
+
+Efficient retrieval and reranking with reusable computation 
+
+Hou & Yang (2026) propose State-Centric Retrieval and EmbeddingRWKV , unifying embedding and reranking via reusable states. A state-based reranker processes only query tokens, decoupling compute from document length and offering major speedups; uniform layer selection retains most performance using fewer layers. 
+
+Memory structuring and intent grounding for retrieval robustness 
+
+STITCH (Yang et al., 2026) retrieves history by contextual intent (goal/action/entity-type cues), reducing context-mismatched retrieval. ES-Mem (Zou et al., 2026) segments interactions into coherent events and uses hierarchical memory to improve episodic localization. While both target agent memory, their core insight— structure-aware indexing reduces retrieval noise —is applicable to selecting ICL demonstrations for clinical RE. 
+
+Data synthesis for robust retrieval environments 
+
+RAGShaper (Tao et al., 2026) synthesizes noisy retrieval environments with distractors and teaches agents to correct retrieval failures. Although our work does not synthesize new corpora, we adopt the motivation that 
+
+retrieval noise is a first-class problem and propose structural cues to reduce it. 
+
+Methods / Experiment 
+
+Task and setting 
+
+We study clinical relation extraction in English and Turkish using ICL prompting. Each test instance is a sentence (or short clinical snippet) containing two entities; the model must predict the relation type. We focus on improving demonstration selection for ICL and reducing retrieval/reranking cost .
+
+Overview of SIRE 
+
+SIRE has three components: 1. State backbone (EmbeddingRWKV-style) for candidates 
+
+• We adopt the state-centric paradigm of Hou & Yang (2026): for each candidate demonstration 𝑑 ,we precompute and store compact RWKV states from selected layers. 
+
+• These states serve dual use: (i) as embedding-like representations for initial retrieval, and (ii) as reusable cached computation for reranking. 2. Intent- and event-aware indexing cues Inspired by STITCH (Yang et al., 2026) and ES-Mem (Zou et al., 2026), we attach lightweight discrete cues to each demonstration: 
+
+• Contextual intent proxy : a tuple (clinical goal/topic , relation family , entity-type pair ).
+
+– Goal/topic can be approximated by section headers if available (e.g., “Assessment”, “Medica-tion”), or by a shallow topic classifier. 
+
+– Relation family is derived from the RE label inventory (e.g., treatment-related vs. problem-related). 
+
+• Event boundary proxy : demonstrations are grouped into “events” (e.g., per note section or temporal chunk). Retrieval can prioritize same-event demonstrations when the query indicates a similar boundary signature. 3. Query-only state-based reranking For top-𝐾 retrieved candidates, we rerank using a state-based scorer that consumes: 2• query tokens through RWKV, and 
+
+• cached candidate states (no candidate tokens processed at rerank time), following the efficiency principle of Hou & Yang (2026). 
+
+Baselines 
+
+We compare SIRE against: 
+
+• Dense Retrieval + Cross-Encoder Rerank (standard two-stage) : conventional embedding retrieval then full pairwise reranking. 
+
+• RAR : relation-aware contrastive retrieval for ICL demonstration selection (Aidynkyzy et al., 2026). 
+
+• State-Centric Retrieval (SCR) without intent/event cues : reusable-state retrieval+rering as in Hou & Yang (2026), but without our structural indexing. 
+
+Experimental protocol 
+
+• Dataset : English–Turkish parallel clinical RE dataset derived from i2b2/VA (Aidynkyzy et al., 2026). 
+
+• LLM prompting : we use a consistent ICL prompt template across methods; only demonstration selection differs. 
+
+• Metrics : micro-F1 for RE; retrieval latency (ms/query) and reranking latency (ms/query) for efficiency. 
+
+• Ablations : remove intent cues, remove event cues, reduce stored layers (uniform layer selection) as suggested by Hou & Yang (2026). 
+
+Results 
+
+Main accuracy results (micro-F1) 
+
+Table 1 shows that adding reusable-state reranking improves over retrieval-only approaches, and adding intent/event cues improves further—especially in Turkish, where context mismatch is more damaging. 
+
+Table 1. Clinical RE micro-F1 (English/Turkish). 
+
+Method Retrieval signal Reranking compute EN micro-F1 TR micro-F1 Dense + Cross-Encoder Rerank semantic query+doc tokens 0.895 0.861 RAR (Aidynkyzy et al., 2026) relation-aware none / lightweight 0.906 0.888 SCR (Hou & Yang, 2026) reusable states query-only 0.909 0.891 
+
+SIRE (ours) states + intent + event 
+
+query-only 0.916 0.899 Efficiency results 
+
+SIRE is designed to reduce reranking cost by avoiding document-token processing at inference, consistent with the state-centric speedups reported by Hou & Yang (2026). Table 2 reports latency trends. 
+
+Table 2. Inference efficiency (per query). 
+
+3Method Candidate length dependence Retrieval (ms) Rerank (ms) Total (ms) Dense + Cross-Encoder scales with doc length 18 220 238 RAR low 25 0 25 SCR low 20 35 55 
+
+SIRE (ours) low 22 36 58 RAR is fastest because it avoids heavy reranking, but SIRE offers a better accuracy–latency tradeoff when reranking is needed for robustness, while remaining far cheaper than cross-encoders. 
+
+Ablation: intent cues, event cues, and layer selection Table 3. Ablation study (micro-F1; rerank latency). 
+
+Variant EN micro-F1 TR micro-F1 Rerank ms SIRE full 0.916 0.899 36 - intent cues 0.913 0.894 36 - event cues 0.914 0.896 36 - intent - event (SCR) 0.909 0.891 35 25% layers stored (uniform) 0.914 0.897 24 
+
+Uniform layer selection retains most quality while reducing reranking time, aligning with the “retain ~25% layers with minimal loss” observation in Hou & Yang (2026). 
+
+Discussion 
+
+Why do intent/event cues help? RAR improves semantic alignment at the relation level, but bilingual clinical snippets often reuse the same entities under different local goals (e.g., “rule out”, “family history”, “current meds”). STITCH shows that intent indexing suppresses semantically similar but context-incompatible memory (Yang et al., 2026); our results suggest the same phenomenon occurs for ICL demonstration selection, particularly in Turkish where lexical variation and translation artifacts can amplify retrieval ambiguity (Aidynkyzy et al., 2026). Event boundaries (ES-Mem) further help by preferring demonstrations from similarly structured discourse segments (Zou et al., 2026). 
+
+Why reusable states matter here. Clinical ICL often benefits from reranking because small differences in wording can flip relation labels. Standard cross-encoder reranking is expensive; state-centric reranking offers a practical middle ground by reusing precomputed candidate computation and processing only the query (Hou & Yang, 2026), enabling stronger selection without prohibitive latency. 
+
+Limitations. 
+
+• Our intent/event proxies are lightweight and may be noisy when section headers or reliable topic cues are absent. 
+
+• We did not incorporate synthetic distractor-heavy training as in RAGShaper (Tao et al., 2026), which could further improve robustness under adversarial retrieval noise. 
+
+• Results are limited to bilingual EN–TR clinical RE; generalization to other languages and IE tasks remains to be validated. 
+
+Conclusion 
+
+SIRE addresses two persistent issues in bilingual clinical RE with ICL: (i) inefficient reranking pipelines and (ii) context-mismatched demonstration retrieval. By combining state-centric retrieval with reusable 
+
+4RWKV states (Hou & Yang, 2026) and intent/event-structured indexing cues inspired by STITCH and ES-Mem (Yang et al., 2026; Zou et al., 2026), SIRE improves micro-F1 in both English and Turkish while keeping inference costs low via query-only reranking . This suggests that future clinical prompting systems should treat demonstration retrieval as both an efficiency problem and a structured context-matching problem. 
+
+Contributions 
+
+1. Problem framing: Identified a joint efficiency–robustness gap in bilingual clinical ICL for relation extraction beyond relation-aware retrieval alone (Aidynkyzy et al., 2026). 2. Method: Proposed SIRE , integrating reusable RWKV states for unified retrieval+rering (Hou & Yang, 2026) with intent/event-aware indexing cues motivated by structured memory retrieval (Yang et al., 2026; Zou et al., 2026). 3. Evaluation: Demonstrated improved EN/TR micro-F1 and favorable latency tradeoffs versus standard two-stage reranking and RAR, with ablations showing the complementary effects of intent cues and state reuse. 4. Practical insight: Showed that storing a subset of layers can preserve accuracy while reducing reranking latency, consistent with state-centric layer selection findings (Hou & Yang, 2026). 5

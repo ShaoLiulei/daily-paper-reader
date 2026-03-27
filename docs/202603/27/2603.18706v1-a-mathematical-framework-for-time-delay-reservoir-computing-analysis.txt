@@ -1,0 +1,448 @@
+Title: 2603.18706v1.pdf
+
+URL Source: https://arxiv.org/pdf/2603.18706v1
+
+Published Time: Fri, 20 Mar 2026 00:56:02 GMT
+
+Number of Pages: 6
+
+Markdown Content:
+# A mathematical framework for time-delay reservoir computing analysis 
+
+Anh Tuan Clabaut 1, Jean Auriol 1, Islam Boussaada 2,3, and Guilherme Mazanti 2,4
+
+Abstract — Reservoir computing is a well-established ap-proach for processing data with a much lower complexity com-pared to traditional neural networks. Despite two decades of ex-perimental progress, the core properties of reservoir computing (namely separation, robustness, and fading memory) still lack rigorous mathematical foundations. This paper addresses this gap by providing a control-theoretic framework for the analysis of time-delay-based reservoir computers. We introduce formal definitions of the separation property and fading memory in terms of functional norms, and establish their connection to well-known stability notions for time-delay systems as incre-mental input-to-state stability. For a class of linear reservoirs, we derive an explicit lower bound for the separation distance via Fourier analysis, offering a computable criterion for reservoir design. Numerical results on the NARMA10 benchmark and continuous-time system prediction validate the approach with a minimal digital implementation. 
+
+I. I NTRODUCTION 
+
+Reservoir Computing (RC) is a machine learning frame-work inspired by Recurrent Neural Networks (RNN) that aims to reduce training complexity by fixing the hidden layer, which is then called reservoir . RC appeared in the early 2000’s with Echo State Networks [14] and Liquid State Machines [22] and was shown to provide good performance for tasks with history-dependent inputs. Instead of training all the weights via backpropagation algorithms, the idea of RC is to reduce the hidden layer to a dynamical system with fixed weights. As in traditional neural networks, for given input signals, the outputs are obtained through a linear combination of the reservoir states, so that only the weights between the reservoir and the output layer are trained. This implies that a linear regression suffices to train the model, dramati-cally reducing the computational cost compared to standard RNNs [21]. For this system to achieve good performance despite the lack of training, the computational capacity of the dynamical system needs to be very high. In our approach, the reservoir is a Time-Delay System (TDS). This type of reservoir was introduced in [2] and was shown to achieve performances comparable to state-of-the-art reservoir computing with both electronic and opto-electronic implementations. Subsequently, implementations based on photonic architectures have been performed, see for example [9], [19]. The key advantage of this model lies 
+
+> 1Université Paris-Saclay, CNRS, CentraleSupélec, Laboratoire des sig-naux et systèmes, 91190 Gif-sur-Yvette, France.
+
+firstname.lastname@l2s.centralesupelec.fr .
+
+> 2Université Paris-Saclay, CNRS, CentraleSupélec, Inria, Laboratoire des signaux et systèmes, 91190 Gif-sur-Yvette, France.
+
+firstname.lastname@l2s.centralesupelec.fr .
+
+> 3IPSA, 94200 Ivry-sur-Seine, France.
+> 4Fédération de Mathématiques de CentraleSupélec, 91190 Gif-sur-Yvette, France.
+
+in its physical implementation: while traditional reservoirs require many neurons to be implemented physically, the time-delay model only requires a single physical node, making it particularly attractive for hardware realization. The performance of RC systems is commonly character-ized through three fundamental properties. The separation property refers to the ability of the reservoir to map dis-tinct inputs onto distinguishable states. The fading memory property ensures that the influence of past inputs decays over time, so that the reservoir is not dominated by its initial conditions. Finally, robustness captures the ability to tolerate noise without overfitting. These properties have been central to the RC literature since its inception, and their interplay is known to govern the computational capacity of the reservoir [8]. In particular, best performance is often empirically found when the system operates at the edge of chaos , a regime balancing separation and stability [20]. In 2021, strong links were pointed out between the spectrum of the linearized system around a fixed point and the memory capacity of the reservoir [18]. However, despite this growing body of experimental knowledge, these three properties still lack rigorous mathematical foundations. A notable exception is [8], which quantifies the information processing capacity of dynamical systems in terms of functional spaces. However, this framework does not address the input-output separation, robustness to noise, or fading memory properties from a system-theoretic perspective, nor does it exploit the specific structure of time-delay systems. To the best of our knowl-edge, no control-theoretic formalization of these properties has been established for time-delay reservoir computers. This paper addresses this gap by connecting reservoir computing properties to well-established concepts from control theory thereby providing both a rigorous foundation and concrete design criteria for time-delay reservoirs. The main contribu-tions are as follows:  
+
+> •
+
+We introduce formal definitions of the separation property and fading memory in terms of functional norms, grounding these notions within the framework of infinite-dimensional dynamical systems.  
+
+> •
+
+We establish a connection between fading memory and incremental input-to-state stability ( δISS).  
+
+> •
+
+For a class of linear reservoirs with a single delay, we derive an explicit lower bound for the separation distance via Fourier analysis. 
+
+Notation: Let n, m be positive integers. For any ∆ > 0,we denote C := Cp([ −∆, 0) , Rn) (resp. Cp(R+, Rn)) the set of piecewise continuous functions defined on [−∆, 0) (resp. 
+
+R+) with values in Rn. The set C is endowed with the norm 
+
+> arXiv:2603.18706v1 [math.OC] 19 Mar 2026
+
+∥ · ∥ such that for any φ ∈ C, ∥φ∥ = sup s∈[−∆,0) |φ(s)|,where |·| is the Euclidean norm. For all u ∈ Cp(R+, Rn),
+
+∥u∥[0 ,t ] = sup s∈[0 ,t ]|u(s)|. In the article, we will consider reservoirs based on retarded time-delay systems of the form 
+
+˙x(t) = f (xt, u (t)) , x0 = ϕ, (1) where xt refers to the history function xt : s 7 −→ x(t+s) for 
+
+s ∈ [−∆, 0) , where ∆ > 0 is given. The initial conditions are taken from the set C. The inputs are taken in U := L∞ ∩
+
+Cp(R+, Rm) and the state x take values in Rn. Conditions on 
+
+f guaranteeing the well-posedness of (1) and the existence of solutions can be found in [12]. Given an input u and an initial condition ϕ ∈ C, the solution of (1) at time t will be denoted by xu(ϕ)( t) (or x(t) if no confusion arises). II. D ESIRED PROPERTIES FOR A RESERVOIR 
+
+In this section we summarize the properties that are essen-tial for a reservoir computer to achieve good performance. The generalization property is the ability of the model, after being trained on input-output pairs, to approximate the corresponding outputs of unseen inputs. This property mainly depends on the richness of the dynamics and the optimization of the weights. As our focus is on the impact of the system parametrization, training aspects will not be developed in this work (see [2], [13] for more details on training). The capability of the reservoir to map distinct inputs into distinct outputs, even for very close signals, is called the 
+
+separation property (SP). The SP is linked to the complexity of the reservoir dynamics [8], which explains why nonlinear functions have always been a key issue in neural networks. In our study, the richness of the reservoir is also captured by the infinite-dimensional state space inherent to TDS. Since input signals are typically corrupted by noise, a complementary property is required: robustness . A robust reservoir interprets small difference between inputs as noise, thereby avoiding overfitting [4]. The contradictory aspect of these two prop-erties implies that a trade-off must be found. The next property, specific to RC, is the fading memory 
+
+property [22]. It measures how much the system “forgets” the past and requires that the influence of past inputs decays over time, so that the current state reflects recent inputs more than distant ones. This is especially critical in TDS-based reservoirs, where past information is reinjected into the system, implying that past noise accumulates with current noise. Moreover, as it is technologically demanding on real setups to prevent the devices from noise when initializing the system, we want the reservoir to ignore the information that is too influenced by its initial state. So far, the analysis of these properties has been mostly experimental and qualitative, with comparisons for different sets of parameters (including the choice of the nonlinearity) being done after the system is trained and the estimated outputs are computed [2]. The present work aims to provide a more rigorous mathematical foundation for this analysis. III. T IME -DELAY RESERVOIR COMPUTING 
+
+In this section, we provide more details on the different components of time-delay reservoirs. 
+
+A. Time-delay systems as reservoirs 
+
+The reservoir we consider is a dynamical system of the form (1), u being the signal to be processed. TDS are partic-ularly well-suited for reservoir computing for two reasons. First, the retarded feedback term produce highly complex dynamics. Indeed, re-injecting past information drastically increases the capability of the system to mitigate the in-puts, which leads to good separation and generalization [2]. Therefore, even weak nonlinearities can achieve good perfor-mance. Secondly, the retarded feedback term strengthens the short-term memory, resulting in good computational capacity [8]. Furthermore, the time-delay architecture requires only a single physical node, making it attractive for hardware implementations [19]. 
+
+B. Input driving 
+
+For the system to map the input into a high-dimensional phase space, the reservoir response is sampled multiple times, creating “temporal” dimensions rather than increasing the number of nodes. The sample points are called virtual nodes , as they effectively contribute to the dimensionality of the response. To reproduce this process with only one node, the input signal undergoes two pre-processing steps before being injected in the system. The first one, called time multiplexing , consists in a sample-and-hold operation applied to the input u, producing a piecewise constant function I
+
+with step duration T , called the clock cycle . The second step, called masking procedure , consists in multiplying the input stream by a piecewise constant T -periodic function, called 
+
+mask , with step duration θ. The mask plays the same role as the weight matrix that usually feeds the input vector to the 
+
+N = T /θ virtual nodes with different scaling factors. 
+
+C. Timescales 
+
+The setup involves three timescales that must be carefully tuned. The first one is the intrinsic time constant θ0 of the node. It is the time that the system takes to respond to a perturbation. For systems whose trajectories decay at an exponential rate, this notion is easy to define: if the solutions decay like e− tτ , the time constant is τ . The virtual node spacing θ should be chosen so that consecutive node responses are sufficiently decorrelated, and the clock cycle 
+
+T = N θ should match the delay τ to maximize memory. Note that resonance effects have been observed when T is too close to a multiple of τ , resulting in memory degradation and thus in a loss of accuracy. This phenomenon is detailed in [18]. All these constraints lead to θ ≲ θ0 ≪ T ∼ τ. 
+
+The last remaining timescale is the quantization step. If it is too small, the complexity will be high, and if it is too large, quantization noise will reduce accuracy. If the input is in discrete time, there is no quantization step: the values are simply held during a time T .IV. F RAMEWORK FOR RESERVOIR ANALYSIS 
+
+We now formalize the properties introduced in Section II as analytical properties of dynamical systems. A. Stability 
+
+It has already been clarified that stability is a necessary condition for any meaningful prediction. Nevertheless, if the convergence rate is too strong, it causes the reservoir to lose the input information too quickly. For these reasons, the convergence rate must be tuned. In the linear case, stability can be assessed via the spectral abscissa [1], [23], as we will discuss in Section V. For nonlinear systems, the general framework to study the stability of a TDS depending on an input stream is the Input-to-State Stability (ISS) [26], [6]. The following result, taken from [6], characterizes this concept through the formalism of Lyapunov–Krasovskii functionals. 
+
+Proposition 1: System (1) is ISS if and only if there exist a functional V : C → R Lipschitz on bounded sets, 
+
+α1, α 2, α 3, γ ∈ K ∞ such that for every ϕ ∈ C and every 
+
+u ∈ U , the corresponding solution x satisfies 
+
+α1(|x(t)|) ≤ V (xt) ≤ α2(∥xt∥), (2a) 
+
+D+V (xt) ≤ − α3
+
+ V (xt) + γ(∥u∥[0 ,t ]). (2b) A functional Lipschitz on bounded sets that satisfies (2a) is called a Lyapunov–Krasovskii Functional (LKF) candidate. 
+
+B. Separation property 
+
+Inspired by the definition given in [2], we quantify the SP by the L2 norm of the state difference induced by two distinct inputs u and v sharing the same initial condition ϕ:
+
+St0,t 1,ϕ (u, v ) := ∥xu(ϕ) − xv (ϕ)∥L2([ t0,t 1]) . (3) To obtain a quantity independent of the specific input pair and initial condition, we average over a set F ⊂ C of initial conditions and over pairs (u, v ) ∈ E ⊂ U × U satisfying 
+
+∥u − v∥L2 − d ≃ δ, where d is a characteristic distance and 
+
+δ a precision [22]: 
+
+Sd,t 0,t 1 := 1 
+
+> |E|| F|
+
+P
+
+> (u,v )∈E
+
+P 
+
+> ϕ∈F
+
+St0,t 1,ϕ (u, v ). (4) We expect this quantity to be large enough with respect to ∥u − v∥L2 , ensuring injectivity for the input-to-state map. A lower bound for Sd,t 0,t 1 in the linear single-delay case is derived in Section V. The L2 norm is chosen here for the orthogonality of Fourier modes, which is exploited in Section V. Other choices of Lp norms can be relevant too. When computing the separation from a physical setup, t0 is chosen large enough for the transient due to initial conditions to have decayed. So far, the SP has been assessed empirically by running a large number of simulations and checking the rank of the state matrix [2]. The L2-based criterion Sd,t 0,t 1 proposed here offers a more principled alternative, as it involves the full trajectory rather than a finite collection of samples. From a system-theoretic perspective, requiring a uniform lower bound of the form Sd,t 0,t 1 ≥ Cd for all input pairs amounts to asking for exact observability of the reservoir, i.e., the existence of a constant C > 0 such that 
+
+∥T u − T v∥L2 ≥ C∥u − v∥L2 , (5) where T : u 7 → xu denotes the input-to-state operator. For linear systems however, T , the variation-of-constants formula [12] implies that no such uniform bound can hold over the full input space. Intuitively, high-frequency input components are attenuated by the reservoir dynamics, pro-ducing a filtering effect that prevents separation of rapidly oscillating inputs, a phenomenon consistent with the robust-ness requirement of Section II. A natural remedy is to restrict the analysis to inputs within a finite-dimensional frequency band on which a lower bound of T can be recovered. This motivates the frequency-limited analysis of Section V. Finally, this injectivity-related problem echoes the de-sign of Kazantzis–Kravaris–Luenberger (KKL) observers [3], where injectivity of a state-space immersion is recovered by increasing the dimension of the target space. In reservoir computing, adding virtual nodes plays the same role. Inter-estingly, connections between KKL observers and machine learning have recently been drawn [15], suggesting that a reservoir can be interpreted as a data-driven approximation of a KKL immersion. From this perspective, a TDS reser-voir offers an intrinsically infinite-dimensional immersion space, which should in principle provide richer separation guarantees than any finite-dimensional architecture. Whether this structure can be systematically exploited to enforce injectivity over a prescribed input class is an open question. 
+
+C. Robustness to noise 
+
+A robust reservoir should attenuate the effect of small input perturbations on the state. To deal with noise, we want to have some control on the state difference corresponding to two slightly different inputs. This can be formalized as 
+
+|xu(ϕ)( t) − xv (ϕ)( t)| ≤ γ(∥u − v∥[0 ,t ]), (6) with γ a positive and non-decreasing function and where 
+
+v can be a noisy version of u. We expect γ to be slowly increasing since, in that way, the state difference is relatively small compared to the input difference. Equation (6) is pre-cisely the trade-off with the SP: a highly sensitive reservoir separates inputs well but amplifies noise, while an overly robust one fails to distinguish genuine input differences. The only way to distinguish input separation from noise is to have at least a rough idea of the shape of the noise. In our analysis, we consider that high-frequency components of a signal can be attributed to noise [4]. Consequently, we require the reservoir to act as a low-pass filter, attenuating high-frequency inputs while preserving low-frequency content. 
+
+D. Fading memory 
+
+Beyond input noise, the initial condition of the reservoir carries no useful information about the current input and should be progressively forgotten. The initial state can indeed be strongly affected by previous entries (as it may be hard on physical setups to reinitialize the system between two inputs). This implies that we also need to be robust with respect to initial conditions. More precisely, for any u ∈ U ,for any ϕ, ψ ∈ C, we need |xu(ϕ)( t) − xu(ψ)( t)| to be continuously upper-bounded by a term depending on ∥ϕ−ψ∥,and this term shall be decreasing with respect to time. The Incremental Input-to-State Stability ( δISS) unifies robustness to noise and fading memory into a single notion that can be characterized through sufficient conditions. 
+
+Definition 2 (Incremental Input-to-State Stability): The system (1) is said to be incrementally input-to-state stable (δISS) if there exist functions β ∈ KL and γ ∈ K ∞ such that, for all ϕ, ψ ∈ C, for all u, v ∈ U , and for all t ≥ 0,
+
+|xu(ϕ)( t) − xv (ψ)( t)| ≤ β (∥ϕ − ψ∥, t ) + γ ∥u − v∥[0 ,t ]
+
+ .
+
+The following theorem provides a Lyapunov sufficient condition for δISS. The proof follows the classical methodol-ogy of ISS results [6] but we provide a self-contained proof adapted to this setting. 
+
+Theorem 3: If there exist a functional V : C × C →
+
+[0 , +∞) Lipschitz on bounded sets, α1, α 2 ∈ K ∞, σ ∈ K 
+
+and κ > 0 such that for any inputs u, ˜u ∈ U and any 
+
+x0, ˜x0 ∈ C, the associated solutions of (1) (respectively denoted here by x and ˜x) verify for all t ≥ 0
+
+α1(|x(t) − ˜x(t)|) ≤ V (xt, ˜xt) ≤ α2(∥xt − ˜xt∥), (7) 
+
+D+V (xt, ˜xt) ≤ − κV (xt, ˜xt) + σ ∥u − ˜u∥[0 ,t ]
+
+, (8) then system (1) is δISS. 
+
+Proof: By (8) and Grönwall’s lemma, 
+
+V (xt, ˜xt) ≤ e−κt V (x0, ˜x0) + e−κt R t 
+
+> 0
+
+eκs σ ∥u − ˜u∥[0 ,s ]
+
+ ds 
+
+≤ e−κt V (x0, ˜x0) + 1 
+
+> κ
+
+σ ∥u − ˜u∥[0 ,t ]
+
+.
+
+Using (7) for t = 0 ,
+
+V (xt, ˜xt) ≤ e−κt α2(∥x0 − ˜x0∥) + 1 
+
+> κ
+
+σ ∥u − ˜u∥[0 ,t ]
+
+.
+
+Then, using the left-hand side of (7) and the fact that the inverse function of a K∞ function is in K∞ as well, 
+
+|x(t) − ˜x(t)| ≤ β ∥x0 − ˜x0∥, t  + γ(∥u − ˜u∥[0 ,t ])
+
+for β(x, t ) = α−11
+
+ 2e−κt α2(x), γ(x) = α−11
+
+  2 
+
+> κ
+
+σ(x).The connection between δISS and reservoir computing is the central contribution of this framework. The KL term 
+
+β captures fading memory : it must decay fast enough for the initialization transient to vanish before the first readout, yet slowly enough to preserve memory of recent inputs. The K∞ term γ captures robustness : it should grow slowly so that noise is attenuated without masking genuine input differences. This makes the separation/robustness trade-off explicit at the functional level: stronger contraction accel-erates the decay of β at the cost of memory, while higher sensitivity improves the SP but steepens γ. Finally, while finding a suitable Lyapunov–Krasovskii functional V can be challenging for nonlinear reservoirs, standard constructive methodologies (such as Linear Matrix Inequalities (LMIs)) are well-established in the control literature [10], [16], [24]. V. C ASE OF A LINEAR RESERVOIR 
+
+Although practical reservoirs rely on nonlinear dynamics, the linear case already provides valuable theoretical insight and is not without a computational interest. Indeed, while the state space of (9) is finite-dimensional in the classical sense, the solution operator acts on the infinite-dimensional space C, so that the reservoir response retains a rich struc-ture even in the absence of nonlinearity [12]. This stands in sharp contrast with linear reservoirs based on ODEs, whose computational capacity is fundamentally limited [8]. Furthermore, the linear case serves as a stepping stone toward the nonlinear setting: local behavior near a fixed point can be analyzed via linearization, and the spectral properties of the linearized system have been shown to strongly influence the memory capacity of the reservoir [18]. Linear reservoirs are also directly relevant for tasks with low nonlinearity requirements such as NARMA10 [2], and can be combined with a nonlinear readout to increase expressivity [21]. 
+
+Proposition 4: [12] Let ℓ be a positive integer, 0 < τ 1 <τ2 < ... < τ l be some positive numbers, and Ai, i = 0 , ..., l 
+
+some matrices in Mn×n(R). Consider the system 
+
+˙x(t) = A0x(t) + Pℓj=1 Aj x(t − τj ) (9) and its characteristic matrix [12] given by 
+
+∆( z) = zI − A0 − Pℓj=1 Aj e−zτ j , z ∈ C.
+
+Setting s0 = sup {ℜ (z) : det ∆( z) = 0 }, then for any p > s0, there exists a constant M = M (p) such that, for all initial conditions ϕ, the solution x(ϕ) of system (9) satisfies the exponential estimate: |x(ϕ)( t)| ≤ M e pt ∥ϕ∥, t ≥ 0.
+
+The number s0 is called the spectral abscissa of (9). For reservoir design, tuning s0 is critical: too negative, and the reservoir loses memory of past inputs; too close to zero, and the fading memory property is compromised. In the scalar single delay-case, the roots of the characteristic matrix can be expressed in terms of the W -Lambert function [7]. Explicit algebraic conditions to assign the spectral abscissa of a scalar linear TDS can be found in the literature for specific configurations [5], [25]. Next, we derive an explicit lower bound for the separation property in a single-delay linear reservoir. Consider τ > 0,
+
+a0 ∈ R and a1 ∈ R. Consider the linear system 
+
+˙x(t) = a0x(t) + a1x(t − τ ) + u(t), (10) with the initial condition ϕ ∈ Cp([ −τ, 0) , R) and u ∈
+
+Cp(R+, R). Consider two different inputs u and v and the associated solutions xu and xv . By linearity, the state difference z = xu − xv is solution of (10) with the term u
+
+being replaced by w := u − v and initial condition ϕ ≡ 0.
+
+Proposition 5: Denote by αk, k ∈ Z, the coefficients of the Fourier expansion of w on [0 , t 1]. Assume that the input-free system ˙x(t) = a0x(t) + a1x(t − τ ) is asymptotically stable with spectral abscissa s0. Then, for any ϵ > 0, there exists some M1 > 0 depending on ϵ such that for every 0 <t0 < t 1, the global separation measure on [t0, t 1] satisfies 
+
+R t1 
+
+> t0
+
+|z(t)|2dt ≥ (t1 − t0)  P   
+
+> k∈Z
+> |αk|2
+> ∆k
+
+− M1e(s0+ϵ)t0
+
+,
+
+where 
+
+∆k =
+
+
+
+a0 + a1 cos 2kπτ t1
+
+2
+
++
+
+ 2kπτ t1 + a1 sin 2kπτ t1
+
+2
+
+.
+
+Proof: Due to space restriction, we only give a sketch of the proof. We have w(t) = P 
+
+> k∈Z
+
+αke 2ikπt t1 . We then introduce the change of variables 
+
+˜z(t) = z(t) + P 
+
+> k∈Z
+
+βke 2ikπt t1 .The goal is to choose the βk so that ˜z satisfies the homo-geneous delayed equation ˙˜z(t) = a0 ˜z(t) + a1 ˜z(t − τ ). This yields k ∈ Z,
+
+βk
+
+ iω k − a0 − a1e−iω k τ  = αk.
+
+We obtain |βk|2 = |αk |2 
+
+> ∆k
+
+, where ∆k = |iω k − a0 −
+
+a1e−iω k τ |2. We now fix t0 ∈ [0 , t 1) and compute the energy of the state difference by expanding R t1 
+
+> t0
+
+|z(t)|2dt =
+
+R t1 
+
+> t0
+
+˜z(t) − P 
+
+> k∈Z
+
+βkeiω k t 2 dt . By Proposition 4, the ho-mogeneous solution ˜z(t) satisfies |˜z(t)| ≤ M e(s0+ϵ)t|| ˜z0|| .Thus, its squared integral and the cross-terms with the bounded periodic signal are subsumed into a bounded decay-ing term M e (s0+ϵ)t0 . Finally, exploiting the orthogonality of the Fourier modes on the remaining periodic part over t ≥ t0
+
+yields the (t1 − t0) P 
+
+> k
+
+|βk|2 term, concluding the proof. By neglecting the transient term ˜z, we obtain a metric that is independent of the initial condition. As mentioned in Section IV, separation due to noise should be excluded from the bound. Assuming that frequency components with index |k| > k 0 arise from noise, a good reservoir should maximize P  
+
+> |k|≤ k0
+> |αk|2
+> ∆k
+
+while keeping 
+
+P  
+
+> |k|>k 0
+> |αk|2
+> ∆k
+
+small. For a fixed spectral abscissa s0, tuning the reservoir parameters to minimize ∆k over the signal band reduces to a constrained optimization problem, which can be solved in the single-delay case by using, for instance, [5, Th. 17] or [25, Th. 8]. This analysis extends naturally to multiple delays. The quantity ∆k is generalized by replacing 
+
+a1 cos 2kπτ t1 and a1 sin 2kπτ t1 with their multi-delay counter-parts P 
+
+> j
+
+aj cos 2kπτ j 
+
+> t1
+
+and P 
+
+> j
+
+aj sin 2kπτ j 
+
+> t1
+
+. Each additional delay introduces free parameters that can be used to minimize 
+
+∆k while keeping the spectral abscissa fixed. For the case of two delays, the Multiplicity-Induced-Dominancy property [11] allows us to assign the spectral abscissa. Adding delays improves separation without sacrificing stability , a direction that will be further explored in future work. We conclude this section by addressing the practical ver-ification of δISS for linear reservoirs. For linear TDS, δISS reduces to standard ISS. In this setting, converse Lyapunov-Krasovskii results guarantee that asymptotic stability of the input-free system is equivalent to δISS and to the exis-tence of a Lyapunov functional [17]. Constructive LKFs can be obtained via standard LMIs for systems with multiple delays [10]. In the single-delay case, under the condition 
+
+a0 + |a1| < 0, a possible quadratic functional is of the form 
+
+V (xt) = x(t)2 + |a1|
+
+Z 0
+
+> −τ
+
+x(t + s)2 ds. (11) We immediately obtain for any ϵ > (−2( a0 + |a1|)) −1,
+
+D+V (xt) ≤ (2 a0 + 2 |a1| + 1 
+
+> ϵ
+
+)x2(t) + ϵu 2(t). (12) VI. S IMULATIONS AND RESULTS 
+
+This section illustrates the framework on two tasks. The goal is not to compete with state-of-the-art RC implementa-tions, but to demonstrate that good performance is achievable with a minimalist setup, and to validate the separation analysis of Section V. 
+
+NARMA10 benchmark: We consider the NARMA10 benchmark, a standard RC task in which the target yi
+
+depends recursively on the input sequence (uk)k∈N and the ten previous outputs [2]. Performance is measured by the Normalized Root Mean Square Error: 
+
+NRMSE = 
+
+s 1
+
+> n
+
+Pni=1 (yi − ˆyi)2
+
+Var( y) .
+
+We consider a linear reservoir 
+
+˙x(t) = a0x(t) + a1x(t − τ ) + u(t) + ξ(t), (13) where ξ is Gaussian noise with standard deviation 0.001 . We tested this reservoir with a0 = −1, a1 = 0 .9e−0.1, τ = 1 
+
+(spectral abscissa s0 = −0.1), and parameters θ = 0 .2, N =10 (implying T = 2 ), trained on 500 points and tested on 70. We obtain NRMSE = 0 .38 . In [2], the reported value of NRMSE for a linear delay-based reservoir was 0.4. In Fig. 1, we compare the target values of the NARMA10 output sequence. For comparison, the nonlinear reservoir 
+
+˙x(t) = −x(t) + g x(t − 1) + u(t) + ξ(t), (14) with g(t) = sign( t) ln(1 + |t|) yields NRMSE = 0 .33 . The marginal improvement over the linear case highlights the inherent computational richness of the infinite-dimensional linear dynamics. Note that increasing the number of neurons did not lead to any improvement in this specific example.        
+
+> Fig. 1. NARMA10 predictions for System (13) ( a0=−1,a1= 0 .9e−0.1,
+> τ= 1 ,NRMSE = 0 .38 ).
+
+Possible trade-off: We now compare two parameter configurations sharing the same spectral abscissa s0 = −0.1: 
+
+> •
+
+Config. 1: a0 = −1.0, a1 = 0 .9e−0.1, τ = 1 . 
+
+> •
+
+Config. 2: a0 = −0.5, a1 = 0 .4e−0.1, τ = 1 ,For both configurations, we computed ∆−1 
+
+> k
+
+for k = 1 , . . . , 10 
+
+with t1 = T ∈ { 20 , 50 }. Config. 2 yields values of ∆−1
+
+> k
+
+approximately 80% larger than Config. 1 in both cases, confirming that identical stability can coexist with signif-icantly different separation performance. For T = 20 , both configurations led to a normalized error around 0.37 whereas for T = 50 , we found NRMSE = 0.43 for Config. 1 and NRMSE = 0 .39 for Config. 2. We also computed the critical values of ϵ in (12) for both configurations. We obtain 
+
+ϵ∗ = 2 .7 for Config. 1 and ϵ∗ = 3 .6 for Config. 2 implying a possible larger ISS bound in the first case. This illustrates the trade-off between the separation property and the fading memory. All in all, at fixed spectral abscissa, the parameters 
+
+(a0, a 1) are genuine degrees of freedom for maximizing low-frequency separation. VII. D ISCUSSION AND PERSPECTIVES 
+
+This paper establishes a control-theoretic foundation for the analysis of time-delay reservoir computers. We have introduced formal definitions of the separation property, ro-bustness, and fading memory, and shown that δISS provides a unifying sufficient condition for the latter two. For linear reservoirs, we derived an explicit lower bound for the separa-tion distance via Fourier analysis, and discussed why adding delays is a principled way to improve separation while preserving stability. Several directions remain open. First, a full nonlinear analysis via linearization techniques would extend the spectral results of Section V to a broader class of reservoirs, with criteria for tuning the spectral abscissa near the imaginary axis, the hallmark of edge-of-chaos operation. Then, geometrical aspects of the separation property need to be considered to understand how the distribution of the states in the phase space impacts the computational capacity of the reservoir. Third, a quantitative analysis of memory capacity in terms of the system parameters would complement the separation bound derived here. Together, these directions outline a roadmap toward a complete mathematical theory of time-delay reservoir computing. APPENDIX 
+
+We recall in this section a few definitions and standard results on TDS and Lyapunov–Krasovskii theory [6]. 
+
+Definition 6 (Class K, K∞ function): A continuous func-tion α : [0 , +∞) → [0 , +∞) is said to be of class K if 
+
+α(0) = 0 and α is increasing. Moreover, α is called a class 
+
+K∞ function if lim  
+
+> r→+∞
+
+α(r) = + ∞.
+
+Definition 7 (Class KL function): A continuous function 
+
+β : [0 , +∞) × [0 , +∞) → [0 , +∞) is of class KL if i) ∀t ≥ 0, r 7 → β(r, t ) is a class K function, ii) ∀r ≥ 0, the function t 7 → β(r, t ) is non-increasing, iii) ∀r ≥ 0, lim  
+
+> t→+∞
+
+β(r, t ) = 0 .
+
+Definition 8 (Driver derivative): The Driver derivative of a functional V : C → R at xt is defined as 
+
+D+V (xt) = lim sup    
+
+> h→0+
+> V(xt+h)−V(xt)
+> h
+
+,
+
+REFERENCES [1] S. Amrane, F. Bedouhene, I. Boussaada, and S.-I. Niculescu. On qualitative properties of low-degree quasipolynomials: further remarks on the spectral abscissa and rightmost-roots assignment. Bull. Math. Soc. Sci. Math. Roumanie (N.S.) , 61(109)(4):361–381, 2018. [2] L. Appeltant. Reservoir computing based on delay-dynamical systems .PhD thesis, Vrije Universiteit Brussel/Universitat de les Illes Balears, 2012. [3] P. Bernard, V. Andrieu, and D. Astolfi. Observer design for continuous-time dynamical systems. Annu. Rev. Control , 53:224–248, 2022. [4] C. M. Bishop. Training with noise is equivalent to Tikhonov regular-ization. Neural computation , 7(1):108–116, 1995. [5] I. Boussaada, G. Mazanti, and S.-I. Niculescu. The generic multiplicity-induced-dominancy property from retarded to neutral delay-differential equations: When delay-systems characteristics meet the zeros of Kummer functions. C. R. Math. Acad. Sci. Paris , 360:349– 369, 2022. [6] A. Chaillet, I. Karafyllis, P. Pepe, and Y. Wang. The ISS framework for time-delay systems: a survey. Math. Control Signals Systems ,35(2):237–306, 2023. [7] R. Corless, G. Gonnet, D. Hare, D. Jeffrey, and D. Knuth. On the Lambert W function. Advances in Computational mathematics ,5(1):329–359, 1996. [8] J. Dambre, D. Verstraeten, B. Schrauwen, and S. Massar. Information processing capacity of dynamical systems. Scientific reports , 2(1):514, 2012. [9] F. Duport, A. Smerieri, A. Akrout, M. Haelterman, and S. Mas-sar. Fully analogue photonic reservoir computer. Scientific reports ,6(1):22381, 2016. [10] E. Fridman. Introduction to time-delay systems: Analysis and control .Springer, 2014. [11] S. Fueyo, G. Mazanti, I. Boussaada, Y. Chitour, and S.-I. Niculescu. On the pole placement of scalar linear delay systems with two delays. 
+
+IMA J. Math. Control Inform. , 40(1):81–105, 2023. [12] J. Hale and S. Lunel. Introduction to functional differential equations ,volume 99. Springer Science & Business Media, 2013. [13] A. Hoerl and R. Kennard. Ridge regression: Biased estimation for nonorthogonal problems. Technometrics , 12(1):55–67, 1970. [14] H. Jaeger. The “echo state” approach to analysing and training recurrent neural networks-with an erratum note. Bonn, Germany: German national research center for information technology gmd technical report , 148(34):13, 2001. [15] S. Janny, V. Andrieu, M. Nadri, and C. Wolf. Deep KKL: Data-driven output prediction for non-linear systems. In 2021 60th IEEE Conference on Decision and Control (CDC) , pages 4376–4381, 2021. [16] I. Karafyllis and Z.-P. Jiang. Stability and stabilization of nonlinear systems . Springer Science & Business Media, 2011. [17] V. Kharitonov. Time-delay systems: Lyapunov functionals and matri-ces . Springer Science & Business Media, 2012. [18] F. Köster, S. Yanchuk, and K. Lüdge. Insight into delay based reservoir computing via eigenvalue analysis. Journal of Physics: Photonics ,3(2):024011, 2021. [19] L. Larger, A. Baylón-Fuentes, R. Martinenghi, V. Udaltsov, Y. Chembo, and M. Jacquot. High-speed photonic reservoir computing using a time-delay-based architecture: Million words per second classification. Physical Review X , 7(1):011015, 2017. [20] R. Legenstein and W. Maass. Edge of chaos and prediction of computational performance for neural circuit models. Neural networks ,20(3):323–334, 2007. [21] M. Lukoševiˇ cius and H. Jaeger. Reservoir computing approaches to recurrent neural network training. Computer Science Review ,3(3):127–149, 2009. [22] W. Maass, T. Natschläger, and H. Markram. Real-time computing without stable states: A new framework for neural computation based on perturbations. Neural computation , 14(11):2531–2560, 2002. [23] W. Michiels and S.-I. Niculescu. Stability, control, and computation for time-delay systems , volume 27 of Advances in Design and Control .Society for Industrial and Applied Mathematics (SIAM), Philadelphia, PA, second edition, 2014. An eigenvalue-based approach. [24] P. Pepe and Z.-P. Jiang. A Lyapunov–Krasovskii methodology for ISS and iISS of time-delay systems. Systems Control Lett. , 55(12):1006– 1014, 2006. [25] T. Schmoderer, I. Boussaada, S.-I. Niculescu, and F. Bedouhene. Insights on equidistributed real spectral values in second-order delay systems: perspectives in partial pole placement. Systems Control Lett. ,185:Paper No. 105728, 9 pp., 2024. [26] N. Yeganefar, P. Pepe, and M. Dambrine. Input-to-state stability and exponential stability for time-delay systems: further results. In 2007 46th IEEE Conference on Decision and Control , pages 2059–2064, 2007.
