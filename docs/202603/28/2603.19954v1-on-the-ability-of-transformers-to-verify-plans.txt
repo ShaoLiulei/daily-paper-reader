@@ -1,0 +1,2309 @@
+Title: On the Ability of Transformers to Verify Plans
+
+URL Source: https://arxiv.org/pdf/2603.19954v1
+
+Published Time: Mon, 23 Mar 2026 00:56:03 GMT
+
+Number of Pages: 43
+
+Markdown Content:
+# On the Ability of Transformers to Verify Plans 
+
+Yash Sarrof ♩ 1 Yupei Du  1 Katharina Stein  1 Alexander Koller 1 Sylvie Thi´ ebaux 2 3 Michael Hahn 1
+
+# Abstract 
+
+Transformers have shown inconsistent success in AI planning tasks, and theoretical understanding of when generalization should be expected has been limited. We take important steps towards addressing this gap by analyzing the ability of decoder-only models to verify whether a given plan correctly solves a given planning instance. To analyse the general setting where the number of objects – and thus the effective input alphabet – grows at test time, we introduce C*-RASP , an ex-tension of C-RASP designed to establish length generalization guarantees for transformers under the simultaneous growth in sequence length and vocabulary size. Our results identify a large class of classical planning domains for which trans-formers can provably learn to verify long plans, and structural properties that significantly affects the learnability of length generalizable solutions. Empirical experiments corroborate our theory. 
+
+# 1. Introduction 
+
+Transformer based Large Language Models (LLMs) have demonstrated remarkable capabilities, but their success in the field of AI planning has been mixed. Planning involves computing a sequence of actions to transform an initial state into a desired goal state. To circumvent combinatorial ex-plosion, planning state spaces are represented symbolically, typically using variants of the STRIPS formalism as stan-dardized in the PDDL planning definition language (Fikes & Nilsson, 1971; Haslum et al., 2019). LLMs have made considerable strides in solving planning problems through apt prompting, fine tuning, and programmatic plan or heuris-tic generation (Yao et al., 2023; Stein et al., 2025; Pallagani et al., 2022; Silver et al., 2024; Chen et al., 2025a; Aghzal et al., 2025), but there is also evidence pointing to their 
+
+inability to reliably solve planning problems, e.g. under the 
+
+> ♩
+
+Led theoretical work Led empirical work 
+
+> 1
+
+Saarland University 2Australian National University 3University of Toulouse / LAAS-CNRS. Correspondence to: Yash Sarrof 
+
+<ysarrof@lst.uni-saarland.de >.
+
+Preprint. March 23, 2026. 
+
+Problem class Fixed Universe Variable Universe 
+
+Delete-free C-RASP [Pos ] C*-RASP [Pos ]
+
+Well-formed C-RASP [Pos ] C*-RASP [Pos ]
+
+STRIPS /∈ C-RASP [Pos ] /∈ C*-RASP [Pos ]
+
+Conditional effects not star-free, 
+
+/∈ C-RASP [Pos ] /∈ C*-RASP [Pos ]
+
+Figure 1. Overview of our results 
+
+slogan “LLMs still can’t plan” (Valmeekam et al., 2022; 2024). On many benchmarks, transformers tend to lose track of the world state, propose inapplicable actions, or stop before reaching the goal – especially as plans grow longer (Huang et al., 2025a; Fritzsche et al., 2026). The analysis of LLM planning failures in the literature is al-most exclusively empirical and a clear theoretical analysis is lacking. This paper contributes to the theoretical understanding of why transformers succeed on certain planning tasks and fail on others . We focus specifically on plan verification, 
+
+which decides for a given planning instance and a given plan whether the plan correctly solves the instance. Further-more, we focus on the question of length generalization: 
+
+can a transformer learn to verify long plans if it is trained only on short plans? If not, then they cannot fully learn to verify plans from any finite amount of training data. A key technical challenge in understanding how transformers generalize on plan verification is that existing techniques for length generalization are limited to the case where the token vocabulary at training and inference time is the same. In this case, a recent line of work has established a theoretically principled framework for predicting length generalization of transformers based on the expressiveness of the C-RASP 
+
+language (Yang & Chiang, 2024; Huang et al., 2025b; Yang et al., 2025; Jobanputra et al., 2025; Jiang et al., 2025; Chen et al., 2025b) and its variant C-RASP [Pos ]1 (Huang et al., 2025b; Jobanputra et al., 2025). It is known that trans-formers can length-generalize on problems that can be ex-pressed in C-RASP [Pos ], and that they empirically tend not to length-generalise otherwise. We use the C-RASP 
+
+framework to analyze plan verification for the case where the planning instances at training and test time contain the 
+
+> 1
+
+Huang et al. (2025b) call it C-RASP [periodic , local ].
+
+1
+
+> arXiv:2603.19954v1 [cs.AI] 20 Mar 2026 On the Ability of Transformers to Verify Plans
+
+same objects (Fixed Universe); but of course an even more interesting question is whether transformer can generalize to instances with a larger set of objects (Variable Universe). This case is out of reach of a C-RASP [Pos ]-based analysis. We therefore introduce C*-RASP , which extends C-RASP 
+
+with the ability to handle increasing alphabets during test time, and provides length generalization guarantees under a formal learning model inspired by Huang et al. (2025b). This is a nontrivial technical result with ramifications be-yond plan verification. Using our frameworks, we establish the following results (Overview in Figure 1). Plan verifica-tion is in C*-RASP if it is delete-free (i.e. actions only have positive effects) or well-formed (i.e. each of their effects necessarily changes the state). Full STRIPS plan verification is not in C*-RASP , nor is plan verification with conditional effects. This implies that certain structural properties – such as well-formedness which holds of a large class of classi-cal planning domains – can enable the learning of length generalizable solutions, whereas the latter is intractable for unconstrained plan verification with transformers. We con-firm our theoretical findings experimentally on a number of planning domains. 
+
+# 2. Background & Task Definition 
+
+2.1. Planning 
+
+Planning involves finding a path from an initial to a goal state in a huge transition system where we transition be-tween possible states of the world with actions. This prob-lem is compactly represented in terms of a domain (predi-cates representing states and action schemas describing state transitions) and an instance that describes the particular set of objects present in the world, the initial state, and goal. A planning domain is a pair D = ⟨P , A⟩ where 1. P is a finite set of predicates . A predicate p ∈ P has the form p(x1, . . . , x np ) where xi are arguments p takes. 2. A is a finite set of action schemas . Each a ∈ A is a triplet ⟨args (a), pre (a), eff (a)⟩ where args (a) are argu-ments, eff (a) = [ Ci(a) ▷ eff i(a)] k(a) 
+
+> i=1
+
+are conditional ef-fects , and pre (a), eff i(a), and Ci(a) are sets of literals over 
+
+P with arguments taken from args (a). They represent the 
+
+preconditions of a, and its effects under various mutually exclusive and exhaustive conditions , respectively. Figure 2 presents an example, a variant of a well-known domain which we call Heavy Grippers, where a robot must relocate balls within a set of rooms. The robot can move between rooms, pick, drop and carry balls using its grippers. Some balls are heavy. Dropping balls and picking heavy balls discharges the battery, whereas moving recharges it. A planning instance Π = ⟨D , O, I, G ⟩, has a domain D, set                                           
+
+> Predicates: room (r),ball (b),gripper (g),free (g),heavy (b),
+> charged, atRobby (r),at (b, r ),carry (b, g )
+> Action move (r1, r 2):
+> Pre: {room (r1),room (r2),atRobby (r1)}
+> Eff: {charged ,atRobby (r2),¬atRobby (r1)}
+> Action pick (b, r, g ):
+> Pre: {ball (b),room (r),gripper (g),atRobby (r),at (b, r ),
+> free (g),charged }
+> Eff: {¬ heavy (b)}▷{carry (b, g ),¬free (g),¬at (b, r )}{heavy (b)}▷{carry (b, g ),¬free (g),¬at (b, r ),¬charged }
+> Action drop (b, r, g ):
+> Pre: {ball (b),room (r),gripper (g),atRobby (r),carry (b, g )}
+> Eff: {at (b, r ),free (g),¬carry (b, g ),¬charged }
+> Figure 2. Heavy Grippers domain. We omit the empty condition sets for the effects in move and drop which are unconditional.
+
+of objects O, initial state I, and goal G.A proposition p(o1, . . . , o arity (p)) is a ground instance of a predicate p ∈ P obtained by substituting the arguments of p
+
+with objects from O; we write P for the sets of all proposi-tions. A state is a set of propositions under the closed world assumption, i.e. this set contains exactly those propositions that hold in the state. The goal G is represented by a set of ground literals . In the following, we partition sets of literals 
+
+L into: L+ containing all propositions appearing positively in L, and L− containing propositions whose negation ap-pears in L. L is satisfied in state S, written S |= L, iff 
+
+L+ ⊆ S and L− ∩ S = ∅. S is a goal state iff S |= G.Actions represent one-step transitions in the state space of the planning instance. An action a(o1, . . . , o arity (a)) is a ground instance of an action schema a ∈ A , where ar-guments of a are substituted with objects from O in its preconditions, conditions and effects; we write A for the set of actions. An action a ∈ A is applicable in a state 
+
+S iff its preconditions are satisfied (i.e. S |= pre (a)), in which case the successor state is obtained by removing (resp. adding) the propositions made false (resp. true) by a: i.e. succ (S, a ) = ( S \ eff i(a)−) ∪ eff i(a)+ where S |= Ci(a).A plan is a sequence of actions π = [ a1, . . . , a n], and is 
+
+valid for the planning instance Π iff all actions are applica-ble and it reaches the goal. That is, π induces a sequence of states s1, . . . , s n+1 such that s1 = I, si+1 = succ (si, a i)
+
+and sn+1 |= G. Figure 3 shows a valid plan for a small instance of the Heavy Grippers domain, where the robot must swap the balls in the rooms. In the following, we say that a state S is reachable iff there exists a valid plan for the planning instance ⟨D , O, I, S ⟩.
+
+2.2. Planning Subclasses & Our Generalization Setting 
+
+Our results distinguish the following subclasses of planning instances, listed from the least restrictive to the most: 2On the Ability of Transformers to Verify Plans         
+
+> Figure 3. Valid plan for a Heavy Grippers instance with 1 gripper, 2 balls and 2 rooms. The goal G={at (B1 ,RoomB ),at (B2 ,RoomA )}
+> is to swap the balls in our rooms. Ball B1 is heavy and requires charge, making moving the only legal action in I. The robot then picks B2 from RoomB, moves, drops it in RoomA. It needs charge so it moves back and forth before picking B1, moving and dropping it in RoomB
+
+Conditional Effects: no restrictions are applied. 
+
+STRIPS: no action has conditional effects. Thus, for all 
+
+a ∈ A, k(a) = 1 and C1(a) = ∅. Hence eff (a) simplifies to a single literal set and we write STRIPS actions in this simplified form in the rest of the paper (e.g. see move and drop in Figure 2). 
+
+Well-Formed: a STRIPS instance where each proposition listed in the effects of an action strictly changes value when-ever the action is applied. Formally, for all reachable states 
+
+S, all actions a ∈ A, and all l ∈ eff (a) we have that 
+
+S |= pre (a) = ⇒ S |= ¬l.
+
+Delete-Free: a STRIPS instance where actions only have positive effects, i.e. for all a ∈ A eff (a)− = ∅.We say that a planning domain falls into one of the above classes if all instances of interest for this domain do. 2
+
+STRIPS is the standard formalism to describe planning prob-lems. Conditional effects are a useful feature when model-ing real-world problems, and are strictly more expressive than STRIPS (Nebel, 2000). Many classical planning bench-marks are well-formed according to our definition. The Delete-Free class captures the most well-known relaxation of STRIPS, and is commonly used when computing cost-to-goal heuristics estimates to guide the search of planners (Helmert & Domshlak, 2009). Our primary focus is to study a transformer’s capability to 
+
+length generalize : training on valid plans of a limited length and testing on longer plans. We study two generalization settings, providing both theoretical and experimental results for each. The domain D = ⟨P , A⟩ is fixed throughout, and the task is to decide if a given plan π is valid.     
+
+> 2Planning domain formulations normally assume a set of im-plicit constraints that all states must satisfy, and which hold in the initial state and are preserved by actions; the instances of interest are those for which Iand Gsatisfy these constraints. This is only relevant to Well-Formedness, since the other three properties only depend on the domain.
+
+1. Fixed Universe: The set of objects O is fixed, but I
+
+and G can vary per input sample. The model must learn to validate longer plans for unseen pairs of (I, G ).
+
+2. Variable Universe: The set of objects O, I, G can all vary across samples. Thus at test time, longer plans might also have many more objects than ever seen during training. Note that both the fixed and variable universe settings are widely used in the planning literature, see e.g. (Arfaee et al., 2011; Ferber et al., 2022; Rossetti et al., 2024; Toyer et al., 2020; St˚ ahlberg et al., 2022; Huang et al., 2025a). 
+
+2.3. C-RASP 
+
+Understanding and predicting transformers’ generalization behavior has been of great interest (e.g. Zhou et al., 2024; Golowich et al., 2025; Izzo et al., 2025). Recently, expres-siveness in the C-RASP (Counting RASP) language (Yang & Chiang, 2024) and its variant C-RASP [Pos ] (Huang et al., 2025b; Jobanputra et al., 2025) has been used to establish a theoretically principled and empirically predictive frame-work for predicting length generalization of transformers (Huang et al., 2025b; Yang et al., 2025; Jobanputra et al., 2025; Jiang et al., 2025; Chen et al., 2025b). If a task can be defined by a program in C-RASP [Pos ], then decoder-only transformers with absolute positional encodings (APE) provably generalize to longer inputs under a specific for-mal model of training (Theorem 7 in Huang et al. (2025b)). Huang et al. (2025b) show that this result unifies a range of prior empirical observations. Tasks exhibiting length gen-eralization can be programmed in C-RASP [Pos ], whereas tasks provably outside this class empirically fail to gener-alize. For instance, Huang et al. (2025b) proved that the Flipflop language L = Σ ∗be ∗ (over Σ = {a, b, e }) and the PARITY language L = b∗(ab ∗ab ∗)∗ cannot be expressed in C-RASP [Pos ]. Languages reducible to either Flipflop or PARITY, are therefore predicted to and have been empir-ically observed to not length generalize (Liu et al., 2023; Hahn & Rofin, 2024; Huang et al., 2025b; Jobanputra et al., 3On the Ability of Transformers to Verify Plans  
+
+> Figure 4. Example from the Colors domain (Fig. 8), where actions add balls of a given color to a bag or remove all balls of a given color from a bag. (a) Well-Formed: balls of the same color cannot be added if already present, and can’t be removed if not in the bag. Such alternation allows the truth of “Is a color in the bag?” to be determined by simply counting add versus remove actions from the initial state. (b) STRIPS: In general STRIPS, determining the truth value requires identifying the last action that actually changed the state, making it equivalent to solving the FlipFlop language.
+
+2025). Thus, we obtain positive generalization results via membership in C-RASP [Pos ], and negative results via re-duction to PARITY or Flipflop. 
+
+# 3. Theoretical Results 
+
+3.1. Generalization over a Fixed Universe Theorem 3.1 (Fixed Universe) . Let D be a planning domain and O a fixed set of objects. Consider the language LD,O 
+
+consisting of all sequences ⟨I, π, G ⟩ where π is a valid plan for the planning instance ⟨D , O, I, G ⟩.1. (Delete-Free & Well-Formed) If D is delete-free or well-formed, then LD,O ∈ C-RASP [Pos ].2. (STRIPS) There exist STRIPS domains and object sets such that LD,O /∈ C-RASP [Pos ].3. (Conditional Effects) There exist domains with con-ditional effects such that LD,O is neither star-free nor in 
+
+C-RASP [Pos ].Proof Sketch. (Full proof in Appendix A.1) These results imply that transformers can learn to verify delete-free and well-formed plans in the fixed universe setting with perfect length generalization. They also show that there are more general instances where, even with a fixed set of objects, transformers cannot length generalize. Statement 1: C-RASP highlights how a transformer using uniform attention can count over its context window. For delete-free, a proposition is true if it was initially present or the count of actions listing it as an effect is > 0. For well-formed, the truth value of a proposition toggles (See Figure 4a). We can count the number of actions adding a proposition (+1 if initially present) and the ones deleting it. Thus all validity checks (action preconditions and goal) can be done through such counts, which allows us to write 
+
+C-RASP [Pos ] programs to prove our positive results. For our negative results, we construct a planning instance Π
+
+for a given D, O , and show that even the language of valid plans of a fixed Π: L(Π) /∈ C-RASP [Pos ].Statement 2: Lin & Bercher (2022) already showed that 
+
+L(Π) when Π is a STRIPS instance, is a strict subset of star free regular languages. We construct a STRIPS in-stance Π such that L(Π) = Σ ∗be ∗, where Σ = {a, b, e },the FlipFlop language. Thus L(Π) /∈ C-RASP [Pos ]. As shown in Figure 4, ascertaining the truth value of a propo-sition in STRIPS might require figuring out the last action that affected it. Statement 3: We define an instance in the Lights Out planning domain with conditional effects. We show that 
+
+L(Π) in such a case can be reduced to PARITY, making 
+
+L(Π) /∈ C-RASP [Pos ] (Huang et al., 2025b). 
+
+3.2. Generalization over a Variable Universe 
+
+Motivation for a new Framework: Planning might require reasoning over a larger number of objects at test time than seen at train time. For transformers, this corresponds not only to generalization in sequence length, but also to gener-alization over an effectively larger alphabet. Since C-RASP 
+
+assumes a fixed and finite alphabet Σ, it is not suitable to analyze such settings. To address this limitation, we ex-pand on several key ideas from Huang et al. (2025b) and introduce C*-RASP , an extension of C-RASP designed to establish length generalization guarantees for transformers under simultaneous growth in sequence length and vocabu-lary size. Huang et al. (2025b) framed length generalization as the asymptotic convergence of a sequence of transform-ers – trained on increasing lengths – to the same underlying algorithm, formalized as a Limit Transformer, that would thus work at arbitrarily longer lengths than training (Huang et al., 2025b; Izzo et al., 2025). We adopt the same view, but consider asymptotic convergence of a sequence of trans-formers – trained on not just increasing lengths but also on increasing vocabulary – to the same underlying algorithm, which we refer to as a Symbolic Limit Transformer (Formal definition in Appendix C.5). Huang et al. (2025b) used 
+
+C-RASP as a more human readable interface to prove tasks representable in a Limit Transformer. We will do the same with C*-RASP and Symbolic Limit Transformers. 
+
+Split Alphabet: The key observation underlying our exten-sion is that, in planning domains, not all symbols play the same role. Action names and predicate names are drawn from a fixed, finite set, while object identifiers are not. We therefore view the input alphabet (say Ω) as partitioned into two parts: Σ ∪ C , Σ is a fixed alphabet of domain-level sym-bols (actions, predicates, delimiters), and C is a countably increasing alphabet (isomorphic to natural numbers) used 4On the Ability of Transformers to Verify Plans 
+
+to represent object identities. 
+
+Product Functions: To formalize this, we parameterize transformers using product functions (Huang et al., 2025b). These functions express the internal computations of a transformer—such as attention scores and MLP activations— as inner products of learnable parameters mediated by the model’s matrices (keys, queries, values, and feedforward lay-ers; see Definition C.1 for the full formalization). They can either reflect pairwise interactions or products that depend on only a single token or position. Pairwise interactions are those between different tokens, arising for instance from self attention or with the unembedding matrix. An example is a token-token interaction cTi W c j , where W is the product of several parameter matrices throughout the transformer, and ci, c j are embeddings for tokens i, j ∈ C . Product functions affected by single token/position capture products formed because of the MLPs. Along the lines of Huang et al. (2025b), for a transformer to generalize to increasing lengths and alphabets, its internal ‘algorithm’ cannot depend on absolute position values or object identifiers, which is formalized via the following constraints: 1. Translation Invariance : Interactions must depend only on relative differences, not absolute indices. Crucially, we apply this to the alphabet C and not just positions: a token-token interaction must satisfy f (ci, cj ) = f (ci+δ , cj+δ ).Interactions between unrelated types (e.g., Position-Token) and those involving just one token or one position must collapse to constants. 2. Locality : Interactions must vanish when the relative dis-tance exceeds a finite bandwidth ∆, ensuring the algorithm relies only on local context. Practically, invariance can be brought about during train-ing via the offset trick : For APE, offsets are used to train positional embeddings beyond the maximum train length. For example, if the maximum training length was 100, but generalization to length 200 was desired, during training, positions are randomly shifted to [1 + o, . . . 100 + o] such that 0 ≤ o ≤ 100 . This discourages reliance on absolute po-sitions, promoting invariance (Huang et al., 2025b). We can apply the same idea to our extended characters, and despite having access to a limited vocabulary during training, we can shift object identities with offsets to train embeddings beyond what is seen during training. 
+
+The Learning Model: Symbolic Limit Transformer is es-sentially an algorithm of a transformer that satisfies these constraints over an infinite context and alphabet. To prove that finite training can actually lead to this solution, we de-fine a learning model along the lines of Huang et al. (2025b): 1. Hypothesis Class ( Θn): We restrict the search space to transformers that already satisfy translation invariance, and where any parameter is specified at fixed precision (finite number of bits used to represent any parameter). 3.2. Regularizer ( R): A regularizer penalizes model complex-ity (depth, norms) and non-local interactions, forcing the inference procedure to select ‘algorithms’ that are local. Our regularizer simplifies the one used by Huang et al. (2025b). 3. Inference Procedure: We model learning as an idealized selection of the T ∈ Θn minimizing R(T ) while matching the target function on all inputs of length n/ 2 (Huang et al., 2025b). Crucially, these inputs are restricted to use only a contiguous subset of the extended alphabet of size at most 
+
+n/ 2. This forces the model to infer rules that are invariant to token identities. Our main result shows that this procedure converges: by selecting the simplest local algorithm on short data, the model effectively identifies the unique Symbolic Limit Transformer, guaranteeing generalization to length 
+
+n.4
+
+Guaranteed Length Generalization: We show that express-ibility by a Symbolic Limit Transformer is the necessary and sufficient condition for length generalization in our framework. Informally our result is the following, 
+
+Theorem 3.2 (Informal version of Theorem C.9) . A task is expressible by a Symbolic Limit Transformer iff our In-ference Procedure generates a sequence of transformers 
+
+Tn that eventually generalize: there exists a threshold N0
+
+such that for all m > N 0, the model Tm (selected on length 
+
+m/ 2) correctly computes f on all inputs up to length m.Proof Sketch (Detailed Proof in Appendix C.9) Our inference procedure generates an infinite sequence of distinct trans-formers T1, T 2, . . . , but translation invariance and locality ensure that they traverse only a finite set of underlying al-gorithms . The regularizer bounds the structural complexity (depth, precision), while the invariance constraints ensure that the number of product functions is finite. Thus, as 
+
+n → ∞ , the procedure sequentially rules out algorithms that would not have generalized. Since the set of candidate algorithms is finite, there must be a N0 after which only the correct one remains. 
+
+C*-RASP : Huang et al. (2025b) used C-RASP as a human-readable interface to establish expressibility results for Limit Transformers. We will do the same for Symbolic Limit Transformers and C*-RASP . We define the following logi-cal predicate that acts over our extended alphabet C, which is used to refer to object IDs. Since generally these objects IDs are numbered, we assume that C ∼= N.
+
+Definition 3.3 (Match Predicate) . A Match Predicate 
+
+χ(i, j ) is a conjunction of equality checks between tokens 
+
+> 3In infinite precision setups one cannot hope to identify algo-rithms implemented by transformers from finite data, notwithstand-ing the choice of the regularizer (Huang et al., 2025b)
+> 4In doing so, we improve on the treatment of the Unique Copy task compared to Huang et al. (2025b). See Remark C.6.
+
+5On the Ability of Transformers to Verify Plans Boolean-Valued Operations Initial P (i) := Qσ (i) for σ ∈ Σ                                                
+
+> Boolean P(i) := ¬P1(i)
+> P(i) := P1(i)∧P2(i)
+> Constant P(i) := ⊤
+> Comparison P(i) := C1(i)≤C2(i)
+> Count-Valued Operations Counting C(i) := #[j≤i, ψ (i, j )] P(j)
+> for ψ∈Ψ∪ {⊤}
+> Match C(i) := #[j≤i, χ (i, j )]
+> Conditional C(i) := P(i) ? C1(i):C2(i)
+> Addition C(i) := C1(i) + C2(i)
+> Subtraction C(i) := C1(i)−C2(i)
+> Constant C(i) := 1
+> Table 1. Operations allowed in a C*-RASP program.
+
+in the neighborhoods of i and j: χ(i, j ) := VKk=1 (cj−δk =
+
+ci−γk +τk), where δk, γ k ∈ N and τk ∈ Z are constants and 
+
+ci refers to the token at position i. This predicate evaluates to True if the token at position j − δk has the same value as the token ((shifted by τk)) at i − γk for all k.Such a match predicate can match tokens based on local constants δ, γ, τ , without memorizing identities of any token from C. The algorithms represented by this predicate corre-spond to simple pattern matching operations in local neigh-borhoods throughout our context window. As an example, if we wish to check whether for an action pick (b, r, g ), its pre-condition at (b, r ) was in the initial state, the following match predicate can help us check that they refer to the same set of objects ( i, j denote the end of the action and the proposition respectively) χ(i, j ) := ( ci−2 = cj−1) ∧ (ci−3 = cj−2).This predicate is our sole addition (in green) to C-RASP .
+
+Definition 3.4 (C*-RASP ). Let Σ∪C be an alphabet, where 
+
+Σ is finite, and C is an increasing alphabet. Let Ψ be a set of 
+
+binary relations ψ : N×N → { 0, 1}. A C*-RASP program 
+
+P is defined as a sequence P1, . . . , P k of operations, where each operation is either Boolean-valued or count-valued, and can be formed according to the rules listed in Table 1. It should be noted that only symbols from the fixed alpha-bet Σ may be accessed via unary queries Qσ , while sym-bols from the extended alphabet C can only be compared through the match predicate. 5 Counting operations return the number of positions j ≤ i where P (j) and ψ(i, j ) which represents functions such as i = j + δ, for a fixed δ, thus   
+
+> 5Compared to C-RASP [Pos ]as defined by (Huang et al., 2025b), we omit operations performing modular counting on posi-tions. These play no role in our results; we discuss technical issues about their representation in Appendix C.6
+
+acting as a local relation ( δ cannot be arbitrarily large) for checking things in local neighborhoods. As in C-RASP , if a C*-RASP program is run on input w with final operation 
+
+L, then we accept w if and only if L(|w|) is true. We also write C*-RASP for the class of all languages accepted by some C*-RASP program. Any C*-RASP program can be simulated by a Symbolic Limit Transformer. Hence, by The-orem 3.2, the existence of a C*-RASP program for a task implies a guarantee of length generalization for APE trans-formers on that task, allowing us to prove positive length generalization results. If no ψ ∈ Ψ is used and all constants of the type σk, δ k are 0, then length generalization would be guaranteed even for NoPE transformers. Thus we make a distinction between C*-RASP and C*-RASP [Pos ] to de-note the necessity of positional encodings. On the other hand, we show that the difficulty of FlipFlop and PARITY carries over even to C*-RASP :
+
+Theorem 3.5. Consider the alphabet Σ = {a, b, e }. Then, 
+
+P ARIT Y := b∗(ab ∗ab ∗)∗ /∈ C*-RASP . and Flip flop 
+
+:= Σ ∗be ∗ /∈ C*-RASP .Proof sketch. If the input alphabet Ω = Σ ∪ C is finite, then 
+
+C*-RASP reduces to C-RASP [Pos ], as the match predicate can then be simulated by the syntax of C-RASP [Pos ] itself (Detailed Proof in Appendix, Lemma C.22). Thus, existence of a program for FlipFlop or PARITY in C*-RASP would imply existence of a program in C-RASP [Pos ], which Huang et al. (2025b) showed to be impossible. 
+
+Theorem 3.6. Let D be a planning domain. Consider the language LD consisting of all possible sequences 
+
+⟨I, π, G ⟩ where π is a valid plan for some planning instance 
+
+⟨D , O, I, G ⟩.1. (Delete-Free / Well-Formed) If D is delete-free or well-formed, then LD ∈ C*-RASP . In particular, generalization from both limited number of objects and plan lengths during training to a increased number of objects and plan lengths is expected. 2. (STRIPS / Conditional Effects) There exists STRIPS do-mains as well as domains with conditional effects for which 
+
+LD /∈ C*-RASP . Generalization to instances with longer plans or increased number of objects is thus not expected. In particular, there are domains where LD subsumes FlipFlop or PARITY. Detailed Proof is in Appendix B.1. To show our positive re-sults, we construct C*-RASP programs along the same lines as for Theorem 3.1. The crucial difference is the use of the match predicate to match actions to propositions, without relying on specific object identities. Since STRIPS and do-mains with conditional effects have instances with Flip-Flop and PARITY like signatures, Theorem 3.5 applies. 6On the Ability of Transformers to Verify Plans 
+
+# 4. Experiments 
+
+4.1. Planning Domains and Datasets Construction 
+
+We develop three domains to empirically validate our pre-dictions regarding the learnability of different planning sub-classes. For each dataset we generate correct and incorrect plans, where the incorrect plans are constructed to be either 
+
+incomplete (where the goal is not fully satisfied) or non-executable (where an action’s preconditions are violated). 6
+
+Heavy Grippers. We modify the Heavy Grippers domain (Figure 2), and create well-formed and delete-free variants. First, we eliminate the conditional effects by separating 
+
+pick into two actions and remove charged from the pre-conditions of picking up not heavy balls. Second, we create the well-formed variant by extending the preconditions and the delete-free variant by removing the delete effects. 
+
+Colors. This domain involves placing colored balls into bags, where actions add or remove a color from a specific bag, and goals specify which colors each bag should contain. We design well-formed and standard STRIPS variants that differ in handling redundant operations: the well-formed variant enforces that a color can be added or removed only if it is absent or present in the bag, respectively, while the standard STRIPS formulation treats these as no-ops. 
+
+Lights Out. We formalize the Lights Out game as our final domain. It consists of lights (on/off) on a 5 × 5 grid where pressing a light toggles it and its neighbors. The goal is to turn all lights off. We consider two variants: one with conditional effects and a well-formed variant. In the conditional effects variant, the post-press states of the pressed light and its neighbors depend on their states before pressing; the well-formed variant uses separate actions for pressing each light under every possible combinations of its and its neighbors’ states. For example, pressing the corner light L00 yields 23 different actions, corresponding to the states combinations of L00 and its neighbors L10 and L01 .
+
+4.2. Experimental Setup & Results Setup: We use the GPT-2 architecture with APE and pre-layer normalization, and train it with the standard causal lan-guage modeling objective. The initial state, plan, goal, and a verdict token indicating plan validity (‘correct’/‘incorrect’), each separated by a custom delimiter form our inputs: 
+
+<init> I <plan> π <goal> G <verdict> V, 
+
+where V refers to the verdict label. We train on plans of 11–100 actions and validate on 101–200 actions (length here refers to the number of actions in π, not tokens). The numbers of objects in Colors and Heavy Grippers grow 
+
+> 6
+
+For some domains, like the standard Colors, since all actions are applicable, invalid plans can only be incomplete. Details of our domain design, data generation, and setups are in Appendix D. 100    
+
+> 150
+> 200
+> plan length
+> 0.50
+> 0.75
+> 1.00
+> Accuracy
+> Grippers
+> 100
+> 150
+> 200
+> plan length
+> Colors
+> 100
+> 150
+> 200
+> plan length
+> Lights Out
+> Well-formed STRIPS Conditional Effects Delete-free
+
+Figure 5. ID (100-bucket) OOD (110-200, 10-bucket) accuracy for our domains. We compare the well-formed variant to a minimal pair: delete-free for Grippers, STRIPS for Colors, and conditional effects for Lights Out. Well-formed and delete-free has good accuracy even at higher lengths, accuracy for STRIPS drops with plan length and performance for conditional effects is chance level. Our detailed results are in Figure 12. 
+
+with plan length, whereas Lights Out has a fixed number of objects. We use a fixed number of objects for Lights Out to show that our negative result regarding conditional effects holds even in the setting described in Theorem 3.1, whereas the increased number of objects in the other domains helps validate the positive results regarding well-formedness and being delete-free, as described in Theorem 3.6. We use four random seeds and select the best checkpoint on a held out validation set. At test time, the verdict token is omitted for the model to generate it. We evaluate on both in-distribution (ID, lengths 11–100) and out-of-distribution (OOD, lengths 101–200) test sets. 
+
+Results: Our experiments (Figure 5) are consistent with our theory. For Lights Out, we observe a sharp contrast: the con-ditional effects formulation yields chance-level performance even on a fixed set of objects, whereas the well-formed variant generalizes perfectly despite having an exponential action space, corroborating Theorem 3.1. Furthermore, our models successfully generalize to longer plans and more objects in Heavy Grippers and Colors as predicted by Theo-rem 3.6. Specifically, the well-formed variants of both do-mains—as well as the delete-free variant of Heavy Grippers (all in ∈ C*-RASP )—achieve high accuracy, while for the STRIPS variant of Colors ( /∈ C*-RASP ), the performance dips. Overall, generalization succeeds where C*-RASP 
+
+membership holds and fails otherwise. 7
+
+# 5. Discussion 
+
+5.1. Implications 
+
+Our results establish a sharp divide in the learnability of plan verification by transformers: generalization in delete-free and well-formed instances is possible; but for unconstrained STRIPS domains it is not, with conditional effects making 
+
+> 7
+
+Our code is available at: https://github.com/ coli-saar/transformers_plan_verification 
+
+7On the Ability of Transformers to Verify Plans 
+
+it even harder. Our negative results highlights why trans-formers have had inconsistent success in planning tasks. Conversely, our positive results are significant given that a broad class of practical planning problems are well-formed. For instance, 70% of the domains from the Learning Track 2023 (Taitler et al., 2024), and a lot of domains in the In-ternational Planning Competition (IPC) (McDermott, 2000) come with benchmark problem generators that can only produce well-formed instances. We achieve this breadth through a “semantic” definition of well-formedness in terms of the actual dynamics of the actions and states; much more permissive than the syntax-based definition of G ¨osgens et al. (2025), which is rarely satisfied by planning benchmarks. We also find that the exact formulation of the planning task matters: for instance, the Lights Out game when formulated with conditional effects does not generalize, but a compi-lation of this domain into a well-formed one does. This confirms that the structural complexity of the planning prob-lem, rather than just the number of actions or objects, drives the ability of transformers to learn it. Thus, if one can re-formulate the problem structure, transformers could have marked improvement in performance. It is also worth noting that the ramifications of Theorem 3.2 (More Formal Statement C.9), and C*-RASP which estab-lishes a framework to give length generalization guarantees for transformers with growing alphabets at test time, are far beyond plan verification. For instance, they open up the possibility to reason about how powerful can transformers with a growing index hint vocabulary be, as even a limited set of index hints have shown to help improve generalization in transformers (Zhou et al., 2024). 
+
+5.2. Related Work 
+
+Transformers have been applied extensively to planning tasks (Yao et al., 2023; Silver et al., 2024; Stein et al., 2025; Hirsch et al., 2024; Pallagani et al., 2022; Fritzsche et al., 2026; Chen et al., 2025a). While LLMs can generate plans when test data instances are of the same size as training (Ros-setti et al., 2024), they struggle on larger instances (Huang et al., 2025a; Fritzsche et al., 2026). A recurrent observation is a sharp performance degradation on longer plans (Stein et al., 2025; Valmeekam et al., 2025; Hirsch et al., 2024; Pallagani et al., 2023; Hazra et al., 2024), underscoring the need to better evaluate length generalization in planning (Chiari et al., 2025). Comparatively, plan verification has only been studied by a few (Stechly et al., 2025; Valmeekam et al., 2023). Stechly et al. (2025) found that LLMs struggle to verify self generated plans, while Valmeekam et al. (2023) found LLMs to be better at verification than generation for a STRIPS domain, but overall performance remained low. Prior work has also tried to connect computational com-plexity of classical planning (Bylander, 1994) to formal language theory (H ¨oller et al., 2016; Lin & Bercher, 2022), albeit not in the context of transformer expressiveness. In contrast, a rich line of research has looked into transformers expressiveness through the lens of formal language theory and computational complexity. This includes the design of formalisms that capture transformer computations, such as RASP (Weiss et al., 2021), B-RASP (Yang et al., 2024), C-RASP (Yang & Chiang, 2024) and results linking models to complexity classes such as TC 0 (Merrill & Sabharwal, 2023; Strobl, 2023). Zhou et al. (2024) conjectured that only programs expressible in RASP-L exhibit length generaliza-tion, a notion formalized by Huang et al. (2025b) using the C-RASP formalism (Yang & Chiang, 2024). The C-RASP length generalization framework has since seen substantial success, with results demonstrated at scale (Jobanputra et al., 2025), quantitative bounds on training length (Izzo et al., 2025), and even predictions of the model depth required to solve certain problems (Yang et al., 2025). More broadly, length generalization remains an active area of research, with approaches exploring scratchpads, positional embed-dings, and synthetic data generation (Anil et al., 2022; Abbe et al., 2023; Zhou et al., 2024; Golowich et al., 2025; Hou et al., 2024; Xiao & Liu, 2025; Press et al., 2022; He et al., 2024; Cho et al., 2024; Lee et al., 2025; Chen et al., 2025b). Our work is most closely related to N ´u ˜nez-Molina et al. (2025), who show that plan verification for propositional STRIPS is expressible in B-RASP, and thus realizable by a restricted class of transformers (Yang et al., 2024). We differ in two key respects: we study generalization in learn-ing rather than expressivity, and we consider generalization not only across plans for a fixed instance, but also across instances with unbounded numbers of objects. 
+
+5.3. Limitations & Future Work 
+
+Our theoretical results on length generalization apply to stan-dard transformers without scratchpads (no chain of thought). However, our results are still relevant, as chain of thought is expensive and knowing what is possible without Chain of thought is important. Much like C-RASP , our theory also only applies to APE and NoPE encodings, extending our theory to cover Rotary Positional embeddings is a natural next step. Finally, our focus was on verification and not plan generation. As Stechly et al. (2025) mentions, their re-spective computational complexity (P vs PSPACE-complete for STRIPS) should not be expected to translate to relative transformer performance. Thus generalizing our findings to plan generation is non-trivial. Our proofs rely on the existence of valid plans containing loops, whereas optimal plans could be much shorter. Thus, while our results serve as a foundational step, characterizing the learnability of plan generation remains exciting grounds for future work. 8On the Ability of Transformers to Verify Plans 
+
+# 6. Conclusion 
+
+We presented a formal analysis of the ability of transform-ers to verify plans, focusing on the challenge of length generalization. To address the setting where the number of objects grows at test time, we introduced C*-RASP , a novel extension of the C-RASP framework that character-izes learnability under simultaneous growth of sequence length and vocabulary size. Our results indicate that the specific formulation of a planning problem—rather than only the number of objects or actions—is a decisive factor in learnability. These findings take steps toward explaining inconsistent performance of transformers on planning tasks, opening new avenues for characterizing their capabilities in planning. 
+
+# Impact Statement 
+
+This paper presents work whose goal is to advance the field of Machine Learning. There are many potential societal consequences of our work, none of which we feel must be specifically highlighted here. 
+
+# Acknowledgments 
+
+Katharina Stein was funded by the Deutsche Forschungs-gemeinschaft (DFG, German Research Foundation) under the project number 232722074 – SFB 1102. We gratefully acknowledge the stimulating research environment of the GRK 2853/1 “Neuroexplicit Models of Language, Vision, and Action”, funded by the Deutsche Forschungsgemein-schaft under project number 471607914. Sylvie Thi ´ebaux’s work was funded by the Australian Research Council (ARC) under the Discovery Project grant DP220103815 and by the Artificial and Natural Intelligence Toulouse Institute (AN-ITI) under the grant agreement ANR-23-IACL-0002. We thank Chaahat Jain for insightful discussions. 
+
+# Contributions 
+
+YS drafted the paper, contributed Theorem 3.1, 3.6 and their corresponding proofs (Appendix A, B) with inputs from ST and MH, and coordinated the experiments with KS and YD. YS and MH jointly developed the learning framework, symbolic limit transformer translation, C*-RASP formu-lation (Section 3.2 and Appendix C). YD developed the training and evaluation pipeline, trained all models, imple-mented the Colors domain dataset in use, and contributed substantially to the design and development of the other two domain datasets. KS led the development of the datasets and contributed substantially to their designs. She conducted the implementation and generation of the Grippers Heavy and Lightsout datasets, and contributed to the writing. AK advised on the research direction and narrative framing, supervised the experimental work, and contributed to the writing of the paper. ST contributed to the research framing, to the identification of the generalisable planning classes, to the formulation of theorems 3.1 and 3.6, and proposed the Color domain. She drafted section 2 and provided feedback and corrections on every section except Appendix C. MH contributed to the research framing and to the identification of the generalisable planning classes, and jointly developed the learning framework, limit transformers, and C*-RASP formulation with YS. 
+
+# References 
+
+Abbe, E., Bengio, S., Lotfi, A., and Rizk, K. Generalization on the unseen, logic reasoning and degree curriculum. In Proceedings of the 40th International Conference on Machine Learning , ICML’23. JMLR.org, 2023. Aghzal, M., Plaku, E., Stein, G. J., and Yao, Z. A survey on large language models for automated planning, 2025. URL https://arxiv.org/abs/2502.12435 .Anil, C., Wu, Y., Andreassen, A., Lewkowycz, A., Misra, V., Ramasesh, V., Slone, A., Gur-Ari, G., Dyer, E., and Neyshabur, B. Exploring length generalization in large language models. Advances in Neural Information Pro-cessing Systems , 35:38546–38556, 2022. Arfaee, S. J., Zilles, S., and Holte, R. C. Learning heuristic functions for large state spaces. Artif. Intell. , 175(16-17): 2075–2098, 2011. Bylander, T. The computational complexity of propositional strips planning. Artificial Intelligence , 69(1-2):165–204, 1994. Chen, D. Z., Zenn, J., Cinquin, T., and McIlraith, S. Lan-guage models for generalised pddl planning: Synthesis-ing sound and programmatic policies. In Proceedings of the 18th European Workshop on Reinforcement Learning (EWRL) , 2025a. Chen, T., Ma, T., and Li, Z. Non-asymptotic length general-ization. In Forty-second International Conference on Ma-chine Learning , 2025b. URL https://openreview. net/forum?id=WZlq625BWD .Chiang, D. and Cholak, P. Overcoming a theoretical lim-itation of self-attention. In Muresan, S., Nakov, P., and Villavicencio, A. (eds.), Proceedings of the 60th Annual Meeting of the Association for Computational Linguis-tics (Volume 1: Long Papers), ACL 2022, Dublin, Ire-land, May 22-27, 2022 , pp. 7654–7664. Association for Computational Linguistics, 2022. doi: 10.18653/ V1/2022.ACL-LONG.527. URL https://doi.org/ 10.18653/v1/2022.acl-long.527 .9On the Ability of Transformers to Verify Plans 
+
+Chiari, M., Putelli, L., Rossetti, N., Serina, I., and Gerevini, A. E. On planning through llms. In Proceedings of the International Conference on Automated Planning and Scheduling , volume 35, pp. 377–385, 2025. Cho, H., Cha, J., Awasthi, P., Bhojanapalli, S., Gupta, A., and Yun, C. Position coupling: Improving length gen-eralization of arithmetic transformers using task struc-ture. In The Thirty-eighth Annual Conference on Neural Information Processing Systems , 2024. URL https: //openreview.net/forum?id=5cIRdGM1uG .Cybenko, G. Approximation by superpositions of a sig-moidal function. Mathematics of control, signals and systems , 2(4):303–314, 1989. Edelman, B. L., Goel, S., Kakade, S., and Zhang, C. Induc-tive biases and variable creation in self-attention mecha-nisms. In International Conference on Machine Learning ,pp. 5793–5831. PMLR, 2022. Ferber, P., Geißer, F., Trevizan, F. W., Helmert, M., and Hoffmann, J. Neural network heuristic functions for clas-sical planning: Bootstrapping and comparison to other methods. In Proceedings of the 32nd International Con-ference on Automated Planning and Scheduling (ICAPS) ,pp. 583–587, 2022. Fikes, R. and Nilsson, N. J. STRIPS: A new approach to the application of theorem proving to problem solving. Artif. Intell. , 2(3/4):189–208, 1971. Fritzsche, M., Gestrin, E., and Seipp, J. Symmetry-aware transformer training for automated planning. In Jenkins, C. and Taylor, M. (eds.), Proceedings of the Fortieth AAAI Conference on Artificial Intelligence (AAAI 2026) . AAAI Press, 2026. Golowich, N., Jelassi, S., Brandfonbrener, D., Kakade, S. M., and Malach, E. The role of sparsity for length generalization in transformers. arXiv preprint arXiv:2502.16792 , 2025. G ¨osgens, J., Jansen, N., and Geffner, H. Learning lifted strips models from action traces alone: A simple, gen-eral, and scalable solution. In Proceedings of the 35th International Conference on Automated Planning and Scheduling (ICAPS) , pp. 189–197, 2025. Hahn, M. and Rofin, M. Why are sensitive functions hard for transformers? In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pp. 14973–15008, 2024. Haslum, P., Lipovetzky, N., Magazzeni, D., and Muise, C. An Introduction to the Planning Domain Definition Language . Synthesis Lectures on Artificial Intelligence and Machine Learning. Morgan & Claypool Publishers, 2019. Hazra, R., Zuidberg Dos Martires, P., and De Raedt, L. Saycanpay: Heuristic planning with large language mod-els using learnable domain knowledge. Proceedings of the AAAI Conference on Artificial Intelligence , 38(18): 20123–20133, Mar. 2024. doi: 10.1609/aaai.v38i18. 29991. URL https://ojs.aaai.org/index. php/AAAI/article/view/29991 .He, Z., Feng, G., Luo, S., Yang, K., Wang, L., Xu, J., Zhang, Z., Yang, H., and He, D. Two stones hit one bird: bilevel positional encoding for better length extrapolation. In Proceedings of the 41st International Conference on Machine Learning , ICML’24. JMLR.org, 2024. Helmert, M. and Domshlak, C. Landmarks, critical paths and abstractions: What’s the difference anyway? In 
+
+Proceedings of the 19th International Conference on Au-tomated Planning and Scheduling, ICAPS , 2009. Hirsch, E., Uziel, G., and Anaby-Tavor, A. What’s the plan? evaluating and developing planning-aware techniques for llms. CoRR , abs/2402.11489, 2024. doi: 10.48550/ ARXIV.2402.11489. URL https://doi.org/10. 48550/arXiv.2402.11489 .H ¨oller, D., Behnke, G., Bercher, P., and Biundo, S. As-sessing the expressivity of planning formalisms through the comparison to formal languages. In Proceedings of the International Conference on Automated Planning and Scheduling , volume 26, pp. 158–165, 2016. Hou, K., Brandfonbrener, D., Kakade, S. M., Jelassi, S., and Malach, E. Universal length generalization with turing programs. CoRR , abs/2407.03310, 2024. doi: 10.48550/ARXIV.2407.03310. URL https://doi. org/10.48550/arXiv.2407.03310 .Huang, S., Cohn, T., and Lipovetzky, N. Chasing progress, not perfection: Revisiting strategies for end-to-end llm plan generation. In Proceedings of the 35th Interna-tional Conference on Automated Planning and Schedul-ing (ICAPS) , pp. 204–212, 2025a. Huang, X., Yang, A., Bhattamishra, S., Sarrof, Y., Krebs, A., Zhou, H., Nakkiran, P., and Hahn, M. A formal framework for understanding length generalization in transformers. In The Thirteenth International Conference on Learning Representations , 2025b. Izzo, Z., Nichani, E., and Lee, J. D. Quantita-tive bounds for length generalization in transform-ers. In High-dimensional Learning Dynamics 2025 ,2025. URL https://openreview.net/forum? id=DgGPgVLrRX .Jiang, H., Hahn, M., Zetzsche, G., and Lin, A. W. Soft-max transformers are turing-complete. arXiv preprint arXiv:2511.20038 , 2025. 10 On the Ability of Transformers to Verify Plans 
+
+Jobanputra, M., Veitsman, Y., Sarrof, Y., Bakalova, A., Dem-berg, V., Pavlick, E., and Hahn, M. Born a transformer– always a transformer? on the effect of pretraining on architectural abilities. In The Thirty-ninth Annual Confer-ence on Neural Information Processing Systems , 2025. Kazemnejad, A., Padhi, I., Natesan Ramamurthy, K., Das, P., and Reddy, S. The impact of positional encoding on length generalization in transformers. Advances in Neural Information Processing Systems , 36:24892–24928, 2023. Lee, N., Cai, Z., Schwarzschild, A., Lee, K., and Papail-iopoulos, D. Self-improving transformers overcome easy-to-hard and length generalization challenges. In Forty-second International Conference on Machine Learning ,2025. Lin, S. and Bercher, P. On the expressive power of planning formalisms in conjunction with ltl. Proceedings of the International Conference on Automated Planning and Scheduling , 32(1):231–240, Jun. 2022. doi: 10.1609/ icaps.v32i1.19806. URL https://ojs.aaai.org/ index.php/ICAPS/article/view/19806 .Liu, B., Ash, J., Goel, S., Krishnamurthy, A., and Zhang, C. Exposing attention glitches with flip-flop language modeling. Advances in Neural Information Processing Systems , 36:25549–25583, 2023. McDermott, D. The 1998 ai planning systems competition. 
+
+AI Magazine , 21(2):35–35, 2000. Merrill, W. and Sabharwal, A. The parallelism tradeoff: Limitations of log-precision transformers. Transactions of the Association for Computational Linguistics , 11:531– 545, 2023. Nebel, B. On the compilability and expressive power of propositional planning formalisms. J. Artif. Intell. Res. ,12:271–315, 2000. N ´u ˜nez-Molina, C., G ´omez, V., and Geffner, H. From next token prediction to (strips) world models – pre-liminary results, 2025. URL https://arxiv.org/ abs/2509.13389 .Pallagani, V., Muppasani, B., Murugesan, K., Rossi, F., Horesh, L., Srivastava, B., Fabiano, F., and Loreggia, A. Plansformer: Generating symbolic plans using transform-ers. CoRR , abs/2212.08681, 2022. Pallagani, V., Muppasani, B., Murugesan, K., Rossi, F., Horesh, L., Srivastava, B., Fabiano, F., and Loreggia, A. Plansformer: Generating symbolic plans using transform-ers. In NeurIPS 2023 Workshop on Generalization in Planning , 2023. URL https://openreview.net/ forum?id=gWhXByDv2n .Press, O., Smith, N., and Lewis, M. Train short, test long: Attention with linear biases enables input length extrapo-lation. In International Conference on Learning Represen-tations , 2022. URL https://openreview.net/ forum?id=R8sQPpGCv0 .Rossetti, N., Tummolo, M., Gerevini, A. E., Putelli, L., Se-rina, I., Chiari, M., and Olivato, M. Learning general policies for planning through GPT models. In Proceed-ings of the Thirty-Fourth International Conference on Automated Planning and Scheduling, ICAPS , pp. 500– 508, 2024. Silver, T., Dan, S., Srinivas, K., Tenenbaum, J. B., Kaelbling, L., and Katz, M. Generalized Planning in PDDL Domains with Pretrained Large Language Models. Proceedings of the AAAI Conference on Artificial Intelligence , 38(18): 20256–20264, 2024. ISSN 2374-3468. doi: 10.1609/aaai. v38i18.30006. Stechly, K., Valmeekam, K., and Kambhampati, S. On the self-verification limitations of large language mod-els on reasoning and planning tasks. In The Thirteenth International Conference on Learning Representations ,2025. URL https://openreview.net/forum? id=4O0v4s3IzY .Stein, K., Fi ˇser, D., Hoffmann, J., and Koller, A. Automat-ing the generation of prompts for llm-based action choice in pddl planning. In Proceedings of the 35th Interna-tional Conference on Automated Planning and Schedul-ing (ICAPS) , pp. 250–259, 2025. Strobl, L. Average-hard attention transformers are constant-depth uniform threshold circuits. arXiv preprint arXiv:2308.03212 , 2023. St ˚ahlberg, S., Bonet, B., and Geffner, H. Learning Gen-eralized Policies without Supervision Using GNNs. In 
+
+Proceedings of the 19th International Conference on Prin-ciples of Knowledge Representation and Reasoning (KR) ,pp. 474–483, 2022. Taitler, A., Alford, R., Espasa, J., Behnke, G., Fi ˇser, D., Gimelfarb, M., Pommerening, F., Sanner, S., Scala, E., Schreiber, D., Segovia-Aguas, J., and Seipp, J. The 2023 International Planning Competition. AI Magazine , 45(2): 280–296, 2024. doi: 10.1002/aaai.12169. Toyer, S., Thi ´ebaux, S., Trevizan, F. W., and Xie, L. Asnets: Deep learning for generalised planning. J. Artif. Intell. Res. , 68:1–68, 2020. Valmeekam, K., Olmo, A., Sreedharan, S., and Kambham-pati, S. Large language models still can’t plan (a bench-mark for LLMs on planning and reasoning about change). 11 On the Ability of Transformers to Verify Plans 
+
+In NeurIPS 2022 Foundation Models for Decision Mak-ing Workshop , 2022. URL https://openreview. net/forum?id=wUU-7XTL5XO .Valmeekam, K., Marquez, M., Olmo, A., Sreedharan, S., and Kambhampati, S. Planbench: An extensible bench-mark for evaluating large language models on planning and reasoning about change. Advances in Neural Infor-mation Processing Systems , 36:38975–38987, 2023. Valmeekam, K., Stechly, K., and Kambhampati, S. Llms still can’t plan; can lrms? A preliminary evaluation of openai’s o1 on planbench. CoRR , abs/2409.13373, 2024. Valmeekam, K., Stechly, K., Gundawar, A., and Kamb-hampati, S. A systematic evaluation of the planning and scheduling abilities of the reasoning model o1. Transac-tions on Machine Learning Research , 2025. ISSN 2835-8856. URL https://openreview.net/forum? id=FkKBxp0FhR .Weiss, G., Goldberg, Y., and Yahav, E. Thinking like trans-formers. In International Conference on Machine Learn-ing , pp. 11080–11090. PMLR, 2021. Xiao, C. and Liu, B. Generalizing reasoning problems to longer lengths. In The Thirteenth International Confer-ence on Learning Representations , 2025. Yang, A. and Chiang, D. Counting like transformers: Com-piling temporal counting logic into softmax transformers. In First Conference on Language Modeling , 2024. Yang, A., Chiang, D., and Angluin, D. Masked hard-attention transformers recognize exactly the star-free lan-guages. Advances in Neural Information Processing Sys-tems , 37:10202–10235, 2024. Yang, A., Cadilhac, M., and Chiang, D. Knee-deep in c-RASP: A transformer depth hierarchy. In The Thirty-ninth Annual Conference on Neural Information Processing Systems , 2025. URL https://openreview.net/ forum?id=jPduiyxyfw .Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K. R., and Cao, Y. React: Synergizing reasoning and acting in language models. In The Eleventh In-ternational Conference on Learning Representations ,2023. URL https://openreview.net/forum? id=WE_vluYUL-X .Zhou, H., Bradley, A., Littwin, E., Razin, N., Saremi, O., Susskind, J. M., Bengio, S., and Nakkiran, P. What algorithms can transformers learn? A study in length generalization. In The Twelfth International Conference on Learning Representations, ICLR 2024, Vienna, Austria, May 7-11, 2024 . OpenReview.net, 2024. URL https: //openreview.net/forum?id=AssIuHnmHX .12 On the Ability of Transformers to Verify Plans 
+
+# A. Proofs on Plan Verification 
+
+A.1. Proofs about Generalization over a Fixed Object Universe 
+
+We restate Theorem 3.1 and then prove it. 
+
+Theorem A.1. Let D be a planning domain and O a fixed set of objects. Consider the language LD,O consisting of all sequences ⟨I, π, G ⟩ where π is a valid plan for the planning instance ⟨D , O, I, G ⟩.1. (Delete-Free & Well-Formed) If D is delete-free or well-formed, then LD,O ∈ C-RASP [Pos ].2. (STRIPS) There exist STRIPS domains and object sets such that LD,O /∈ C-RASP [Pos ].3. (Conditional Effects) There exist domains with conditional effects such that LD,O is neither star-free nor in 
+
+C-RASP [Pos ].Proof of Statement 1. In this setting, the domain D and the set of objects O are fixed and finite. However, the initial state I
+
+and the goal state G are provided as part of the input sequence, and can vary per sample. Given this setting, all possible instances will have the set of all possible ground propositions P , and the same set of all possible ground actions A, where both P, A are finite as well. Because of this we can directly refer to the necessary P , which is all the set of possible propositions, and A which is the entire set of ground actions (i.e. after the object names have been substituted into the predicates and action schemas taken from P and A respectively). The initial state I ⊆ P , and the goal state G are as defined in Section 2.1. We now give a recipe for constructing a C-RASP [Pos ] program for any such input, where the given plan π is a valid action sequence and upon starting from I and taking all the actions in π all the goal conditions listed in G are met. We assume that the input sequence is as follows w = $ I@π@G@. where, 
+
+I = p1, po 1,1, . . . , po 1,pk 1 , p2, po 2,1, . . . , po 2,pk 2 , . . . π = α1, o 1,1, . . . , o 1,k 1 , α2, o 2,1, . . . , o 2,k 2 , . . . G = g1, go 1,1, . . . , go 1,gk 1 , g2, go 2,1, . . . , go 2,gk 2 , . . . 
+
+Thus, in the I block, the token pt represents a predicate name, followed by pk t (arity of the predicate) objects representing its arguments, Thus pt, po t, 1 . . . po t,pk t ∈ P . Similarly, in the the token π block, αt is an action schema name, followed by kt object tokens representing its arguments, and αt, o t, 1 . . . o t,k t ∈ A Finally the G block is also similar to the I block and therefore gt, go t, 1 . . . go t,gk t ∈ P . We need to verify the plan by tracking the state of every ground proposition in P ,making sure that all preconditions of a given action was always satisfied and also checking that all the goal conditions were indeed met by the end of the w.1. We must identify which part of the input a token belongs to, using cumulative counts of separator tokens. CountSep (i) := # [j ≤ i] Q@(j)
+
+Using this, we define the section selectors: • InInit (i) := ( CountSep (i) == 0) 
+
+• InPlan (i) := ( CountSep (i) == 1) 
+
+• InGoal (i) := ( CountSep (i) == 2) 
+
+• End (i) := ( CountSep (i) == 3) 
+
+The == syntax is equivalent to checking (CountSep (i) ≤ k) ∧ (CountSep (i) ≥ k).2. We first identify, at any index i, whether an action has just completed and what that action is. Let a ∈ A be a specific ground action, defined by schema α and argument objects u1, . . . , u k. The action a ends at index i if the sequence of tokens ending at i matches the signature of a:token at i = uk, token at i − 1 = uk−1, . . . , token at i − k = α
+
+13 On the Ability of Transformers to Verify Plans 
+
+In C-RASP, we can implement lookbacks using the query relation ψ(i, j ) ≡ (i = j + ∆) . For each ground action a,we define a boolean selector sequence Occurs a(i) that is true iff the action a ends at i:OccursAction a(i) := (# [j ≤ i, i = j + k] Qα(j) == 1) ∧
+
+> k
+
+^
+
+> m=1
+
+(# [j ≤ i, i = j + m] Qum (j) == 1) ∧ InPlan (i)
+
+!
+
+This expression verifies the action schema name at offset k and every object argument um at the correct offset. Since there are finitely many ground actions, we define one such line for every a ∈ A.Thus at every position i, at most only 1 ground action can ever be true. We do the same thing for every p ∈ P to match propositions listed in the initial and the goal state. ( u1, . . . u k representing the arguments of the proposition p, k the arity of the proposition). OccursInitial p(i) := (# [j ≤ i, i = j + k] Qp(j) == 1) ∧
+
+> k
+
+^
+
+> m=1
+
+(# [j ≤ i, i = j + m] Qum (j) == 1) ∧ InInit (i)
+
+!
+
+OccursGoal p(i) := (# [j ≤ i, i = j + k] Qp(j) == 1) ∧
+
+> k
+
+^
+
+> m=1
+
+(# [j ≤ i, i = j + m] Qum (j) == 1) ∧ InGoal (i)
+
+!
+
+3. For every ground proposition p ∈ P , we identify the set of ground actions that add it, T P p, where T P p = {a ∈ A|p ∈
+
+eff (a)+}. These sets will be fixed and known a priori, given our fixed objects and domain. We define the cumulative count of additions for p at step i:MadeTrue p(i) := ( X
+
+> a∈T P p
+
+# [j ≤ i] OccursAction a(j)) 
+
+We do the same for the set of actions that delete it F P p = {a ∈ A|p ∈ eff (a)−}.MadeFalse p(i) := ( X
+
+> a∈F P p
+
+# [j ≤ i] OccursAction a(j)) 
+
+4. Now, we define the truth value of a proposition p at step i.• Well-Formed : Because of well-formedness, the truth value of a proposition toggles (False → True → False). We compute the net flow (adds minus deletes) for each proposition at every step. If the proposition was in the initial state, then the net flow has to be 0, and if it was not then this net flow should be 1.Net p(i) := MadeTrue p(i) − MadeFalse p(i)
+
+Valid p(i) := ( OccursInitial p(i) ∧ Net p(i) == 0) ∨ (¬OccursInitial p(i) ∧ Net p(i) == 1) 
+
+• Delete-Free : The proposition is true, if it was either already true (as it was in the initial state) or at least one action made it true. Valid p(i) := OccursInitial p(i) ∨ (MadeTrue p(i) ≥ 1) 
+
+5. For every ground action a, let pre (a)+, pre (a)− define the list of positive and negative ground propositions for a given action. We need to check that all the preconditions are satisfied before the action effect takes place. We check the state of preconditions at i − 1 (the state before the effects of the action took place). If any of the preconditions are not met, we mark this position as invalid. PreCondPassed a(i) := ^
+
+> p∈pre (a)+
+
+(# [j ≤ i, i = j + 1] Valid p(j) ^
+
+> p∈pre (a)−
+
+(# [j ≤ i, i = j + 1] ¬Valid p(j)
+
+InvalidAction a(i) := OccursAction a(i) ∧ ¬ PreCondPassed a(i)
+
+The count of invalid actions by the end of w should be 0. AllActionsValid(i) := ( X
+
+> a∈A
+
+# [j ≤ i] InvalidAction a(j) == 0) 
+
+14 On the Ability of Transformers to Verify Plans 
+
+6. Finally, we need check if every goal condition is satisfied. We iterate over our ground propositions. For every proposition, either it does not appear in the goal or it is valid. GoalSat (i) := ^
+
+> p∈P
+
+¬OccursGoal p(i) ∨ Valid p(i)
+
+At the end token, we need to check, that all goals were met. AllGoalsMet (i) := End (i) ∧ AllActionsValid (i) ∧ (# [j ≤ i] ¬GoalSat (i) == 0) 
+
+Note that, in case negative goal conditions are present, we can check for invalidity of the underlying proposition, however the logic remains the same. Since A and P are finite, this program has a finite number of lines and operations. At the last position of our sequence, our program outputs True if the given input sequence was valid else not for any possible sequence in LD,O . Hence, for both delete-free and well-formed, LD,O ∈ C-RASP [Pos ].For our negative results, we will show that there exist instances Π = ⟨D , O, I, G ⟩, where the language of all valid plans of just that instance L(Π) (therefore subsets of the full language LD,O ) are not contained in C-RASP [Pos ]. Consequently, the language LD,O itself is not in C-RASP [Pos ].
+
+Proof of Statement 2. Lin & Bercher (2022) showed that L(Π) when Π = ⟨D , O, I, G ⟩ represents a STRIPS instance belongs to a strict subset of star free languages. Here we will show that there could be a STRIPS instance Π, where 
+
+L(Π) /∈ C-RASP [pos ]. Huang et al. (2025b) had rigorously showed that the star free language Σ∗be ∗ (Σ = {a, b, e }), also known as the flipflop language is not in C-RASP [pos ]. Thus, we will now create a STRIPS instance Πf f where 
+
+L(Π f f ) = Σ ∗be ∗, which will thus prove our claim. Let the planning domain be Df f = ⟨P , A⟩ where P = {active }, arity (active ) = 1 and A = {aa, a b, a e}. All three schemas share the argument set args () = {x} and empty preconditions pre () = ∅. Their effects are: eff (aa) = {¬ active (x)},eff (ab) = {active (x)}, eff (ae) = ∅. Now we define the planning instance to be Πf f = ⟨D f f , {k}, ∅, active (k)⟩. This planning instance is a STRIPS instance, as by construction we did not violate any rules of being in STRIPS. The ground actions correspond directly to the alphabet Σ: a = aa(k), b = ab(k), and e = ae(k). Note that since the preconditions are empty, all actions are applicable in every state. Let π ∈ Σ∗ be a sequence of actions π = σ1 . . . σ n. We track the state Si = succ (I, σ 1 . . . σ i). The ground proposition set is simply {active (k)}. Thus, there are only two possible states: ∅
+
+(which we call OFF) and {active (k)} (which we call ON). Since I = ∅, the system starts in the OFF state. Based on the definitions of the ground actions each action regardless of the previous state acts as follows – a: eff (a)− = {active (k)} removes the proposition, setting the state to off, b:eff (b)+ = {active (k)} adds the proposition, setting the state to on, e: eff (e) = ∅ acts as the identity function, leaving the state unchanged. A plan π is valid iff Sn |= G, which means active (k) ∈ Sn (i.e., the final state is on). Consider the last occurrence of a non-e symbol in w. If w contains no a or b (i.e., w ∈ e∗), the state remains I (off). The goal is not satisfied. If the last non-e
+
+symbol is a, the state becomes off at that step. Any subsequent e actions maintain the off state. The goal is not satisfied. If the last non-e symbol is b, the state becomes ON at that step. Any subsequent e actions maintain the ON state. The goal is satisfied. Therefore, w ∈ L(Π f f ) if and only if w contains at least one b, and no a occurs after the last b. This corresponds exactly to the regular expression Σ∗be ∗.
+
+Proof of Statement 3. P ARIT Y is the non star free regular language L = b∗(ab ∗ab ∗)∗ where Σ = {a, b }. Thus, a string 
+
+w ∈ L, if it contains an even number of a’s. Huang et al. (2025b) rigorously showed that P ARIT Y /∈ C-RASP [Pos ]. We will here show that the Lights Out domain, when defined with conditional effects (explained in Section D.1), can be reduced to PARITY, thus proving our claim. We begin by first defining a Lights Out planning instance. 15 On the Ability of Transformers to Verify Plans 
+
+Definition A.2 (Lights Out with conditional effects) . Let LO = ( V, E ) be a lights out board represented as a graph where 
+
+V = {v1, . . . , v n} represents the set of cells (vertices) and E defines the connectivity (edges between the vertices). For any 
+
+v ∈ V , let N [v] = {u ∈ V | (v, u ) ∈ E} ∪ { v} be the closed neighborhood of v. Given an initial configuration of cells 
+
+I ⊆ V that are on, we define the corresponding planning instance ΠLO = ⟨D , O, I, G ⟩ as follows: • The domain is D = ⟨P , A⟩ .
+
+– The set of objects is empty, O = ∅.
+
+– The predicates are propositional (arity 0), representing the state of each cell: P = {on i | vi ∈ V }
+
+– The action schema correspond to pressing specific cells. Since the logic depends on the fixed graph topology, we define a schema for each cell: AG = {a1, . . . , a n} For each cell vk ∈ V , the schema ak is defined by: * args (ak) = ∅
+
+* pre (ak) = ∅ (actions are always applicable) * The effects eff (ak) toggle the cell and its neighbors. For every vj ∈ N [vk], we include the following pair of conditional effects: 8
+
+{on j } ▷ {¬ on j }{¬ on j } ▷ {on j }
+
+• The initial state is defined by the set of cells that are initially on: I = {on i | vi ∈ I}
+
+• The goal is to switch all lights off: G = {¬ on 1, . . . , ¬on n}
+
+Algebraic Formulation of the State Space: To analyze the structure of the language L(Π LO ), we reformulate the state space algebraically. The specific structure of the conditional effects, which toggle the truth value of literals (flipping on to off and vice versa) motivates the use of a vector space over the finite field of two elements, F2 = ( {0, 1}, +, ·). Let n = |V |.We define an isomorphism ϕ : P(P) → Fn 
+
+> 2
+
+where the k-th component is 1 if on k ∈ S, and 0 otherwise. The initial state 
+
+I maps to a vector b = ϕ(I), and the goal state maps to ⃗ 0. Recall that for each cell vk, the action schema ak toggles the values of propositions in N [vk]. In F2, toggling corresponds to addition by 1. Let uk ∈ Fn 
+
+> 2
+
+be the effect vector for action ak,where the j-th component is 1 if vj ∈ N [vk] and 0 otherwise. Thus the transitions in our lights out instance succ (S, a k) are isomorphic to vector addition: ϕ(succ (S, a k)) = ϕ(S) + uk.
+
+Definition A.3 (Plan Homomorphism) . Let (Σ ∗, ·) be the free monoid on Σ with the operation of string concatenation. Let 
+
+(Fn 
+
+> 2
+
+, +) be the additive group of state vectors. We define a function h : Σ ∗ → Fn 
+
+> 2
+
+that maps a sequence of actions to its total effect vector: 
+
+h(w = a1 . . . a k) = 
+
+> k
+
+X
+
+> m=1
+
+um
+
+The function h(w) is a monoid homomorphism. Let w1, w 2 ∈ Σ∗. The concatenation w1w2 is the sequence of actions in w1 followed by the sequence of actions in w2. The total effect vector is the sum of the effect vectors of all actions in the concatenated sequence. Since vector addition in Fn
+
+> 2
+
+is associative and commutative, this sum is equal to the sum of the effects of w1 and the sum of the effects of w2. Thus, 
+
+h(w1w2) = h(w1) + h(w2).
+
+Periodicity of the Solution Language: A plan w is a solution if, starting from state b, it reaches state ⃗ 0. The final state is 
+
+b + h(w). The condition for a valid plan is therefore b + h(w) = ⃗ 0, which in F2 is equivalent to h(w) = b. Therefore, the language of valid plans L is precisely the preimage of the singleton set containing the initial state vector, {b}:
+
+L = h−1({b}) = {w ∈ Σ∗ | h(w) = b}
+
+The structure of L is determined by the kernel of the homomorphism h.
+
+> 8For compactness, we factorize conditions, with the semantics that all conditions that are true in the current state trigger their effects and that consistent sets of conditions must lead to consistent effect sets. This does not affect our results.
+
+16 On the Ability of Transformers to Verify Plans 
+
+Definition A.4 (Kernel) . The kernel of the homomorphism h is the preimage of the identity element of the target group 
+
+(Fn 
+
+> 2
+
+, +) , which is the zero vector ⃗ 0.
+
+ker( h) = h−1(⃗0) = {w ∈ Σ∗ | h(w) = ⃗ 0}
+
+The kernel is the sublanguage of all action sequences that have no net effect on the board state. 
+
+Proposition A.5. For any action ai ∈ Σ, the sequence aiai ∈ ker( h).Proof. Let ui be the effect vector for action ai. By the homomorphism property, h(aiai) = h(ai) + h(ai) = ui + ui. In any vector space over F2, for any vector v, v + v =⃗ 0. Therefore, h(aiai) = ⃗ 0, which by definition means aiai ∈ ker( h).The existence of this non-trivial kernel proves that the solution language is periodic and not star-free. The syntactic monoid of the language contains non-trivial groups. For any action ai, the element represented by ai in the monoid has order 2, since applying it twice returns to the start. A monoid containing non-trivial group elements is, by definition, not aperiodic. This implies that the language of Lights Out plans is not star-free. 
+
+Reduction from PARITY: Now, that we have established that L is not star free, we will further show that L(Π LO ) /∈
+
+C-RASP [pos ]. The proof proceeds by contradiction. Assume that the language of valid L(Π LO ) ∈ C-RASP [pos ]. Consider the specific instance where the initial state is all lights off ( I = ∅). The corresponding initial state vector is b =⃗ 0. The language of valid plans for this instance, L(Π LO ), is the kernel of the homomorphism h:
+
+L(Π LO ) = {w ∈ Σ∗ | h(w) = ⃗ 0} = ker( h)
+
+Our initial assumption implies L(Π LO ) ∈ C-RASP [pos ], as it is simply a specific instance of the general problem. Let us fix three distinct actions: α, β, γ ∈ Σ. Let their effect vectors be eα, e β , e γ . We can always choose these actions such that eγ + eβ̸ =⃗ 0. Consider the regular language Rinter defined as: Rinter = (( αα )∗(γβ )∗)∗. This language consists of all strings formed by concatenating blocks of (αα ) and (γβ ). As already established, applying an action twice leads to no action. Hence (αα ) is simply the identity and by construction (γβ ) does not map to the zero vector. Hence 
+
+Rinter ≡ (ab )∗ which is known to be in C-RASP [pos ] (Huang et al., 2025b). Since, C-RASP is closed under intersection and L(Π LO ) ∈ C-RASP [pos ], we have R = L(Π LO ) ∩ Rinter ∈ C-RASP [pos ] i.e. R ∈ C-RASP [pos ].The PARITY language over {a, b } can be written as a∗(ba ∗b)∗a∗. We link R to PARITY using an inverse homomorphism. Define ψ : {a, b }∗ 7 → { α, β, γ }∗ as: ψ(a) = αα , ψ(b) = γβ . The inverse homomorphism ψ−1(R) is the set of all strings in {a, b }∗ that map into R under ψ. This language is precisely the set of strings over {a, b } with an even number of b’s. Note that ψ−1(R) = a∗(ba ∗b)∗a∗ = PARITY .Now Lemma 42 in Huang et al. (2025b) shows that C-RASP [pos ] is closed under inverse images of morphisms where each symbol is mapped to a word of the same length 9. This applies to ψ, because it maps both a and b to length-2 words. Thus since we have shown that R ∈ C-RASP [pos ], it implies that PARITY ∈ C-RASP [pos ]. However, Huang et al. (2025b) formally proved that PARITY is not in C-RASP [pos ]. This is a direct contradiction. 
+
+# B. Proofs about Generalization over a Planning instances with growing number of objects 
+
+We restate Theorem 3.6 and then prove it. 
+
+Theorem B.1. Let D be a planning domain. Consider the language LD consisting of all possible sequences ⟨I, π, G ⟩ where 
+
+π is a valid plan for some planning instance ⟨D , O, I, G ⟩.1. (Delete-Free / Well-Formed) If D is delete-free or well-formed, then LD ∈ C*-RASP . In particular, generalization from both limited number of objects and plan lengths during training to a increased number of objects and plan lengths is expected. 2. (STRIPS / Conditional Effects) There exists STRIPS domains as well as domains with conditional effects for which 
+
+LD /∈ C*-RASP . Generalization to instances with longer plans or increased number of objects is thus not expected. In particular, there are domains where LD subsumes FlipFlop or PARITY.   
+
+> 9This is precisely why we needed two actions γβ , as our identity action has two actions αα
+
+17 On the Ability of Transformers to Verify Plans 
+
+We start by proving Statement 1 
+
+Proof. We represent a planning instance and plan as a sequence of tokens w. Along the same lines as Theorem A.1, the sequence is composed of the initial state I, and action names obtained by grounding action schemas from the finite set A
+
+and object names O per sample taken from the potentially infinite alphabet C, and the goal G.We will define A as follows. Each α ∈ A has the form nα(x1, . . . x arity (α)) where nα is the name of the action schema, and and the xi ∈ args (α) refer to the placeholder objects. This set can be constructed from the action schemas A set by ignoring the schemas’ preconditions and effects, with a one to one mapping between A and A. It should be noted that we are constructing this set just for notational convenience and to avoid ambiguity. We write it as w = $ I@π@G@. where, 
+
+I = np1 , po 1,1, . . . , po 1,pk 1 , p2, po 2,1, . . . , po 2,pk 2 , . . . π = nα1 , o 1,1, . . . , o 1,k 1 , α2, o 2,1, . . . , o 2,k 2 , . . . G = ng1 , go 1,1, . . . , go 1,gk 1 , g2, go 2,1, . . . , go 2,gk 2 , . . . 
+
+In the I block, the token npt represents a predicate name, followed by pk t (arity of the predicate) objects representing its arguments. Thus each npt , po t, 1 . . . po t,pk t represents a ground proposition where the proposition name and object structure are taken from P, and each object that has been instantiated is taken from O. The key difference here is that P ,the set of all ground propositions is now infinite, and hence cannot be used. Similarly, in the π block, nαt is an action schema name, followed by kt object tokens representing its arguments. Therefore, nαt , o t, 1 . . . o t,k t follows the structure of an nαt (x1, . . . , x arity (αt)) ∈ A. Finally the G block is also similar to the I block and therefore ngt , go t, 1 . . . go t,gk t . For 
+
+nαt , npt and ngt , the objects that follow it are taken from the infinite pool of objects O. Thus, in addition to the ground propositions, the number of ground actions are also infinite. We will be constructing C*-RASP [Pos ] programs to verify action preconditions and goals for our positive cases. Note that unlike in C-RASP , here we will not be able to use object names inside the Qσ operator to check for the presence of a specific object at the current position (owing to the increased number of objects), and will instead rely on the match predicate to help us resolve our issue. 1. Section Identification: we must identify which part of the input a token belongs to, using cumulative counts of separator tokens. CountSep (i) := # [j ≤ i] Q@(j)
+
+• InInit (i) := ( CountSep (i) == 0) 
+
+• InPlan (i) := ( CountSep (i) == 1) 
+
+• InGoal (i) := ( CountSep (i) == 2) 
+
+• End (i) := ( CountSep (i) == 3) 
+
+The == syntax is not explicitly listed in C*-RASP [Pos ], but it is equivalent to checking (c(i) ≤ 1) ∧ (c(i) ≥ 1) .2. Precalculated Sets based on D: Since our D is fixed, we can precalculate the following sets for every predicate p ∈ P 
+
+and thus have them be plugged into our program whenever we want: • T P p: The subset of action names along with placeholder object arguments α in A that have p in their add-effects (eff (α)+). • F P p: The set of action names along with placeholder object arguments α ∈ A that have p in their delete-effects (eff (α)−). • P re p: The set of action names along with placeholder arguments α ∈ A with p in their preconditions. 3. Check presence of Action/Predicate: To check the presence of a specific action/ predicate, we can use our local function from j.Curr α(i) = # [j ≤ i, i = j + arity (α)] Qnα (j) ≥ 1
+
+Curr p(i) = # [j ≤ i, i = j + arity (p)] Qnp (j) ≥ 1
+
+We can still use Q here as the number of predicates and action names are taken from our fixed alphabet. 18 On the Ability of Transformers to Verify Plans 
+
+4. Match predicate: We have to determine if two different subsequences refer to the same ground proposition, and since our object universe is variable, object names cannot be directly compared against a fixed list. Thus, we compare them exclusively through their positions relative to the object names. Consider a mapping function μα,β,p : {1, . . . , k α} → { 1, . . . , k β }, where α ∈ A has p ∈ P listed as a precondition and β ∈ A has p ∈ P listed in its effects. So μα,β,p (m) = n implies that we want to map the m-th argument of α with the n-th argument of β to check how each of these map their arguments to p. We need this, as the mapping of the arguments of the underlying predicate to α and β could be different. We define the match predicate χα,β,p (i, j ) to be true if the ground action nα, o 1, . . . , o kα ending at index i and action 
+
+nβ , o 1, . . . , o kβ ending at index j match on the arguments of p. Since we only have access to the full argument list at the end of the action span due to causal masking, we define the offsets relative to i and j:
+
+χα,β,p (i, j ) := Curr α(i) ∧ Curr β (j) ∧
+
+> arity (p)
+
+^
+
+> m=1
+
+(ci−kα+m = cj−kβ +n)
+
+where n = μα,β,p (m). We note that all such offsets m, n pairs will be constant and fixed according to a domain and can thus be plugged into our C*-RASP [Pos ] program. We can similarly define χα, Init ,p (i, j ) to be true, if the ground action nα, o 1, . . . , o kα ending at i with a ground proposition np, o 1, . . . , o arity (p) ending at position j is listed in the initial state. 
+
+χα, Init ,p (i, j ) := Curr α(i) ∧ Curr p(j) ∧
+
+> arity (p)
+
+^
+
+> m=1
+
+(ci−kα+m = cj−kp+n)
+
+With such match predicates, we will be able to match grounded actions and propositions, irrespective of the exact identities of the underlying objects. Thus, we will henceforth in the proof, be able to directly reason and interact with grounded actions and propositions listed in our w. We will be using α, p in our indexing, but those C*-RASP variables will be true for every ground instance of the corresponding α, p .5. Precondition Check at every action: For a specific action instance α at i and a specific precondition p of α, we compute three values: (a) Provided by Init: Does the initial state contain the required ground proposition? 
+
+Vinit,α,p (i) := # [j < i ] ( InInit (j) ∧ χα, Init ,p (i, j )) 
+
+The check for being in initial is required, so as to not match with propositions listed in G.(b) Provided by Plan (Adds): How many times has this proposition been added by previous actions? 
+
+Vadd,α,p (i) := X
+
+> β∈T P p
+
+# [j < i, χ α,β,p (i, j )] 
+
+(c) Removed by Plan (Deletes): How many times has this proposition been deleted? 
+
+Vdel,α,p (i) := X
+
+> β∈F P p
+
+# [j < i, χ α,β,p (i, j )] 
+
+We combine these to check if precondition p is satisfied for action α at step i:• Case A: Delete-Free. In a delete-free domain, F P p = ∅, so Vdel (i) = 0 . The precondition is satisfied if the proposition was ever established: Satisfied α,p (i) := ( Vinit,α,p (i) + Vadd,α,p (i) ≥ 1) 
+
+• Case B: Well-Formed. In a well-formed domain, the truth value of a proposition toggles cleanly. A proposition is true if it was in Init and not net-deleted, or not in Init and net-added. The current truth value is: CurrentVal α,p (i) := Vinit,α,p (i) + Vadd,α,p (i) − Vdel,α,p (i)
+
+19 On the Ability of Transformers to Verify Plans 
+
+Since the domain is well-formed, this sum will always be either 0 (False) or 1 (True). Thus: Satisfied α,p (i) := ( CurrentVal α,p (i) == 1) 
+
+We note that for negative precondition requirements, the satisfaction check above would be changed to the value to be equal to 0. Whether a precondition requirement is positive or negative is known apriori as well, and hence one can aptly set 0 (for negative precondition) or 1 (positive precondition) here. We mark an action as valid, if all the preconditions are satisfied. Valid α(i) = ^
+
+> p∈pre (α)
+
+Satisfied α,p (i)
+
+We check at the final token of the entire input sequence, that we are indeed at the end and that we found no invalid actions so far. AllActionsValid (i) := End (i) ∧ ^
+
+> α∈A
+
+(# [j ≤ i] ¬Valid α(j) == 0) 
+
+6. Finally, we check if all goal conditions are met. We iterate over all predicates p ∈ P . For each predicate p, we perform validity checks at every position in the block where the goal proposition is of the type p (each such proposition may have different objects). We can construct a similar match predicate as before, χGoal ,β,p (i, j ) to match a goal requirement at i with an action 
+
+β at j (where j ≤ i). We can also construct χGoal ,Init ,p (i, j ), here in fact the entire proposition to be matched will be listed in the same way in the goals as in the initial state. For a specific goal proposition at index i (the index denotes the end of that goal proposition), we compute its validity: (a) Initial Status: Ginit,p (i) := # [j ≤ i, χ Goal ,Init ,p (i, j )] 
+
+(b) Added: Gadd,p (i) := P 
+
+> β∈T P p
+
+# [j ≤ i, Curr β (j) ∧ χGoal ,β,p (i, j )] 
+
+(c) Deletes: Gdel,p (i) := P 
+
+> β∈F P p
+
+# [j ≤ i, Curr β (j) ∧ χGoal ,β,p (i, j )] 
+
+The goal ending at i is satisfied if: GoalSat p(i) := ( Ginit,p (i) + Gadd,p (i) − Gdel,p (i) == 1) 
+
+(Or ≥ 1 for Delete-Free). If i is not a goal token for p, we define GoalSat p(i) to be by default true (or ignore it in the final count). We note that for negative goal conditions, the conditions for satisfaction above would be flipped to equating with 0 (for both well-formed and delete-free). We explicitly mark goals that were unsatisfied: UnsatisfiedGoal (i) := InGoal (i) ∧ _
+
+> p∈P
+
+(Curr p(i) ∧ ¬ GoalSat p(i)) 
+
+At the final token, we verify that the total count of unsatisfied goal tokens is zero. AllGoalsMet (i) := End (i) ∧ (# [j ≤ i] UnsatisfiedGoal (j) == 0) 
+
+The final program output is Φvalid := AllActionsValid ∧ AllGoalsMet. We next proceed to proving Statement 2 
+
+Proof. Statements 2, 3 of Theorem 3.1 already showed that even the set of objects is fixed, universe domains with STRIPS and domains with conditional effects have instances where the language of valid plans is isomorphic to the FlipFlop and Parity language. As Theorem 3.5 showed both FlipFlop and Parity cannot be expressed in C*-RASP . Thus, the current statement falls out as a corollary based on these facts established already. 20 On the Ability of Transformers to Verify Plans 
+
+# C. Learning Framework 
+
+C.1. Model of the transformer with Extended Alphabet Parameterization Our parameterization and setup closely follows Huang et al. (2025b), with the crucial distincition being in the way we allow an extended alphabet (to account for the increase of objects during test). We focus on transformers with causal masking. We assume the transformer T is parameterized by the following; • A finite alphabet Σ and a token embedding matrix for the finite alphabet E ∈ R|Σ|× d.• Width of the transformer being d ∈ N.• A context width N (T ) ∈ N ∪ { +∞} .• Positional encodings {pt ∈ Rd : 1 ≤ t < N (T ) + 1 }.• An extended embedding collection {ck ∈ Rd : 1 ≤ k < N (T ) + 1 ∈ N} representing the learnable embeddings for the extended alphabet. Note that while indexed by integers similar to positions, these are distinct parameters from the positional encodings. • Depth L, heads H, and layer matrices {Kl,h , Ql,h , Vl,h , Al, Bl, bl} as standard. • An unembedding matrix U ∈ R|Ω|× d
+
+Input Structure, Embeddings & Positional Embedding We define the vocabulary as the disjoint union Ω = Σ ∪ C ∪ { $},where $ is a special reserved start symbol. Thus, a input string w is a sequence w = ( w1, . . . , w n), where the first token is the special start symbol, w1 = $ , and the rest of the sequences can be either a σ ∈ Σ or a symbol c ∈ C . Similar to Huang et al. (2025b), we study NoPE (No Positional Encoding) and Absolute Positional Encodings (APE) that has learned per-position embedding vectors p1, . . . , pN . We encode an input x of length |x| = k ≤ N using positional encodings 
+
+p1+ o, . . . , pk+o where o is an offset such that k + o ≤ N , and require that the transformer correctly performs the task independently of the offset o ≥ 0. The offsets try to mimic the fact that language models typically need to solve tasks appearing at aribitrary positions in a long context. Positions outside of the input are considered empty. 
+
+Computation of Initial State Let w be an input sequence of length n such that n ≤ N (T ). We consider two kinds of offset again, where {op, o c} ≥ 0 are the positional offsets and the character offsets such that n + op ≤ N (T ) and 
+
+n + oc ≤ N (T ) as well (ensuring the sequence fits within the context window when shifted). The input to the first transformer layer, denoted as y(0)  
+
+> i
+
+∈ Rd for the token at position i (where 1 ≤ i ≤ n), is defined as the sum of the token’s embedding and its positional encoding: 
+
+y(0)  
+
+> i
+
+=
+
+(
+
+Ewi + pi+op if wi ∈ Σ (Finite Token) 
+
+ck+oc + pi+op if wi ∈ C and wi has value k (Extended Token) (1) The motivation for training the extended alphabet with offsets is to enable reasoning over the increasing alphabet and still be able to fit everything in the same context window, akin to the motivation of using offsets for absolute positional encodings. Attention logits, at query position i and key position j are computed as 
+
+a(l,h ) 
+
+> i,j
+
+= ( y(l−1)  
+
+> j
+
+)T KTl,h Ql,h y(l−1)  
+
+> i
+
+for 1 ≤ j ≤ i ≤ | x|; l = 1 , . . . , L ; h = 1 , . . . , H (2) We assume standard softmax attention, but incorporate scaling with log |x| following prior work finding it necessary to theoretically represent sparse functions and circumvent theoretical limitations of soft attention (Chiang & Cholak, 2022; Edelman et al., 2022): 
+
+Y (l) 
+
+> i
+
+:= y(l−1)  
+
+> i
+
++
+
+> H
+
+X
+
+> h=1
+
+Pij=1 exp 
+
+
+
+log |x| · a(l,h )
+
+> i,j
+
+
+
+Vl,h y(l−1) 
+
+> j
+
+Pij=1 exp 
+
+
+
+log |x| · a(l,h )
+
+> i,j
+
+ (3) 21 On the Ability of Transformers to Verify Plans 
+
+After each attention block, the activations are passed through a one-layer MLP: 
+
+y(l) 
+
+> i
+
+:= Y (l) 
+
+> i
+
++ Bl · ψl(AlY (l) 
+
+> i
+
++ bl) (4) where we allow similar to Huang et al. (2025b) the activation function ψl to be, in each coordinate, either ReLU or Heaviside. In addition, we also allow the activation function f (x) = 1 /x + ϵ, where ϵ is a small constant to avoid division by 0. Owing to the universal approximation theorem (Cybenko, 1989), such non-linear activations can be approximated arbitrarily closely by ReLU MLPs. We do this to use to have an MLP that could invert values akin to the strategy in Theorem 1 of Kazemnejad et al. (2023). 10 
+
+To keep our model close to Huang et al. (2025b), we also omit layer norm as they do and also assume an infinite-precision setup for the activations, with the restriction that attention logits (2) and the output of the exp( ·) function are both rounded to p fractional bits of precision before further processing. This mild restriction was put in Huang et al. (2025b) to prevent tiny changes in attention patterns to potentially snowball into large changes in the output due to infinite precision; it is also adopted in Izzo et al. (2025). A transformer T maps strings x (|x| ≤ N (T )) to vectors of next-token prediction logits, T (x, o p, o c) ∈ R|x|×| Ω|, where 
+
+T (x, o p, o c)i = U y (L) 
+
+> i
+
+(i = 1 , . . . , |x|) for the unembedding matrix U ∈ R|Ω|× d, and op, o c are the offsets. Let F(Ω) be the set of all maps f mapping x to f (x) ∈ R|x|×| Ω|.C.1.1. P RODUCT FUNCTIONS 
+
+Our theory extends the framework for length generalization of transformers with absolute positional encodings, where the width may grow with the input length, to account for cases where transformers also reason based on token identities from an unbounded vocabulary. Similar to Huang et al. (2025b), we cannot view the ground-truth function as realized by a single transformer. Even if one assigned such a transformer an infinite number of positional encodings, it would effectively only distinguish between a bounded number of positions because the width of the model is bounded. Analogously, even if we equip the transformer with an increasing number of token embeddings, a single finite-width transformer can only act on this infinite alphabet in a limited fashion—primarily by matching identities of token symbols rather than memorizing infinite arbitrary features. Thus, just as Huang et al. (2025b) derived a parameterization to convert sequences of transformers operating on longer sequences into a single limiting object, we derive a similar parameterization to unify sequences of transformers equipped with increasing alphabet sizes .We reuse the key technical idea to reparameterize the transformer in terms of product functions —inner products of parameter vectors mediated by parameter matrices. However, in our setting, we explicitly distinguish between pairwise interactions ( α) and single-site potentials ( β). The pairwise interactions ( α) capture operations operations where two kinds of embedding interact (either position-position, position-token, or token-token).For instance in attention scores or with the use of Input-Output predictions (Token-Token): 
+
+pTi KT
+
+> 1,h
+
+Q1,h pj ETσ KT
+
+> 1,h
+
+Q1,h Eτ
+
+pTi KT
+
+> 2,h
+
+Q2,h V1pj U Tτ V3V1Eσ
+
+(5) Meanwhile, the single-site potentials ( β) capture interactions where such two kinds of embeddings do not interact. For instance while considering MLP operations: 
+
+(A1)Ts, ·pi (A1)Ts, ·Eσ
+
+U Tτ (B1)·,s U Tτ V2(B1)·,s 
+
+(6) 
+
+Definition C.1 (Product Parameterization) . More formally, this parameterization is defined as follows:   
+
+> 10 The prevalent use of the Universal Approximation theorem notwithstanding, precisely understanding how such functions are learned on the basis of more commonly used activation functions such as ReLU in MLPs inside transformers is largely an open and highly challenging question, which we leave to future work.
+
+22 On the Ability of Transformers to Verify Plans 
+
+For l = 1 , . . . , L ,: 
+
+Vstart ={pi : i} ∪ { Eω : ω ∈ Ω}VO l ={(Bl)·,s : s = 1 , . . . , d }VI l ={(Al)s, · : s = 1 , . . . , d }VU ={Uω : ω ∈ Ω}VO =Vstart ∪
+
+> L
+
+[
+
+> l=1
+
+VO l
+
+VI =
+
+> L
+
+[
+
+> l=1
+
+VI l
+
+P ={{ Vl1,h 1 , . . . , V lk ,h k } : 0 ≤ k ≤ L; l1 < · · · < l k; 1 ≤ hi ≤ H}
+
+Given a transformer T , define the Pairwise Interaction Potentials ( α) and Single-Site Potentials ( β): 
+
+αattn  
+
+> l,h, S1,S2,v,w
+
+:= vT Y
+
+> S∈S 1
+
+S
+
+!T
+
+KTl,h Ql,h 
+
+Y
+
+> S∈S 2
+
+S
+
+!
+
+w ∈ R
+
+for 1 ≤ l ≤ L; 1 ≤ h ≤ H; v, w ∈ VO ; S1, S2 ∈ P 
+
+αunembed  
+
+> S,u,w
+
+:= uT Y
+
+> S∈S
+
+S
+
+!
+
+w ∈ R
+
+for u ∈ VU ; w ∈ V start ; S ∈ P 
+
+βmlp  
+
+> S,v,w
+
+:= vT Y
+
+> S∈S
+
+S
+
+!
+
+w ∈ R
+
+for v ∈ VI ; w ∈ VO ; S ∈ P 
+
+βunembed  
+
+> S,u,w
+
+:= uT Y
+
+> S∈S
+
+S
+
+!
+
+w ∈ R
+
+for u ∈ VU ; w ∈ VI ; S ∈ P 
+
+where the matrix product over a set S ∈ P Y
+
+> S∈S
+
+S (7) is computed in descending order of layers; with the S associated with the lowest layer at the right. For instance, 
+
+Y  
+
+> S∈{ V1,h ,V 3,h ′,V 4,h ′′ }
+
+S = V4,h ′′ V3,h ′ V1,h (8) 
+
+Remark C.2 . Here, we exemplify the Product Parameterization. 
+
+αattn  
+
+> 1,h, ∅,∅,pi,Eσ
+
+=pTi KT
+
+> 1,h
+
+Q1,h Eσ
+
+αattn   
+
+> 2,h, {V1,h ′},∅,pi,pj
+
+=pTi V T 
+
+> 1,h ′
+
+KT
+
+> 2,h
+
+Q2,h pj
+
+αunembed    
+
+> {V3,h ′,V1,h },Uτ,Eσ
+
+=U Tτ V3,h ′ V1,h Eσ
+
+βmlp  
+
+> ∅,(A1)s, ·,pi
+
+=( A1)Ts, ·pi
+
+βmlp  
+
+> {V1,h },(A3)s, ·,Eσ
+
+=( A3)Ts, ·V1,h Eσ
+
+βunembed    
+
+> {V3,h ′,V2,h },Uτ,(B1)·,s
+
+=U Tτ V3,h ′ V2,h (B1)·,s 
+
+23 On the Ability of Transformers to Verify Plans 
+
+Remark C.3 . For ease of notation, we have not restricted the layers from which different vector parameters are taken in the definition of α and β; hence, they will also include products that are not relevant to actual computations, such as 
+
+piT V T
+
+> 2,h
+
+KT 
+
+> 1,h ′
+
+Q1,h ′′ V3,h ′′′ pj (9) where a vector of the form V3,h ′′′ pj cannot actually feed into the computation of queries in the first layer. This is simply for simplicity of notation; such products will not impact results and is consistent with the parameterization used in Huang et al. (2025b). C.1.2. S YMBOLIC LIMIT TRANSFORMERS 
+
+We define locality and translation invariance by generalizing the notions from (Huang et al., 2025b) beyond positional encodings to also cover token embeddings: 
+
+Definition C.4 (Locality & Translation Invariance) . For any embedding types x, y ∈ { p, c}, if the product functions obey the following, then the transformer is said to be local and translation invariant: 1. Locality & Translation Invariance for Related Types: When inputs share a type (Pos-Pos or Tok-Tok), then their interactions vanish if the distance exceeds a bandwidth ∆ ∈ N 11 :
+
+|k − m| > ∆ = ⇒ α..., xk ,xm = 0 (10) Translation Invariance implies that for all shifts δ, the behaviour remains the same: 
+
+α..., xk ,xm = α..., xk+δ ,xm+δ (11) 2. Translation Invariance for Unrelated Types: When inputs differ in type (Pos-Tok) or act singly (MLP-Pos), the interaction cannot pick out specific absolute indices from a structure it is unrelated to. Thus, the interaction collapses to a Constant . For any xk, if the other term is of a different type or fixed: 
+
+β..., xk = C and α..., xk ,ym = C (12) We will use the parameterization just defined to translate sequences T1, T 2, T 3, . . . of transformers running on inputs of length 1, 2, 3, . . . to limiting transformer-like objects that are applicable at all input lengths, while keeping width d bounded even if the widths of Tn, and thus the allowed number of tokens diverge to infinity. We will define this limit transformer like object as follows: 
+
+Definition C.5. A Symbolic Limit Transformer is a transformer T where: 1. N (T ) = + ∞
+
+2. Positional encodings {pt}t∈N and extended alphabet embeddings {ck}k∈C have globally bounded norms in H. There exists Cemb > 0 such that: 
+
+sup 
+
+> t∈N
+
+∥pt∥ ≤ Cemb and sup 
+
+> k∈C
+
+∥ck∥ ≤ Cemb (13) 3. All weight matrices W ∈ { Kl,h , Ql,h , Vl,h , Al, Bl, U } are bounded linear operators on H, where their spectral norms are bounded. 4. For every layer l, the MLP projects to a finite-dimensional subspace. There exists dff ∈ N such that Al : H → Rdff and 
+
+Bl : Rdff → H .5. The behavior of this transformer is governed by the set of scalar product functions defined earlier (Definition C.1). Each product function must evaluate to a number in p-bit precision, for some fixed p ∈ N. Crucially, these functions must satisfy the Locality and Translation Invariance Constraints defined in Definition C.4  
+
+> 11 . . . implies that the rest of the parameters are the same on both sides
+
+24 On the Ability of Transformers to Verify Plans 
+
+Length generalization will be linked to expressibility by Symbolic Limit Transformers. A Limit Transformer, as defined in Huang et al. (2025b) could use positional information through bounded-width and bounded-precision positional encodings 
+
+pi, and additionally through potentially more complicated functions ϕl,h , where a function f : N × N → R would be “translation-invariant” if f (i, j ) = f (i + τ, j + τ ), ∀i ≤ j, ∀τ ≥ 0, and “local” if there is τ such that f (i, j ) = 0 when 
+
+j > i + τ .Symbolic Limit Transformers use positional information in the same way. However since now they have access to an infinite character vocabulary, we put some restrictions in the ways in which these character tokens can interact with each other. Thus we can perform operations like checking the equality of character tokens, or check the equality of character tokens that lie near each other in their embedding spaces. The other points in the definition are simply to keep the outputs of each of the operations be finite, and representable in finite precision.d The parameterization in terms of inner products permits a translation from a transformer T to a bounded-width Symbolic Limit Transformer (Statement 3 of Proposition C.12 in the Appendix). 
+
+C.2. Definition of Inference Procedure 
+
+To define the inference procedure, we specify the following hypothesis class at each input length n:
+
+Definition C.6 (Hypothesis Class) . For each n = 1 , 2, 3, . . . , define the hypothesis class Θn as the set of transformers T (as defined in Section C.1) where (1) N (T ) = n, (2) each parameter vector and matrix of T is represented at p bits of precision, for some p ∈ N, (3) each product function involving only positional encodings is translation-invariant. (4) each product function involving only the extended character alphabet is also translation-invariant. Note that the width d of the transformers T ∈ Θn is unconstrained. We keep the requirement of Huang et al. (2025b) of wanting the contributions of positional encodings pi (that vary with position) to the transformer’s computations to be offset-independent. This is a stronger requirement than for the input-output behavior to be offset-independent: we ask for the transformer’s “algorithm” itself to be the same across offsets. We extend this logic to the character alphabet in requirement (4). Here, the goal is to prevent the model from overfitting to specific absolute values of the extended tokens. By enforcing translation invariance on the embeddings ck, we ensure that the model only ever uses relative differences between token indices (to do operations like local matching or exact equality checks). This effectively restricts the transformer to learning algorithms based on pattern matching—such as identifying when a current token matches one from the past—without allowing it to attach arbitrary semantics to specific tokens in the infinite sequence. Our inference procedure will use a regularizer R favoring simpler hypotheses. It should be noted that while our extension of Limit Transformers is more complex than in Huang et al. (2025b), the regularizer we will use would be simpler. It should be noted that this trades off a complexity in a theoretical mathematical construct – that is just a tool for proving statements about standard transformers – with an increase in simplicity in the conditions of the regularizer we use in the idealized model of learning. The following will be sufficient: 
+
+Definition C.7 (Regularizer) . Let T ∈ Θn, thus N (T ) = n. Define R(T ) as the sum of (1) L + H; (2) the precision 
+
+p used in Definition C.6; the precision p used for rounding attention logits and the output of exp( ·) (Section C.1); (3) 
+
+max l,h ∥KTl,h Ql,h ∥; max l,h ∥Vl,h ∥; max l ∥Al∥F , ∥Bl∥F ; ∥U ∥; (4) max i ∥pi∥2, max σ ∥Eσ ∥2, max l ∥bl∥2; (5) the term: 
+
+ζ(T ) = 
+
+> L
+
+X
+
+> l=1
+> H
+
+X
+
+> h=1
+
+X
+
+> S1,S2∈P
+
+  
+
+> N(T)
+
+X
+
+> j=1
+
+αAttn 
+
+> l,h, S1,S2,p1,pj
+> 2
+
++
+
+> |Ω|
+
+X
+
+> k=1
+
+αAttn 
+
+> l,h, S1,S2,E1,Ek
+> 2
+
+ + X
+
+> S∈P |Ω|
+
+X
+
+> k=1
+
+αunembed  
+
+> S,U1,Ek
+> 2
+
+(14) We note that this regularizer omits a term rank (Vl,h ) used in Huang et al. (2025b); we do not need it and can thus simplify by removing it. As in Huang et al. (2025b), the idea of (14) is to discourage accidental attention between far-away positions and interactions between character token embeddings that do not appear together during training, which could hamper length generalization. These form a subset of the product functions formally defined earlier (Definition C.1). Due to translation invariance, such a term entails a bound on products for all pairs pi, pj (i ≤ j) and ci, cj ) entering causal attention. While such a regularizer is not part of standard training, standard initialization tends to lead to bounded values for (14) when d is large. As shown in Huang et al. (2025b), it thus captures an implicit bias of standard initialization and training. Additionally, by removing the bounded rank constraint on the regularizer, we enforce lesser restrictions on it, making it a more plausible estimate of 25 On the Ability of Transformers to Verify Plans 
+
+standard initialization and training compared to what was used in Huang et al. (2025b). Importantly, the width d does not explicitly enter R; as a consequence, for any sufficiently large C, the number of transformers Tn ∈ Θn with R(Tn) ≤ C
+
+is infinite, simply because d is not constrained. Nonetheless, this regularizer will be sufficient for identification under our idealized inference procedure, which observes the input-output behavior of the target function f on inputs of length 
+
+≤ n 
+
+> 2
+
+and selects a transformer T with maximal context window n, T ∈ Θn that exactly fits that input-output behavior while minimizing the regularizer R(T ). At inference time, when the transformer Tn processes input lengths up to n, it may encounter extended tokens ck that were effectively unseen during the “training” phase (which is restricted to smaller indices). This can be thought of as adding random embeddings at test time. However, these tokens would be constrained by the translation invariance and locality conditions of the hypothesis class Θn, and the algorithm learned by the transformer would not be able to rely on the specific identity of these new tokens, and instead would have to use the same relative algorithms learned on the smaller alphabet (such as checking for equality ci = cj or local proximity). This setup models the transformer’s ability to generalize simpler algorithmic primitives (like pattern matching) to completely novel vocabulary items. The inference procedure is then defined in analogy to Huang et al. (2025b): 
+
+Definition C.8 (Inference Procedure) . Given a function f ∈ F (Ω) , the Inference Procedure obtains a sequence of transformers T1 ∈ Θ1, T 2 ∈ Θ2, . . . as follows. Define Un as the set of T ∈ Θn matching the behavior of f on the restricted domains of inputs constrained in the following ways relative to n.1. The sequence length of any input x is |x| ≤ n 
+
+> 2
+
+.2. The extended character tokens {ck} appearing in x fall within a range of size at most n 
+
+> 2
+
+. Specifically, if Kx = {k ∈
+
+N ∧ k ∈ [1 , n ] | ck appears in x} is the set of indices in input x, then max( Kx) − min( Kx) ≤ n 
+
+> 2
+
+.Then choose Tn ∈ Un such that 
+
+R(Tn) ≤ 1
+
+n + inf  
+
+> T∈Un
+
+R(T ) (15) Importantly, we only ask Tn to match the behavior of f up to length n 
+
+> 2
+
+with context window sizes of the character embeddings involved also restricted to n 
+
+> 2
+
+, formalizing the idea of training on shorter inputs and testing on longer ones; our identifiability guarantee will provide conditions under which Tn will end up matching f correctly up to length n – representing length generalization. In (15), we do not simply ask for minimizing the regularizer, as the set of elements of Un with R(T ) smaller than a given value need not be finite and thus a minimum need not be attained by any Tn. As in (Huang et al., 2025b), we take the testing length to be twice the training length, but the analysis works whenever the training length diverges to infinity. 
+
+C.3. Main Result: Convergence of Inference Procedure 
+
+Our main result asymptotically characterizes length generalization under the inference procedure from Definition C.8. For functions representable by Symbolic Limit Transformers, we guarantee that any run of the Inference Procedure will ultimately achieve length generalization, so that transformers with context length n and access to a vocabulary range of 
+
+n from C chosen to fit the target function on inputs with length ≤ n 
+
+> 2
+
+and vocabulary range of n/ 2 from C will, when n is sufficiently large, also perform correctly at all lengths ≤ n. Formally, we obtain the following analogue of Theorem 7 in Huang et al. (2025b): 
+
+Theorem C.9 (Guaranteed Length Generalization in the Limit) . Let f ∈ F (Ω) . Then the following are equivalent: 1. f is expressible by a Symbolic Limit Transformer. 2. (Guaranteed Length Generalization) Applying the Inference Procedure from Definition C.8 to f generates a sequence 
+
+T1, T 2, . . . with sup n=1 ,2,3,... R(Tn) < ∞, for which there is some N0 such that, for all m > N 0, Tm matches f on all inputs of any length k ≤ m.Remark C.10 . We note that a Symbolic limit transformer T∞ representing f need not itself be offset-invariant. It is sufficient to have 
+
+T∞(x, 0) = f (x) (16) Statement 2 of Proposition C.12 shows that such a function has a sequence of transformers Tn ∈ Θn which are offset-invariant, even without assuming T∞ to be offset-invariant. 26 On the Ability of Transformers to Verify Plans 
+
+High-Level Proof Sketch Our proof here tracks the proof of Theorem 7 of Huang et al. (2025b) really closely. The core logic of both ours and theirs is the same, and the difference primarily lies in the fact that our learning setting has different definitions for the regularizer, our limiting object, inference procedure etc. The core idea is that if f is expressible by a Symbolic Limit Transformer satisfying then, even though the Inference Procedure produces infinitely many distinct 
+
+transformers T1, T 2, . . . (with increasing numbers of position and token embeddings), these can only traverse a finite set of underlying algorithms , each described by some Symbolic Limit Transformer. The property of translation invariance and locality ensure that the parameter count effectively remains finite, as its position-related parameters as well as the extended character related parameters can be fully specified in terms of finite product functions. The regularizer bounds the complexity of the symbolic Limit Transformers as well, thus keeping the set of algorithms traversed finite. For 1 ⇒2, given a sequence generated by the Inference Procedure, we show that R stays bounded and use the compactness property to show that a subsequence exhibits behavior equivalent to f . To show that, in fact, all possible sequences Tn generated by the Inference Procedure ultimately exhibit behavior equivalent to f , when n is large, we show that subsequences failing to length-generalize would exhibit increasing attention scores between far-away positions and between characters whose embeddings are far apart, as input length increases. Due to the penalty on such scores in R, any such sequence would, for large n, need to have a higher value of R than sequences avoiding such an increase. For 2 ⇒1, we obtain the Symbolic Limit Transformer from the compactness property applied to the sequence generated by the Inference Procedure. The penalty on pairwise interactions enforces that the transformer satisfy the locality property, and as noted in the Remark C.10, offset invariance is not necessary for T∞.
+
+Preliminaries and Formal Proof For our formal proof, we will set up some definitions that will help provide translations between ordinary transformers and Symbolic Limit Transformers. It will be useful to define a complexity metric applicable to Symbolic Limit Transformers. 
+
+Definition C.11. For a Limit Transformer T∞, define R∞(T∞) as the sum of 1. The number of layers and heads ( L + H)2. dM LP 
+
+3. the precision p used for expressing the output of any product function, and the precision p used for rounding attention logits and the output of exp( ·) (Section C.1). 4. The total L2 norm of the pairwise product functions. This corresponds to the limit ( N (T ) → ∞ ) of the ζ(T ) term in Definition C.7: 
+
+ζ(T∞) = 
+
+> L
+
+X
+
+> l=1
+> H
+
+X
+
+> h=1
+
+X
+
+> S1,S2∈P
+
+
+
+> ∞
+
+X
+
+> j=1
+
+αAttn 
+
+> l,h, S1,S2,p1,pj
+> 2
+
++
+
+> ∞
+
+X
+
+> k=1
+
+αAttn 
+
+> l,h, S1,S2,E1,Ek
+> 2
+
+
+
++ X
+
+> S∈P ∞
+
+X
+
+> k=1
+
+αunembed 
+
+> S,U1,Ek
+> 2
+
+Proposition C.12. The following are true. 1. Specification by Product functions: The input-output behavior of a (symbolic-limit or normal) transformer is fully specified by its product functions. Thus, for any choice of product functions that respects translation invariance and locality, there is a corresponding symbolic-limit transformer, and also (restricting to any N (T )) a corresponding transformer implementing these. 2. Symbolic Limit Transformer to a standard Transformer: For any symbolic-limit transformer T∞ and any context window length N0, there is a corresponding transformer T ∈ ΘN0 with N (T ) = N0 that exactly matches the product functions of T∞ restricted to inputs up to size N0. Furthermore, R(T ) ≤ R ∞(T∞).3. Standard Transformer to a Symbolic Limit Transformer: For any transformer T , there is a corresponding symbolic limit transformer T∞ that has the same product functions up to N (T ), and R∞(T∞) is bounded in terms of R(T ).
+
+27 On the Ability of Transformers to Verify Plans 
+
+4. Let C > 0 be a constant. There is a finite set of symbolic limit transformers denoted QC , such that any T∞ with 
+
+R∞(T∞) < C agrees with an element of QC on all product functions except possibly those representing pairwise interactions between embeddings of related types (Position-Position, Token-Token, etc.). Proof. 1. This directly follows from the definition of our Product Parameterization (Defintion C.1). Since the output of the model is a composition of scalar products, specifying those products specifies the model. 2. We can simply construct T to evaluate the product functions of the Symbolic Limit Transformer for indices i, j ≤ N0.Since R∞(T∞) is the sum of squared norms over the infinite domain, and R(T ) is the sum over the finite domain N0,non-negativity of the terms involved implies R(T ) ≤ R ∞(T∞).3. We construct T∞ from T as follows: • For the product functions terms involving unrelated types or involving just a single position or single character from the extended set, we extend the values observed in T constantly to infinity (because of our assumption of locality). • For pairwise terms (related types), since the product functions are translation invariant, we take all available distances from T and use that to fill in the values of our product functions wherever the relative distance between the terms is smaller than the available distances, and set the other product functions to 0 i.e. when the relative distance was not observed in T . This extension thus, also ensures the infinite sum of squares converges, keeping R∞(T∞) bounded by the finite sum R(T ).4. We focus on the product functions excluded from our exception. More specifically the single-site β terms, or the α terms where Position-Token interactions happen. By the definition of the Symbolic Limit Transformer, these functions must satisfy the Locality constraint. Thus, they must evaluate to a constant value K everywhere to ensure the limit object is well-defined. Additionally, since R∞(T∞) < C :1. The contribution of such product functions to the regularizer would be |K|2. Thus, |K|2 ≤ R ∞(T∞) < C , which implies |K| < √C.2. Since the precision p is fixed, K must be a multiple of 2−p.There are only finitely many discrete multiples of 2−p in the bounded interval [−√C, √C]. Since the transformer has a fixed, finite number of layers and heads, there are only finitely many such constant product functions to assign. Thus, the set of possible configurations for these components, QC , is finite. The following definitions will be used: 
+
+Definition C.13. If T ∈ Θi, then define R−(T ) to be R(T ) minus the term in Eq. (14). That is, 
+
+R(T ) = R−(T ) + ζ(T ) (17) where 
+
+ζ(T ) = 
+
+> L
+
+X
+
+> l=1
+> H
+
+X
+
+> h=1
+
+X
+
+> S1,S2∈P
+
+" N (T )
+
+X
+
+> j=1
+
+αAttn 
+
+> l,h, S1,S2,p1,pj
+> 2
+
++
+
+> |Ω|
+
+X
+
+> k=1
+
+αAttn 
+
+> l,h, S1,S2,E1,Ek
+> 2
+
+#
+
++ X
+
+> S∈P |Ω|
+
+X
+
+> k=1
+
+αunembed 
+
+> S,U1,Ek
+> 2
+
+The following lemma will be used for both directions of our main theorem C.9, and is an adaptation of Lemma 17 from Huang et al. (2025b). The proof technique is the same, the main thing that changes is that the terms in the derivation refer to our framework. We try to keep our notation and argumentation similar to theirs to enable quick readability for a reader familiar with Huang et al. (2025b). For readers unfamiliar with Huang et al. (2025b), the following set of proofs are still self contained, and our remarks are meant to simply acknowledge that the following proof argument style is not novel, and is simply an application of it in our context. 28 On the Ability of Transformers to Verify Plans 
+
+Lemma C.14. Let T1, T 2, . . . , where Tn ∈ Θn, be a sequence generated by the Inference Procedure based on the functional behavior of a function f ∈ F , and such that 
+
+sup 
+
+> n=1 ,2,3,...
+
+R(Tn) < ∞ (18) 
+
+Then f is expressible by a Symbolic Limit Transformer and there is some N0 such that, for all m > N 0, Tm matches f on all inputs of length k ≤ m.Proof. We will refer to all sets of pariwise functions α with related types with Φrelated . We will use a superscript Φ(T )
+
+> related
+
+, to indicate the symbolic limit transformer whose relevant product functions of this type are being talked about. We can use statement 3 of Proposition C.12 to get Limit Transformers ˜T1, ˜T2, . . . such that sup i R∞( ˜Ti) < ∞ for the sequence of transformers T1, T 2, . . . generated by our Inference Procedure. In similar vein to Huang et al. (2025b), we thus get, 
+
+˜Ti(x, o ) = Ti(x, o ), ∀i, o, x ; |x| + o ≤ i (19) and, each ˜Ti possesss the same set of pairwise product functions as Ti up to length i, which means Φ( ˜Ti) 
+
+> related
+
+= Φ (Ti)
+
+> related
+
+Each ˜Ti has (i) the collection of its constant product functions (single site potentials and cross-type interactions) (ii) the collection of pairwise decaying product functions. We will write P( ˜Ti) for the collection of the constant product functions 
+
+˜Ti. Let A := sup i R∞( ˜Ti) < ∞. Then {P( ˜T ) : R∞( ˜T ) ≤ A} and by Proposition C.12 (Statement 4) only a finite number of Symbolic Limit Transformer parameter settings P( ˜Ti) will be traversed as i → ∞ .If each product function involved in Φ( ˜Ti) 
+
+> related
+
+also traversed a finite set of distinct functions as i → ∞ , then the number of 
+
+˜Ti itself is finite would have been finite. Each of these functions are local according to definition; however, a priori, they might not be local for any single finite τ (where τ is the distance beyond which product functions evaluate to 0) across the different ˜Ti. We will now show that all such functions are in fact local for a single finite τ .For any given n,
+
+R(Tn) ∈
+
+
+
+inf  
+
+> T∈Un
+
+(R(T )) , 1
+
+n + inf  
+
+> T∈Un
+
+(R(T )) 
+
+
+
+Again similar to Huang et al. (2025b), here, our inf T ∈Un R(T ) is bounded and monotonically increasing in n, and thus it converges to some limit, say ˜R. As 1/n → 0, the interval width tends to 0, and therefore the squeeze theorem gives 
+
+R(Tn) → ˜R.For each τ and each n, we consider 
+
+Dn(τ ) = X  
+
+> f∈Φ( ˜Tn )
+> related
+> min( n,τ )
+
+X
+
+> i=1
+
+|f ( ˜Tn)(1 , i )|2 ≤ R (Tn)
+
+The f ( ˜Tn)(1 , i ) refers to every single product function, where the interactions happen between a term i and a term 1.Therefore for positional attention terms ( pTi . . . p j ), this implies interactions between p1 and pi, for extended alphabet attention terms it implies interaction between c1 and ci, and for unembedding terms it implies interactions between some U1
+
+and Ei.Each such f has precision bounded in terms of R(Tn), and thus {Dn(τ ) : n ∈ N} is a discrete set. Consequently, every accumulation point of the sequence (Dn(τ )) n∈N must be attained for infinitely many values of n.Having established this, we now look at R−(Tn) from Equation 17. The following derivation (Equation 20 to Equation 26) are verbatim the same as Huang et al. (2025b), with the key difference being in the interpretation of the terms here. Let 
+
+R0 := lim inf  
+
+> n→∞
+
+R−(Tn) (20) and let ν1, ν 2, ν 3, . . . be such that 
+
+lim  
+
+> i→∞
+
+R−(Tνi ) = R0 (21) 29 On the Ability of Transformers to Verify Plans 
+
+Then, for some D0,
+
+lim  
+
+> i→∞
+
+Dνi (νi) = D0 (22) and ˜R = lim  
+
+> n→∞
+
+R(Tn) = lim  
+
+> i→∞
+
+R(Tνi ) = R0 + D0 (23) Indeed, 
+
+D0 = lim sup 
+
+> n→∞
+
+Dn(n) (24) because 12 
+
+D0 + R0 = lim 
+
+> n→∞
+
+(R−(Tn) + Dn(n)) = lim inf  
+
+> n→∞
+
+R−(Tn) + lim sup 
+
+> n→∞
+
+Dn(n) (25) Define, for each τ ∈ N,
+
+D∞(τ ) = lim inf  
+
+> i→∞
+
+Dνi (τ ) (26) Because all functions in Φrelated have bounded precision in terms of R(Tn), and our function above is monotonically increasing, there must be τ∞ such that D∞(τ∞) = lim τ →∞ D∞(τ ).We now define a sequence T ′ 
+
+> n
+
+where for each n,
+
+lim inf  
+
+> j→∞
+
+Dνj (n) = D∞(n) ≤ D∞(τ∞)
+
+As all functions in Φrelated have bounded precision, there are infinitely many νi such that Dνi (n) = lim inf j→∞ Dνj (n).Hence, we can select i(n) ∈ N such that νi(n) ≥ n and 
+
+Dνi(n) (n) = lim inf  
+
+> j→∞
+
+Dνj (n)
+
+For each n, let T ′ 
+
+> n
+
+be the restriction of Tνi(n) to positions up to n. Since Tνi(n) agrees with f up to length νi(n)/2 ≥ n/ 2, it follows that T ′ 
+
+> n
+
+also agrees with f up to length n/ 2. Once again, the derivation from here till the point where we show that 
+
+D∞(τ∞) = D0 are verbatim the same as Huang et al. (2025b). Then 
+
+lim sup 
+
+> n→∞
+
+R(T ′
+
+> n
+
+) = lim sup 
+
+> n→∞
+
+R−(T ′
+
+> n
+
+) + Dνi(n) (n)= lim sup 
+
+> n→∞
+
+R−(Tνi(n) ) + D∞(τ∞)=R0 + D∞(τ∞)
+
+Since Tn was created by the Inference Procedure, we have 
+
+lim sup 
+
+> n→∞
+
+R(T ′
+
+> n
+
+) ≥ lim  
+
+> n→∞
+
+R(Tn) (27) On the other hand, since R(T ′
+
+> n
+
+) ≤ R (Tνi(n) ), we also have 
+
+lim sup 
+
+> n→∞
+
+R(T ′
+
+> n
+
+) ≤ lim  
+
+> n→∞
+
+R(Tn) (28) giving 
+
+lim sup 
+
+> n→∞
+
+R(T ′
+
+> n
+
+) = lim  
+
+> n→∞
+
+R(Tn) = D0 + R0 (29) Hence, 
+
+R0 + D∞(τ∞) = lim sup 
+
+> n→∞
+
+R(T ′
+
+> n
+
+)= lim  
+
+> n→∞
+
+R(Tn)=R0 + D0
+
+> 12
+
+As noted by (Huang et al., 2025b), if an + bn converges and an, b n are bounded, then the limit lim( an + bn) equals lim sup an +lim inf bn. For, assume lim sup an + lim inf bn > lim( an + bn) (similar if > is replaced by <). Then let i(n) be a subsequence such that 
+
+ai(n) → lim sup an. Then lim( an + bn) = lim( ai(n) + bi(n)) = lim sup an + lim bi(n) ≥ lim sup an + lim inf bn > lim( an + bn),contradiction. 
+
+30 On the Ability of Transformers to Verify Plans 
+
+and D∞(τ∞) = D0. Now assume there are infinitely many n such that the functions in as each function in Φ(Tn) 
+
+> related
+
+are not 
+
+τ∞-local, hence, infinitely many n such that Dn(n) ≥ Dn(τ∞) + 2 −2p. Then: 
+
+D0 = lim sup 
+
+> n→∞
+
+Dn(n)
+
+≥ lim sup 
+
+> n→∞
+
+Dn(τ∞) + 2 −2p
+
+≥ lim inf  
+
+> i→∞
+
+Dνi (τ∞) + 2 −2p
+
+=D0 + 2 −2p
+
+This is a contradiction. The first inequality follows from Dn(n) ≥ Dn(τ∞) whenever n ≥ τ∞, as for every n, Dn(·) is monotonically increasing. The second holds because (νi)i∈N is a subsequence of (n)n∈N; hence a lim sup over the larger sequence gives an upper bound of lim inf over the subsequence. Thus with this, we can claim that all the functions in Φ( ˜Tn)
+
+> related
+
+have to be local for a uniform τ∞.The remainder of the proof follows Huang et al. (2025b); we repeat it here for self-containedness. The attention product functions involving only positions or only extended characters have products bounded by (R0)4, and are bounded in absolute value by ≤ ∥ pi∥2∥KTl,h ∥∥ Ql,h ∥∥ pj ∥2 ≤ (R0)4 or ≤ ∥ ci∥2∥KTl,h ∥∥ Ql,h ∥∥ cj ∥2 ≤ (R0)4. The unembedding terms are in fact bounded by a smaller polynomial ∥Ui∥∥ Ej ∥ ≤ (R0)2, therefore each function value is expressed at precision bounded by a polynomial in R0. There are only a finite set of functions that satisfy these properties and are are local for this τ∞.We had already shown that the constant components of ˜T are from a finite set, and now we have also shown that the pairwise product functions are also from a finite set. Hence, we know that, Q := { ˜Ti : i ∈ N} is finite. Let Q∞ ⊆ Q be the set of Limit Transformers that equal ˜Ti for infinitely many different i. By definition of the Inference Procedure, every element of 
+
+Q∞ is functionally equivalent to f at all input lengths. Because Q is finite, there is N0 such that ˜Ti ∈ Q ∞ for each i ≥ N0.Hence, Ti is functionally equivalent to f at all lengths ≤ i as soon as i exceeds the threshold N0.We now prove the theorem. 
+
+Proof of the Theorem. With Lemma C.14, now both directions of the theorem are just corollaries. 
+
+2⇒1: This directly follows from Lemma C.14. 
+
+1⇒2: By Statement 2 of Proposition C.12, there exists a standard normal transformer bTi ∈ θi which can be derived from the ground truth Symbolic Limit Transformer ˜T∞ for each i = 1 , 2, 3, . . . , such that R( bTi) is uniformly bounded, i.e. 
+
+lim sup 
+
+> i→∞
+
+R(Ti) ≤ lim sup 
+
+> i→∞
+
+R( bTi) < ∞ (30) where Ti refers to the sequence generated by Inference Procedure in Lemma C.14. Lemma C.14 now provides a threshold 
+
+N0 > 0 such that the sequence of inferred transformers stablise to some Symbolic Limit Transformer, which we define as computing a function g. Now for all m > N 0, Tm computes g on inputs of length ≤ m. However, by construction of the inference procedure, Tm is also constrained to match the ground truth function f on inputs of length ≤ m. Therefore for all 
+
+m > N 0, and all inputs x, such that |x| ≤ m, we have g(x) = Tm(x) = f (x). Since this holds for arbitrarily large m, we conclude that g ≡ f . Thus, for all m > N 0, the inferred transformer Tm matches f. 
+
+C.4. Result for NoPE Transformers 
+
+As in (Huang et al., 2025b), we obtain an analogous result for NoPE transformers: 
+
+Corollary C.15. For ease of the reader, we mark the differences to Theorem C.9 in green font. Let f ∈ F (Ω) . Then the following are equivalent: 1. f is expressible by a Symbolic Limit Transformer where all pi ≡ 0
+
+31 On the Ability of Transformers to Verify Plans 
+
+2. (Guaranteed Length Generalization) Consider the inference procedure from Definition C.8 applied to f with R while constraining all pi ≡ 0, generating a sequence T1, T 2, . . . . For any such sequence, there is some N0 such that, for all 
+
+m > N 0, Tm matches f on all inputs of any length k ≤ m, and sup n=1 ,2,3,... R(Tn) < ∞.Proof. The statement 2 of Proposition C.12 still stands, but instead when translating a Symbolic Limit Transformer to an ordinary transformer, since the positional encodings are taken to be zero, pi ≡ 0, the product functions involving these positions become 0. Similarly in the statement 3 of Proposition C.12 also stands, but when pi ≡ 0 in a transformer, the resulting Symbolic Limit Transformer also has zero positional encodings and zero outputs for all associated positional product functions. Specifically, the pairwise product functions restricted to position-position interactions will be identically zero, and the single site potentials or the cross related types will have fewer product functions. The finiteness and compactness arguments in Lemma C.14 then rely solely on the interactions between extended alphabet characters (Token-Token interactions) and the remaining constant components. Since these are a subset of the components bounded in the general proof, the convergence and finiteness arguments apply equally. The proof of Theorem C.9 thus applies directly to show Corollary C.15. 
+
+C.5. Statement of Main Theorem for Arbitrary Training Lengths 
+
+Analogous to how Huang et al. (2025b) extended their generalization results from length n/ 2 to n to arbitrary scaling of train vs test lengths, we do the same. 
+
+Definition C.16. A training length is a function t : N → N satisfying lim t→∞ t(n) = + ∞ and t(n) ≤ n for all n.If t(n) is a training length, then the t(n)-Inference Procedure determines Tn ∈ Θ( n) to match f at all inputs of lengths 
+
+≤ t(n) while minimizing R(Tn) up to 1 
+
+> n
+
+.The special case of t(n) = n 
+
+> 2
+
+is the Inference Procedure from Definition C.8. The definition above is an adaptation of Definition 22 from Huang et al. (2025b), except the inference procedure and regularizer mentioned in the definition will refer to the versions we defined earlier. With this, we can state the following. 
+
+Theorem C.17. Let f ∈ F (Ω) . The following are equivalent: 1. f is expressible by a Symbolic Limit Transformer. 2. Let t(n) be any training length. Then the t(n)-Inference Procedure will output solutions T1, T 2, . . . such that, for some 
+
+N0, for all m > N 0, Tm matches f at all lengths ≤ m.
+
+Intuitively, this says that, when selected to fit the behavior of f on sufficiently long inputs of length t(n), the output of the Inference Procedure will generalize to unboundedly longer inputs of length n, where n can be arbitrarily larger than t(n).
+
+Corollary C.18. Assume f ∈ F (Ω) is not expressible by a Symbolic Limit Transformer. Then, for some training length 
+
+t(n), the t(n)-Inference Procedure outputs a sequence Tn where infinitely many Tn fail to match f at length n.
+
+The proof here tracks the proof of Theorem 23, Corollary 24 & Remark 25 from Huang et al. (2025b) which are applicable directly here, with the difference being that the terms refer to our learning model. We restate it for completeness. 
+
+Remark C.19 . Theorem C.17 differs from Theorem C.9 in the following aspects. • Here, we talk about length generalization for all arbitrary training lengths t(n), not specifically n 
+
+> 2
+
+.• We do not ask for sup i R(Ti) < ∞, but ask for Tn to ultimately length generalize. 
+
+Proof of Theorem C.17. 1⇒2 The proof of Theorem C.9 remains valid in this direction without any changes, as we never used the fact that training length was half the context size. 2⇒1 We will show that if f is not expressible by a Symbolic Limit Transformer, then generalization would not happen. Thus, assume f is not expressible by a Symbolic Limit Transformer. We use the same arguments as in Lemma C.14. 32 On the Ability of Transformers to Verify Plans 
+
+Consider any sequence Tn ∈ Θn that matches f and has lim inf n→∞ R(Tn) < ∞. This sequence need not be generated by our Inference procedure. If we translating each of these to a Symbolic Limit Transformer we once again will get a sequence where, except the pairwise product functions, only a finite number of settings will be traversed. Now, as in the proof of Lemma C.14, we use D∞(τ ) to construct a sequence of Symbolic Limit Transformers that are local for a single τ . Now since f is not expressible by a Symbolic Limit transformer, lim inf n→∞ R(Tn) = ∞ (†) for any sequence Tn ∈ Θn that matches f . Because if this was not true, then by Lemma C.14, we would get a Symbolic Limit Transformer. We will now construct a sequence of failure points nk and and a training length t(n). Let k ∈ N represent a target training length. For any such fixed k, it is possible to match f on inputs of length ≤ k with a finite regularization cost. Let Uk be an upper bound on this regularization cost required to fit f on inputs of length k, considering any transformer of any size 
+
+n > k . We set Uk such that for any n > k , there exists a transformer in θn, matching f on the prefix k with cost ≤ Uk.Because the cost to match f at length n diverges to infinity (as established above), for any fixed k, we can find a nk
+
+sufficiently large such that any transformer T ∈ θnk that matches f at the full length nk must have a regularization cost strictly greater than Uk + 1 . We construct this sequence nk inductively ensuring nk > n k−1.We now define the training length function t(n) based on these intervals: t(n) = max {k : nk ≤ n}. This function is a step function, for n ∈ [nk, n k+1 ), the training length is constant at t(n) = k. Note that t(n) → ∞ as n → ∞ .Consider the behavior of the Inference Procedure at specific test lengths n = nk. The procedure receives a training constraint of length t(nk) = k. It seeks to minimize R(T ) subject to matching f on length k. By definition of Uk, there exists a transformer T ∗ ∈ Θnk that matches f on length k with R(T ∗) ≤ Uk + ϵ. However, by our choice of nk, any transformer that matches f on the full length nk requires a cost > U k + 1 . Since the Inference Procedure minimizes cost, it will prefer 
+
+T ∗ (cost ≈ Uk) over any solution that generalizes to nk (cost > U k + 1 ). Thus, the inferred transformer Tnk will match the training data (length k) but fail to match the target function f at the test length nk. Since this occurs for infinitely many k,the inference procedure fails to length generalize 
+
+C.6. Length Generalization for C-RASP 
+
+Any C*-RASP or C*-RASP [Pos ] program can be translated to a Symbolic Limit Transformer. If the positional functions 
+
+ψ(i, j ) and all the constants of the type δk, γ k from our Match predicate (definition 3.3) are not used ( τk can still be used), then then length generalization will be guaranteed even without positional embeddings. If any of them are required to be used, then length generalization is only guaranteed with the use of absolute positional embeddings. We say a Symbolic Limit Transformer T accepts an input if the value in the last dimension in the last position of the output is greater than 0,and rejects otherwise. 
+
+Theorem C.20. For every C*-RASP program P with local functions Ψ, there exists a Symbolic Limit Transformer T∞ such that for all w ∈ Σ∗, P accepts w iff T∞ accepts $w. Furthermore: 1. If P uses neither local positional relations ψ(i, j ) nor spatial offsets in Match Predicates (i.e., δk = γk = 0 for all matches, though τk̸ = 0 is allowed), then T∞ requires no positional encodings (NoPE), and length generalization is guaranteed for NoPE transformers. 2. If P uses local positional relations ψ(i, j ) or non-zero spatial offsets ( δk̸ = 0 or γk̸ = 0 ), then T∞ utilizes absolute positional encodings, and length generalization is guaranteed for APE transformers. 
+
+As a consequence, the Inference Procedure will ultimately length-generalize on inputs from a function f expressible by a 
+
+C*-RASP [Pos ] program. If the C-RASP program requires no positional functions as said above, then length generalization will succeed even with NoPE transformers. 
+
+Remark C.21 . We note that the Symbolic Limit Transformer T∞ provided by the proof of Theorem C.20 emulates the 
+
+C-RASP program P at zero offset: That is, P accepts w iff a predetermined entry in the last output dimension of T∞($ w, 0) 
+
+is above some threshold. In principle, its computations may not be offset-invariant, i.e., for the constructed T∞, the output 
+
+T∞($ w, o ) may depend on o. Importantly, the proof of Theorem C.9 does not require a Symbolic Limit Transformer computing f to be offset-invariant, but just requires it to compute f when the offset is zero. This is because Statement 2 33 On the Ability of Transformers to Verify Plans 
+
+of Proposition C.12 ensures that, for any Symbolic Limit Transformer T∞, even if it is not offset-invariant, there are transformers Tn ∈ Θn whose behavior matches T∞(·, 0) .
+
+Proof. We will also show that a Symbolic Limit Transformer T∞ simulates a C*-RASP program P if for every operation 
+
+Pk of P there is a dimension dk in T such that when Pk(i) when run on w is true iff T∞($ w)i+1 ,d k = 1 (and 0 otherwise) for Boolean operation and Pk(i) = c iff T∞($ w)i+1 ,k = ci+1 for count operations. We will use induction on the length of P . All boolean cases and all but one counting case are identical to Huang et al. (2025b). The only distinct operation which still needs proving is the match predicate. We restate the proof of the case when C(i) := # [j ≤ i, ψ (i, j )] P (j) from Huang et al. (2025b) when ψ is a local function of the following form 
+
+ψ(i, j ) = 
+
+(
+
+1 j = i − ℓ
+
+0 else We are doing this, as we will re-use a key idea here to implement our match predicate. Thus, in this C(i) will either be 1 or 
+
+0 depending if P (i − ℓ) is true or false. If we set the query and key matrices to 0 we get 
+
+sij = log N · ψ(i, j )
+
+We assume the log is base 2, but the argument is similar for others. Then we can have attention compute 
+
+ci,k =
+
+X
+
+> j≤i
+
+exp (log N · ψ(i, j )) · P (j)
+
+X
+
+> j≤i
+
+exp (log N · ψ(i, j )) =
+
+X
+
+> j≤i
+
+N ( ψ(i,j )ln 2 ) · P (j)
+
+X
+
+> j≤i
+
+N ( ψ(i,j )ln 2 )
+
+If P (i − ℓ) and ¬P (j) for j̸ = i − ℓ, then we have a lower bound: 
+
+N ( 1ln 2 )
+
+N ( 1ln 2 ) + i − 1 ≤ ci,k 
+
+If ¬P (i − ℓ) and P (j) for j̸ = i − ℓ then we have an upper bound: 
+
+ci,k ≤ i − 1
+
+N ( 1ln 2 ) + i − 1
+
+Since N 1ln 2 ≥ i, and we know that P (i − ℓ) ⇐⇒ ci,k ≥ 12 , we can construct an MLP that computes the correct value. It will output either 0 
+
+> i+1
+
+or 1 
+
+> i+1
+
+, in the dimension reserved for Pk+1 (i), for instance by using a conditional operation (allowed in the syntax of the language) that checks that the output of the attention layer ci+1 ,k ≥ 12 .Now, when C(i) := # [j ≤ i, χ (i, j )] , where χ(i, j ) ≡ VKk=1 (cj−δk = ci−γk + τk). The c here refers to integers representing the elements of the extended alphabet, whereas everywhere else before in this proof, we were referring to c as counts. Similarly k here refers to the constants in this specific condition. Just for this proof, we will use σ to refer to characters to avoid confusion, and r. Hence, we want to prove that C(i) := # [j ≤ i, χ (i, j )] , where χ(i, j ) ≡
+
+VRr=1 (σj−δr = σi−γr + τr ). Note that all the γr , τ r , δ r are constants and help in looking around in the neighborhood, and the total number of such conditions R is also bounded. We reserve 2R spots in our residual stream. We use the same process defined earlier in computing our local ψ(i, j ) functions, except in the attention computation, we use the value matrices to pass the value of the character embeddings at offsets to be transferred to the current position. We 34 On the Ability of Transformers to Verify Plans 
+
+take the value matrix to be the identity matrix I 13 . Therefore, the only change would be that we use σj instead of P(j) in our derivation above. Thus, 2R spots out of all will now store each of our values of σi−γr , σi−δr .We can assume that the σi here are be one-hot vectors representing the corresponding integers. Adding a constant τ
+
+corresponds to a linear shift such that Rτ σi = σi + τ . So, Rτ can be implemented as a shifted-diagonal matrix. Note that this is just one way in which this could happen. There could be other ways of this being true. We just want to be able to go from one character’s embedding to another with a linear transformation. Thus, we can hardcode these shifts in the KQ parameter matrices doing the retrievals of σi−γr . Thus, instead of KQ = 0 , they implement such a shift. Therefore we will already have the values of σi−γr + τr in R positions. Thus, with these many attention heads, now we have all the information in our residual stream, and we need to actually compute the equality and the ∧ condition. We construct an attention head for this. We use the key and query matrices to concatenate the respective slots that hold all the R σi−δr vectors and all the R σi−γr + τr vectors respectively, and the product between these will be maximum when all the sets of R vectors match, which is what we want. Additionally, the key query matrices also scale up all the one hot vectors by a factor of 2. Thus now, we note that if χ(i, j ) is true, then the score is 2R, and ≤ 2( R − 1) if even one condition fails. Therefore to verify a full match (and avoid confusion with partial matches), the attention score to the $ is always 2R. The value matrix at $ holds the value 1, and the value matrix at all other positions hold the value 0. Let Mi = {j ≤ i|χ(i, j ) = T rue } and m = |Mi| be the count we wish to compute. Based on our construction of Q and K, the attention scores sij satisfy: 
+
+sij =
+
+
+
+2R if j = $ (Start Token) 
+
+2R if j satisfies the match requirements) 
+
+≤ 2( R − 1) if j Mismatch (31) The output of the attention head at position i therefore 
+
+hi =
+
+P 
+
+> j≤i
+
+exp(log N · sij )V (j)
+
+P 
+
+> j≤i
+
+exp(log N · sij )= exp(log N · si$) · 1 + P  
+
+> j̸=$
+
+exp(log N · sij ) · 0exp(log N · si$) + P 
+
+> j∈Mi
+
+exp(log N · sij ) + P 
+
+> j / ∈Mi∪{ $}
+
+exp(log N · sij )
+
+Dividing both the numerator and the denominator by exp(log N · 2R), and substituting the score values, we obtain: 
+
+hi = 11 + P     
+
+> j∈Mi
+> exp(log N·2R)exp(log N·2R)
+
++ P     
+
+> j / ∈Mi∪{ $}
+> exp(log N·sij )exp(log N·2R)
+
+= 11 + m · 1 + P 
+
+> j / ∈Mi∪{ $}
+
+exp( sij − log N · 2R)
+
+We analyze the error term caused by mismatches. Since sij ≤ log N · 2( R − 1) for mismatches, the exponent is bounded by 
+
+−2 log N . There are at most i such mismatching terms (bounded by context length N ). Thus: 
+
+X
+
+> j / ∈Mi∪{ $}
+
+exp( sij − log N · 2R) ≤ N · exp( −2 log N ) = N · N −2 = 1
+
+N
+
+Therefore, the output of the attention head is: 
+
+hi = 11 + m + O(N −1) (32) As Izzo et al. (2025) argued, because of the restriction that attention logits and the output of the exp( ·) operation be rounded p fractional bits of precision, the O(1 /N ) terms gets rounded to 0. Thus our value converges strictly to 11+ m . This is f As m
+
+is an integer bounded by N , the values { 11 , 12 , . . . , 1  
+
+> N+1
+
+} are well-separated. We use our activation function f (x) = 1 /x to invert this value to recover m (or compute mi+1 as required by the count operation) with arbitrary precision. 
+
+> 13
+
+Allowed now, as the rank constraint on V matrices is no longer there, unlike in Huang et al. (2025b) 
+
+35 On the Ability of Transformers to Verify Plans 
+
+Lemma C.22. C*-RASP [Pos ] where the input alphabet Ω is finite, is equivalent to C-RASP [Pos ].Proof. The syntax of C*-RASP [Pos ] closely tracks the syntax of C-RASP . The only additional operation in C*-RASP is that of the match predicate χ(i, j ).The class C*-RASP extends C-RASP solely through the addition of the Match operation. We show that when Σ is finite, any function defined by a Match operation can be simulated by a finite sequence of standard C-RASP operations. Recall the definition of the Match operation for a specific neighborhood structure defined by constants vectors δ, γ ∈ NK
+
+and τ ∈ ZK :
+
+Cmatch (i) := # [j ≤ i, χ (i, j )] (33) where χ(i, j ) ≡ VKk=1 (cj−δk = ci−γk + τk).Since Σ is finite, we know all pairs of ( σ, σ + τ ) we are looking for. Let us say that we enumerate each of these as (ak, b k),where k ∈ [1 , K ]. The number of such pairs is equal to the size of the alphabet Σ, as every character from Σ can only be at a fixed distance τ to one other character from Σ. Thus, the whole match predicate boils down to a couple of steps. The first step is finding a j in the past, which has the symbol bk stored at δk distance away from it. This local operation can be encoded as following in C-RASP [local ].
+
+Ppast (i) := 
+
+> K
+
+^
+
+> k=1
+
+(# [j ≤ i, j + δk = i] Qbk (j) > 0) 
+
+The second step is to check whether the current position also has symbols ak stored at a distance of γk distance from it. This is fairly similar to the previous check, and can use similar commands. 
+
+Pcurrent (i) := 
+
+> K
+
+^
+
+> k=1
+
+(# [j ≤ i, j + γk = i] Qak (j) > 0) 
+
+The final step is counting the number of past positions where step 1 holds, and also making sure that step 2 holds at the current position. Thus, 
+
+Cmatch (i) := # [j ≤ i] Ppast (j) ∧ Pcurrent (i)
+
+Although once we know either of ak or bk, we can get the other character in the pair. Apriori, we do not know the identity of the current position. In case of the infinite alphabet, the key was that the program could perform the matching without relying on the exact identity of the symbol. To simulate the same, instead of the predicates Qak or Qbk , we need to replicate the whole 3 steps for all possible pairs in Σ at every step k. Thus, the 3 lines of program are repeated |Σ| times, each time with a different (ak, b k) combination assigned to each k. Since, we can simulate the only extra command in C*-RASP [Pos ]
+
+using commands of C-RASP [local ], when the alphabet is finite, the two are equivalent. We restate Theorem 3.5 and prove it. 
+
+Theorem C.23. Consider the alphabet Σ = {a, b, e }. Then, P ARIT Y := b∗(ab ∗ab ∗)∗ /∈ C-RASP [∞, local ]. and Flip flop := Σ ∗be ∗ /∈ C-RASP [∞, local ] .Proof. The proof of both of the languages above is analogous. We represent the corresponding language as L, and both 
+
+P ARIT Y or Flip-Flop can be substitued in place of L in our forthcoming arguments. We assume that there exists a program C*-RASP [Pos ] , P for L. Since, P works for L, it can work for L with bounded alphabet as well, as the Σ of L is simply Σ = {a, b, e }. However as per theorem C.22, such a P can be simulated in C-RASP [local ]. That would imply that 
+
+L ∈ C-RASP [periodic , local ], which was proven to be impossible in Lemma 11 of Huang et al. (2025b). Thus, our initial assumption that such a program exists must be wrong. Hence, the corollary stands. 36 On the Ability of Transformers to Verify Plans 
+
+Remark on Periodic Relations: Huang et al. (2025b) introduce C-RASP [periodic,local], which includes both local relations ( ψ in the counting operation), and periodic relations ϕ(i, j ) checking if i ≡ k (mod m). In our new framework, we omit such periodic relations. In Huang et al. (2025b), accounting for these relations necessitated the assumption that the regularizer penalizes the rank of V matrices. In our present framework, we instead only penalize the spectral norm of these matrices, for two reasons: (i) first, because a norm penalty is better motivated as a proxy for standard learning methods than a rank penalty, (ii) second, because penalizing the rank of V matrices would preclude moving information about object names across adjacent positions, which in fact is important for verifying plan validity. In Huang et al. (2025b), periodic relations were important for explaining APE length generalization on certain formal languages such as (aa )∗, which are definable in FO [Reg ] but not FO [<]. Such languages are not directly relevant to our present results, as they are not star-free but empirically easier for transformers than PARITY/FlipFlop. In particular, including such relations would not change Theorems 3.1 and 3.6. We leave to future work to better understand the role of periodic relations in length generalization. 
+
+Remark on Unique Copying Task: Unique copying is the task of copying a string that is composed of distinct tokens. Huang et al. (2025b) showed that that task of unique copying is in C-RASP . However such kind of copying would require an increase of vocabulary during test time, and thus actually creates a challenge for rigorously treating the task using the results of Huang et al. (2025b), which assumes a fixed alphabet. Huang et al. (2025b) addressed this problem by formalizing Unique Copy as repeating a string unboundedly often with a fixed alphabet. However, formalizing the task in our new framework becomes much more principled and more true to the original formulation of the task. Essentially, the following lines of program are enough to detect that unique copying was successful: OnlyOneMatch (i) := ( # [j ≤ i, c j−1 = ci] == 1) 
+
+UniqueCopySuccessful (i) := ( # [j ≤ i] ¬OnlyOneMatch (i) == 0) 
+
+# D. Experimental Details 
+
+D.1. Domains and Dataset Generation 
+
+For the generation of our training and test datasets, we use custom generators instead of existing problem generators and symbolic planners in order to control the lengths of the generated plans and get more variation. The generation of correct plans is mostly based on randomly selecting applicable action sequences but varies slightly depending on the domain. We first describe the shared set-up and then provide the domain-specific details below. Table 2 provides an overview over the characteristics of the six datasets we generate (see Table 3 for information about size and train/test splits). Note that the initial state of the Colors planning instances is fixed in the sense that all bags are empty initially. However, the part of the initial state that defines which objects are colors and bags varies depending on O.All datasets contain the same number of valid and invalid plans. In particular, we generate a set of planning instances 
+
+Πi = ⟨D , O i, I i, G i⟩ and for each Πi we create a plan π = [ a1, . . . , a k, . . . , a n] such that π induces a state sequence from 
+
+s1 = I to sn+1 such that sn+1 |= G, i.e. π is a valid plan. Additionally, we generate an invalid plan π′ for each Πi and add 
+
+⟨Πi, π ⟩ and ⟨Πi, π ′⟩ to the dataset. We consider two ways of constructing invalid plans: converting the valid plan into an incomplete plan or a non-executable 
+
+plan. To obtain the incomplete plans, the valid plan π = [ a1, . . . , a k, . . . , a n] is converted into an invalid plan π′ =[a1, . . . , a ′
+
+> k
+
+, . . . , a ′
+
+> m
+
+] inducing a sequence of states s1, . . . , s ′ 
+
+> m+1
+
+where s1 = I and s′
+
+> m+1
+
+̸ |= G. The incomplete plans are created such that exactly one (in the case of Heavy Grippers, Colors) or at least one (Lights Out) of the literals in the goal is not satisfied. For Lights Out and Colors, π′ contains exactly the same number of actions as π. For Heavy Grippers, the number of actions is similar but some of the invalid plans are slightly shorter. For Heavy Grippers, we additionally generate a dataset with non-executable plans. To obtain a non-executable plan π′, the valid plan is converted into an action sequence π′ = [ a1, . . . , a m−1, a ′
+
+> m
+
+] such that [a1, . . . , a m−1] induces a sequence of states s1, . . . , s ′ 
+
+> m
+
+and s′
+
+> m
+
+̸ |= pre (a′
+
+> m
+
+). We then combine the datasets with the incomplete plans and non-executable plans into the final dataset. In the STRIPS Colors domain and the Lights Out domain with conditional effects all actions are always applicable. Therefore, we cannot generate a dataset with non-executable plans here and only consider incomplete ones. The valid and invalid plans for the Colors and Lights Out domains are minimal pairs, differing only by single action. The 37 On the Ability of Transformers to Verify Plans 
+
+Domain Domain variant Object set O Fixed states Invalid plans Heavy Grippers well-formed varying number and names none incomplete + non-executable Heavy Grippers delete-free varying number and names none incomplete + non-executable Colors well-formed varying number and names initial I incomplete Colors STRIPS varying number and names initial I incomplete Lights Out well-formed fixed goal G incomplete Lights Out conditional effects fixed goal G incomplete 
+
+Table 2. Overview over the datasets generated for our experiments.                                                                                           
+
+> Predicates: room (r),ball (b),gripper (g),free (g),heavy (b),
+> charged, atRobby (r),at (b, r ),carry (b, g )
+> Action move (r1, r 2):
+> Pre: {room (r1),room (r2),atRobby (r1),¬atRobby (r2),¬charged }
+> Eff: {charged ,atRobby (r2),¬atRobby (r1)}
+> Action pick (b, r, g ):
+> Pre: {ball (b),room (r),¬heavy (b),gripper (g),atRobby (r),
+> free (g),at (b, r ),¬carry (b, g )}
+> Eff: {carry (b, g ),¬free (g),¬at (b, r )}
+> Action pickHeavy (b, r, g ):
+> Pre: {ball (b),room (r),heavy (b),gripper (g),atRobby (r),
+> free (g),charged ,at (b, r ),¬carry (b, g )}
+> Eff: {carry (b, g ),¬free (g),¬at (b, r ),¬charged }
+> Action drop (b, r, g ):
+> Pre: {ball (b),room (r),gripper (g),atRobby (r),carry (b, g ),charged ,¬at (b, r ),¬free (g)}
+> Eff: {at (b, r ),free (g),¬carry (b, g ),¬charged }
+> Predicates: room (r),ball (b),gripper (g),free (g),heavy (b),
+> charged, atRobby (r),at (b, r ),carry (b, g )
+> Action move (r1, r 2):
+> Pre: {room (r1),room (r2),atRobby (r1)}
+> Eff: {charged ,atRobby (r2)}
+> Action pick (b, r, g ):
+> Pre: {ball (b),room (r),gripper (g),atRobby (r),at (b, r ),
+> free (g),¬heavy (b)}
+> Eff: {carry (b, g )}
+> Action pickHeavy (b, r, g ):
+> Pre: {ball (b),room (r),gripper (g),atRobby (r),at (b, r ),
+> free (g),charged ,heavy (b)}
+> Eff: {carry (b, g )}
+> Action drop (b, r, g ):
+> Pre: {ball (b),room (r),gripper (g),atRobby (r),carry (b, g )}
+> Eff: {at (b, r ),free (g)}
+
+Figure 6. The well-formed (left) and delete-free (right) variants of the Heavy Grippers domain used in our experiments. Variants were obtained from the variant shown in Figure 2. 
+
+same applies to the valid and non-executable plans in the Heavy Grippers datasets. However, some of the incomplete plans differ slightly more due to the specific characteristics of the domain and might have a slightly different plan length than their valid counterparts. 
+
+Heavy Grippers. The Gripper domain is a well-known planning domain from the IPC benchmarks. Here, we create a variant of it that introduces two new aspects to the domain, namely that balls can be heavy and that the robot has a charge that affects how it can pick and drop balls (see Section 2.1 and Figure 2). We create a well-formed and a delete-free variant of our Heavy Grippers domain shown in Figure 2. First, we eliminate the conditional effects by separating pick into two actions, pick and pickHeavy , and remove charged from the preconditions of 
+
+pick . Second, we create the well-formed variant by extending the preconditions and the delete-free variant by removing the delete effects, resulting in the two domains shown in Figure 6. For the generation of the planning instances we fix the number of grippers to 2 (the standard number for the IPC Gripper variant), but vary the number of balls and rooms. In particular, when generating a plan of length N , we sample the number of balls nb from the range [0 .6 ∗ N, 0.85 ∗ N ]. The number of heavy balls and rooms is selected by sampling from 
+
+[0 .45 ∗ nb, 0.85 ∗ nb] and range [0 .2 ∗ nb, 0.5 ∗ nb] respectively. This sampling strategy results in different combinations of plan lengths and number of objects while modeling that more objects tend to correlate with larger plans, which is the standard in planning datasets. We randomly assign a name to each object sampled from a fixed set of possible names. This set contains object names ranging from Object0 to ObjectM , where M is at least as large as the maximum number of objects within one instance in our dataset. For the initial state I, the initial locations of the robot and all balls are randomly assigned. We then sample a sequence of applicable actions until reaching the target length and make sure that in the resulting state each ball is located in a room, 38 On the Ability of Transformers to Verify Plans                                                            
+
+> O={object 237 ,object 223 ,object 100 ,object 154 ,object 280 ,object 113 ,object 94 ,object 7 ,object 76 }
+> I={at -robby (object 280 ), gripper (object 237 ), gripper (object 223 ), f ree (object 237 ), f ree (object 223 ),room (object 100 ), room (object 154 ), room (object 280 ), room (object 113 ),ball (object 94 ), ball (object 7 ), ball (object 76 ), heavy (object 94 ),at (object 94 ,object 100 ), at (object 7 ,object 154 ), at (object 76 ,object 280 )}
+> G={at (object 94 ,object 280 ), at (object 7 ,object 154 ), at (object 76 ,object 154 )}
+> π= [ pick (object 76 ,object 280 ,object 223 ), move (object 280 ,object 100 ), pick heavy (object 94 ,object 100 ,object 237 ),move (object 100 ,object 154 ), drop (object 76 ,object 154 ,object 223 ), move (object 154 ,object 280 ),drop (object 94 ,object 280 ,object 237 ), move (object 280 ,object 113 )]
+> π′
+> 1= [ pick (object 76 ,object 280 ,object 223 ), move (object 280 ,object 100 ), pick heavy (object 94 ,object 100 ,object 237 ),move (object 100 ,object 154 ), drop (object 76 ,object 154 ,object 223 ), move (object 154 ,object 113 ),drop (object 94 ,object 113 ,object 237 )]
+> π′
+> 2= [ pick (object 76 ,object 280 ,object 223 ), move (object 280 ,object 100 ), pick heavy (object 94 ,object 100 ,object 237 ),move (object 100 ,object 154 ), drop (object 76 ,object 154 ,object 223 ), move (object 154 ,object 280 ),drop (object 94 ,object 280 ,object 237 ), drop (object 76 ,object 280 ,object 223 )]
+
+Figure 7. An example planning instance from the well-formed Heavy Grippers domain with a valid plan π, an incomplete plan π′ 
+
+> 1
+
+and a non-executable plan π′
+
+> 2
+
+. The actions by which the invalid plans differ from the valid one are underlined. 
+
+i.e. not carried anymore. The goal G consists of the locations of all balls obtained after applying the sampled sequence of applicable actions. For the delete-free variant, part of the actions of the sequence are sampled from all actions applicable under the delete-free variant and some are sampled from the smaller set of actions applicable under the well-formed variant. This mixture increases the probability that balls are actually dropped again which is important for getting reasonable goal states. The non-executable plans are obtained by replacing the last action of the valid plan with an action for which the preconditions are not valid at that step in the action sequence. This action is sampled at random from the non-executable move and drop actions. Pick actions are not considered because valid plans never end with pick actions, and this type of mistake could be easily identified without actually reasoning over the planning instance and plan. For the generation of incomplete plans, it is not possible to simply replace a single action. We select one ball and modify the plan such that the last step at which that ball is dropped does not drop the ball in the goal room anymore, which requires also changing the movements of the robot. Figure 7 shows a small example planning instance from the Heavy Grippers domain, with plans that are valid ( π), incomplete ( π′
+
+> 1
+
+) and non-executable ( π′
+
+> 2
+
+) under the well-formed domain variant. Under the delete-free variant, both π and π′ 
+
+> 2
+
+are valid plans, but π′ 
+
+> 1
+
+is also incomplete. 
+
+Colors. This domain involves placing colored balls into bags, where actions add or remove a color from a specific bag, and goals specify which colors each bag should contain. We design a standard STRIPS and a well-formed variant of the domain as shown in Figure 8. The variants differ in how they handle redundant operations, i.e. adding a color that is already in a bag or removing one that is not. The well-formed variant enforces that a color can be added or removed only if it is absent or present in the bag, respectively, while the standard STRIPS does not have this restriction. For all planning instances, we define the initial state as one in which no color is in any bag. We choose the number of colors and bags as a function of the target plan length: we set the total number of bag–color pairs (i.e., #colors × #bags) to approximately one quarter of the plan length, and we make the numbers of colors and bags as close as possible. We randomly assign a name to each object sampled from a fixed set of possible names. This set contains object names ranging from Object0 to ObjectM , where M is at least as large as the maximum number of objects within one instance in our dataset. Valid plans are generated by randomly sampling applicable actions until reaching the target length. The goal is then defined as the set of all hasColor facts that hold in the resulting state. In order to obtain the incomplete plans, we randomly substitute an action in the plan with another applicable action, and verify that this substitution leads to a different end state, failing the original goals. Figure 9 shows a small example planning instance from the Colors domain where the goal is to have color object3 in bag object5 and color object8 in bag object6 .The figure shows a valid and an incomplete plan for the well-formed variant and a valid and an incomplete plan for the 39 On the Ability of Transformers to Verify Plans 
+
+Predicates: bag (b), color (c), hasColor (b, c )
+
+Action remove (c, b ):
+
+Pre: {bag (b), color (c)}
+
+Eff: {¬ hasColor (b, c )}
+
+Action add (c, b ):
+
+Pre: {bag (b), color (c)}
+
+Eff: {hasColor (b, c )}
+
+Predicates: bag (b), color (c), hasColor (b, c )
+
+Action remove (c, b ):
+
+Pre: {bag (b), color (c), hasColor (b, c )}
+
+Eff: {¬ hasColor (b, c )}
+
+Action add (c, b ):
+
+Pre: {bag (b), color (c), ¬hasColor (b, c )}
+
+Eff: {hasColor (b, c )}
+
+Figure 8. The standard (left) and well-formed (right) variants of the Colors domain. 
+
+Well-formed variant                          
+
+> O={object 5 ,object 6 ,object 3 ,object 8 }
+> I={bag (object 5 ), bag (object 6 ), color (object 3 ), color (object 8 )}
+> G={hasColor (object 5 ,object 3 ), hasColor (object 6 ,object 8 )}
+> π1= [ add (object 3 ,object 5 ), add (object 8 ,object 5 ), remove (object 3 ,object 5 ),add (object 8 ,object 6 ), add (object 3 ,object 5 ), remove (object 8 ,object 5 )]
+> π′
+> 1= [ add (object 3 ,object 5 ), add (object 8 ,object 5 ), remove (object 3 ,object 5 ),add (object 8 ,object 6 ), add (object 3 ,object 6 ), remove (object 8 ,object 5 )]
+
+Standard variant                          
+
+> O={object 5 ,object 6 ,object 3 ,object 8 }
+> I={bag (object 5 ), bag (object 6 ), color (object 3 ), color (object 8 )}
+> G={hasColor (object 5 ,object 3 ), hasColor (object 6 ,object 8 )}
+> π2= [ remove (object 3 ,object 5 ), add (object 8 ,object 5 ), add (object 8 ,object 5 ),add (object 8 ,object 6 ), remove (object 8 ,object 5 ), remove (object 3 ,object 6 )]
+> π′
+> 2= [ remove (object 3 ,object 5 ), add (object 8 ,object 5 ), add (object 8 ,object 5 ),remove (object 8 ,object 5 ), remove (object 8 ,object 5 ), remove (object 3 ,object 6 )]
+
+Figure 9. A small planning instance of the Colors domain with a valid plan π1 and an incomplete plan ( π′
+
+> 1
+
+) for the well-formed variant and a valid ( π2) and incomplete ( π′
+
+> 2
+
+) plan for the standard STRIPS. The actions by which the valid and invalid plans differ are underlined. 
+
+standard STRIPS. For both cases, the invalid plans are obtained by replacing a single action that has the effect that object3 
+
+will not be in object5 in the end. Note that the valid plan for the STRIPS variant is invalid under the well-formed variant but the well-formed valid plan would also be valid under the standard STRIPS domain. 
+
+Lights Out. While the well formed variants of Heavy Grippers and Colors domains serve as positive cases to show generalization over variable objects, we will use Lights Out to show negative results. It is important to note that this restriction does not undermine the validity of our evaluation. On the contrary, since conditional effects of Lights Out represents a negative result, the failure to generalize even for a fixed set of objects matches our predictions from Theorem 3.1. Lights Out is a puzzle consisting of lights arranged in a square grid. Each light is either on or off, and pressing a light toggles the state of itself and of each of the adjacent lights. The goal is to have all the lights off. We consider two formalizations of this domain, one with conditional effects and one that is well-formed. We use the standard 5x5 in all our Lights Out datasets with lights named L00 , L01 , ... L44 according to their positions in the grid. The variant with conditional effects includes only a single action schema for pressing a light as shown in Figure 10 (left). There are no preconditions for pressing a light and the effect on each of the affected lights (i.e. the pressed light and the adjacent lights) is conditioned on the current status of that light. The well-formed variant has separate actions for pressing each light and for each possible combination of the state of that light and the adjacent lights. Figure 10 (right) shows two action schemas from the well-formed domain. The shown action schemas are two of the schemas for pressing the light in the upper left corner ( L00 ) which has two adjacent lights, L10 and 
+
+L01 . The other action schemas for pressing L00 cover all the remaining possible 23 on/off-combinations of L00 , L10 and L01 .Overall, the domain consists of 512 action schemas. There could be many other ways of defining this, we choose one for our convenience. 40 On the Ability of Transformers to Verify Plans                                                        
+
+> Predicates: on (l),out (l),adj (l1, l 2)
+> Action press (l1):
+> Pre: ∅
+> Eff: {out (l1)}▷{on (l1),¬out (l1)}{on (l1)}▷{out (l1),¬on (l1)}∀l2.{adj (l1, l 2),on (l2)}▷{out (l2),¬on (l2)}∀l2.{adj (l1, l 2),out (l2)}▷{on (l2),¬out (l2)}
+> Constants: L00 ,L01 ,L02 ,L03 ,L04 ,L10 ,L11 , . . .
+> Predicates: on (l),out (l)
+> Action press-00-1:
+> Pre: {out (L00 ),out (L01 ),on (L10 ),¬on (L00 ),¬on (L01 ),¬out (L10 )}
+> Eff: {on (L00 ),on (L01 ),out (L10 ),¬out (L00 ),¬out (L01 ),¬on (L10 )}
+> Action press-00-2:
+> Pre: {on (L00 ),out (L01 ),on (L10 ),¬out (L00 ),¬on (L01 ),¬out (L10 )}
+> Eff: {out (L00 ),on (L01 ),out (L10 ),¬on (L00 ),¬out (L01 ),¬on (L10 )}
+
+Figure 10. Left: the Lights Out domain with conditional effects and universal quantification over adjacent lights. Right: an excerpt of the well-formed variant of Lights Out. The complete well-formed domain consists of 512 action schemas. Dataset Variant Train Val-ID Val-OOD Test-ID Test-OOD Color Bags Well-formed 1,720,000 12,000 13,333 24,000 26,667 Color Bags STRIPS 1,720,000 12,000 13,333 24,000 26,667 Grippers Well-formed 360,000 18,000 20,000 18,000 20,000 Grippers Delete-free 360,000 18,000 20,000 18,000 20,000 Lights-Out Well-formed 180,000 6,000 6,666 12,000 13,334 Lights-Out Conditional effects 180,000 6,000 6,666 12,000 13,334 
+
+Table 3. Number of instances per dataset, variant, and split. 
+
+All Lights Out planning instances have the same goal, i.e. all lights need to be off. In order to generate the initial states and valid plans, we start from the goal state and sample actions up to the target plan length. The resulting state becomes then the initial state and the valid plan is obtained by inverting the action sequence. The incomplete plans are obtained by replacing the last action with a different, applicable action which is guaranteed to result in a state where at least one light is turned on. 
+
+D.2. Training and evaluation Setup. Unless otherwise specified, we use a decoder-only Transformer based on the GPT-2 architecture, with 8 layers, hidden size 768, and 12 attention heads. We use trainable absolute positional embeddings (APE) and pre-layer normalization, and optimize it using the standard causal language modeling objective. Inputs are tokenized with a domain-specific vocabulary that includes delimiter tokens, action tokens, argument and object tokens, the verdict tokens, along with other special tokens. Each example is constructed using delimiter tokens that separate the initial conditions I, the plan action sequence π, the goal G, and a final verdict token V ∈ { correct , incorrect }:
+
+<init> I <plan> π <goal> G <verdict> V. 
+
+Tokenization. We tokenize plans at the level of action primitives and their arguments, with domain-specific schemes: (i) Lights Out (conditional-effect version): actions of the form press (lij ) are tokenized as <press> <i> <j> . (ii) Lights Out (well-formed version): there are multiple distinct actions for pressing a specific light; we therefore tok-enize these as <press> <i> <j> <k> . (iii) Colors and Heavy Grippers: actions such as add (object i, object j )
+
+and pick (object i, object j , object k) are tokenized as <add> <object i> <object j> and <pick> <object i> <object j> <object k> . Moreover, we only include tokens that are different for different instances. For example, for Colors, because all instances share the same initial state, i.e., all bags are empty, we omit the initial state from the input sequence. 
+
+Data splits. For all three domains, we generate planning instances and correct plans of lengths 11 up to 200, and their invalid counterparts. We train only on the dataset instances with a plan length of up to 100 and test on the complete range of plans. All datasets are balanced, with the same number of valid and invalid plans. 
+
+Evaluation. We train on plans of length 11–100 actions (ID) and validate on both 11–100 actions (ID) and 101–200 actions (OOD) datasets; here, “length” refers to |π|, instead of the total number of input tokens, which also increases 41 On the Ability of Transformers to Verify Plans 10000 20000 
+
+training step  
+
+> 0.50
+> 0.75
+> 1.00
+> Test ID accuracy
+> Grippers
+> 10000 20000
+
+training step  
+
+> Colors
+> 10000 20000
+
+training step     
+
+> Lights Out
+> Well-formed STRIPS Conditional Effects Delete-free
+> Figure 11. In-distribution test accuracy during the learning process (seed 0).
+
+monotonically with |π|. We run four random seeds and pick the checkpoint with the best validation performance. 14 Then we report both ID and OOD accuracy scores on held-out test sets. At inference time, we provide the prefix up to <verdict> 
+
+and compare only the logits of the two verdict tokens at the last prompt position; the prediction is the one with the larger logit. 
+
+Instance packing. To improve training throughput while preserving instance boundaries, we concatenate multiple variable-length instances into fixed-length blocks of length B = 4096 tokens, without splitting any instance across blocks. If an instance does not fit in the remaining space, we start a new block. For Colors and Heavy Grippers allowing cross-instance attention leads to unstable optimization with large loss spikes, so we prevent tokens from different instances in the same block from attending to each other, i.e., attention is restricted to the tokens from the same instance, in addition to the standard causal mask. Instances are shuffled between each epoch to avoid memorization. 
+
+Optimization. Across all domains, we use a per-device batch size of 8 blocks. Our pilot shows that a larger block, e.g., 16 or 32, achieves similar performance; we therefore stick to 8 for efficiency. We train for 50 ,000 steps for all runs, and validate them every 1000 steps. We use AdamW with a linear learning-rate schedule, with warmup over the first 10% of training steps, weight decay 0.1, and gradient clipping to max norm 0.5. We train in bfloat16 on a single A100 or H100 GPU per run. We performed a learning-rate sweep over {2 × 10 −5, 5 × 10 −5, 1 × 10 −4, 3 × 10 −4, 6 × 10 −4, 1 × 10 −3, 2 × 10 −3} and selected the best setting per domain; this yields the following fixed learning rates: (i) Lights Out 2 × 10 −5, (ii) Colors 
+
+3 × 10 −4, (iii) Heavy Grippers 6 × 10 −4.
+
+# E. Additional Empirical Results 
+
+Extended main empirical results. We first present an extended version of our main empirical results in Figure 12, i.e., the generalization accuracy across different plan lengths. Results are bucketed into 10-length intervals; for example, the point at x = 20 reports the accuracy over lengths 11–20. Besides the average accuracy scores, we also show the best seed and the standard deviation across all four seeds. 
+
+In-distribution learnability. We also compare the ID learnability of different planning variants, by plotting the curve of ID test accuracy during the training process in Figure 11. We use one random seed as an example here, and our observations are consistent across different seeds. 
+
+Model failure on Lights Out with conditional effects. Lights Out with conditional effects is the only setting in which models remain at chance-level accuracy. while others achieve near-perfect ID accuracy. This suggests that conditional-effect Lights Out is substantially more challenging, and highlights the massive benefit of the well-formed reformulation, which introduces an exponential (in grid size) number of actions and yields near-perfect accuracy for both ID and OOD lengths. 
+
+> 14 For the not-well-formed variant of Colors, we exclude the results of a random seed, because it failed to converge to a high ID performance. The phenomenon is consistent with our observation regarding the in-distribution learnability analysis in Figure 11.
+
+42 On the Ability of Transformers to Verify Plans 20 
+
+> 30
+> 40
+> 50
+> 60
+> 70
+> 80
+> 90
+> 100
+> 110
+> 120
+> 130
+> 140
+> 150
+> 160
+> 170
+> 180
+> 190
+> 200
+
+plan length  
+
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Accuracy
+> ID OOD
+
+Lights Out 
+
+> Well-formed
+> Conditional Effects 20
+> 30
+> 40
+> 50
+> 60
+> 70
+> 80
+> 90
+> 100
+> 110
+> 120
+> 130
+> 140
+> 150
+> 160
+> 170
+> 180
+> 190
+> 200
+
+plan length  
+
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Accuracy
+> ID OOD
+
+Colors 
+
+> Well-formed
+> STRIPS 20
+> 30
+> 40
+> 50
+> 60
+> 70
+> 80
+> 90
+> 100
+> 110
+> 120
+> 130
+> 140
+> 150
+> 160
+> 170
+> 180
+> 190
+> 200
+
+plan length  
+
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Accuracy
+> ID OOD
+
+Grippers 
+
+> Well-formed
+> Delete-free
+
+Figure 12. Accuracy scores for each 10-length bucket. This is an extended version of results in Figure 5. 
+
+Well-formed is easier than STRIPS. For Colors, although both the well-formed and STRIPS variants achieve near-perfect ID accuracy, the well-formed variant is learned substantially earlier, again suggesting the benefit of well-formed actions. 
+
+Delete-free vs well-formed. For Heavy Grippers, the delete-free variant is learned slightly earlier than the well-formed variant, but variants do eventually converge. 43

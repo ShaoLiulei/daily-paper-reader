@@ -1,0 +1,327 @@
+Title: Toward High-Fidelity Visual Reconstruction: From EEG-Based Conditioned Generation to Joint-Modal Guided Rebuilding
+
+URL Source: https://arxiv.org/pdf/2603.19667v1
+
+Published Time: Mon, 23 Mar 2026 00:32:41 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# Toward High-Fidelity Visual Reconstruction: From EEG-Based Conditioned Generation to Joint-Modal Guided Rebuilding 
+
+## Zhijian Gong 1,2, Tianren Yao 1, Wenjia Dong 1,2, Xueyuan Xu 1,2∗
+
+> 1
+
+## Beijing University of Technology, Beijing 
+
+> 2
+
+## Beijing Key Laboratory of Computational Intelligence and Intelligent System, Beijing 
+
+## Abstract 
+
+Human visual reconstruction aims to reconstruct fine-grained visual stimuli based on subject-provided descriptions and corresponding neural signals. As a widely adopted modality, Electroen-cephalography (EEG) captures rich visual cogni-tion information, encompassing complex spatial re-lationships and chromatic details within scenes. However, current approaches are deeply coupled with an alignment framework that forces EEG fea-tures to align with text or image semantic rep-resentation. The dependency may condense the rich spatial and chromatic details in EEG that achieved mere conditioned image generation rather than high-fidelity visual reconstruction. To address this limitation, we propose a novel Joint-Modal Visual Reconstruction (JMVR) framework. It treats EEG and text as independent modalities for joint learning to preserve EEG-specific informa-tion for reconstruction. It further employs a multi-scale EEG encoding strategy to capture both fine-and coarse-grained features, alongside image aug-mentation to enhance the recovery of perceptual de-tails. Extensive experiments on the THINGS-EEG dataset demonstrate that JMVR achieves SOTA performance against six baseline methods, specif-ically exhibiting superior capabilities in modeling spatial structure and chromatic fidelity. 
+
+## 1 Introduction 
+
+Reconstructing scenes based on subject descriptions and neu-ral activity presents a challenging but promising research di-rection. The task not only promotes understanding into hu-man visual cognition, but also has the potential for augmen-tative communication for individuals with motor or language impaired [Tirupattur et al. , 2018; Zeng et al. , 2023]. Among various neural signals, Electroencephalography (EEG) is widely used in recent visual cognition research due to its high temporal resolution and ease of acquisition [Cichy and Pantazis, 2017; Wilson et al. , 2024]. EEG contains rich in-formation on spatial structure cognition and color percep-
+
+> ∗
+
+Corresponding author EEG  
+
+> A brown beaver
+> sits on the dirty
+> ground, set against
+> a rocky outdoor
+> background.
+> Text
+> OR
+> JMVR
+> Visual
+> Stimuli
+> Visual Reconstruction
+
+Figure 1: Overall Framework. The EEG signals and corresponding textual descriptions are input to the joint latent space in JMVR for training and visual reconstruction. 
+
+tion induced by visual stimuli which provides a foundation for high-quality visual reconstruction [Palazzo et al. , 2020; Zhang et al. , 2025]. Previous works have demonstrated the feasibility of decod-ing visual information from EEG. Early studies examined ap-proaches based on Generative Adversarial Networks (GANs) [Fares et al. , 2020; Jiang et al. , 2020], but achieved limited image reconstruction quality [Zeng et al. , 2023]. Recently, Denoising Diffusion Probabilistic Models (DDPMs) have been proposed to establish the foundation for high-quality conditional image generation [Chen, 2024; Wang et al. , 2024; Lee and Kang, 2025]. This motivates researchers to employ EEG signals to condition DDPMs for effective image synthe-sis. Due to the inherently low signal-to-noise ratio charac-teristics of EEG, these methods typically pre-align EEG fea-tures with image or text modalities. Such text-like or image-like aligned embeddings enable a more effective capture of semantics in EEG and can be directly integrated into mature text-to-image pipelines. [Bai et al. , 2023]. However, human cognitive responses to visual stimuli are inherently diverse and multifaceted [Zhang et al. , 2025]. This alignment-centric paradigm may restrict the model’s capac-ity to reconstruct richer perceptual information, such as spa-tial layout and chromatic cognition [Ozcelik and VanRullen, 2023]. Although existing models achieve meaningful EEG-conditioned image generation, their deep coupling with text or image modalities limits the detailed reconstruction of vi-sual perceptions that fall outside the pre-aligned semantic                        
+
+> arXiv:2603.19667v1 [cs.CV] 20 Mar 2026 Condition
+> Latent
+> Layernorm
+> Scale & Shift
+> Layernorm
+> Scale & Shift
+> Joint Self-Attention
+> Step Related
+> Gated Scale
+> Layernorm
+> Scale & Shift
+> Layernorm
+> Scale & Shift
+> MLP MLP
+> Cognition
+> Latent
+> Noised
+> Image Latent
+> ++
+> ++
+> Step Related
+> Gated Scale
+> Step Related
+> Gated Scale
+> Step Related
+> Gated Scale
+> ·
+> Text EEG
+> Fine-grained
+> Embedding
+> EEG
+> Encoding
+> Coarse-grained
+> Embedding
+> Diffusion Step
+> Embedding +·
+> Condition
+> Latent Cognition Latent
+> JMVR Block
+> Modulation
+> Output
+> Noise
+> Encoding
+> Image
+> Enhanced
+> Image Latent
+> ·
+> Image Latent EEG
+> Time 1D Conv
+> Channel Attention
+> Residual Block
+> Pyramid Multi -Scale Pooling
+> AdaptiveAvgPool
+> …X∈RC×T
+> X∈RC×2X∈RC×4
+> …X∈RC×N
+> N = 2 m< T
+> …
+> ·
+> X∈RC×(T–2)
+> Residual Block
+> Layern or m
+> SiLU
+> 2D Conv
+> 2D Conv
+> Layern or m
+> DropOut
+> ·
+> Linear
+
+Figure 2: Overview of the JMVR framework. Text prompts are processed into coarse- and fine-grained embeddings. The former combines with diffusion timesteps and EEG to construct the condition latent for feature modulation, while the latter is concatenated with EEG rep-resentations to generate the cognition latent. Within the JMVR Block, this cognition latent interacts with the enhanced image latent via a joint-attention mechanism to synthesize the final output after modulation. 
+
+space. To address these issues, we introduce Joint-Modal Visual Reconstruction (JMVR), a novel framework that treats EEG as an independent modality without prior alignment. The key contributions are as follows: 
+
+· Representation Decoupling: JMVR decouples EEG rep-resentations from the abstract semantic of text and images. By unifying all modalities within a joint latent space, it es-tablishes a direct mapping from EEG signals to complex visual features that prevents information degradation. 
+
+· Diffusion-step Gated Scaling: Adaptive weights are im-plemented to text and EEG modalities across different dif-fusion steps. It facilitates the model to focus on high-level textual semantics during coarse generation, while attend-ing to visual details contained in the EEG signals in fine-grained synthesis. 
+
+· Multi-scale EEG Encoding: A multi-scale pyramid EEG encoding architecture is proposed by modeling both coarse-and fine-grained visual cognition simultaneously. This de-sign significantly enhances the encoder’s ability for repre-senting multi-scale visual information from EEG signals. 
+
+· Image Augmentation: Edge, saturation, and depth infor-mation are extracted from the original visual stimuli. Inte-grating these features into the joint latent space facilitates the model to capture perceptual details from EEG that are often lost during alignment with textual descriptions. 
+
+## 2 Related Work 
+
+Early exploration in EEG-based visual reconstruction primar-ily relied on GAN [Fares et al. , 2020; Jiang et al. , 2020; Mishra et al. , 2023; Wakita et al. , 2021]. However, these ap-proaches often limited to generate high-fidelity images [Zeng 
+
+et al. , 2023]. Current research has pivoted toward Diffusion models to achieve better reconstruction quality. For exam-ple, NICE introduced a spatiotemporal encoder incorporating self-attention and graph attention mechanisms, while MUSE adopted a similar strategy utilizing spatial convolutions and Transformer-like graph attention to encode spatially repre-sentative EEG signals [Song et al. , 2023; Chen and Wei, 2024]. DreamDiffusion used an pre-trained large EEG model to replace the encoder for EEG representation [Bai et al. ,2023]. These frameworks essentially align the entire EEG recording with images via cosine similarity to condition the generation process. As the demand for reconstruction preci-sion has intensified, recent research has shifted toward dis-entangling EEG semantics through more granular alignment strategies. For instance, ATM implemented a dual-pipeline framework that aligns EEG separately with abstract textual semantics and image details [Li et al. , 2024]. Building on this, Perceptogram explored a tripartite alignment framework that integrates text, image, and image latent features to bet-ter recover low-level attributes such as color and shape [Fei 
+
+et al. , 2025]. Despite these advancements, the reconstruction of fine-grained visual details remains a persistent challenge. Addressing this, CognitionCapturer proposed that simple se-mantic alignment fails to decode visual cognition beyond high-level concepts in text and image [Zhang et al. , 2025]. It introduces a scalable multi-modal approach that incorpo-rates auxiliary information in EEG like depth. However, this paradigm remains constrained by the alignment framework that relies on the manual provision of supplementary modali-ties. The lack of capacity to adaptively capture intrinsic cog-nitive features remains challenge. 
+
+## 3 The Proposed Framework 
+
+In this section, we present the JMVR framework that de-signed to reconstruct high-fidelity visual stimuli from EEG signals. As illustrated in Fig.2, the proposed architecture treats EEG as an independent conditional modality, avoiding the information loss associated with forced semantic align-ment. This framework operates on a Diffusion Transformer (DiT) backbone that acquires text and EEG signals to learn the relationship between these signals and the image denois-ing process in the multi-modal space [Peebles and Xie, 2023]. Four novel modules will be introduced in this section includ-ing Multi-scale EEG Encoder and Image Augmentation for input signals; Joint-Modal Attention and Diffusion Step Gat-ing for joint training and modality information balance. To avoid ambiguity between the temporal dimension of EEG signals and the diffusion process, we denote the EEG signal length as T and the diffusion timestep as τ .
+
+3.1 Multi-Scale EEG Encoder 
+
+To extract both fine-grained details and global semantics for visual reconstruction, we propose a dual-stream EEG encoder to process raw EEG signals X ∈ RC×T . The encoder con-sists of two branches that designed for capturing local spa-tiotemporal dynamics and holistic contextual representations. (1) The spatiotemporal stream on left branch focuses on mod-eling high-frequency EEG variations that are critical for re-building detailed visual information. Specifically, a 1D tem-poral convolution is applied to extract temporal features and a channel attention mechanism that enhances visually respon-sive electrodes and suppresses noise. Each residual block is designed to fuse spatiotemporal information while stabilizing training [Zeng et al. , 2023]. It includes Layer Normalization, SiLU activation, and 2D convolutions. (2) The right branch aim to capture global information through a Pyramid Multi-Scale Pooling (PMSP) module. To complement the lim-ited receptive field in spatiotemporal stream, PMSP leverages adaptive average pooling to construct hierarchical represen-tations at multiple temporal scales. Specifically, pooled fea-tures with resolutions RC×21
+
+, RC×22
+
+, . . . , RC×2m
+
+are gener-ated, where 2m < T . These multi-scale features are concate-nated as ˆX ∈ RC×(T −2) along the temporal dimension and subsequently projected to enable effective modeling of visual semantics from coarse to fine granularity. Finally, the out-puts of the two branches are concatenated to form a unified representation that balances global visual cognition with fine-detail perception. Further information on dimensional details are provided in the appendix. 
+
+3.2 Image Augmentation 
+
+To construct a semantically enriched joint latent space en-capsulating multi-dimensional visual perception, we propose a Visual Feature Augmentation strategy. By explicitly in-tegrating edge, saturation, and depth information of origi-nal visual stimuli, this approach facilitates a profound cor-respondence between EEG signals and visual attributes. To reinforce the modeling of structural geometry, we apply the Canny operator to generate a binary edge map after the Gaus-sian smoothing with a 3 × 3 kernel to the grayscale image to suppress textural noise. The edge detection threshold is set to 50 /150. Recognizing chromatic as a significant element of visual cognition, we transform origin images into the HSV color space and extract the saturation channel. This provides Noise Encoding 
+
+> Enhanced Image Latent
+> Origin
+> Depth
+> Saturation
+> Edge
+> Figure 3: Image Augmentation Process. The edge detection map, saturation heatmap, and depth map were extracted in advance and then combined with the original image to form the augmented image set for each sample.
+
+the joint space with a dedicated representation of color in-tensity and distribution. Furthermore, to capture the neural correlates of 3D spatial structure within the latent space, we utilize the Depth-Anything-v2 model to generate high-fidelity depth maps [Yang et al. , 2024]. Finally, the original image and these corresponding augmented views are individually encoded via a pre-trained Variational Autoencoder (VAE) and projected together through a linear layer into a unified latent embedding [Peebles and Xie, 2023]. 
+
+3.3 Joint-Modal Attention 
+
+Most existing EEG-conditioned synthesis approaches adopt an Diffusion model backbone that injects EEG signals through cross-attention mechanisms. These frameworks commonly aligned EEG representations with graphical and textual latent space to ensure training stability. However, This design introduces structural limitations. Text-aligned EEG representations restrict the expressive cognition in EEG sig-nals and degrade perceptual information that is not explicitly semantic. In addition, conventional cross-attention formula-tions constrain dual-interactions between modalities and limit adaptive information exchange [Esser et al. , 2024]. To overcome these limitations, we propose a Joint-Modal Attention mechanism. The proposed formulation integrates image, text, and EEG features within a unified modeling pro-cess. Each modality preserves its intrinsic representational structure while participating in shared attention operations. This joint modeling strategy enables richer cross-modal in-teractions and facilitates the coordinated representation of se-mantic and perceptual information. Let Hm ∈ RLm×D denote the sequence of tokens for a specific modality m ∈ { img , txt , eeg }, where Lm represents the token sequence length and D is the embedding dimen-sion. Since these modalities have fundamentally differences, forcing them to share transformer weights would restrict the model’s ability to process their distinct features. Therefore, we employ modality-specific learnable parameters for layer normalization and linear scale and shift projections. This en-sures that EEG signals are processed in their native feature space without forced alignment to text. Inside a Joint-modal Attention block, we first normalize the inputs using adaptive modulation conditioned on the diffusion timestep τ . Let ˜Hm denote the normalized features. We then project these sequences into query ( Q), key ( K), and value (V ) representations: 
+
+Qm = ˜HmW (m) 
+
+> Q
+
+, Km = ˜HmW (m) 
+
+> K
+
+, Vm = ˜HmW (m)
+
+> V
+
+(1) where W (m)  
+
+> {Q,K,V }
+
+∈ RD×D are learnable projection matrices distinct for each modality. To enable interaction, we concatenate these sequences along the temporal dimension to form a unified joint se-quence: 
+
+Qjoint = Concat [Qimg , Q txt , Q eeg ] ∈ RLtotal ×D
+
+Kjoint = Concat [Kimg , K txt , K eeg ] ∈ RLtotal ×D
+
+Vjoint = Concat [Vimg , V txt , V eeg ] ∈ RLtotal ×D
+
+(2) We then perform a single joint self-attention operation on this joint sequence: Attention (Qjoint , K joint , V joint ) = softmax Qjoint K⊤
+
+> joint
+
+√D
+
+!
+
+Vjoint 
+
+(3) This operation facilitates a bi-directional information flow. Image tokens can attend to specific visual details in EEG to-kens that are absent in text, while text and EEG tokens can interact to contextually refine noisy signals with high-level semantic guidance. Following joint-attention layer, the output sequence is split back into its constituent modalities. We apply separate Multi-Layer Perceptrons (MLP) to each stream to compute the residuals: 
+
+H′ 
+
+> m
+
+= Hm + MLP m (Split m(Attention (·))) (4) By employing modality-specific projection parameters while performing attention over a unified latent space, JMVR establishes a direct mapping from EEG representations to high-dimensional image features. This design avoids forc-ing EEG signals into a text-aligned latent space and thereby preserves perceptually relevant information related to spatial structure and chromatic characteristics. 
+
+3.4 Diffusion Step Gating 
+
+High-fidelity visual reconstruction requires the model to ex-plicitly capture the evolving dependency between semantic guidance and EEG signals throughout the generative pro-cess. Conventional conditioning strategies implicitly assume a temporally static contribution of each modality across all diffusion steps. Such an assumption is inconsistent with the coarse and fine nature of diffusion-based generation. In prac-tice, high-level textual semantics mainly control global struc-ture formation during early denoising stages under high noise conditions τ → τmax and fine-grained EEG representations become increasingly critical for refining perceptual details at low noise regimes 0 → τ .To facilitate the temporal balanced modeling in joint-modal information integration, we introduce a Diffusion Step Gating strategy that explicitly regulates the information flow across diffusion timesteps. Building upon the adaLN-zero in-herent to the DiT architecture [Peebles and Xie, 2023], this approach implements a hybrid gating mechanism to modu-late the information flow based on the generative stage in the residual pathways. Let ∆Hm denote the output of the Joint Self-Attention module for modality m. The modulation of the gating strat-egy is formulated as: 
+
+H′ 
+
+> m
+
+= Hm + [ λm(τ ) · αm(τemb )] · ∆Hm (5) where αm(τemb ) is a learnable coefficient to inject infor-mation from condition latent embedding [Peebles and Xie, 2023]. λm(τ ) is a specialized timestep prior designed to con-straint information emphasis for text and EEG modalities. Following the coarse and fine generative dynamics, we de-fine λm(τ ) as the timestep prior using complementary sinu-soidal schedules: 
+
+λtxt (τ ) = sin 
+
+ τTmax 
+
+· π
+
+2
+
+
+
+(6) 
+
+λeeg (τ ) = 1 − sin 
+
+ τTmax 
+
+· π
+
+2
+
+
+
+(7) By effectively coordinating the high-level textual seman-tics with fine-grained EEG visual cognition, the proposed dif-fusion step gating strategy promotes the decoupling utiliza-tion of joint-modal information, enhancing the fidelity of the reconstructed visual stimuli with precise cognitive details. 
+
+## 4 Dataset and Experiment Setup 
+
+As one of the most commonly used datasets, ThingsEEG dataset is employed in this study which records EEG re-sponses from 10 participants under a rapid serial visual pre-sentation (RSVP) paradigm [Gifford et al. , 2022]. Visual stimuli are drawn from the THINGS database and consist of 16,740 natural images spanning a wide range of object cat-egories [Hebart et al. , 2019]. The dataset is split into 1,654 training categories containing 10 images for each and 200 test categories containing only single image for each. Preprocessing includes segmenting the EEG recordings from 0 to 1000 ms for each stimulus, filtering between 0.1 and 100 HZ , and normalized. The baseline correction is performed using the 200ms EEG interval before stimulus. We employ Qwen3-VL-Embedding-2B for image detailed captioning and adopt CLIP-L/G for fine-grained and coarse-grained text encoding. The proposed method is conducted on double NVIDIA A40 48GB GPUs. Detailed hyperparameter settings are provided in our code repository. Following the outline in CognitionCapture, we use Pixel Correlation (PixCorr) and Structural Similarity Index (SSIM) as pixel-level metrics. Additionally, we implement deep learning-based metrics including AlexNet (Layers 2 and 5), Inception, CLIP, and SwAV to evaluate semantic similar-ity [Zhang et al. , 2025]. To further evaluate the model’s capability in reconstructing the color and spatial informa-tion within EEG signals, we introduce two novel metrics: CIELab EMD (LabEMD) and Depth EMD (DeepEMD). LabEMD is designed to evaluate color reconstruction consis-tency with human visual perception. It presents luminance and chromaticity differences between reconstructed image GT 
+
+JMVR 
+
+> (Ours)
+
+ATM 
+
+Cognition 
+
+Capture Figure 4: Visual comparison of reconstruction quality (The reconstruction samples were selected from subject-08). 
+
+Method Fine-grained Coarse-grained PixCorr ↑ SSIM ↑ LabEMD ↓ DeepEMD ↓ Alex(2) ↑ Alex(5) ↑ Incep ↑ CLIP ↑ SwAV ↓
+
+NICE (2024) 0.173 0.326 23.409 2.834 0.783 0.832 0.746 0.773 0.523 MUSE (2024) 0.199 0.358 21.930 2.501 0.802 0.853 0.754 0.793 0.513 ATM (2024) 0.182 0.353 23.441 3.040 0.776 0.866 0.755 0.790 0.545 DreamDiffusion (2024) 0.206 0.347 22.764 1.741 0.787 0.857 0.751 0.791 0.504 Perceptogram (2025) 0.214 0.334 19.899 1.659 0.856 0.874 0.762 0.818 0.531 CognitionCapturer (2025) 0.178 0.359 17.749 2.435 0.806 0.894 0.769 0.803 0.552 JMVR* (ours) 0.215 0.367 15.263 1.123 0.821 0.877 0.778 0.809 0.493 JMVR (ours) 0.236 0.372 12.413 0.982 0.874 0.920 0.793 0.829 0.458   
+
+> Table 1: Quantitative assessments of the mean reconstruction quality of all subjects. The best and suboptimal results are denoted by bold and underline respectively. *indicate that the text input was replaced with aligned EEG signals so that JMVR* became a EEG-to-image model.
+
+and original stimulus by calculating the Earth Mover’s Dis-tance (EMD) within the CIELab color space. DeepEMD aims to assess the preservation of spatial layouts. We imple-mented a commonly used deep analysis model called Depth-Anything-v2 to extract depth maps [Byung-Ki et al. , 2025; Yang et al. , 2024]. Then, the EMD between these maps is computed to quantify the accuracy of the reconstructed spa-tial structures. 
+
+## 5 Experimental Results 
+
+5.1 Performance Comparison 
+
+Tab. 1 shows the quantitative assessments of the image recon-struction quality. The results demonstrates that our JMVR framework achieves state-of-the-art performance across all evaluated metrics. Compared with alignment-centric multi-modal methods, joint-modal training demonstrates superior performance in image reconstruction and stronger multi-modal comprehension capabilities. This provides a novel training paradigm for visual reconstruction from neural sig-nals. Although it is a fair comparison between JMVR with joint inputs and the methods that obtains text-like repre-sentations via EEG-text pre-alignment, the further study for the image reconstruction performance is conducted through JMVR* model that only uses EEG inputs without pre-alignment. The result shows that the restricted paradigm also superior to competing approaches in fine-grained reconstruc-tion and maintains highly competitive capabilities in high-level semantic consistency. Fig. 4 provides the reconstruction results of JMVR com-paring to the origin visual stimuli ground truth (GT) and com-peting approaches (ATM and CognitionCapturer). As illus-trated, our method demonstrates a superior capability in re-constructing both high-level semantic consistency and low-level visual attributes. In contrast to the semantic drift ef-fect in competing approaches, JMVR consistently captures the correct core category of the visual stimuli. This ro-bustness validates the effectiveness the advanced semantic-Method Fine-grained Coarse-grained PixCorr ↑ SSIM ↑ LabEMD ↓ DeepEMD ↓ Alex(2) ↑ Alex(5) ↑ Incep ↑ CLIP ↑ SwAV ↓
+
+w/o Diffusion Step Gating 0.228 0.363 12.633 0.985 0.865 0.885 0.790 0.814 0.527 w/o Multi-Scale EEG 0.223 0.364 13.172 1.065 0.858 0.877 0.788 0.816 0.551 w/o Image Augmentation 0.213 0.347 22.218 2.497 0.788 0.881 0.785 0.817 0.546 JMVR*(our) 0.215 0.367 15.263 1.123 0.821 0.877 0.778 0.809 0.493 JMVR(our) 0.236 0.372 12.413 0.982 0.874 0.920 0.793 0.829 0.458 
+
+> Table 2: Quantitative assessments of the mean reconstruction quality of the JMVR method in ablation study across all subjects. *indicate that the text input was replaced with aligned EEG signals so that JMVR* became a EEG-to-image model. JMVR
+> (Ours)
+> Cognition
+> Capture
+> Figure 5: 3D point clouds of the reconstruction image (The sample was selected from the aircraft carrier reconstruction by Subject-08).
+
+understanding performance of learning text and EEG in a shared latent space. Furthermore, JMVR successfully recon-structs fine-grained details that are lost in other approaches like the color of minivan and the material of mixing bowl. This further illustrates the contribution of undegraded joint-model framework and multi-scale EEG feature extraction method. 
+
+5.2 Ablation Experiments 
+
+Tab. 2 presents the individual contributions of our proposed components. The ablation of the multi-scale EEG feature ex-traction and the diffusion step gating leads to a consistent per-formance decrease across all metrics. This decline highlights the significance of these components for EEG signal encod-ing and the joint-modal flow matching regulation. Further-more, the exclusion of image enhancement module causes a sharp increase of LabEMD and DeepEMD, demonstrating its indispensability for fine-grained visual fidelity. 
+
+## 6 Discussion 
+
+6.1 Spatial Reconstruction Analysis 
+
+Since DeepEMD in Tab. 1 are often difficult to capture by human eye, we implemented the Depth-Anything-v2 model to project the reconstructed images into 3D point clouds for further discussion. Fig. 5 demonstrates the spatial recon-struction performance of two models that incorporate depth  
+
+> (a) Text masking (b) EEG masking Figure 6: LabEMD and DeepEMD performance under different text and EEG masking ratios.
+
+information during training. Although the Cognition Cap-ture model pre-aligns EEG signals with depth information during training, its strategy appears to limited spatial com-prehension. The upper structure of the ship fails to be ac-curately reconstructed. In contrast, JMVR relatively recon-structs correct depth hierarchical relationships with the joint-training approach. The results demonstrates that our frame-work more effectively captures the latent interplay between EEG-encoded visual perception and the spatial semantics of images. 
+
+6.2 Interaction between Text and EEG Modalities 
+
+To verify the respective significance of text and EEG modal-ities in visual reconstruction, we analyzed the variations in LabEMD and DeepEMD metrics under different masking ra-tios. Since text encodings typically provide explicit infor-mation of object coloration. Color fidelity declines as the text masking ratio increases as shown in Fig. 6a. When the text masking ratio becomes higher, the color reconstruc-tion capability of JMVR degrades to our comparison EEG-to-image model. The results underscores the necessity of incor-porating joint-modal training with textual guidance for high-quality visual reconstruction. Conversely, Fig. 6b reveals that EEG input masking triggers a simultaneous increase in both LabEMD and DeepEMD metrics. This indicates that EEG signals containing rich visual attributes related color and spa-tial depth. These can effectively complement semantic infor-mation of the textual modality. Thus, the result highlights a limitation of comparative methods that inevitably discard these perceptual details inherent in the neural signal by align-ing EEG directly with text embeddings, indicating the advan-tages of joint-modal paradigm. To further examine how textual semantic information mod-ulates the internal mechanisms of EEG-based neural decod-(a) single-modal (EEG-only)   
+
+> (b) joint-modal (EEG +text) Figure 7: Channel weights of single-modal JMVR* with only EEG input and joint-modal JMVR with both EEG and text inputs.
+
+ing models, we compared the spatial distributions of channel attention weights under single-modal and multi-modal condi-tions in Fig. 7. Under the single-modal condition, the attention weights were highly concentrated on occipital electrodes (e.g., OZ, O1, O2, and POZ), which are primarily associated with low-level visual feature encoding [Oostenveld and Praam-stra, 2001]. This illustrates of spatial concentration reflects an information bottleneck in single-modality EEG decoding. In the absence of high-level semantic guidance, the model is forced to rely on channels with direct stimulus-related re-sponses in order to extract visual information. With the introduction of textual descriptions, the dis-tribution of attention weights was systematically reorga-nized. Although occipital regions remained prominent, at-tention extended toward parietal and temporo-occipital ar-eas. From a perspective of neural functions, these regions are known to support spatial attention, object integration, and visual–semantic mapping [Conci et al. , 2025; Shafritz et al. ,2002]. From a modeling perspective, the availability of a sta-ble global semantic from text reduces the burden on EEG signals to encode object identity and allows attention to be redistributed toward channels with spatial structure and fine-grained perceptual details. This redistribution supports more precise image reconstruction from EEG by preserving sensi-tivity to visual cognition attributes. Overall, the observed reorganization of channel attention reveals an interactive mechanism between textual and EEG modalities within the joint attention space. By introducing high-level semantic constraints, multi-modal learning shifts EEG encoding from early visual cortex toward a coopera-tion of neural signals across multiple brain regions. These findings offer mechanistic insight into joint-modal neural de-coding and suggest a principled pathway for improving EEG-based visual reconstruction through joint-cognitive inputs. 
+
+6.3 Temporal Evolution of Visual Cognition 
+
+To investigate the focus of visual cognition, we analyzed the performance of the unnimodal model JMVR* driven only by EEG signals within different time interval. The EEG data was segmented using a sliding window of [t − 100 , t ] ms for de-coding. The reconstructed images being classified via 10-way 
+
+> Figure 8: Temporal evolution of semantic classification (Accuracy) and structural reconstruction quality (DeepEMD). Note that a de-crease in the DeepEMD metric corresponds to an improvement in spatial reconstruction performance. The double valleys in the figure represent two peaks in spatial reconstruction performance.
+
+zero-shot classification with the CLIP model. Since the spar-sity of the segmented EEG information causes high variance for CIELab EMD, our analysis only focuses on semantic cat-egorization and depth reconstruction. As illustrated in Fig. 8, the semantic classification accuracy exhibits a unimodal pro-file, peaking within the 200–300 ms interval. This suggests that subject identification is primarily an early-stage process occurring shortly after stimulus. In contrast, the DeepEMD metric reveals a distinct bimodal distribution. During the early 100–300 ms phase , DeepEMD values are significantly lower than the baseline. This indicates an early spatial un-derstanding even before the peak of semantic classification cognition. The early structural encoding may be linked to mechanisms of spatial localization or figure-ground segrega-tion within the visual pathway. In the later stage of visual cognition during 900–1000 ms, we observe a resurgence in spatial reconstruction quality. The results demonstrate that after the initial semantic recognition, the brain re-focused on depth information and spatial details to refine its cognitive representation of the scene. 
+
+## 7 Conclusion 
+
+To mitigate the loss of cognitive information in EEG-based visual reconstruction, we propose the Joint-Modal Visual Re-construction framework. The model incorporates four key components: multi-scale EEG encoding, image augmenta-tion, joint-modal attention, and diffusion step gating. It achieves state-of-the-art performance in reconstructing vi-sual stimuli. Beyond performance improvements, we analyze the interaction mechanisms between multi-modal represen-tations, offering new insights into the neural basis of visual reconstruction. Furthermore, we investigate the temporal dy-namics of visual cognition, revealing how depth information and semantic subject features are cognized across different stages of neural processing. Despite these advances, the cur-rent evaluation process mainly emphasizes depth consistency and chromatic fidelity and lacks a comprehensive assessment of higher-level visual cognitive reconstruction. Future work may extend the framework to incorporate additional modali-ties and develop more informative evaluation metrics to quan-tify visual cognitive reconstruction performance. References 
+
+[Bai et al. , 2023] Yunpeng Bai, Xintao Wang, Yan-pei Cao, Yixiao Ge, Chun Yuan, and Ying Shan. Dreamdiffusion: Generating high-quality images from brain eeg signals. 
+
+arXiv preprint arXiv:2306.16934 , 2023. [Byung-Ki et al. , 2025] Kwon Byung-Ki, Qi Dai, Lee Hyoseok, Chong Luo, and Tae-Hyun Oh. Jointdit: En-hancing rgb-depth joint modeling with diffusion trans-formers. arXiv preprint arXiv:2505.00482 , 2025. [Chen and Wei, 2024] Chi-Sheng Chen and Chun-Shu Wei. Mind’s eye: image recognition by eeg via multimodal similarity-keeping contrastive learning. arXiv preprint arXiv:2406.16910 , 2024. [Chen, 2024] Chi-Sheng Chen. Necomimi: Neural-cognitive multimodal eeg-informed image generation with diffusion models. arXiv preprint arXiv:2410.00712 , 2024. [Cichy and Pantazis, 2017] Radoslaw Martin Cichy and Dimitrios Pantazis. Multivariate pattern analysis of meg and eeg: A comparison of representational structure in time and space. NeuroImage , 158:441–454, 2017. [Conci et al. , 2025] Markus Conci, Leonie Nowack, Paul CJ Taylor, Kathrin Finke, and Hermann J M¨ uller. Right pari-etal rtms induces bidirectional effects of selective attention upon object integration. Brain Sciences , 15(5):483, 2025. [Esser et al. , 2024] Patrick Esser, Sumith Kulal, Andreas Blattmann, Rahim Entezari, Jonas M¨ uller, Harry Saini, Yam Levi, Dominik Lorenz, Axel Sauer, Frederic Boe-sel, et al. Scaling rectified flow transformers for high-resolution image synthesis. In Forty-first international conference on machine learning , 2024. [Fares et al. , 2020] Ahmed Fares, Sheng-hua Zhong, and Jianmin Jiang. Brain-media: A dual conditioned and lat-eralization supported gan (dcls-gan) towards visualization of image-evoked brain activities. In Proceedings of the 28th ACM International Conference on Multimedia , pages 1764–1772, 2020. [Fei et al. , 2025] Teng Fei, Abhinav Uppal, Ian Jackson, Srinivas Ravishankar, David Wang, and Virginia R de Sa. Perceptogram: Visual reconstruction from eeg using im-age generative models. arXiv preprint arXiv:2404.01250 ,2025. [Gifford et al. , 2022] Alessandro T Gifford, Kshitij Dwivedi, Gemma Roig, and Radoslaw M Cichy. A large and rich eeg dataset for modeling human visual object recognition. 
+
+NeuroImage , 264:119754, 2022. [Hebart et al. , 2019] Martin N Hebart, Adam H Dickter, Alexis Kidder, Wan Y Kwok, Anna Corriveau, Caitlin Van Wicklin, and Chris I Baker. Things: A database of 1,854 object concepts and more than 26,000 naturalistic object images. PloS one , 14(10):e0223792, 2019. [Jiang et al. , 2020] Jianmin Jiang, Ahmed Fares, and Sheng-Hua Zhong. A brain-media deep framework towards see-ing imaginations inside brains. IEEE Transactions on Mul-timedia , 23:1454–1465, 2020. [Lee and Kang, 2025] Jeyoung Lee and Hochul Kang. Synapse: Synergizing an adapter and finetuning for high-fidelity eeg synthesis from a clip-aligned encoder. arXiv preprint arXiv:2511.17547 , 2025. [Li et al. , 2024] Dongyang Li, Chen Wei, Shiying Li, Ji-achen Zou, and Quanying Liu. Visual decoding and re-construction via EEG embeddings with guided diffusion. In The Thirty-eighth Annual Conference on Neural Infor-mation Processing Systems , 2024. [Mishra et al. , 2023] Rahul Mishra, Krishan Sharma, Ran-jeet Ranjan Jha, and Arnav Bhavsar. Neurogan: image re-construction from eeg signals via an attention-based gan. 
+
+Neural Computing and Applications , 35(12):9181–9192, 2023. [Oostenveld and Praamstra, 2001] Robert Oostenveld and Peter Praamstra. The five percent electrode system for high-resolution eeg and erp measurements. Clinical neu-rophysiology , 112(4):713–719, 2001. [Ozcelik and VanRullen, 2023] Furkan Ozcelik and Rufin VanRullen. Natural scene reconstruction from fmri sig-nals using generative latent diffusion. Scientific Reports ,13(1):15666, 2023. [Palazzo et al. , 2020] Simone Palazzo, Concetto Spamp-inato, Isaak Kavasidis, Daniela Giordano, Joseph Schmidt, and Mubarak Shah. Decoding brain representations by multimodal learning of neural activity and visual features. 
+
+IEEE Transactions on Pattern Analysis and Machine In-telligence , 43(11):3833–3849, 2020. [Peebles and Xie, 2023] William Peebles and Saining Xie. Scalable diffusion models with transformers. In Proceed-ings of the IEEE/CVF international conference on com-puter vision , pages 4195–4205, 2023. [Shafritz et al. , 2002] Keith M Shafritz, John C Gore, and Ren´ e Marois. The role of the parietal cortex in visual fea-ture binding. Proceedings of the National Academy of Sci-ences , 99(16):10917–10922, 2002. [Song et al. , 2023] Yonghao Song, Bingchuan Liu, Xiang Li, Nanlin Shi, Yijun Wang, and Xiaorong Gao. Decoding natural images from eeg for object recognition. arXiv preprint arXiv:2308.13234 , 2023. [Tirupattur et al. , 2018] Praveen Tirupattur, Yogesh Singh Rawat, Concetto Spampinato, and Mubarak Shah. Thoughtviz: Visualizing human thoughts using genera-tive adversarial network. In Proceedings of the 26th ACM international conference on Multimedia , pages 950–958, 2018. [Wakita et al. , 2021] Suguru Wakita, Taiki Orima, and Isamu Motoyoshi. Photorealistic reconstruction of visual tex-ture from eeg signals. Frontiers in Computational Neu-roscience , 15:754587, 2021. [Wang et al. , 2024] Ling Wang, Chen Wu, and Lin Wang. Braindreamer: Reasoning-coherent and controllable im-age generation from eeg brain signals via language guid-ance. arXiv preprint arXiv:2409.14021 , 2024. [Wilson et al. , 2024] Holly Wilson, Xi Chen, Mohammad Golbabaee, Michael J Proulx, and Eamonn O’Neill. Fea-sibility of decoding visual information from eeg. Brain-computer interfaces , 11(1-2):33–60, 2024. [Yang et al. , 2024] Lihe Yang, Bingyi Kang, Zilong Huang, Zhen Zhao, Xiaogang Xu, Jiashi Feng, and Hengshuang Zhao. Depth anything v2. In Neural Information Process-ing Systems Conference , 2024. [Zeng et al. , 2023] Hong Zeng, Nianzhang Xia, Dongguan Qian, Motonobu Hattori, Chu Wang, and Wanzeng Kong. Dm-re2i: A framework based on diffusion model for the reconstruction from eeg to image. Biomedical Signal Pro-cessing and Control , 86:105125, 2023. [Zhang et al. , 2025] Kaifan Zhang, Lihuo He, Xin Jiang, Wen Lu, Di Wang, and Xinbo Gao. Cognitioncapturer: Decoding visual stimuli from human eeg signal with mul-timodal information. In Proceedings of the AAAI Confer-ence on Artificial Intelligence , volume 39, pages 14486– 14493, 2025.
