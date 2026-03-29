@@ -1,0 +1,562 @@
+Title: Functorial Neural Architectures from Higher Inductive Types
+
+URL Source: https://arxiv.org/pdf/2603.16123v1
+
+Published Time: Wed, 18 Mar 2026 00:38:27 GMT
+
+Number of Pages: 22
+
+Markdown Content:
+> Submitted to: ACT 2026
+
+# Functorial Neural Architectures from Higher Inductive Types 
+
+Karen Sargsyan 
+
+> Institute of Chemistry, Academia Sinica, Taipei, Taiwan
+> karen.sarkisyan@gmail.com
+
+Neural networks systematically fail at compositional generalization—producing correct outputs for novel combinations of known parts. We show that this failure is architectural: compositional gen-eralization is equivalent to functoriality of the decoder, and this perspective yields both guarantees and impossibility results. We compile Higher Inductive Type (HIT) specifications into neural archi-tectures via a monoidal functor from the path groupoid of a target space to a category of paramet-ric maps: path constructors become generator networks, composition becomes structural concate-nation, and 2-cells witnessing group relations become learned natural transformations. We prove that decoders assembled by structural concatenation of independently generated segments are strict monoidal functors (compositional by construction), while softmax self-attention is not functorial for any non-trivial compositional task. Both results are formalized in Cubical Agda. Experiments on three spaces validate the full hierarchy: on the torus ( Z2), functorial decoders outperform non-functorial ones by 2–2 .7×; on S1 ∨ S1 (F2), the type-A/B gap widens to 5 .5–10 ×; on the Klein bottle (Z ⋊ Z ), a learned 2-cell closes a 46% error gap on words exercising the group relation. 
+
+# 1 Introduction 
+
+A model that has learned to add 2-digit numbers should handle 5-digit numbers—the algorithm is the same, applied to more parts. A robot that can navigate around one obstacle should handle two obstacles by composing single-obstacle plans. A language model trained on simple commands should handle “go left then right” without retraining. In each case, the task decomposes into parts that combine by a known rule, and the model must respect that rule on inputs never seen during training. This is compositional generalization, and neural networks systematically fail at it. Standard neural networks fail on SCAN [1] (linguistic composition), COGS [2] (semantic parsing), and multi-step arithmetic [3]. These failures are not capacity limitations—they persist as models scale. We argue that the failure is architectural. Consider a decoder that handles a combined input by producing each part’s output independently, then combining the results: D(w1 · w2) = D(w1) ⊕ D(w2).In categorical language, this equation says the decoder is a monoidal functor from the input algebra to the output algebra. We prove that a specific class of decoders (transport decoders) are monoidal functors (Theorem 3.3), and that softmax attention is not one, for any choice of parameters (Theorem 4.1). The reason is concrete: two different input sequences can represent the same compositional meaning (e.g., 
+
+ab and ba in an abelian group), so a compositional decoder must produce the same output for both. But attention computes different key vectors for different token orderings, producing different outputs regardless of the learned weights. The principle that compositional semantics is functoriality originates in DisCoCat [4, 5]. To realize this principle in learnable systems, one needs a categorical account of neural architectures themselves; categorical deep learning [6, 7, 8] provides this, organizing parametric maps into categories and formaliz-ing learning and architectural constraints via functorial and algebraic structure. But in both programmes, building a functorial architecture for a given compositional structure—say Z2 for the torus, F2 for two-obstacle navigation—requires ad hoc engineering with no guarantee that the result is actually functorial. 
+
+> arXiv:2603.16123v1 [cs.LG] 17 Mar 2026
+
+2 Functorial Neural Architectures from Higher Inductive Types 
+
+We provide the missing step: a compilation functor from Higher Inductive Type (HIT) specifications to neural architectures, so that the algebraic structure of the task determines the architecture automati-cally, with compositional correctness by construction. Experiments show that the resulting architectures outperform non-functorial alternatives by 2–10 ×.
+
+Contributions. (1) A compilation functor mapping HIT constructors—basepoints, loops, 2-cells—to architectural components—generator networks, structural concatenation, learned homotopies—so that compositional correctness is guaranteed by construction (§3). (2) Transport decoders (which concate-nate independently generated segments) are strict monoidal functors; softmax attention is not, for any parameters. Both results are formalized in Cubical Agda (§4). (3) Experiments on T 2 (fundamental group π1 = Z2, abelian), S1 ∨ S1 (π1 = F2, free), and Klein bottle ( π1 = Z ⋊ Z , semidirect product) vali-date all three levels: winding constraints, monoidal composition, and a learned 2-cell witnessing a group relation (§5). 
+
+# 2 From Types to Categories 
+
+The three ingredients below—HIT specifications, monoidal structure of π1, and parametric maps— combine in §3 to give the compilation functor. The reader familiar with HoTT and categorical deep learning may skip to §3. 
+
+2.1 Spaces from generators and relations 
+
+To build decoders with topological guarantees, we need a specification language that describes spaces by their generators and relations—much as a group presentation describes a group by generators and relations. Higher inductive types provide exactly this. In HoTT [9, 10], every type A has an identity type a =A b. Elements p : a = b are paths; they compose (p · q : a = c), have inverses ( p−1 : b = a), and satisfy groupoid laws up to higher coherence. The loop space Ω(A, a) := ( a = a) carries a group structure up to higher coherence under path composition; its set-truncation ∥Ω(A, a)∥0 is the group π1(A, a).A Higher Inductive Type (HIT) specifies a type by listing its constructors at each dimension: a basepoint, loops (paths from the basepoint to itself), and 2-cells (homotopies between loops witnessing algebraic relations). Three examples drive the paper: Torus T 2: base : T 2; loop a, loop b : base = base ; surf : loop a · loop b = loop b · loop a.
+
+π1(T 2) = Z2 (abelian; the 2-cell surf witnesses commutativity). Wedge of circles S1 ∨ S1: base ; loop a, loop b : base = base ; no 2-cells. 
+
+π1(S1 ∨ S1) = F2 (free group; no relations, ab ̸ = ba ). Klein bottle K: base ; loop a, loop b; rel : loop b · loop a · loop −1 
+
+> b
+
+= loop −1 
+
+> a
+
+.
+
+π1(K) = ⟨a, b | bab −1 = a−1⟩ ∼= Z ⋊ Z (non-trivial relation). These three span a hierarchy: abelian with a 2-cell ( T 2), non-abelian without one ( S1 ∨ S1), and non-abelian with a non-trivial 2-cell ( K). Each exercises a different level of the compilation functor in §3. 
+
+2.2 Composition as monoidal structure 
+
+The word “compositional” needs a precise meaning. We need a category whose monoidal product is word concatenation, so that a decoder preserving this product is compositional by definition—not by K. Sargsyan 3empirical evaluation on a test set. A group G = ⟨a1, . . . , ak | r1, . . . , rm⟩ can be viewed as a single-object category BG : the morphisms are elements of G, and composition is the group operation—i.e., word concatenation followed by reduction via the relations r j. This category is monoidal under composition. When G = π1(X, x0), the morphisms are homotopy classes of loops and composition is path concatenation. A decoder is then a functor D : BG → C into some target category. If D preserves the monoidal product— D(w1 · w2) = D(w1) ⊕ D(w2)—it is a monoidal functor, and compositional by construction. 
+
+2.3 Neural networks as parametric maps 
+
+To land the compilation functor, we need a target category whose morphisms are neural networks. Fol-lowing Cruttwell et al. [6] and Gavranovi´ c et al. [7], a neural network layer is a parametric map 
+
+(Θ, f : Θ × X → Y )—a morphism in the category Para (Smooth ) parameterized by weights θ ∈ Θ.Composing two layers pairs their parameter spaces: (Θ1 × Θ2, g ◦ f ). Fong, Spivak, and Tuy´ eras [8] show that gradient descent defines a monoidal functor from Para to a category of learners, so anything landing in Para is trainable by backpropagation. Our compilation functor targets a subcategory: it maps each generator of π1(X) to a parametric loop in Para (Smooth ), and composition in π1 maps to concatenation of loop segments. Functoriality of this map is compositional generalization. The next section makes this concrete. 
+
+# 3 From Specifications to Architectures 
+
+Let X be a pointed connected space with π1(X) = G = ⟨a1, . . . , ak | r1, . . . , rm⟩.
+
+Definition 3.1 (Parametric loops) . ParLoop (X) is the monoidal category with a single object ⋆ (the basepoint x 0), whose morphisms ⋆ → ⋆ are parametric loops (Θ, L : Θ × [0, 1] → X) with L (θ , 0) = 
+
+L(θ , 1) = x0 for all θ , and whose monoidal product is loop concatenation: (L1 ⊕ L2)( t) = L1(2t) for t ≤ 12 , L 2(2t−1) for t > 12 .
+
+Construction 3.2 (HIT compilation) . Given a HIT for X with π1(X) = G, the compilation functor D :
+
+BG → ParLoop (X) is: (i) Generators. For each generator a i of G, a neural network g ai (θi,t) : [0, 1] → X (an MLP taking time t and outputting a point on X) producing a parametric loop whose winding number is constrained to [ai] ∈ π1(X) by construction. For inverses: g a−1 
+
+> i
+
+(θi,t) := gai (θi, 1 − t).(ii) Composition. For a word w = ai1 · · · aiL , D(w) := gai1 ⊕ · · · ⊕ gaiL (structural concatenation of the L loop segments). (iii) 2-cells. For each relation r j : LHS j = RHS j, a parametric homotopy H j : ΘHj × [0, 1]s × [0, 1]t → Xwith boundary conditions H j(−, 0, −) = D(LHS j), H j(−, 1, −) = D(RHS j)—a continuous defor-mation from one loop to the other, implemented as a separate MLP. 
+
+Theorem 3.3 (Transport composition = strict functoriality) . Let D be the transport decoder from Con-struction 3.2(i–ii). (a) Free monoid. For all words w 1, w2 over the generators and for all parameter values θ :
+
+D(w1 · w2) = D(w1) ⊕ D(w2).
+
+That is, D is a strict monoidal functor from the free monoid on the generators to ParLoop (X).This is an architectural identity, not a learned approximation. 4 Functorial Neural Architectures from Higher Inductive Types 
+
+(b) Extension to G. With the 2-cells of Construction 3.2(iii), D respects the group relations up to ho-motopy: for each relation r j : LHS j = RHS j, the learned homotopy H j provides a path D(LHS j) ≃
+
+D(RHS j) in the loop space of X. The result is a functor from BG to the homotopy category of parametric loops: strict on composition, with H j witnessing each relation. Proof. Part (a). Write w1 = ai1 · · · ain and w2 = a j1 · · · a jm . By Construction 3.2(ii): 
+
+D(w1 · w2) = gai1 ⊕ · · · ⊕ gain ⊕ ga j1 ⊕ · · · ⊕ ga jm = D(w1) ⊕ D(w2),
+
+using associativity of ⊕. The unit law D(e) = x0 holds by convention (the empty concatenation is the constant loop at x0). 
+
+Part (b). Each Hj is a parametric homotopy satisfying the boundary conditions of Construc-tion 3.2(iii). By definition, this makes D(LHS j) and D(RHS j) equal in the set-truncation ∥Ω(X, x0)∥0 =
+
+π1(X), so D descends to a well-defined map on the quotient BG .Formalized in Cubical Agda ( TransportCoherence.agda ). 
+
+Remark 3.4 (Strict vs. up-to-reparametrization) . The continuous concatenation formula of Definition 3.1 (run L 1 at double speed, then L 2) is associative only up to reparametrization of [0, 1]. In the implementa-tion, ⊕ is point-cloud list-append, which is strictly associative. The strict functoriality of Theorem 3.3(a) relies on this discrete representation. In the continuous setting, the same result holds as a monoidal functor up to coherent reparametrization isomorphisms—a standard situation in homotopy theory, where path concatenation is associative only up to higher coherence. 
+
+Put simply: the transport decoder composes by list-append, and list-append is associative with an empty list as unit. No learning is involved in the composition step—it is a structural identity that holds for every parameter value and every word length. 
+
+Remark 3.5 (When the 2-cell matters) . On T 2 and S 1 ∨ S1, the 2-cell H is either trivially satisfiable (abelian: any ordering is homotopic) or absent (free: no relations to witness). On K, the relation bab −1 = a−1 is non-trivial: after composing g b ⊕ ga ⊕ gb−1 , the result must be homotopic to g a−1 . Without H, the transport decoder generates geometrically correct segments but globally incoherent loops—it ignores the frame flip. With H, the decoder learns the deformation. 
+
+The topological constraints do not destroy geometric expressivity. Each generator gai (θi) can rep-resent any continuous loop in its homotopy class (by the universal approximation theorem for MLPs); the constraint acts only between classes, enforcing that D(w) is assembled from these generators. An alternative architecture—the cover decoder—assigns an independent shape to each homotopy class, giv-ing strictly more geometric freedom. But this extra freedom is precisely the freedom to be incoherent: to produce outputs that violate composition. Functoriality trades inter-class freedom for the guarantee (Appendix J). This motivates a formal distinction: 
+
+Definition 3.6 (Type-A / Type-B) . An architecture is type-B (functorial) if its decoder defines a monoidal functor G → ParLoop (X) for all parameter values. It is type-A (non-functorial) otherwise. Type-B architectures generate each loop segment independently from the corresponding generator network, then concatenate. Type-A architectures use cross-segment dependencies (e.g., attention between positions belonging to different generators), breaking the monoidal factorization D(w1 · w2) = D(w1) ⊕
+
+D(w2).K. Sargsyan 5
+
+# 4 What Attention Cannot Compose 
+
+Construction 3.2 produces type-B architectures. We now show that the dominant composition mecha-nism in modern architectures—softmax attention—is inherently type-A: no parameter setting makes it functorial. Softmax self-attention [11] aggregates information across positions via content-dependent weights: each position attends to every other position based on learned similarity between their representations, so every position’s output depends on the tokens at all other positions. (The standard formulation in terms of query, key, and value matrices is recalled in Appendix A.) 
+
+Theorem 4.1 (Attention is not functorial) . Let T θ be a transformer with softmax self-attention, and let G be a non-trivial group. There exist no parameters θ for which T θ defines a monoidal functor G → ParLoop (X).Proof sketch (full proof in Appendix A). Suppose for contradiction that T is functorial, so T (w1 · w2) = 
+
+T (w1) ⊕ T (w2). Since ⊕ is a function of T (w1) and T (w2) alone, the output for the w1-segment can depend on w2 only through T (w2): any two words representing the same group element must produce the same effect on w1’s output. But attention violates this: at each layer, position i ∈ w1 attends to positions 
+
+j ∈ w2 via key vectors Kh j determined by the token embeddings of w2, not by T (w2). Since G is non-trivial, there exist distinct words w2̸ = w′ 
+
+> 2
+
+with [w2] = [ w′
+
+> 2
+
+] ∈ G—same group element, different token sequences. Under any standard embedding (which maps distinct generator symbols to distinct vectors), these produce different key vectors, causing w1’s output to differ between T (w1 · w2) and T (w1 · w′
+
+> 2
+
+),contradicting T (w2) = T (w′
+
+> 2
+
+).In short: attention is a content-based routing mechanism, and content-based routing cannot be compo-sitional. A functorial decoder must treat all words representing the same group element identically, but attention reads the tokens themselves—not their equivalence class—so it distinguishes words that the functor must identify. 
+
+Scaling prediction. For type-B decoders, the per-segment error is O(1) as word length grows: each segment is generated independently by the same network. For type-A decoders, per-segment error de-grades beyond the training word length because attention patterns over longer sequences are out-of-distribution (proved formally in Appendix I). The experiments in §5 confirm this across all three spaces. 
+
+Depth obstruction for nonsolvable groups. The functoriality obstruction (Theorem 4.1) applies to all non-trivial groups, abelian or not. For groups with nonsolvable finite quotients (such as F2 ↠ S5), a separate depth obstruction compounds the problem: prefix products are NC 1-complete [12], outside the 
+
+AC 0 circuit class that fixed-depth transformers implement. For solvable groups (such as Z⋊Z ), constant-depth shortcuts exist [21] and only the functoriality obstruction applies. The full trichotomy—abelian, solvable non-abelian, nonsolvable—is developed in Appendix H (Corollary H.2). Section 5.2 ( F2) tests both obstructions simultaneously; Section 5.3 ( Z ⋊ Z , solvable) isolates functoriality alone. 
+
+Relationship to DisCoCat and categorical deep learning. Theorem 4.1 provides a structural impos-sibility result absent from prior work on functorial semantics: softmax cross-attention is incompatible with monoidal functoriality, whether the codomain is FdVect (as in DisCoCat [4, 5]) or ParLoop (X).A stronger version (Appendix F) drops group structure entirely, requiring only sequential composition-ality. The categorical deep learning programme [6, 8, 7] provides the semantic foundations we build 6 Functorial Neural Architectures from Higher Inductive Types 
+
+on (§2); our contribution extends it from analysis to synthesis, deriving functorial architectures from type-theoretic specifications rather than analyzing existing ones. 
+
+# 5 Three Spaces, Three Predictions 
+
+The theorems make testable predictions: type-B decoders should show constant per-segment error as word length L grows (Theorem 3.3), while type-A decoders should degrade (Theorem 4.1). We test on three spaces spanning the HIT hierarchy. 
+
+Task. The task is continuous geometric generation: given a word w = w1 · · · wL over generators of 
+
+π1(X), produce a point cloud ˆ γ ⊂ Rd approximating a loop on X in the homotopy class [w]—a curve that winds around X in the way prescribed by w (with d = 3 for T 2 and S1 ∨ S1; d = 4 for K). Training uses all words of length ≤ 2 (6 words for T 2 and S1 ∨ S1; 16 words for K which has inverses); test words have length 3 , 4, 6, 8, 10—never seen during training. This is up to a 5 × length extrapolation test. Ground-truth loops and data generation details are in Appendix B. 
+
+Architectures. Table 1 summarizes the six decoders tested, classified by which HIT constructors they compile and whether they are functorial (type-B) or not (type-A). The type-A/B classification is deter-mined by a single question: does the decoder structurally compose outputs from independently generated parts, or does it allow cross-segment information flow? Table 1: Architectures tested on T 2. The other two spaces use a subset of these (see Tables 3, 4). “Compiled from HIT” indicates which level of Construction 3.2 the architecture implements: winding = hard topological constraint only, generators = independent loop networks, all = generators plus learned 2-cell H. Type-A decoders allow cross-segment information flow or lack compositional structure; type-B decoders compose independently generated segments.                          
+
+> Architecture Type Compiled from HIT Params Why type-A or B? Transf. (WC) Awinding only 585K Attn. mixes segments Cover Awinding only 205K No composition Transp. Attn. Awinding + positions 585K Correct positions, attn. mixes Transport Bwinding + generators 170K Struct. concatenation Homotopy Ball (incl. 2-cell) 195K Concat. + learned H
+
+Type-A decoders (non-functorial). The transformer (WC) augments a standard transformer with a hard winding constraint: angle increments sum to the correct winding number by construction, but attention still mixes information across segments. 1 The cover decoder assigns a single independent network to each homotopy class—it respects winding but has no compositional structure, since each class is generated from scratch rather than assembled from parts; it is type-A not because of cross-segment information flow, but because it lacks monoidal factorization entirely. The transport attention decoder is designed to isolate the effect of the composition method: our framework derives its positional encoding (Appendix G), it has 3 .4× more parameters than the transport decoder, and it shares the winding 
+
+> 1An unconstrained transformer achieves 0% winding accuracy and is excluded from all experiments.
+
+K. Sargsyan 7constraint—yet it is type-A because attention still mixes across segments. If this decoder degrades on longer words, the cause is the composition method, not the conditioning. Type-B decoders (functorial). The transport decoder is the Construction 3.2(i–ii) compilation: inde-pendent generator networks whose outputs are structurally concatenated. The homotopy decoder adds the learned 2-cell H from Construction 3.2(iii), which witnesses group relations as continuous deforma-tions between loops. All architectures are trained with the same protocol: Chamfer loss optimized by AdamW (lr = 10 −3,weight decay 10 −4), cosine learning rate schedule, 500 epochs max with early stopping (patience 80). On T 2, all architectures converge to comparable training loss (2 .23–2 .27); on S1 ∨ S1, training losses differ (a matched-loss ablation in Appendix C confirms the gap is architectural, not statistical). Results are aggregated over 3 random seeds (mean ± std). Full hyperparameters are in Appendix B. 
+
+Metrics. The Chamfer distance d C(P, Q) is the symmetric average nearest-neighbor squared distance between two point clouds—a standard metric in geometric deep learning, insensitive to parameterization (formula in Appendix B). 
+
+Definition 5.1 (Per-segment Chamfer distance) . Given a generated loop ˆγ and ground-truth γ for a word w of length L, both loops are divided into L segments (one per generator), each resampled to a fixed resolution of n pts = 32 points. The per-segment Chamfer distance is: 
+
+¯dL(w) = 1
+
+L
+
+> L
+
+# ∑
+
+> i=1
+
+dC( ˆγi, γi)
+
+For a functorial decoder, ¯dL = εgen (constant) independent of L. This is the primary metric in all experi-ments. 
+
+Circle accuracy (for S1 ∨ S1 only): the fraction of generated segments whose centroid is closer to the correct circle ( A or B) than to the wrong one. This detects a failure mode specific to non-abelian structure: a decoder that cannot distinguish which generator to trace will scatter segments across both circles. 
+
+5.1 Experiment 1: Torus T 2 (π1 = Z2, abelian) 
+
+T 2 is embedded in R3 with major radius R = 2.0, minor radius r = 0.8. The generators a, b trace loops around the two cycles. Table 2: Torus T 2: Per-segment Chamfer distance ¯dL (mean ± std, 3 seeds) at increasing word length 
+
+L. Training uses L ≤ 2; test lengths 3–10 are never seen. Type-B decoders (below line) stabilize; type-A decoders (above) stagnate or degrade despite more parameters. 
+
+Architecture Type L=2 L=4 L=6 L=8 L=10 Transf. (WC) A 1.89 ±.12 1.42 ±.31 1.42 ±.37 1.53 ±.51 1.54 ±.34 
+
+Cover A 2.15 ±.31 1.65 ±.11 2.07 ±.06 1.98 ±.20 1.91 ±.10 
+
+Transp. Attn. A 1.83 ±.18 1.63 ±.17 1.77 ±.21 2.05 ±.19 2.09 ±.13 
+
+Transport B 1.68 ±.22 0.86 ±.12 0.74 ±.03 0.73 ±.03 0.77 ±.03 
+
+Homotopy B 1.68 ±.19 0.93 ±.09 0.74 ±.03 0.74 ±.02 0.80 ±.03 8 Functorial Neural Architectures from Higher Inductive Types 
+
+At L = 10, the type-B range is 0 .77–0 .80 and the type-A range is 1 .54–2 .09: a 2–2 .7× gap. The transport attention decoder is especially informative: it shares the winding constraint, uses theoretically-motivated positional encoding, and has 3 .4× more parameters (585K vs. 170K)—yet degrades because cross-segment attention breaks functoriality. Correct conditioning cannot substitute for correct composi-tion. Two further observations sharpen the interpretation. First, the cover decoder has hard winding and factors through Z2, yet stagnates (2 .15 → 1.91)—correct homotopy class is necessary but not sufficient; composition structure is required. Second, all architectures converge to comparable training loss (2 .23– 2.27; Appendix B), so the gap is not a training artifact. On this abelian space, transport ≈ homotopy: the proof term is unnecessary because Z2 has no non-trivial relations. The non-abelian experiments below remove the letter-counting crutch. 
+
+5.2 Experiment 2: S1 ∨ S1 (π1 = F2, non-abelian free) 
+
+The theory makes a sharp prediction: the type-A/B gap should widen dramatically. On T 2, letter-counting partially compensated for the lack of functoriality; on S1 ∨ S1, the non-abelian fundamental group F2
+
+removes this crutch. The decoder must now produce different loops for different orderings of the same letters— ab ̸ = ba in F2, and an architecture that collapses word order will fail categorically, not just quantitatively. 
+
+Setup. S1 ∨ S1 is embedded in R3 as two unit circles meeting at the origin: circle A in the xy -plane centered at (−1, 0, 0), circle B in the yz -plane centered at (0, 0, −1). A word w = w1 · · · wL traces the loop that follows circle w1, returns to the wedge point, follows circle w2, and so on. A sequential decoder (GRU: a gated recurrent network that processes the word left-to-right, maintaining a hidden state) is included as a type-A baseline that respects sequential order. Table 3: Wedge of circles S1 ∨ S1 (π1 = F2, non-abelian): per-segment Chamfer and circle accuracy. Non-abelian structure dramatically amplifies the type-A/B gap. Full L-progression in Appendix D.                          
+
+> Per-seg Chamfer ¯ dLCircle acc. (%) Architecture Type L=2L=6L=10 L=2L=10 Transformer A.152 ±.002 .411 ±.027 .537 ±.027 33 14 Sequential A.010 ±.001 .173 ±.021 .297 ±.027 67 11 Transport B.002 ±.001 .018 ±.008 .054 ±.019 100 100
+
+The non-abelian separation. The gap widens to 5 .5–10 ×: transport achieves 0 .054 at L = 10 while the transformer reaches 0 .537 (10 ×) and the sequential decoder 0 .297 (5 .5×). Topological collapse. Circle accuracy is the sharpest diagnostic. Even at L = 2 (a training length), the transformer assigns only 33% of segments to the correct circle; by L = 10 this drops to 14%—it cannot even distinguish which generator to trace, producing points near an arbitrary mixture of the two circles. This is a categorically different failure from T 2, where type-A decoders at least produced loops on the torus (with wrong per-segment geometry but correct topology). On S1 ∨ S1, the transformer collapses the non-abelian structure entirely, producing outputs that are topologically meaningless. The transport decoder maintains 100% circle accuracy at all lengths. K. Sargsyan 9The sequential decoder. The GRU outperforms the transformer at all lengths (0 .297 vs. 0 .537 at 
+
+L = 10), consistent with the depth trichotomy (Appendix H): sequential processing helps with the prefix products that fixed-depth attention cannot compute. However, the GRU is still type-A—its segment gen-eration depends on accumulated context, not structural composition—and it still degrades: per-segment Chamfer increases from 0 .010 to 0 .297 (30 ×). Sequential processing is necessary but not sufficient for compositional generalization in non-abelian groups. A matched-loss ablation (Appendix C) rules out training quality as the explanation: retraining type-A architectures with double epochs to match the best type-B training loss barely changes extrapolation (transformer ¯ d10 : 0 .537 → 0.491, still 9 × worse; sequential: 0 .297 → 0.282, still 5 × worse). The gap is architectural, not statistical. 
+
+5.3 Experiment 3: Klein bottle K (π1 = Z ⋊ Z ) — the 2-cell 
+
+The first two experiments test Levels 0 and 1 of the hierarchy: winding constraints and monoidal com-position. The Klein bottle tests Level 2: the learned proof term H. The relation bab −1 = a−1 means that traversing the b-generator flips the orientation of a: after going around b, the a-direction reverses. The theory predicts that H should matter only for words that exercise this relation, and should be dormant otherwise. The group Z ⋊ Z is solvable, so the depth obstruction of §4 does not apply: constant-depth trans-formers have sufficient computational power for this group in principle [21]. The transformer’s failure on K is therefore entirely due to the functoriality obstruction (Theorem 4.1), making K a cleaner test of functoriality than S1 ∨ S1.
+
+K is embedded in R4 via the standard half-angle twist parameterization. We test on two classes of words: Canonical words have all a-generators before all b-generators (e.g., aabb ): the relation is not exercised, so the frame never flips mid-word. Non-canonical words interleave a and b (e.g., abab , baa ): the relation is exercised, requiring the decoder to track the flip. Table 4: Klein bottle: per-segment Chamfer at L = 10, split by word type. The homotopy decoder (type-B with proof term H) closes the gap on non-canonical words.                
+
+> Architecture Type Canonical Non-canonical Cover A1.57 ±.10 1.96 ±.07
+> Transf. (WC) A2.28 ±.35 2.26 ±.36
+> Transport B0.84 ±.03 1.52 ±.08
+> Homotopy B0.82 ±.03 0.82 ±.06
+
+The three decoders respond differently. The cover decoder factors through the abelianization Z ⋊ Z → Z2, which collapses the relation entirely—it cannot distinguish ba from ab even though these repre-sent different homotopy classes on K. The transport decoder concatenates generators in word order and respects this distinction, but ignores the frame flip after b. Only the homotopy decoder, with its learned proof term H witnessing the relation, tracks the frame correctly. Three results. (1) The proof term closes a 46% gap. On non-canonical words, homotopy achieves 0.82 vs. transport’s 1 .52—a 1 .85 × improvement entirely attributable to the learned 2-morphism H.
+
+(2) On canonical words, transport ≈ homotopy (0 .84 vs. 0 .82): when the relation is not exercised, 
+
+H is dormant and adds no benefit. This confirms that the improvement is specifically due to the rela-tion, not to additional capacity. (3) Homotopy eliminates the canonical/non-canonical asymmetry :10 Functorial Neural Architectures from Higher Inductive Types 
+
+transport’s non-canonical/canonical ratio is 1 .8×; homotopy’s is 1 .0×.
+
+5.4 Cross-experiment summary 
+
+Table 5: Cross-experiment summary at L = 10. “Best A / best B” gives the tightest type comparison. 
+
+K values are overall averages across canonical and non-canonical words (Table 4 shows the split). The Klein bottle is the only space where the 2-cell matters.                          
+
+> T2(Z2)S1∨S1(F2)K(Z ⋊ Z )Best type-B ¯ d10 0.77 0.054 0.82 Best type-A ¯ d10 1.54 0.297 1.76 Gap (best A / best B) 2.0×5.5×2.1×
+> Transport vs. Homotopy ≈1.0≈1.01.85 ×
+> 2-cell needed? No (abelian) No (free) Yes (relation)
+
+Each experiment validates a different level of the functorial hierarchy. T 2: winding constraints and monoidal composition (2–2 .7× gap). S1 ∨ S1: non-abelian amplification—attention is especially harmful when segment identity (which circle) must be preserved. K: the learned 2-cell (natural transformation). Only the full HIT compilation—functorial composition plus proof terms—achieves uniformly low error across all spaces and word orderings. 
+
+# 6 Formalization and Verified Machine Learning 
+
+The experiments confirm that functorial architectures outperform non-functorial ones—but the theoreti-cal guarantees are stronger than any finite experiment can demonstrate, because they hold for all param-eter values and all word lengths. To make this claim precise, we formalize the core results in a proof assistant. This inverts the standard approach to neural network verification. Post-hoc verification [13] attempts to prove properties of a trained network—computationally intractable for all but the simplest properties. Our approach verifies at design time: given a property P (expressed as a homotopy type), construct an architecture that satisfies P by construction, for all parameter values. Training adjusts geometric detail within the topologically correct constraint space; it cannot violate the type-theoretic guarantees. The core positive and negative results are formalized in Cubical Agda (v2.6.4, --cubical --safe ,no postulates) in four modules. Torus.agda : T 2 as a HIT; transport commutativity (tr a ◦ tr b = tr b ◦ tr a)holds definitionally. WedgeOfCircles.agda : ab ̸ = ba in F2 (proved by case analysis on head letters). 
+
+TransportCoherence.agda : Theorem 3.3—the transport decoder preserves monoidal structure—proved by induction on the first word, using associativity of concatenation. NonCompositionality.agda : the abstract schema of Theorem 4.1—transport coherence and global mixing are contradictory—proved as an impossibility theorem over any output type. The instantiation to softmax (that αi j > 0 for all i, j
+
+makes attention globally mixing) relies on the standard positivity of softmax, which is not formalized. The Klein bottle relation and proof term H are not yet formalized; this would require extending the word type with inverses and formalizing the boundary conditions of the homotopy. The guarantees form a hierarchy mirroring the Postnikov tower of the target space: K. Sargsyan 11                          
+
+> Level Guarantee Mechanism Validated by 0Correct π1class Hard winding constraint All 3 spaces 1Monoidal composition Generator concatenation T2,S1∨S1
+> 2Group relations Learned proof term HKlein bottle K
+> ≥3π2,π3, . . . Higher-dim. cells Future work
+
+Each level adds architectural constraints that narrow the output space while preserving within-class ex-pressivity (Appendix J). The three experiments validate levels 0–2; extending to higher homotopy groups remains open. The result is a verified ML pipeline: specify (write a HIT), verify (prove properties in Cubical Agda), compile (apply Construction 3.2), train (standard gradient descent). The guarantees hold for the trained network at any parameter value, because they are properties of the architecture, not of the learned weights. To our knowledge, this is the first instance where machine-verified proofs provide compositional generalization guarantees for a neural architecture. The long-term vision is a compiler from HIT specifications to certified neural architectures: parse a HIT declaration in Cubical Agda to extract generators, paths, and higher cells; assign each constructor to an architectural component per Construction 3.2; generate the hard constraints (winding, boundary con-ditions) as differentiable layers; and output a training script. This would make type-theoretic guarantees accessible to practitioners who specify their domain’s topology without requiring knowledge of HoTT. 
+
+# 7 Related Work 
+
+The framework draws on three lines of prior work: categorical foundations for deep learning, equivariant network design, and the empirical study of compositional generalization failures. 
+
+Categorical deep learning. Cruttwell et al. [6] formalize gradient-based learning via lenses, paramet-ric maps, and reverse derivative categories. Gavranovi´ c et al. [7] propose monads in a 2-category of parametric maps as a unified theory of architectures, recovering geometric deep learning constraints. Fong, Spivak, and Tuy´ eras [8] showed backpropagation is a functor; Spivak’s broader programme on compositionality [14] grounds the philosophical claim that systems compose functorially. We extend this lineage by constructing (not merely analyzing) functorial architectures from type-theoretic specifi-cations. 
+
+Equivariant networks. Cohen and Welling [15] and Weiler and Cesa [16] enforce f (g · x) = g · f (x)—a constraint on a single morphism. Our functoriality is a constraint on the entire decoder: D(g1 · g2) = 
+
+D(g1) ⊕ D(g2). The distinction is not merely formal: the transport attention decoder (§5.1) has equiv-ariant positional encoding derived from group theory, shares the winding constraint, and has 3 .4× more parameters than the transport decoder—yet degrades on longer words because cross-segment attention breaks functoriality. Equivariant conditioning (a morphism-level property) does not imply compositional generalization (a functor-level property). 
+
+Compositional generalization in ML. Lake and Baroni [1], Kim and Linzen [2], and Dziri et al. [3] document systematic failures. Kobayashi et al. [17] find that an architectural bottleneck en-ables compositionality—our type-A/B distinction provides the categorical explanation: the bottleneck enforces monoidal factorization, i.e., functoriality. 12 Functorial Neural Architectures from Higher Inductive Types 
+
+Transformer expressivity and group composition. Liu et al. [21] characterize the depth at which transformers can simulate finite-state automata, showing that solvable automata admit O(1)-depth short-cuts (via Krohn-Rhodes decomposition) while nonsolvable automata require Ω(log T ) depth (via Bar-rington’s theorem). Their results yield the solvable/nonsolvable trichotomy in Corollary H.2 and make the Klein bottle ( Z ⋊ Z , solvable) a clean test of functoriality rather than depth. Concurrent work by Marchetti et al. [20] studies the same problem from the perspective of learning dynamics, proving width and depth separations for finite group composition. Their analysis is complementary: they character-ize how networks learn group composition; we characterize which architectures preserve it and compile them from type-theoretic specifications. We do not compare against methods developed for SCAN, COGS, or CFQ because the task types are incommensurable: discrete sequence transduction vs. continuous geometric generation, with exact-match accuracy vs. Chamfer distance. Running a SCAN-specialized architecture on loop generation, or our transport decoder on command parsing, would be a category error. However, the theoretical connection is direct: Theorem 4.1 (and its stronger form, Appendix F) applies to SCAN—the failure to generalize from a primitive command (“jump” seen in isolation) to its composed forms (“jump twice”, “jump around left”, etc.) is an instance of cross-segment dependencies corrupting compositional structure. 
+
+# 8 Conclusion 
+
+Compositional generalization is functoriality. HIT specifications provide a systematic source of functo-rial architectures: the compilation functor maps type-theoretic constructors to architectural components, guaranteeing monoidal preservation. Three experiments validate the full hierarchy—winding constraints, monoidal composition, and 2-cells witnessing group relations—with the Klein bottle experiment demon-strating the first neural architecture where a natural transformation is both theoretically necessary and empirically measurable. The design principle is immediately actionable: when a task has compositional structure, use struc-tural composition; attention-based architectures cannot learn this structure. This shifts the question from “can the network learn to compose?” to “does the architecture guarantee functoriality?” The plane with k obstacles has π1 = Fk—our S1 ∨ S1 experiment ( π1 = F2) tests the same algebraic structure as 2-obstacle path planning, and the 5 .5–10 × gap quantifies the advantage. Any domain with compositional structure—modular programs, multi-step plans, molecular ring systems—can be specified as a HIT and compiled into a certified architecture via the specify–verify–compile–train pipeline. 
+
+Limitations. The framework currently handles π1 constraints. Extending to higher homotopy groups (π2, π3) would require higher-dimensional proof terms. The experiments use three spaces with relatively simple π1; surfaces of higher genus would test H more strenuously. For natural language, the theoretical results provide explanatory value, but the constructive approach awaits an appropriate formalization of linguistic compositional structure. 
+
+Code and data availability. Cubical Agda formalization and Python code to replicate all experiments are available at https://github.com/karsar/hott_neuro .K. Sargsyan 13 
+
+# References 
+
+[1] B. Lake and M. Baroni. Generalization without systematicity: On the compositional skills of sequence-to-sequence recurrent networks. In ICML 2018 , pp. 2873–2882, 2018. [2] N. Kim and T. Linzen. COGS: A compositional generalization challenge based on semantic interpretation. In EMNLP 2020 , pp. 9087–9105, 2020. [3] N. Dziri, X. Lu, M. Sclar, et al. Faith and fate: Limits of transformers on compositionality. In NeurIPS 2023 ,2023. [4] B. Coecke, M. Sadrzadeh, and S. Clark. Mathematical foundations for a compositional distributional model of meaning. Linguistic Analysis , 36:345–384, 2010. [5] B. Coecke, E. Grefenstette, and M. Sadrzadeh. Lambek vs. Lambek: Functorial vector space semantics and string diagrams for Lambek calculus. Annals of Pure and Applied Logic , 164(11):1079–1095, 2013. [6] G. S. H. Cruttwell, B. Gavranovi´ c, N. Ghani, P. Wilson, and F. Zanasi. Categorical foundations of gradient-based learning. In ESOP 2022 , LNCS, pp. 1–28. Springer, 2022. [7] B. Gavranovi´ c, P. Lessard, A. Dudzik, T. von Glehn, J. G. M. Ara´ ujo, and P. Veliˇ ckovi´ c. Position: Categorical deep learning is an algebraic theory of all architectures. In ICML 2024 , 2024. [8] B. Fong, D. I. Spivak, and R. Tuy´ eras. Backprop as functor: A compositional perspective on supervised learning. In LICS 2019 , pp. 1–13. IEEE, 2019. [9] The Univalent Foundations Program. Homotopy Type Theory: Univalent Foundations of Mathematics . Insti-tute for Advanced Study, 2013. [10] C. Cohen, T. Coquand, S. Huber, and A. M¨ ortberg. Cubical type theory: A constructive interpretation of the univalence axiom. FLAP , 4(10):3127–3170, 2018. [11] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, Ł. Kaiser, and I. Polosukhin. Attention is all you need. In NeurIPS 2017 , pp. 5998–6008, 2017. [12] D. A. Barrington. Bounded-width polynomial-size branching programs recognize exactly those languages in NC 1. J. Comput. Syst. Sci. , 38(1):150–164, 1989. [13] G. Katz, C. Barrett, D. L. Dill, K. Julian, and M. J. Kochenderfer. Reluplex: An efficient SMT solver for verifying deep neural networks. In CAV 2017 , LNCS, pp. 97–117. Springer, 2017. [14] B. Fong and D. I. Spivak. An Invitation to Applied Category Theory: Seven Sketches in Compositionality .Cambridge University Press, 2019. [15] T. Cohen and M. Welling. Group equivariant convolutional networks. In ICML 2016 , pp. 2990–2999, 2016. [16] M. Weiler and G. Cesa. General E(2)-equivariant steerable CNNs. In NeurIPS 2019 , pp. 14334–14345, 2019. [17] S. Kobayashi, S. Schug, Y. Akram, F. Redhardt, J. von Oswald, R. Pascanu, G. Lajoie, and J. Sacramento. When can transformers compositionally generalize in-context? arXiv:2407.12275 , 2024. [18] J. Su, M. Ahmed, Y. Lu, S. Pan, W. Bo, and Y. Liu. RoFormer: Enhanced transformer with rotary position embedding. Neurocomputing , 568:127063, 2024. [19] A. Gu and T. Dao. Mamba: Linear-time sequence modeling with selective state spaces. arXiv:2312.00752 ,2023. [20] G. L. Marchetti, D. Kunin, A. Myers, F. Acosta, and N. Miolane. Sequential group composition: A window into the mechanics of deep learning. arXiv:2602.03655 , 2026. [21] B. Liu, J. T. Ash, S. Goel, A. Krishnamurthy, and C. Zhang. Transformers learn shortcuts to automata. In 
+
+ICLR 2023 , 2023. 14 Functorial Neural Architectures from Higher Inductive Types 
+
+# A Full Proof of Theorem 4.1 
+
+The main text gives a proof sketch. Here we make the argument fully explicit, tracking the information flow through each attention layer to show exactly where functoriality breaks. 
+
+Proof. Let Tθ be a transformer with parameters θ , L layers of multi-head softmax self-attention, and embedding dimension d. The input is a word w = w1 · · · wn over generators of a non-trivial group G, with each wi embedded as h(0) 
+
+> i
+
+∈ Rd .Suppose for contradiction that Tθ defines a monoidal functor: there exists ⊕ such that Tθ (w1 · w2) = 
+
+Tθ (w1) ⊕ Tθ (w2) for all w1, w2.At layer l, position i in the w1-segment computes: h(l) 
+
+> i
+
+= h(l−1) 
+
+> i
+
++ MHA (l)(h(l−1) 
+
+> i
+
+, {h(l−1) 
+
+> j
+
+} j), where multi-head attention aggregates: Attn i = ∑ j αi j V h (l−1) 
+
+> j
+
+with αi j = softmax j(Qh (l−1) 
+
+> i
+
+· Kh (l−1) 
+
+> j
+
+/√d).For j in the w2-segment, the key Kh (l−1) 
+
+> j
+
+depends on the embedding of w2’s tokens. Since G is non-trivial, there exist distinct words w2̸ = w′ 
+
+> 2
+
+with [w2] = [ w′
+
+> 2
+
+] ∈ G. These have different tokens, hence different embeddings, hence different keys, hence different αi j , hence different h(1) 
+
+> i
+
+for i ∈ w1. Propagat-ing through layers: Tθ (w1 · w2)̸ = Tθ (w1 · w′
+
+> 2
+
+).But functoriality and Tθ (w2) = Tθ (w′
+
+> 2
+
+) require Tθ (w1 · w2) = Tθ (w1) ⊕ Tθ (w2) = Tθ (w1) ⊕ Tθ (w′
+
+> 2
+
+) = 
+
+Tθ (w1 · w′
+
+> 2
+
+). Contradiction. 
+
+# B Training Details 
+
+Data generation. For each training word, 1000 ground-truth loops are generated by tracing the stan-dard geometric generators on X with random phase offsets (uniformly distributed starting points along each generator circle) and small Gaussian noise ( σ = 0.02) applied independently to each output co-ordinate. This provides within-class geometric variation so that the network learns the shape of each homotopy class rather than memorizing a single curve. 
+
+Chamfer distance. The Chamfer distance between two point clouds P = {pi}Ni=1 and Q = {q j}Mj=1 is: dC(P, Q) = 12N ∑i min j ∥pi−q j∥2 + 12M ∑ j min i ∥pi−q j∥2
+
+Common protocol. All experiments: Chamfer loss, AdamW optimizer (lr = 10 −3, weight decay 10 −4), cosine learning rate schedule with 20-epoch warmup, up to 500 epochs, early stopping (patience 80). Generator networks are 2-layer MLPs with 128 hidden units producing npts = 32 points per seg-ment. All decoders output 64 points total, which for type-B decoders means L · 32 intermediate points resampled to 64. Seeds: 42, 179, 316. 
+
+T 2. Embedded in R3. Training: 6 words ( {a, b, aa , ab , ba , bb }), 1000 samples each. Training losses: all architectures converge to 2 .23–2 .27. The homotopy decoder adds smoothness regularization ( λ = 0.05) on the proof term. 
+
+S1 ∨ S1. Two unit circles in R3 meeting at origin. Same 6 training words (but ab ̸ = ba ). Training losses: transport 0 .0023 ± 0.0003, transformer 0 .0030 ± 0.0002, sequential 0 .0051 ± 0.0002. K. Sargsyan 15 
+
+Klein bottle K. Embedded in R4 via half-angle twist. Training: all 16 words of length ≤ 2 in 
+
+{a, a−1, b, b−1}. The proof term H is a 2-layer MLP (64 hidden units) with boundaries H(s=0) = gb ⊕ga,
+
+H(s=1) = ga−1 ⊕ gb, trained jointly with generators. Training losses: cover 0 .831, transport 0 .920, ho-motopy 0 .920, transformer WC 0 .851 (all ±<0.02). 
+
+# C Matched-Loss Ablation 
+
+A natural objection to the main results is that type-A architectures simply need more training. We test this directly: if we retrain type-A decoders to match the type-B training loss, does the extrapolation gap close? To rule out training quality as the explanation for the type-A/B gap, we retrained type-A architectures on S1 ∨ S1 with 2 × epochs and reduced learning rate (5 × 10 −4), targeting the best type-B training loss. 
+
+Train loss ¯d10 
+
+Architecture Original Retrained Original Retrained Transformer .0030 .0030 .537 .491 Sequential .0051 .0054 .297 .282 Transport (ref.) .0023 .054 
+
+Neither type-A architecture can reach the type-B training loss even with 2 × epochs: the transformer stays at 0 .0030 (target 0 .0023), the sequential worsens to 0 .0054 (from 0 .0051 with standard training; the lower learning rate finds a different basin). This is itself an architectural limitation: the compositional structure of the transport decoder helps optimization, not just generalization. The per-segment Chamfer at L = 10 barely changes after retraining: transformer .537 → .491 (still 9 × worse than transport), sequential .297 → .282 (still 5 × worse). The gap is architectural. 
+
+# D Full L-Progression Tables 
+
+The main text reports selected lengths to save space. The full trajectories below reveal how degradation unfolds: whether it is gradual or abrupt, and whether it saturates. Table 6: S1 ∨ S1: per-segment Chamfer ¯ dL (mean ± std, 3 seeds), full L-progression. 
+
+Architecture Type L=2 L=3 L=4 L=6 L=8 L=10 Transformer A .152 ±.002 .245 ±.006 .297 ±.022 .411 ±.027 .464 ±.039 .537 ±.027 
+
+Sequential A .010 ±.001 .100 ±.005 .129 ±.009 .173 ±.021 .247 ±.034 .297 ±.027 
+
+Transport B .002 ±.001 .015 ±.010 .012 ±.005 .018 ±.008 .030 ±.011 .054 ±.019 
+
+The transformer’s 33% at L = 2 (a training length) shows that the failure is not merely extrapolation—it cannot represent non-abelian structure even in-distribution. The sequential decoder starts better (67%) but converges to the same floor. The S1 ∨ S1 tables reveal the degradation trajectory: the transformer is already at 33% circle accuracy at L = 2 (a training length), confirming that the failure is fundamental, not merely an extrapolation issue. The Klein bottle tables show a striking asymmetry: the homotopy decoder improves with length (from 16 Functorial Neural Architectures from Higher Inductive Types 
+
+Table 7: S1 ∨ S1: circle accuracy (%, mean over 3 seeds). Transport achieves 100% by construction. 
+
+Architecture Type L=2 L=3 L=4 L=6 L=8 L=10 Transformer A 33 19 16 19 12 14 Sequential A 67 36 20 14 8 11 Transport B 100 100 100 100 100 100 
+
+Table 8: Klein bottle K: per-segment Chamfer ¯ dL on all test words (mean ± std, 3 seeds). 
+
+Architecture Type L=2 L=3 L=4 L=6 L=8 L=10 Cover A 1.81 ±.13 1.90 ±.04 1.69 ±.04 1.86 ±.06 1.81 ±.13 1.76 ±.07 
+
+Transf. (WC) A 1.80 ±.16 1.84 ±.21 1.84 ±.24 2.03 ±.29 2.28 ±.39 2.27 ±.33 
+
+Transport B 1.54 ±.18 1.51 ±.05 1.25 ±.06 1.24 ±.05 1.18 ±.03 1.17 ±.04 
+
+Homotopy B 1.43 ±.14 1.10 ±.04 0.97 ±.07 0.85 ±.04 0.79 ±.05 0.82 ±.03 
+
+1.43 at L = 2 to 0 .82 at L = 10), suggesting that the per-segment metric becomes more stable as L grows, while the transport decoder’s non-canonical error worsens from L = 4 onward, reflecting cumulative frame-flip errors that the proof term H would correct. 
+
+# E Coherence Battery 
+
+Per-segment Chamfer measures how well each segment is generated. But functoriality also implies struc-tural identities—exact zeros, not approximate ones. The following battery tests whether these identities hold, distinguishing architectural guarantees from learned approximations. For T 2, we test four structural coherence properties. Composition gap: d∞(D(w1)⊕D(w2), D(w1w2)) 
+
+for canonical pairs. Commutativity: d∞(D(ab ), D(ba )) . Reordering gap: d∞(D(b) ⊕ D(a), D(ab )) .Non-canonical: d∞(D(abab ), D(aabb )) .Commutativity and non-canonical gaps are exactly zero for cover, transport, and homotopy (they factor through Z2, so ab and ba produce identical output by construction). Transport attention shows 1.54 ± 1.39: learned coherence is fragile and high-variance, while structural coherence is exact. 
+
+Order sensitivity on S1 ∨ S1. We test whether each decoder distinguishes words that differ only in generator order (e.g., ab vs. ba , aab vs. aba )—all distinct homotopy classes in F2. Transport distinguishes 80% of test pairs (the remaining 20% have cross-Chamfer near the noise floor, reflecting geometric similarity rather than architectural failure). The transformer distinguishes only 40 ± 16%—barely above chance—confirming that attention collapses word order. 
+
+# F General Non-Compositionality of Attention 
+
+Theorem 4.1 in the main text uses group structure. A natural question is whether groups are essential to the argument, or whether the obstruction is more fundamental. The following result shows it is the latter: softmax attention is incompatible with any form of sequential compositionality, regardless of algebraic structure. K. Sargsyan 17 Table 9: Klein bottle K: per-segment Chamfer on non-canonical words only (words where b precedes a,exercising the relation bab −1 = a−1). The transport–homotopy gap isolates the proof term’s contribution. 
+
+Architecture Type L=2 L=3 L=4 L=6 L=8 L=10 Cover A 1.86 ±.20 2.08 ±.11 1.68 ±.07 1.99 ±.08 2.02 ±.08 1.96 ±.07 
+
+Transf. (WC) A 1.84 ±.11 1.93 ±.33 1.87 ±.28 1.96 ±.30 2.32 ±.40 2.26 ±.36 
+
+Transport B 1.73 ±.12 1.82 ±.06 1.37 ±.08 1.45 ±.04 1.44 ±.05 1.52 ±.08 
+
+Homotopy B 1.38 ±.12 1.13 ±.02 0.97 ±.08 0.83 ±.02 0.75 ±.02 0.82 ±.06 
+
+Table 10: T 2 coherence battery. Exact zeros are architectural guarantees, not learned. 
+
+Arch. Comp. Comm. Reorder Noncan. Transf. (WC) 4.05 ±.21 0.24 ±.13 4.37 ±.10 2.04 ±1.65 
+
+Cover 4.25 ±.18 0.000 4.96 ±.39 0.000 Transp. Attn. 4.21 ±.14 1.54 ±1.39 4.79 ±.28 0.96 ±.56 
+
+Transport 4.28 ±.13 0.000 3.82 ±.07 0.000 Homotopy 4.24 ±.19 0.000 3.79 ±.13 0.000 
+
+Definition F.1 (Segment-independent compositionality) . A decoder D : Σ∗ → Y is segment-independently compositional if there exists a combination operation ⊕ on Y such that: (i) D(w1 · w2) = D(w1) ⊕ D(w2) for all words w 1, w2;(ii) D(w) is computed from w alone; (iii) ⊕ does not introduce cross-segment interactions: when Y is a sequence, the output positions cor-responding to w 1 are determined by D(w1) alone. 
+
+Theorem F.2 (General non-compositionality of attention) . Let T be a network containing at least one softmax attention layer over the full input sequence. Then T is not segment-independently compositional for any alphabet |Σ| ≥ 2, for generic parameters (Q, K,V ).Proof. We show condition (iii) is violated. At the first attention layer applied to w1 · w2, position i within the w1 segment computes: h′ 
+
+> i
+
+= ∑ j∈w1 αi j V h j + ∑ j∈w2 αi j V h j, where αi j = softmax (Qh i · Kh j/√d). The cross-segment sum depends on the tokens of w2 through both αi j and V h j. For generic (Q, K,V ) and 
+
+|Σ| ≥ 2, replacing any token in w2 changes Kh j and V h j, hence changes h′
+
+> i
+
+. Therefore the output at position i ∈ w1 depends on the content of w2, violating condition (iii). 
+
+Remark F.3. This theorem requires no group structure, no topology, and no specific target space. It provides a structural explanation for why transformers struggle with compositional generalization across SCAN, COGS, and CFQ—the obstacle is architectural, not task-specific. The result fails for causal attention with a hard segment partition (where positions in w 1 attend only to w 1), but such masking prevents w 1’s representation from depending on w 2—precisely the loss of global context that motivates full attention. 
+
+Corollary F.4 (Structural limits on learned compositionality) . Theorems 4.1 and F.2 do not imply that a transformer cannot learn to approximate compositional behaviour on the training distribution. What they constrain is the nature of any such learned compositionality: (a) Approximate, never exact. The cross-segment attention term ∑ j∈w2 αi j V h j is architecturally present and strictly positive ( softmax > 0). Training can make this term small but not zero. 18 Functorial Neural Architectures from Higher Inductive Types 
+
+(b) Distribution-dependent. The suppression of cross-segment attention is learned for the specific input statistics (word lengths, winding ranges, token frequencies) encountered during training. (c) No length transfer guarantee. For L > Ltrain , the cross-segment attention weights that were learned-to-be-small on training data have no architectural reason to remain small. The quality of learned compositionality may degrade smoothly, abruptly, or not at all—this is an empirical question, not a structural guarantee. Proof. (a) By the strict positivity of softmax, αi j > 0 for all (i, j), so the cross-segment sum is nonzero whenever V h j̸ = 0 (which holds generically). (b) The trained parameters (Q, K,V ) minimize a loss on the training distribution; there is no penalty on cross-segment attention magnitude as such. (c) At length 
+
+L > Ltrain , both the number of cross-segment terms and the positional encodings (at untrained positions) change; the learned suppression was not trained for these configurations. 
+
+# G Abelian Transport-Attention Theorem 
+
+The transport attention decoder in our experiments uses a positional encoding derived from the frame-work rather than chosen ad hoc. This appendix shows that the derivation recovers a well-known technique—rotary position embeddings (RoPE)—as a special case, and explains why principled posi-tions alone are insufficient for compositional generalization. The main text notes that the framework derives 2D rotary positional encoding from group theory. Here we state the full result. 
+
+Definition G.1 (Transport-structured attention) . Let G be a finitely generated abelian group with gener-ators g 1, . . . , gk. For each generator g i, let T i ∈ O(d) be a learnable orthogonal matrix. The transport-structured attention at position p with group element γp ∈ G is: 
+
+αpq = softmax 
+
+ qp · Tγq−γp kq
+
+√d
+
+
+
+, Tγ = T n1 
+
+> 1
+
+· · · T nk 
+
+> k
+
+for γ = ( n1, . . . , nk). (1) 
+
+Theorem G.2 (Abelian transport attention) . Let G be a finitely generated abelian group. Then: (a) Transport-structured attention (1) is well-defined: T γ is independent of the decomposition of γ into generators (since G is abelian and the T i commute as orthogonal matrices with matching rotation planes). (b) The computational cost is O (T 2d)—identical to standard attention. (c) When T i acts as block-diagonal rotations on d /2 independent planes, this reduces to 2k-dimensional rotary position embeddings (RoPE) [18]. Standard RoPE is the G = Z special case; the framework gives the natural G = Zk extension. Proof. (a) For abelian G, each γ has a unique decomposition γ = n1g1 + · · · + nkgk. Block-diagonal rota-tions on the same planes commute (angles add), so Tγ = T n1 
+
+> 1
+
+· · · T nk 
+
+> k
+
+is independent of ordering. (b) Com-puting Tγq−γp requires k matrix powers in O(d) each (block-diagonal); the dominant cost is T 2 pairwise computations at O(d) each. (c) With Ti block-diagonal having 2 × 2 rotation blocks R(ωi j ), the trans-port T ni acts as R(nωi j ) on each plane. The combined Tγ acts as R(∑i niωi j )—exactly multi-dimensional RoPE with frequency vectors ωi = ( ωi1, . . . , ωi,d/2).K. Sargsyan 19 
+
+Remark G.3. This explains why RoPE improves length generalization: it implements transport in the universal cover of the classifying space of Z. However, transport-structured positional encoding does not make the decoder type-B (functorial): the attention mechanism still mixes information across segments. The transport attention decoder in our experiments confirms this—it has principled positions but wrong composition, and degrades like any type-A architecture. 
+
+# H Depth Obstruction and RNN–Transformer Trichotomy 
+
+Why does the sequential decoder (GRU) outperform the transformer on S1 ∨ S1 but not match the trans-port decoder? The answer involves two independent obstructions. The first is functoriality: attention mixes across segments for any non-trivial group (Theorem 4.1). The second is depth: for groups with nonsolvable finite quotients, computing prefix products requires depth Ω(log n), which fixed-depth trans-formers cannot provide. For solvable groups, however, constant-depth shortcuts exist [21], so the depth obstruction vanishes—only the functoriality obstruction remains. The GRU has the right depth (sequen-tial scan) but the wrong composition (context-dependent, not structural), which is why it outperforms the transformer on F2 yet still falls far short of the transport decoder. 
+
+Theorem H.1 (Depth obstruction for prefix products) . Let G be a finitely generated non-abelian group. Any transport-coherent attention mechanism for G requires computing the accumulated group element 
+
+γp = gw1 · gw2 · · · gwp for each prefix of the input. This prefix-product computation: (a) Cannot be performed by a fixed-depth transformer when G surjects onto a nonsolvable finite group. A fixed-depth transformer implements a bounded-depth, unbounded-fan-in computation—the cir-cuit class AC 0. The free group F 2 surjects onto nonsolvable finite groups (e.g., S 5, which is 2-generated), and the word problem for any nonsolvable finite group is NC 1-complete under AC 0
+
+reductions [12]. Since NC 1̸ ⊂ AC 0 (parity separates them), computing prefix products in F 2 is at least as hard as solving these word problems, and hence outside AC 0. For solvable groups, this obstruction does not apply: Liu et al. [21] show that all solvable semiautomata admit constant-depth Transformer simulators via the Krohn-Rhodes decomposition (their Theorem 2), though the resulting shortcuts are empirically brittle and do not generalize out of distribution. (b) Requires Ω(n) total work (each prefix product depends on the full prefix, and non-commutativity prevents any shortcut). (c) Can be performed by an associative scan (parallel prefix) in O (log n) depth with O (n) work—a sequential-scan structure absent from standard transformers but present in state space models [19] and recurrent architectures. Marchetti et al. [20] prove this rigorously for finite groups: they construct explicit RNN solutions that compose in O (k) steps and multilayer MLP solutions that compose in O (log k) layers, both with hidden width O (|G|3/2) independent of sequence length— compared to the O (exp k) width required by two-layer networks. Proof. (a) The key is the circuit-complexity classification of group word problems. Barrington [12] showed that the word problem for any fixed nonsolvable group G—deciding whether a product of gener-ators equals the identity—is complete for NC 1 (fan-in 2, depth O(log n)) under AC 0 reductions (bounded-depth, unbounded-fan-in circuits). Since NC 1̸ ⊂ AC 0 (the parity function is in NC 1 but not in AC 0), no 
+
+AC 0 circuit can solve these word problems. The free group F2 surjects onto S5 (which is 2-generated and nonsolvable): the natural quotient map F2 ↠ S5 reduces the word problem for S5 to computing prefix products in F2. A fixed-depth transformer with a fixed number of layers implements a bounded-depth, 20 Functorial Neural Architectures from Higher Inductive Types 
+
+unbounded-fan-in computation—that is, an AC 0 circuit—and therefore cannot compute these products. The converse—solvable groups admit constant-depth solutions—follows from Liu et al. [21], who apply the Krohn-Rhodes decomposition to factor solvable semiautomata into modular counters and memory units, each simulable at depth 1. (b) The prefix product γp depends on all p inputs; since G is non-abelian, no proper subset determines γp. (c) Group multiplication is associative, so the parallel prefix algorithm computes all n prefix products in O(log n) depth with O(n) multiplications. 
+
+Corollary H.2 (Depth trichotomy) . The computational requirements for prefix products depend on the solvability structure of G, yielding three regimes: (a) Abelian. The product depends only on letter counts, computable in AC 0. Bounded-depth parallel attention suffices for the computation. (b) Solvable non-abelian (e.g. Z ⋊ Z ). Constant-depth shortcuts exist via Krohn-Rhodes decomposi-tion [21], with depth independent of sequence length but potentially large width. Fixed-depth trans-formers have sufficient computational power for prefix products, but attention still mixes across segments, so the functoriality obstruction (Theorem 4.1) remains. (c) Nonsolvable quotients (e.g. F 2 ↠ S5). Prefix products are NC 1-complete, outside AC 0. Fixed-depth transformers fail for two independent reasons: insufficient depth and broken functoriality. Functoriality (Theorem 4.1) is the uniform obstruction across all three cases. Depth is an additional obstruction only in case (c). Proof. (a) For abelian G, the product g1 · · · gn depends only on the multiplicity of each generator, which is a sum—computable by AC 0 circuits. (b) Liu et al. [21] show that all solvable semiautomata admit O(1)-depth Transformer simulators (their Theorem 2), via the Krohn-Rhodes decomposition into modular counters and memory units. Since every finite quotient of a solvable group is solvable, prefix products in any solvable G can be computed at constant depth. However, constant-depth computability does not imply functoriality: by Theorem 4.1, the attention mechanism still mixes token-level information across segments. (c) Theorem H.1(a): Barrington’s theorem plus NC 1̸ ⊂ AC 0.The GRU’s intermediate performance on S1 ∨ S1 (0 .297 vs. transformer’s 0 .537, transport’s 0 .054) con-firms case (c): the GRU has the right depth structure (sequential processing) but the wrong composition structure (context-dependent, not structural). On the Klein bottle, the transformer’s failure illustrates case (b): even when depth is not an obstruction, cross-segment attention prevents functorial composi-tion. 
+
+# I Per-Segment Error Scaling 
+
+The experiments show that type-B error is flat in L while type-A error grows. Is this an accident of specific architectures, or does it follow from the theorems? Here we prove it follows: functoriality implies O(1) scaling, while non-functoriality implies Ω(1) degradation for L ≫ Ltrain .
+
+Proposition I.1 (Per-segment error scaling) . Let ¯dL = Ew:|w|=L[Chamfer (D(w), D∗(w))] /L denote the per-segment Chamfer distance for words of length L. (a) Type-B: For a transport decoder with converged training, ¯dL ≤ max i Chamfer (gi(θ ), g∗ 
+
+> i
+
+) + 
+
+η(L)/L L→∞
+
+−−−→ εgen , where εgen is the generator approximation error, independent of L. (b) Type-A: For type-A architectures tested at L > Ltrain , ¯dL ≥ Ω(e(L − Ltrain )) where e (·) is the extrapolation error of the network’s learned functions beyond their training domain. For the K. Sargsyan 21 
+
+cover decoder, the MLP evaluates at winding magnitudes up to L (trained only to L train ), giving e = Ω(L − Ltrain ) by the Taylor remainder. For transport attention, 2D RoPE rotation angles scale as n a/Ltrain times any training angle, placing attention in an untrained regime. For the transformer (WC), attention patterns at length L involve L 2 pairwise interactions vs. L 2train during training; the learned attention weights have no architectural reason to generalize to the longer-range interac-tions. In all cases, ¯dL = Ω(1) for L ≫ Ltrain .Proof. (a) By Theorem 3.3, Chamfer (D(w), D∗(w)) ≤ L · εgen + η(L), where η(L) accounts for resam-pling ( O(√L) interpolation error). Dividing by L: ¯dL ≤ εgen + η(L)/L → εgen .
+
+(b) A word of length L has winding pair (na, nb) with na +nb = L. The cover decoder’s MLP evaluates at ∥(na, nb)∥ up to L, while training covered only ∥(na, nb)∥ ≤ Ltrain . For smooth functions, extrapolation error is Ω(∥x − xtrain ∥). For transport attention, rotation angles are na/Ltrain times larger than any training angle. For the transformer (WC), the number of cross-segment attention pairs grows as (L − Ltrain ) new positions per segment, each contributing untrained interactions. All three mechanisms give per-position error Ω(L − Ltrain ), hence ¯ dL = Ω(( L − Ltrain )/L) = Ω(1) for L ≫ Ltrain .
+
+# J Expressivity of Transport Decoders 
+
+A natural concern is that functoriality constrains the decoder so tightly that it cannot represent interesting loops. The following result shows this is not the case: within each homotopy class, the transport decoder is a universal approximator. The constraint acts only between classes, enforcing composition. 
+
+Proposition J.1 (Expressivity) . Let Dtr  
+
+> θ
+
+be a transport decoder with generator networks g a(θ ), gb(θ ).Let Ln ⊂ L (X) denote the space of loops with homotopy class n ∈ G. Then: (a) Within-class expressivity: Each generator g a(θ ) can represent any continuous loop in L(1,0)
+
+given sufficient network capacity (by the universal approximation theorem applied to the generator network in polar coordinates). (b) Between-class constraint: For homotopy class (na, nb), the output is the n a-fold concatenation of ga followed by n b-fold concatenation of g b. The geometric degrees of freedom are those of g a and gb alone. (c) Degrees of freedom: The number of independent geometric degrees of freedom equals the number of generators in the group presentation. The cover decoder has strictly more geometric freedom (an independent shape per homotopy class), but this extra freedom is precisely the freedom to be incoherent. Proof. (a) Universal approximation in polar coordinates. (b) By construction of the transport decoder. (c) For Z2, the group is free abelian on two generators; the transport decoder factors through canonical form ana bnb , making the two generator shapes the only free parameters. 
+
+# K Resampling Artifact Analysis 
+
+Comparing loops of different lengths with a fixed-resolution metric creates a subtle confound. This appendix shows that our per-segment Chamfer metric avoids it, and quantifies how large the artifact would be with a naive alternative. 22 Functorial Neural Architectures from Higher Inductive Types 
+
+All decoders produce a fixed-length output of Tout = 64 points regardless of word length L. This creates a systematic confound: as L grows, the underlying curve lengthens while point density drops, causing naive Chamfer distance to decrease even when per-segment error is constant. We verified this with synthetic curves under constant additive noise σ = 0.1:                
+
+> L=2L=4L=8L=10 Per-seg Chamfer (fair, 32 pts/seg) 0.026 0.024 0.029 0.026 Per-seg Chamfer (naive, resample to 64) 0.010 0.003 0.002 0.001 Artifact ratio (naive/fair) 0.4×0.1×0.07 ×0.05 ×
+
+The fair metric (comparing each segment at fixed 32 points) is flat ( ∼ 0.026), as expected for constant noise. The naive metric decreases by 10 × from L=2 to L=10—a pure measurement artifact. Our per-segment Chamfer ¯dL in all experiments avoids this by comparing each of the L segments at a fixed resolution of 32 points, ensuring that the metric measures generalization quality, not resampling fidelity.

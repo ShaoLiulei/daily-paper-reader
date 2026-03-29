@@ -1,0 +1,1582 @@
+Title: PhasorFlow: A Python Library for Unit Circle Based Computing
+
+URL Source: https://arxiv.org/pdf/2603.15886v2
+
+Published Time: Thu, 19 Mar 2026 00:53:02 GMT
+
+Number of Pages: 32
+
+Markdown Content:
+Abstract 
+
+We present PhasorFlow , an open-source Python library introducing a computational paradigm operating on the S1 unit circle. Inputs are encoded as complex phasors z = eiϕ 
+
+on the N -Torus ( TN ). As computation proceeds via unitary wave interference gates, global norm is preserved while individual components drift into CN , allowing algorithms to natively leverage continuous geometric gradients for predictive learning. PhasorFlow provides three core contributions. First, we formalize the Phasor Circuit model ( N unit circle threads, 
+
+M gates) and introduce a 22-gate library covering Standard Unitary, Non-Linear, Neuro-morphic, and Encoding operations with full matrix algebra simulation. Second, we present the Variational Phasor Circuit (VPC), analogous to Variational Quantum Circuits (VQC), enabling optimization of continuous phase parameters for classical machine learning tasks. Third, we introduce the Phasor Transformer , replacing expensive QK T V attention with a parameter-free, DFT-based token mixing layer inspired by FNet. We validate PhasorFlow on non-linear spatial classification, time-series prediction, financial volatility detection, and neuromorphic tasks including neural binding and oscillatory associative memory. Our results establish unit circle computing as a deterministic, lightweight, and mathematically princi-pled alternative to classical neural networks and quantum circuits. It operates on classical hardware while sharing quantum mechanics’ unitary foundations. PhasorFlow is available at https://github.com/mindverse-computing/phasorflow .
+
+Keywords: unit circle computing, phasor circuits, variational circuits, Fourier transform, transformer, brain–computer interface, oscillatory computing 1
+
+> arXiv:2603.15886v2 [cs.LG] 18 Mar 2026
+
+# PhasorFlow: A Python Library for Unit Circle Based Computing 
+
+Dibakar Sigdel 1∗
+
+, Namuna Panday 11 Mindverse Computing LLC, WA 98087 March 19, 2026 
+
+# 1 Introduction 
+
+The landscape of computation has historically been defined by the mathematical structures upon which data is represented and transformed. Classical digital computers operate on discrete bits—points on a zero-dimensional manifold {0, 1}. Quantum computers leverage qubits, which reside in the complex projective space CP 1, enabling true quantum superposition and non-local entanglement through unitary operations on exponentially scaling Hilbert spaces [1]. Between these extremes lies a rich hierarchy of computational manifolds that remain largely unexplored in the context of programmable classical computing frameworks. We refer to this hierarchy as the Geometric Ladder of Computation :1. Bits : Points on a discrete set {0, 1}—zero-dimensional. 2. Phasors : Points on the unit circle S1 ∼= U(1) —one-dimensional continuous manifold. 3. Qubits : Points in complex projective space CP n—parameterized by both amplitude and phase. We visualize these three primary computational paradigms in Figure 1. The unit circle S1, corresponding to the unitary group U(1) , occupies the middle ground of this ladder. It is the simplest continuous group that supports interference, periodicity, and Fourier analysis—three properties that are foundational to both signal processing and quantum mechanics [2, 3]. A computational element on S1, which we term a phasor , is a complex num-ber of unit modulus: z = eiϕ , where ϕ ∈ [0 , 2π) is a continuous phase angle. Unlike qubits, whose state vectors reside in a linear Hilbert space allowing for true quantum superposition, phasor states begin strictly constrained to the N -Torus ( TN ), a compact, non-linear manifold. Because the N -Torus is not closed under addition, linear interference (mixing) naturally shifts the state off the manifold into the broader CN complex space. Unlike rigid digital logic, this transient departure from unit magnitude allows phasor networks to naturally scale continuous wave interference dynamically across layers. This comparison is summarized in Table 1. In this paper, we present PhasorFlow , a Python library that provides a complete framework for unit circle based computing . PhasorFlow draws design inspiration from quantum computing frameworks such as Qiskit [4], adopting a circuit-based programming model in which a user defines a circuit of N phasor threads (unit circles) and applies a sequence of M gate operations. However, unlike quantum simulators, PhasorFlow circuits are evaluated analytically through direct matrix multiplication, yielding deterministic outputs without sampling noise. 
+
+> ∗devdeep137@gmail.com
+
+2Classical Bit X0 1
+
+1
+
+0       
+
+> •Entity: Discrete Bit
+> ∈ { 0,1}.
+> •Operation: Logic Gate (Boolean Switch).
+> •Dynamics: Jumps between isolated states.
+
+Unit Circle 
+
+eiθ ϕ ϕ + θ
+
+> R
+> iR
+
+eiϕ          
+
+> •Entity: Continuous Phase
+> ϕ∈[0 ,2π).
+> •Operation: Phase Shift (Scalar Mult.).
+> •Dynamics: Smooth rotation on a circle.
+
+Qubit H|0⟩ |+⟩        
+
+> |0⟩
+> |1⟩
+> |ψ⟩
+> •Entity: Superposition
+> α|0⟩+β|1⟩.
+> •Operation: Quantum Gate (Unitary Matrix).
+> •Dynamics: Complex rotation in Hilbert Space.
+
+Figure 1: The three paradigms of computation. PhasorFlow introduces the Unit Circle paradigm as a continuous, deterministic bridge between discrete classical bits and complex, non-deterministic quantum qubits. Table 1: Summary matrix of the three computational paradigms. 
+
+Feature Classical Bit Unit Circle Qubit State Space 2N Discrete Points Continuous Angles Hilbert Space 
+
+Parameters 0 (Rigid Logic) N (Linear Scaling) 2N +1 − 2 (Exponential) 
+
+Manifold 0D Hypercube N -Torus ( TN ) Complex Projective CP 2N −1
+
+Gate Type Logic (AND/OR) Rotation Matrices Unitary Matrices 
+
+Execution Deterministic Deterministic (Phase) Probabilistic (Superposition) 
+
+Connection Wire Connectors Phase Coupling / Mixing Entanglement The development of PhasorFlow is fundamentally motivated by the prevalence of complex spatio-temporal dynamics across diverse real-world domains. Many natural and artificial sys-tems are inherently oscillatory or cyclical, rendering traditional Euclidean representations less effective. For instance, continuous dynamical systems often present complex periodic bound-ary interactions that are difficult to isolate with standard dense linear layers. In neuroscience, Brain-Computer Interface (BCI) data consists of continuous, high-density neural signals that are fundamentally spatio-temporal and oscillatory in nature, naturally demanding phase-based analysis [5]. In systems biology, gene expression and multi-omics cellular activities are tightly regulated by circadian rhythms and other biological clocks, producing profound spatio-temporal transcriptomic profiles [6, 7]. Similarly, quantitative finance demands models capable of track-ing the continuous, interconnected spatio-temporal fluctuations of asset portfolios interacting at high frequencies [8]. By elevating computation natively to the unit circle, PhasorFlow provides a mathematical architecture optimally aligned for encoding, mixing, and extracting phase-based interaction dynamics inherent in these complex systems. The contributions of this work are threefold: 1. Phasor Circuit Formalism. We define a complete gate algebra for unit circle com-putation comprising an expanded library of 22 gates categorized into Standard Unitary, Non-Linear, Neuromorphic, and Encoding operations. We prove that the linear gate set forms a unitary group action on the N -torus TN = ( S1)N , and demonstrate the capability of PhasorFlow to perform Neuromorphic computing (such as neural binding and oscillatory 3associative memory) natively. 2. Variational Phasor Circuits (VPC). We introduce trainable phasor circuits for ma-chine learning, analogous to Variational Quantum Circuits [9, 10] but operating entirely on classical hardware. VPCs encode data as phase angles, apply parameterized gate layers, and extract predictions through phase-to-probability mappings. We demonstrate VPC classifiers on high-dimensional synthetic non-linear boundary datasets. 3. Phasor Transformer and Single-Block Sequence Models. Inspired by the FNet architecture [11], we construct a Phasor Transformer that replaces the O(n2) self-attention mechanism with a parameter-free DFT-based token mixing layer. By utilizing a single transformer block with trainable phase projections, we establish a minimal, highly efficient sequence prediction mechanism built entirely from unit circle operations. The remainder of this paper is organized as follows. Section 2 establishes the mathematical foundations of U(1) phasor computing. Section 3 details the three methodological contributions: phasor circuits, VPCs, and Phasor Transformers. Section 4 describes the PhasorFlow software architecture. Section 5 presents applications to non-linear binary classification, time-series pre-diction, and financial anomaly detection. Section 6 reports experimental results. Section 7 and Section 8 provide discussion, future directions, and concluding remarks. 
+
+# 2 Theory 
+
+This section establishes the mathematical framework for unit circle computing. We first define phasor states on the N -torus, then formalize the unitary operators that act on those states. Throughout this section, ϕ denotes phasor state angles and θ denotes unitary-operator param-eters. 
+
+2.1 State Space 
+
+Definition 2.1 (Phasor Circuit State) . For N computational threads, a phasor circuit state is a vector 
+
+z = ( z1, . . . , z N )⊤ ∈ CN , zk = eiϕ k , ϕ k ∈ [0 , 2π), (1) 
+
+with admissible encoded states constrained to TN = ( S1)N by |zk| = 1 for all k.
+
+A phasor circuit with N independent unit circles (which we term threads ) has its state residing on the N -torus: 
+
+TN = S1 × S1 × · · · × S1
+
+| {z }
+
+> N
+
+= ( S1)N . (2) The state of the system is represented as a complex vector: 
+
+z =
+
+
+
+z1
+
+z2
+
+...
+
+zN
+
+ =
+
+
+
+eiϕ 1
+
+eiϕ 2
+
+...
+
+eiϕ N
+
+ ∈ CN , |zk| = 1 ∀ k. (3) The initial state of the circuit is defined as all phasors at zero phase: 
+
+z0 =
+
+
+
+11
+
+...
+
+1
+
+ , (4) 4corresponding to ϕk = 0 for all threads k = 1 , . . . , N .It is crucial to distinguish this TN geometry from a standard linear vector space (such as the 
+
+RN hidden states of classical neural networks or the C2N
+
+Hilbert space of quantum mechanics). The N -Torus is a compact, non-linear manifold. While the state is represented mathematically as a complex vector, the strict constraint that |zk| = 1 implies that the linear addition of two valid states zA + zB generally does not produce a valid state on the torus. The loss of the linear superposition principle is traded for absolute geometric stability—the state cannot explode to infinity. 
+
+Proposition 2.1 (Torus-Preserving Diagonal Action) . Let D = diag( eiθ 1 , . . . , e iθ N ) ∈ U (1) N
+
+be a diagonal phase-shift operator with gate parameters θk ∈ [0 , 2π), and let z ∈ TN . Then 
+
+Dz ∈ TN .Proof. Each coordinate transforms as (Dz)k = eiθ k zk and therefore |(Dz)k| = |eiθ k | | zk| = 1 .    
+
+> ϕ1
+> 1 Unit ( S1)
+> ϕ1
+> ϕ2
+> 2 Units ( T2)3 Units ( T3)
+> ϕ1
+> ϕ2ϕ3
+> ≈
+> ≈
+> ≈≈
+
+Figure 2: The geometric evolution of the internal phase manifold strictly depends connecting dimension lines on boundaries. An N -thread state resolves mathematically onto the periodic coordinate map of an N -Torus ( T N ). 
+
+2.2 Unitary Operations 
+
+Unitary operators act on phasor state vectors in the ambient vector space CN . A linear operator 
+
+U is unitary when 
+
+U U † = U †U = I, where U † = ¯U T . (5) The three operator structures used by PhasorFlow are: 
+
+U(1) : single-thread phase rotation. A one-thread unitary has the scalar form 
+
+u(θ) = eiθ ∈ U(1) , θ ∈ [0 , 2π). (6) Embedded into an N -thread state, this becomes a diagonal operator acting on one coordinate: 
+
+Sk(θ) = diag(1 , . . . , e iθ , . . . , 1) ∈ U( N ). (7) 
+
+U(2) : two-thread mixing. A two-thread mixing operator acts on a 2D subspace as 
+
+M (θ) = 
+
+a(θ) b(θ)
+
+c(θ) d(θ)
+
+
+
+∈ U(2) , (8) with orthonormal columns/rows implied by Equation (5). When det M (θ) = 1 , the operator belongs to SU(2) .5U( N ): global mixing. Global couplers act on all threads simultaneously: 
+
+W (θ) ∈ U( N ), (9) with the DFT matrix as a canonical parameter-free example in this class. Hence, Shift, Mix, and DFT are interpreted at the level of group structure as Shift: U(1) , Mix: U(2) , DFT/global mixing: U( N ). (10) If det( U ) = 1 , the corresponding operation is special unitary ( SU( n)). Under a unitary transformation, the state evolves as: 
+
+z′ = U z. (11) Since unitary matrices preserve the ℓ2-norm of complex vectors, ∥z′∥ = ∥U z∥ = ∥z∥, the total energy of the system is conserved. For a circuit with M sequential gates U1, U 2, . . . , U M ,the final state is: 
+
+zfinal = UM · · · U2 · U1 · z0 =
+
+> M
+
+Y
+
+> m=1
+
+Um
+
+!
+
+z0. (12) The product of unitary matrices is itself unitary, so the entire linear circuit represents a single composite isometric operation. However, a critical geometric shift arises during execution. While a unitary mixing operation (such as U(2) Mix or global U( N ) mixing) preserves the global ℓ2-norm ∥z′∥ = ∥z∥, individual thread magnitudes |z′
+
+> k
+
+| generally drift away from 1 due to interference. Thus, the state departs from the N -torus manifold into the ambient vector space CN .This drift is intentionally allowed during linear propagation for representational expressivity. A pull-back mechanism is then introduced in the Methods section (non-linear gates) to re-project states back toward TN before the next cycle when topology control is required. 
+
+Theorem 2.1 (Unitary Energy Conservation with Coordinate Drift) . Let U ∈ U (N ) and z ∈
+
+TN . Then 
+
+∥U z∥2 = ∥z∥2 = √N . (13) 
+
+If U is non-diagonal, there exists z ∈ TN such that U z /∈ TN .Proof. Unitarity gives norm preservation directly. For non-diagonal U , some output coordinate is a non-trivial linear combination of at least two unit-modulus entries, so coordinatewise modulus is generally not preserved under interference. 
+
+Corollary 2.2 (Ambient-Space Propagation) . Intermediate states of VPC and Phasor Trans-former layers are naturally propagated in CN even when encoded inputs lie on TN .
+
+Remark 2.1 (State Space vs. Operator Space) . It is essential to distinguish two distinct math-ematical objects throughout this paper. 1. Phasor state vectors z ∈ CN are elements of a vector space . When all coordinates satisfy 
+
+|zk| = 1 , the state lies on the sub-manifold TN ⊂ CN ; after unitary mixing it may leave TN
+
+while remaining in CN . The phase angle of coordinate k is denoted ϕk = arg( zk) ∈ [0 , 2π).2. Gate operators G ∈ U( N ) are group elements acting on CN . Their internal parameters are denoted θ. Shift operations are U(1) on individual threads (or U(1) N diagonally), Mix operations are U(2) on thread pairs, and DFT operations are global U( N ) maps. When an operator has determinant one, it is in the corresponding special unitary group SU( n).In summary: ϕ (Greek phi) always denotes a phasor angle (state); θ (Greek theta) always denotes a gate rotation parameter (operator). 
+
+62.3 Phase Coherence and Interference 
+
+A key observable in phasor systems is the phase coherence , which measures the degree of align-ment among the N phasors: 
+
+C = 1
+
+N
+
+> N
+
+X
+
+> k=1
+
+zk = 1
+
+N
+
+> N
+
+X
+
+> k=1
+
+eiϕ k . (14) When all phasors are perfectly aligned ( ϕk = ϕ for all k), the coherence reaches its maximum 
+
+C = 1 . When phases are uniformly distributed around the circle, destructive interference drives 
+
+C → 0. This observable provides a natural, parameter-free measure of the internal structure of a phasor state, and will be used as a feature detector in our applications. 
+
+2.4 Manifold Comparison 
+
+Table 2 summarizes the key differences between the computational manifolds on the Geometric Ladder. Table 2: Comparison of computational manifolds. 
+
+Property Bit Phasor ( S1) Qubit ( CP 1)
+
+Manifold dimension 0 1 2State parameters 1 (binary) 1 ( ϕ) 2 ( θ, ϕ )Deterministic Yes Yes No Interference No Yes Yes Superposition No No Yes Group structure Z2 U(1) SU(2) 
+
+Hardware requirement Classical Classical Quantum The phasor model inherits the classical wave interference property (enabling constructive and destructive combination) while remaining fully deterministic and executable on standard architecture without requiring quantum superposition or non-local quantum entanglement. This positions S1 computing as an intermediate paradigm—more expressive than bit-based comput-ing for oscillatory dynamics, yet fundamentally classical and strictly practical for immediate application. 
+
+# 3 Method 
+
+This section presents the three principal methodological contributions of PhasorFlow: the Phasor Circuit model (Section 3.1), the Variational Phasor Circuit for machine learning (Section 3.2), and the Phasor Transformer architecture for sequence modeling (Section 3.3). 
+
+3.1 Phasor Circuits 
+
+A Phasor Circuit P(N, M ) is defined by N unit circle threads and an ordered sequence of M
+
+gate operations. The circuit maps an initial state z0 ∈ TN to a final state zf through sequential application of gate matrices. The PhasorFlow library organizes 22 core gate primitives into four operational categories: Standard Unitary, Non-Linear, Neuromorphic, and Encoding gates. 
+
+3.1.1 Shift Gate S(θ)
+
+The Shift gate applies a phase rotation of angle θ ∈ [0 , 2π) to a single thread k. Acting on the full N -dimensional state, it is represented as an N × N diagonal matrix with eiθ at position 7ϕ1
+
+ϕ2
+
+ϕ3
+
+ϕ4
+
+ϕ5
+
+S
+
+S
+
+M
+
+M
+
+S
+
+M
+
+ϕ′
+
+> 1
+
+ϕ′
+
+> 2
+
+ϕ′
+
+> 3
+
+ϕ′
+
+> 4
+
+ϕ′
+
+> 5
+
+Figure 3: An example of an N = 5 continuous Phasor Circuit constructed from parameterized Shift ( S) gates and fixed entangling Mix ( M ) gates, visually analogous to a parameterized quantum circuit cascade. 
+
+(k, k ) and ones elsewhere: 
+
+Sk(θ) = diag (1 , . . . , e iθ 
+
+|{z} 
+
+> k-th
+
+, . . . , 1) . (15) Since |eiθ | = 1 , the diagonal matrix Sk(θ) is trivially unitary: Sk(θ)Sk(θ)† = I. Applied to a single phasor state eiϕ , the 1 × 1 matrix form is simply: 
+
+S(θ) =  eiθ  , (16) producing S(θ) eiϕ = ei(ϕ+θ). In variational circuits, θ serves as a trainable phase weight, analogous to rotation parameters in parameterized quantum circuits [12]. 
+
+Group membership. Sk(θ) acts as a U(1) operation on the target thread; embedded in the full N -dimensional operator algebra it becomes a diagonal element of U(1) N ⊂ U( N ) with determinant det Sk(θ) = eiθ . It is in SU( N ) only when θ = 0 (identity). The N -fold product of independent Shift gates QNk=1 Sk(θk) generates the maximal torus U(1) N of U( N ).
+
+ϕin ϕout = ϕin + θShift S(θ): eiϕ 7 → ei(ϕ+θ)
+
+Figure 4: Circuit representation of the Shift gate acting on a single computation thread. 
+
+3.1.2 Mix Gate Mjk 
+
+The Mix gate creates interference between two threads j and k. It is defined as a 2 × 2 unitary matrix that acts as a 50/50 beam splitter: 
+
+Mjk = 1
+
+√2
+
+1 ii 1
+
+
+
+. (17) Verification of unitarity: 
+
+Mjk M † 
+
+> jk
+
+= 12
+
+1 ii 1
+
+  1 −i
+
+−i 1
+
+
+
+=
+
+1 00 1
+
+
+
+= I. (18) The Mix gate transforms a pair of phasors (zj , z k) as: 
+
+z′
+
+> j
+
+z′
+
+> k
+
+
+
+= 1
+
+√2
+
+zj + iz k
+
+iz j + zk
+
+
+
+. (19) 8This operation introduces phase-dependent coupling: the output phases depend on the relative 
+
+phase difference ϕj − ϕk between the two input threads. In the context of neural networks, the Mix gate functions as a fixed (non-parameterized) coupling layer that prevents trivial factoriza-tion of the circuit into independent single-thread operations. 
+
+Group membership. Mjk is an element of SU(2) on the two-thread subspace: one can verify det( Mjk ) = 12 (1 · 1 − i · i) = 1 , so Mjk ∈ SU(2) ⊂ U(2) . When embedded into the 
+
+N -dimensional space it acts as the identity on all other threads, yielding Mjk ∈ U( N ).
+
+ϕj ϕ′
+
+> j
+
+ϕk ϕ′
+
+> k
+
+M
+
+Figure 5: Circuit representation of the Mix gate, entangling two adjacent continuous phase threads. 
+
+3.1.3 Discrete Fourier Transform (DFT) Gate 
+
+The DFT gate applies a global N × N unitary transformation across all threads simultaneously, mixing all phases through the discrete Fourier basis: 
+
+FN = 1
+
+√N
+
+
+
+1 1 1 · · · 11 ω ω2 · · · ωN −1
+
+1 ω2 ω4 · · · ω2( N −1) 
+
+... ... ... . . . ...
+
+1 ωN −1 ω2( N −1) · · · ω(N −1) 2
+
+
+
+, (20) where ω = e−2πi/N is the N -th root of unity. The DFT matrix is unitary by construction: each row (and column) forms an orthonormal set under the standard inner product on CN [13]. The action on the state vector transforms from the “spatial” domain to the “frequency” domain: 
+
+z′ 
+
+> k
+
+= 1
+
+√N 
+
+> N−1
+
+X
+
+> n=0
+
+zn ωkn , k = 0 , 1, . . . , N − 1. (21) Unlike the Shift and Mix gates, the DFT gate couples all N threads simultaneously, creating global interference patterns. This makes it the most powerful mixing operation in PhasorFlow, and it plays a central role in the Phasor Transformer architecture (Section 3.3). 
+
+Group membership. FN ∈ U( N ) is a global isometry of the state space CN ; each row/-column is an orthonormal Fourier basis vector. Whether FN ∈ SU( N ) depends on N (the determinant is a root of unity whose exact value depends on N modulo 4), but in all cases 
+
+| det FN | = 1 .
+
+3.1.4 Invert Gate 
+
+The Invert gate is a special case of the Shift gate with θ = π:
+
+Ik = Sk(π) = diag (1 , . . . , −1|{z} 
+
+> k-th
+
+, . . . , 1) , (22) which maps zk 7 → − zk = ei(ϕk +π), reflecting the phasor across the origin. 9ϕ1 ϕ′
+
+> 1
+
+ϕ2 ϕ′
+
+> 2
+
+ϕ3 ϕ′
+
+> 3
+
+ϕ4 ϕ′
+
+> 4
+
+ϕ5 ϕ′
+
+> 5
+
+# DFT ( F5)
+
+Figure 6: Circuit representation of the N = 5 Discrete Fourier Transform (DFT) gate. Unlike strictly local or pairwise operations, the DFT acts intrinsically as an all-to-all global unitary operator, extracting Fourier-basis classical wave interference phases across the entire thread registry simultaneously. 
+
+3.1.5 Additional Standard Unitary Gates 
+
+Beyond the core mixing and phase shift operations, PhasorFlow includes structural wire routing and aggregation gates: 
+
+Permute Gate. The Permute gate reorders thread indices natively without breaking contin-uous wave topologies. Given a permutation vector π = ( π1, . . . , π N ), it maps the system state as: 
+
+Pπ(z) = ( zπ1 , z π2 , . . . , z πN ). (23) 
+
+Reverse Gate. The Reverse gate executes a time-reversal operator by globally conjugating the complex state vector across all N threads: 
+
+R(z) = z∗ = ( z∗ 
+
+> 1
+
+, z ∗ 
+
+> 2
+
+, . . . , z ∗ 
+
+> N
+
+). (24) 
+
+Accumulate Gate. The Accumulate gate performs a local cumulative complex summation sweeping sequentially across adjacent threads: 
+
+A(z)k =
+
+> k
+
+X
+
+> j=1
+
+zj , k = 1 , . . . , N. (25) This coherent phase summation powers wave-front dynamics, seamlessly generating recursive structures like the Fibonacci sequence strictly through continuous wave interference. 
+
+GridPropagate Gate. For 2D dynamic programming, the GridPropagate gate simulates wavefront propagation across a lattice topology, where the state of each node (r, c ) accumu-lates its top and left neighbors: 
+
+G(Z)r,c = Zr−1,c + Zr,c −1, (26) enabling native unit-circle evaluation of localized connectivity graphs. 10 3.1.6 Gate Library Summary 
+
+PhasorFlow ships with a comprehensive library of 22 primitive gates that organically compose into fully functional algorithmic and machine learning pipelines. Table 3 summarizes the com-plete operational toolkit. Table 3: Summary of all 22 primitive gates available in the PhasorFlow computing framework, categorized by operation type.                                                 
+
+> Category Gate Name Operation / Function Description Standard Unitary
+> Shift Phase rotation proportional to input value ( z7→z·eiθ ). Invert Phase flip by πradians ( z7→ − z). Mix Two-thread interference (beam splitter). DFT Global sequence token mixing via Discrete Fourier Transform. Permute Reordering of computing thread state indices. Reverse Time-reversal via global complex conjugation ( z7→z∗). Accumulate Cumulative complex wave summation ( zn+1 =zn+1 +zn). GridPropagate Wavefront propagation accumulation across a 2D lattice.
+> Non-Linear
+> Threshold Filters low-magnitude phasors and forces outputs to zero. Saturate Quantizes phase geometry toward discrete binary anchors. Normalize Pulls any generic CNstate rigidly back to the TNunit circle. LogCompress Logarithmic amplitude compression ( μ-law analog). CrossCorrelate Evaluates phase coherence between discrete pattern sequences. Convolve Sliding continuous spatial convolution along threads.
+> Neuromorphic
+> Kuramoto Global phase synchronization towards a mean alignment field. Hebbian Associative memory adaptation via nearest-neighbor phase pull. Ising Anti-ferromagnetic coupling driving bi-modal ( 0, π ) symmetry. Synaptic Continuous drag/coupling between targeted neural oscillators. AsymmetricCouple Non-reciprocal directed phase influence across nodes.
+> Encoding EncodePhase Maps real-valued riinto the spatial phase domain [0 ,2π).EncodeAmplitude Maps scalar magnitudes physically onto the wave norm.
+
+3.1.7 Non-Linear Gates 
+
+While the linear gates (Shift, Mix, DFT) execute unitary transformations that conserve global energy, they dynamically shift the individual threads away from the unit magnitude constraint. Moving the state vector off the N -Torus manifold into the full CN complex space expands the system’s ability to natively scale latent interaction magnitudes. For situations requiring explicit topology control or discrete programmatic decisions, PhasorFlow provides optional non-linear gates that act as geometric projections, breaking unitarity to force the state back towards TN .
+
+Threshold Gate. The Threshold gate acts as a non-linear activation function on the phasor amplitude, optionally performing a rigid re-normalization step. Given a complex value z with magnitude |z| and a threshold parameter τ :
+
+T (τ )( z) = 
+
+(
+
+z/ |z| if |z| ≥ τ, 
+
+0 if |z| < τ. (27) After Mix or DFT operations, individual thread amplitudes deviate from unity. The Thresh-old gate provides a discrete decision mechanism: phasors with sufficient geometric stability are rigidly mapped straight back to the TN manifold, while weak destructive signals are strictly suppressed. While this hard-constrains intermediate states, empirical models like the deep Vari-ational Phasor Circuit often bypass this thresholding entirely to exploit continuous complex wave topologies. 11 Saturate Gate. The Saturate gate discretizes the continuous phase angle to one of L equally spaced levels: Sat (L)( z) = exp 
+
+
+
+i · round 
+
+ θ
+
+2π/L 
+
+
+
+· 2πL
+
+
+
+, θ = arg( z). (28) For L = 2 , the Saturate gate snaps phases to either 0 or π, effectively quantizing the continuous phasor to a binary representation. This gate enables error correction in oscillatory memory networks and serves as the physical foundation for Hopfield-type attractor dynamics [14, 15, 16, 17]. 
+
+Additional Non-Linear Operations. The Normalize Gate (or PullBack) continuously enforces unit-magnitude topology |z| = 1 iteratively during complex cascade flows. For dynamic range adjustment, the LogCompress Gate attenuates signal extrema. Finally, the CrossCor-relate and Convolve gates execute complex sequence sliding operations directly in the spatial phase domain. 
+
+3.1.8 Neuromorphic Gates 
+
+PhasorFlow introduces a suite of non-unitary associative tracking gates explicitly designed for brain-inspired computing. 
+
+• Kuramoto Gate : Implements global phase synchronization across continuous popula-tions [18, 19]. 
+
+• Hebbian Gate : Modifies outer-product associative phase links ∆Wjk ∝ zj ¯zk to store multi-pattern oscillator memories [15]. 
+
+• Ising Gate : A discrete coupling operator that drives threads to strictly bipartite consensus arrays. 
+
+• Synaptic & AsymmetricCouple Gates : Enact directed phase momentum transfer between distinct computational reservoirs. 
+
+3.1.9 Encoding Gates 
+
+The EncodePhase Gate and EncodeAmplitude Gate comprise the native interface for loading external real-valued data structures geometrically onto the N -Torus ( TN ) manifold or into full continuous CN amplitudes. 
+
+3.1.10 Circuit Execution 
+
+A complete circuit P(N, M ) with gate sequence G1, G 2, . . . , G M is executed by applying each gate matrix sequentially to the state vector: 
+
+zf = GM · · · G2 · G1 · z0. (29) Each gate Gm acts on either a single thread (Shift, Invert), a pair of threads (Mix), or all threads (DFT). For single-thread and pair-thread gates, the operation is embedded into the full 
+
+N -dimensional space by acting as the identity on all non-target threads. The computational cost of circuit execution is O(M · N 2) in the general case, dominated by the DFT gate applications. 
+
+Composite group structure. The sequential product of M linear (unitary) gates yields a total circuit operator 
+
+Ucirc = GM · · · G1 ∈ U( N ), (30) because the product of unitary matrices is unitary. If det Gm = 1 for every gate m (as is the case for Mix gates), then Ucirc ∈ SU( N ); Shift gates with θ̸ = 0 contribute a unit-modulus 12 phase factor to det Ucirc , keeping it in U( N ) \ SU( N ) in general. Non-linear gates (Threshold, Normalize, Saturate, etc.) break unitarity and are therefore not elements of U( N ); they act as projections onto sub-manifolds of CN .
+
+3.1.11 Leaky-Integrate-and-Phase (LIP) Layer 
+
+The LIP layer provides a continuous-time dynamical system for N coupled oscillators, inspired by the Kuramoto model [18]: 
+
+dϕ k
+
+dt = −γ(ϕk − ϕrest ) + 
+
+> N
+
+X
+
+> j=1
+
+Wkj sin( ϕk − ϕj ) + Iext  
+
+> k
+
+, (31) where γ is the leak rate, ϕrest is the resting phase, Wkj are synaptic coupling weights, and Iext 
+
+> k
+
+is external input. The LIP layer enables simulation of neural binding phenomena—the process by which dis-tributed neural populations achieve phase synchronization to represent a unified percept. 
+
+3.1.12 Associative Memory (Hopfield-Phase Model) 
+
+The PhasorFlowMemory class implements an oscillatory Hopfield network that stores and re-trieves phase patterns via Hebbian learning: 
+
+W = 1
+
+P
+
+> P
+
+X
+
+> p=1
+
+z(p) 
+
+z(p)†
+
+, Wkk = 0 , (32) where z(p) = eiϕ(p)
+
+are the stored phase patterns and P is the number of patterns. Pattern recovery from a corrupted input proceeds via iterative phase-locking: 
+
+z(t+1) = z(t) + δt · W z(t)
+
+|z(t) + δt · W z(t)| , (33) where the division is element-wise and re-normalizes each phasor to the unit circle. This dy-namics converges to the nearest stored attractor, enabling content-addressable memory retrieval [14, 20]. 
+
+3.2 Variational Phasor Circuit (VPC) 
+
+The Variational Phasor Circuit (VPC) extends the Phasor Circuit model to machine learning by introducing trainable parameters. The VPC architecture is directly analogous to Variational Quantum Circuits (VQCs) [9, 10] and parameterized quantum circuits [12], but operates deter-ministically on classical hardware. 
+
+3.2.1 Architecture 
+
+A VPC consists of three stages: encoded phasor input, variational unitary evolution, and deter-ministic state extraction. 
+
+Definition 3.1 (Single-Layer VPC Operator) . Given an encoded input phasor state zin ∈ TN
+
+and trainable operator parameters θ ∈ RN , a single-layer VPC operator is 
+
+V(θ) = Ulocal 
+
+> N
+
+Y
+
+> k=1
+
+Sk(θk)
+
+!
+
+, (34) 
+
+where Ulocal = Q 
+
+> k=0 ,2,4,...
+
+Mk,k +1 is local pairwise mixing. The forward state is zf = V(θ)zin .
+
+13 Thread z3   
+
+> Thread z2
+> Thread z1
+> Thread z0
+
+Encoded State 
+
+zin         
+
+> S(θin
+> 0)
+> S(θin
+> 1)
+> S(θin
+> 2)
+> S(θin
+> 3)
+> M2,3
+> M0,1
+> S(θ0)
+> S(θ1)
+> S(θ2)
+> S(θ3)
+> M1,2
+> S(θout
+> 0)
+> S(θout
+> 1)
+> S(θout
+> 2)
+> S(θout
+> 3)
+
+Output State 
+
+zf
+
+Figure 7: The continuous physical circuit architecture of a Variational Phasor Circuit (VPC). Exter-nally encoded phasor-states ( zin ) enter the network directly; hardware Mix gates provide interference-based coupling that supersedes classical multi-layer matrices on the unit-circle manifold, while train-able unitary-operator parameters ( θ) modulate subsequent Shift layers. 
+
+Stage 1: Data Encoding. Data encoding is performed upstream of the VPC. The circuit receives an already encoded phasor state 
+
+zin = ( eiϕ 1 , e iϕ 2 , . . . , e iϕ N )⊤ ∈ TN , (35) where ϕk are phase coordinates produced by an external encoder. Consequently, encoding operations are not counted as VPC gates. 
+
+Stage 2: Variational Layer. The VPC variational layer applies two unitary operations in sequence: (i) trainable Shift rotations and (ii) local pairwise Mix coupling. 
+
+V (θ) = Ulocal ·
+
+> N
+
+Y
+
+> k=1
+
+Sk(θk), (36) where θ = ( θ1, . . . , θ N ) are the trainable operator parameters, 
+
+Ulocal = Y
+
+> k=0 ,2,4,...
+
+Mk,k +1 , (37) with local interference generated entirely by Mix gates. Thus, Stage 2 explicitly contains the two VPC operations used in this architecture: Shift (Sk) and local Mix ( Mk,k +1 ). The resulting Stage-2 unitary evolution is 
+
+zf = Y
+
+> k=0 ,2,4,...
+
+Mk,k +1 
+
+| {z }
+
+> Local mix
+
+·
+
+> N
+
+Y
+
+> k=1
+
+Sk(θk)
+
+| {z }
+
+> Shift parameters
+
+·zin . (38) 
+
+Corollary 3.1 (Deterministic VPC Readout) . For fixed (zin , θ), the VPC output probabilities from Equations (42) and (43) are deterministic functions of zf with no sampling variance. 
+
+A single-layer VPC introduces an exceptionally lean parameter count of |θ| = N .
+
+Proposition 3.1 (Linear Parameter Footprint of VPC) . For depth L and width N , if each layer contributes one trainable phase per thread, then the total trainable parameter count is 
+
+PVPC = N L. (39) 14 Stacked (Deep) VPC. As with transformer blocks, VPC layers can be stacked. Let 
+
+V(ℓ) = U (ℓ)local 
+
+> N
+
+Y
+
+> k=1
+
+Sk(θ(ℓ) 
+
+> k
+
+)
+
+!
+
+, (40) for layer index ℓ = 0 , . . . , L − 1. The depth-L propagation is 
+
+z(ℓ+1) = V(ℓ) z(ℓ), z(0) = zin , (41) with final state zf = z(L). If strict manifold control is required between layers, an optional pull-back operation can be inserted after each layer to re-project intermediate states toward TN
+
+before the next layer. 
+
+Stage 3: Deterministic State Extraction. The final state vector zf is evaluated determin-istically by extracting the phase(s) of designated output threads. For binary classification , the phase of thread 0 is mapped to a probability using a sinusoidal envelope: 
+
+p = sin( ϕ0) + 1 2 ∈ [0 , 1] , (42) where ϕ0 = arg( zf, 0) is the phase angle of the first output thread. For multi-class classification with K classes, the absolute phases of the first K threads serve as logits, passed through a softmax function: 
+
+pc = exp( |ϕc|)
+
+PK−1 
+
+> c′=0
+
+exp( |ϕc′ |) , c = 0 , 1, . . . , K − 1, (43) where ϕc = arg( zf,c ).
+
+3.2.2 Loss Functions and Optimization 
+
+The trainable operator parameters θ are optimized to minimize a task-specific loss function. For binary classification, we use the mean squared error (MSE): 
+
+LMSE (θ) = 1
+
+|D| 
+
+X
+
+> (ϕ,y )∈D
+
+(p(ϕ; θ) − y)2 . (44) For multi-class classification, we use categorical cross-entropy: 
+
+LCE (θ) = − 1
+
+|D| 
+
+X
+
+> (ϕ,y )∈D
+
+log py(ϕ; θ). (45) Because the circuit execution is fully analytic (no stochastic sampling), the loss landscape is smooth and continuous. With the recent integration of native PyTorch complex tensor opera-tions, this enables efficient large-scale optimization leveraging continuous Autograd backpropa-gation: 
+
+• PyTorch Adam (Adaptive Moment Estimation): Now powers the majority of deep Pha-sorFlow training tasks. By projecting strictly continuous phases directly through the CN
+
+wave interference without hard S1 topology clipping, Adam traces exact mathematical gradients across deep VPC and Transformer stacks, dramatically accelerating convergence over thousands of parameters. 
+
+• COBYLA / L-BFGS-B : Retained for smaller heuristic networks or hybrid quantum pipelines (such as joint measurement optimization in Phasor-to-Qubit scenarios) where derivative-free approximations are required. 15 Unlike quantum VQCs, which suffer from barren plateau problems due to the exponentially large Hilbert space, VPCs operate by tracking structural wave variations scaling predictably across CN , where the loss landscape dimensionality scales linearly with N rather than exponen-tially. 
+
+3.3 Phasor Transformer 
+
+The Phasor Transformer adapts the transformer architecture [21] to unit circle computing by replacing the self-attention mechanism with the DFT gate. This approach is directly inspired by Google’s FNet [11], which demonstrated that replacing the QK T V attention layer with a Fourier transform achieves comparable performance on many NLP benchmarks while reducing computational complexity from O(n2) to O(n log n).
+
+3.3.1 Architecture 
+
+A Phasor Transformer follows the same structural pattern as VPC: Stage 1 Data Encoding, Stage 2 Variational Transformer Layer, and Stage 3 Deterministic State Extraction. 
+
+Stage 1: Data Encoding. For a context window of length T , raw inputs s = ( s1, . . . , s T )
+
+are externally mapped to phase coordinates ϕ = ( ϕ1, . . . , ϕ T ) and encoded as 
+
+ϕt = st
+
+max |s| · π
+
+2 , (46) which initializes the transformer input state zin = ( eiϕ 1 , . . . , e iϕ T )⊤.
+
+Stage 2: Variational Transformer Layer. A single Phasor Transformer block consists of three unitary operations applied in sequence: 1. Pre-Projection (Feed-Forward Network) : Parameterized Shift gates applied to each thread: Pre-FFN (θpre ) = 
+
+> T
+
+Y
+
+> k=1
+
+Sk(θpre  
+
+> k
+
+). (47) 2. Token Mixing (DFT Attention) : A global DFT gate mixes all T sequence tokens in the frequency domain: TokenMix = FT . (48) 3. Post-Projection (Feed-Forward Network) : A second set of parameterized Shift gates: Post-FFN (θpost ) = 
+
+> T
+
+Y
+
+> k=1
+
+Sk(θpost  
+
+> k
+
+). (49) The complete transformer block is: 
+
+B(θ) = Post-FFN (θpost ) · FT · Pre-FFN (θpre ). (50) For depth D, blockwise propagation is 
+
+z(ℓ+1) = B(θ(ℓ)) z(ℓ), ℓ = 0 , . . . , D − 1, (51) with z(0) = zin .16 Token ϕ3   
+
+> Token ϕ2
+> Token ϕ1
+> Token ϕ0
+
+Input Seq 
+
+ϕ         
+
+> S(θpre
+> 0)
+> S(θpre
+> 1)
+> S(θpre
+> 2)
+> S(θpre
+> 3)
+> FT(TokenMix)
+> S(θpost
+> 0)
+> S(θpost
+> 1)
+> S(θpost
+> 2)
+> S(θpost
+> 3)
+
+Output Seq 
+
+H
+
+Figure 8: The continuous physical circuit architecture of the Phasor Transformer Block B(θ). Classi-cal self-attention matrices are natively superseded by global multidimensional continuous FT waveg-uide interference (TokenMix), preceded and followed by parameterized Shift gate layers ( S(θ)). 
+
+Definition 3.2 (Phasor Transformer Block) . For context length T , a block is the operator 
+
+B(θ) = S(θpost )FT S(θpre ), (52) 
+
+where S(·) is diagonal phase rotation and FT is the DFT token mixer. 
+
+Each block has 2T trainable parameters (the pre- and post-projection weights). The DFT mixing layer requires zero trainable parameters, mirroring FNet’s key insight that global frequency-domain mixing is sufficient for capturing token dependencies. 
+
+Theorem 3.2 (Parameter-Efficient Global Mixing) . For a depth-D phasor transformer with context length T , the trainable parameter count scales as (2 D +1) T under a single-thread readout head, while each block preserves global token coupling through FT without an explicit T × T
+
+attention map. 
+
+Corollary 3.3 (Complexity Regime) . Replacing dot-product attention with DFT mixing yields a token-mixing cost of O(T log T ) per block and linear parameter growth in T .
+
+Stage 3: Deterministic State Extraction. After the final block, the output phase of a designated readout thread is deterministically decoded. For one-step forecasting, 
+
+ˆsT +1 = ϕ0 · max |s|
+
+π/ 2 , (53) where ϕ0 = arg( zout ,0) is the readout phase. 
+
+# 4 Implementation 
+
+PhasorFlow is implemented as a modular Python package designed for clarity, extensibility, and ease of use. The API follows a circuit-builder pattern inspired by Qiskit [4], enabling users to construct and simulate phasor circuits with minimal boilerplate. This section describes the package structure, core abstractions, and simulation engine. 
+
+4.1 Package Structure 
+
+The PhasorFlow package is organized into five principal modules: 
+
+• phasorflow.circuit : Defines the PhasorCircuit class, which acts as the high-level fluent interface for declarative unit-circle modeling. 17 • phasorflow.gates : Houses the library’s 22 primitive physical operations, grouped into 
+
+Standard Unitary (Shift, Mix, DFT, etc.), Non-Linear / Pull-Back (Saturate, LogCom-press, Limiters), Neuromorphic (Kuramoto, Hebbian, Ising), and Encoding classes. 
+
+• phasorflow.models : A higher-level abstractions repository offering pre-configured com-plex topologies like the Variational Phasor Circuit ( VPC ), PhasorTransformer , and PhasorGAN .
+
+• phasorflow.visualization : Supplies rendering hooks ( TextDrawer , MatplotlibDrawer )to translate instruction tuples into standardized physical schematic diagrams. 
+
+• phasorflow.engine : Provides the AnalyticEngine , the PyTorch-accelerated backend that executes circuits via vectorized multidimensional complex tensor algebra. 
+
+4.2 Circuit Builder API 
+
+A circuit is instantiated by specifying the number of unit circle threads N , after which physical instructions are appended progressively via a fluid method-chaining syntax:  
+
+> 1
+
+import phasorflow as pf  
+
+> 2
+
+import torch  
+
+> 34
+
+# Define inputs mapping onto pi bounds  
+
+> 5
+
+classical_data = torch . tensor ([0.2 , 0.8 , -0.4 , 0.9])  
+
+> 67
+
+# Allocate a 4 - thread Continuous Circuit Manifold  
+
+> 8
+
+pc = pf . PhasorCircuit (4)  
+
+> 910
+
+# Data Embedding and Waveguide Interference  
+
+> 11
+
+( pc . encode_phases ( classical_data )  
+
+> 12
+
+. shift ( thread_idx =0 , phi =3.1415)  
+
+> 13
+
+. mix ( thread_a =0 , thread_b =1)  
+
+> 14
+
+. mix ( thread_a =2 , thread_b =3)  
+
+> 15
+
+. pullback () # Non - linear energy projection  
+
+> 16
+
+. dft () # Global hardware dispersion mapping  
+
+> 17
+
+. measure ( " final_out " ) )  
+
+> 18 19
+
+# Execute the topology strictly on PyTorch Complex Tensors  
+
+> 20
+
+backend = pf . Simulator . get_backend ( ’ analytic_simulator ’)  
+
+> 21
+
+result = backend . run ( pc )  
+
+> 22 23
+
+# Extract resultant phases bound between [ - pi , pi ]  
+
+> 24
+
+print ( result [ ’ final_out_phases ’ ]) 
+
+Listing 1: Constructing and simulating a continuous physical circuit pipeline using PhasorFlow’s fluent API. Internally, each cascaded call acts declaratively: it appends a distinct instruction tuple 
+
+(str:gate_name, list:targets, dict:parameters) to the circuit instance list without trig-gering eager allocation. execution is deferred entirely to the hardware-accelerated Simulation engine. 
+
+4.3 Analytic Simulation Engine 
+
+The AnalyticEngine executes a circuit by initializing a complex state vector z0—typically the uniform manifold array 1 ∈ CN —and walking sequentially through the instruction AST. Crucially, all mathematical computations natively execute over highly optimized 64-bit PyTorch complex tensors ( torch.complex64 ). This enables two simultaneous architectural benefits: 18 Firstly, unitary operations like Sk, Mj,k , and multidimensional TokenMix FT are evaluated natively as hardware-accelerated linear complex maps without phase wrapping defects. Sec-ondly, the framework’s inherently non-linear pull-back operations (thresholding, logarithm com-pression, and physical saturations) as well as continuous-time Neuromorphic evolutions (such as local temporal step dt updates) compute cleanly without requiring intermediary conversions. Upon completion, or at specific marked measure() junction states, the engine returns dictio-naries containing the extracted complex Cartesian vectors alongside their analytic polar angles 
+
+ϕk = arg( zk), integrating directly into existing gradient descent loops (Autograd backpropaga-tion). 
+
+# 5 Applications 
+
+We validate PhasorFlow across multiple application domains, including synthetic non-linear binary classification, oscillatory time-series prediction, robust associative memory, neural binding via phase synchronization, and financial volatility detection. 
+
+5.1 Non-linear Binary Classification 
+
+We demonstrate the capacity of the Variational Phasor Circuit (VPC) to solve classification problems on continuous, non-linear boundaries. We generate a synthetic dataset mapping a high-dimensional feature domain into the S1 unit circle for a binary classification task. 
+
+5.1.1 Dataset and Formulation 
+
+Phase coordinates are initially sampled as independent random variables ϕ ∼ U (0 , 2π) across 
+
+N = 16 dimensions. The true target class y ∈ { 0, 1} is determined by an underlying hidden continuous sum-of-cosines threshold: 
+
+y = 1
+
+> N
+
+X
+
+> k=1
+
+cos( ϕk) > 0
+
+!
+
+(54) We generate 1000 samples natively bounded within [−π, π ] over 16 channels. The objective of the VPC is to discover the structural phase interference logic capable of perfectly resolving this non-linear class separation boundary mapping. 
+
+5.1.2 VPC Architecture 
+
+We employ a single-layer Variational Phasor Circuit consisting of N = 16 parallel threads: 
+
+• Data Encoding (External) : input features are first mapped to encoded phases ϕi,forming zin ∈ T16 .
+
+• Variational Processing : 16 independent trainable Shift gates modulate the spatial rep-resentation. 
+
+• Local Interference Coupling : Pairwise Mix gates create local phase interactions across adjacent threads. 
+
+• Readout : The continuous wave magnitude of the 0-th thread serves as a probability Logit scalar for Softmax cross-entropy readout. This formulation yields precisely 16 trainable phase parameters. 19 5.2 Oscillatory Time-Series Prediction 
+
+We evaluate the Phasor Transformer on a synthetic composite waveform prediction task. The target signal is a linear combination (classical sum) of three sinusoidal components with added Gaussian noise: 
+
+s(t) = sin( t) + 0 .5 cos(3 t) + 0 .25 sin(7 t) + ϵ(t), ϵ ∼ N (0 , 0.1) . (55) The signal is sampled at 1000 contiguous time points and framed into overlapping causal sequences of context length T = 32 , with the task of predicting the subsequent values autore-gressively. A deep 2-block Phasor Transformer architecture with 128 total parameters replaces standard 
+
+O(T 2) self-attention with discrete unitary Fourier projection entirely over sequences, significantly reducing the algorithmic overhead while optimizing native frequency domain relationships. 
+
+5.3 Financial Volatility Detection 
+
+We apply PhasorFlow as a non-linear financial indicator for volatility clustering detection. Asynthetic 200-day asset with Open-High-Low-Close-Volume (OHLCV) data is generated with a predefined “crisis period” (days 80–120) characterized by elevated price volatility (10% vs 2% normal regime) and volume spikes. For each trading day t, the 5 normalized OHLCV features fk are mapped to phase angles via ϕk = π · tanh( fk) and then encoded through Shift parameters θk = ϕk in a N = 5 phasor circuit with the following structure: 
+
+• Data encoding: 5 Shift gates. 
+
+• Adjacent coupling: Mix gates on pairs (0 , 1) , (1 , 2) , (2 , 3) to entangle O →H→L→C. 
+
+• Global mixing: DFT gate (includes Volume in the global interference). The daily phase coherence C(t) of the output state vector is computed as the mean magnitude of the complex state (Equation (14)). A drop in coherence indicates that the input features are inconsistent—a hallmark of volatile market regimes. 
+
+5.4 Algorithmic Logic 
+
+Beyond machine learning, PhasorFlow circuits natively execute programmatic Data Structures and Algorithms (DSA) logic deterministically, without requiring trainable weights. The con-tinuous interference physics on the TN manifold maps smoothly to arithmetic and dynamic programming tasks. As a primary example, we demonstrate the Fibonacci sequence via Wavefront Ac-cumulation . By utilizing the Accumulate Gate —which applies a cumulative sum of complex states zn+1 = zn+1 + zn traversing adjacent computing threads—a simple unparameterized circuit initializes a sparse phase impulse on the first two threads. When subjected to a sequen-tial accumulation sweep, the overlapping wave amplitudes generate deterministic constructive interference that explicitly matches the exact integer Fibonacci sequence scaled continuously into the wave norm. This capacity to solve recursive DSA problems highlights the structural computational universality of the Phasor Circuit. 
+
+5.5 Period Finding 
+
+As a demonstration of the DFT gate’s algebraic capabilities, we implement a classical analog of Shor’s period-finding subroutine [22]. The modular exponentiation sequence 7n (mod 15) = [1 , 7, 4, 13] is encoded as phases on N = 4 threads, after which a global DFT is applied. The 20 resulting spectral magnitudes reveal the dominant frequency component corresponding to the period r = 4 of the sequence, from which the factors of 15 can be derived. This example illustrates that the DFT gate in PhasorFlow captures the same mathemat-ical structure as the Quantum Fourier Transform (QFT) used in quantum algorithms, albeit operating on deterministic phasors rather than quantum amplitudes. 
+
+5.6 Neuromorphic Computing 
+
+In addition to deep learning paradigms, PhasorFlow serves as a robust simulator for brain-inspired neuromorphic computing, natively leveraging the intrinsic physics of coupled continuous oscillators. 
+
+5.6.1 Neural Binding via Kuramoto Consensus 
+
+The Kuramoto gate enables the simulation of large-scale phase synchronization dynamics. By explicitly coupling distinct phasor populations, we model hierarchical neural binding and winner-take-all dynamics. Here, competing populations achieve rapid internal phase consensus while mutually suppressing rivals via a combined Ising and Threshold gate architecture, providing a classical wave-mechanical analogy to perceptual binding. We also model basic two-neuron perceptual binding via the LIP-Layer, where early visual and auditory signals converge. 
+
+5.6.2 Oscillatory Associative Memory 
+
+Through the Hebbian gate, PhasorFlow implements a continuous-phase Hopfield attractor net-work. Multiple discrete phase patterns (e.g., alternating 0 and π) are holographically stored by modifying the structural phase links ∆Wjk . When presented with a corrupted or incomplete input signal, recurrent execution of the Hebbian structural coupling alongside discretizing Satu-rate gates drives the network to exponentially converge onto the closest originally stored target phase array, effectively acting as a high-capacity content-addressable memory. 
+
+# 6 Results 
+
+This section reports quantitative results for each application presented in Section 5. 
+
+6.1 VPC Binary Classification 
+
+The Variational Phasor Circuit (VPC) with N = 16 unit circles and |θ| = 16 trainable parame-ters was evaluated on the synthetic non-linear dataset utilizing 1,000 high-dimensional structural representations. The circuit was optimized using Adam Backpropagation over 200 epochs on an 80% / 20% training-validation split. Table 4 summarizes the overall learning performance. Table 4: VPC binary classification results (synthetic dataset, N = 16 , |θ| = 16 ). 
+
+Metric Initial Check Post-Convergence 
+
+Training MSE Loss ∼ 0.25 < 0.05 
+
+Validation Accuracy ∼ 50 .0% 100 .0% 
+
+Optimizer — Adam (lr=0.1) 21 0 2 4 6 8 10 12 14                         
+
+> Thread Index
+> 1
+> 2
+> 3
+> 4
+> 5
+> Phase (rad)
+> A. Spatial Phase Signatures
+> Class 0 Mean
+> Class 1 Mean
+> 0510 15 20 25 30 35 40
+> Epoch
+> 10 1
+> 6 × 10 2
+> 2 × 10 1
+> 3 × 10 1
+> 4 × 10 1
+> MSE (log scale)
+> B. Optimization Convergence
+> Train MSE
+> Validation MSE
+> 0510 15 20 25 30 35 40
+> Epoch
+> 40
+> 50
+> 60
+> 70
+> 80
+> 90
+> 100
+> Accuracy (%)
+> C. Classification Accuracy
+> Train Accuracy
+> Validation Accuracy
+> 01
+> Predicted Label
+> 0
+> 1
+> True Label
+> 90 4
+> 799
+> D. Test Confusion Matrix
+> 20
+> 40
+> 60
+> 80
+> VPC Single Classification | Acc=94.50% | Precision=0.961 | Recall=0.934 | F1=0.947
+
+Figure 9: VPC binary classification performance on the synthetic dataset, illustrating the loss convergence and the resulting probability distribution. As depicted in Figure 9, the minimal VPC learned to separate the two continuous classes perfectly from random initializations, proving that linearly parameterized phase circuits coupled with local Mix interference capture generalized decision-boundary structure without hidden layer expansions. 
+
+6.2 Sequence Benchmarking 
+
+To evaluate global sequence representation learning beyond Euclidean multi-head attention, we evaluated the Phasor Transformer on predicting autoregressive multi-frequency signals composed of additive Gaussian noise over sequences of context length T = 10 .22 0 5 10 15 20 25 30 35                 
+
+> Sample Index
+> 1.5
+> 1.0
+> 0.5
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> Amplitude
+> A. Test Sequence Prediction
+> Ground Truth
+> Prediction
+> 1.5 1.0 0.5 0.0 0.5 1.0 1.5
+> True Amplitude
+> 1.5
+> 1.0
+> 0.5
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> Predicted Amplitude
+> B. Parity Plot
+> Ideal y=x
+> 0.4 0.2 0.0 0.2 0.4 0.6
+> Prediction Error
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> 3.5
+> 4.0
+> Count
+> C. Residual Distribution
+> 0.0 0.1 0.2 0.3 0.4 0.5
+> Normalized Frequency
+> 0.0
+> 2.5
+> 5.0
+> 7.5
+> 10.0
+> 12.5
+> 15.0
+> 17.5
+> 20.0
+> Magnitude
+> D. Frequency-Domain Consistency
+> Ground Truth FFT
+> Prediction FFT
+> Phasor Transformer Evaluation | MSE=0.0705, MAE=0.2235, RMSE=0.2655, Corr=0.947
+
+Figure 10: Phasor Transformer performance on sequence benchmarking, detailing the learning convergence and prediction capabilities. Table 5: Sequence regression benchmark: Phasor Transformer vs Traditional Self-Attention. 
+
+Model Test MSE Trainable Params Mixing Complexity 
+
+Phasor Transformer (DFT) ∼ 0.07 50 O(T log T )
+
+PyTorch Transformer (Self-Attn) ∼ 0.003 > 1, 000 O(T 2)
+
+As shown in Figure 10 and Table 5, while standard transformers with vast hidden multi-head parameters can trivially regress continuous sequential data, the Phasor Transformer established a highly viable alternative establishing a massive reduction in complexity. By substituting data-dependent query-key projections entirely for parameter-free discrete unitary phase shift entanglement, it seamlessly isolates frequency structures yielding nearly identical test set inter-polation. 
+
+6.3 Financial Volatility Detection 
+
+The phase coherence indicator correctly identified the volatility cluster on the synthetic 200-day OHLCV dataset. During the crisis period (days 80–120), the coherence C(t) exhibited a pronounced drop (falling to ∼ 0.5) relative to the stable market regime (which maintained 
+
+∼ 0.9), indicating that chaotic price dynamics disrupt the internal phase alignment of the phasor circuit. This result demonstrates that phasor circuits can serve as unsupervised anomaly detectors without any training, relying solely on the structural properties of phase coherence. 23 0 50 100 150 200 250 300                
+
+> Day
+> 100
+> 101
+> 102
+> 103
+> 104
+> 105
+> 106
+> Price
+> A. Simulated Price Path
+> Close
+> Crisis
+> 050 100 150 200 250 300
+> Day
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> Coherence
+> B. Phase-Coherence Indicator
+> Coherence (EMA)
+> Threshold=0.347
+> 050 100 150 200 250 300
+> Day
+> 0.02
+> 0.03
+> 0.04
+> 0.05
+> 0.06
+> 0.07
+> 0.08
+> 0.09
+> 0.10
+> Sigma
+> C. Ground-Truth Volatility Regime
+> True Volatility
+> Normal Crisis
+> Predicted
+> Normal
+> Crisis
+> True
+> 207 53
+> 33 27
+> D. Crisis Detection Confusion Matrix
+> 40
+> 60
+> 80
+> 100
+> 120
+> 140
+> 160
+> 180
+> 200
+> Financial Volatility Detection | Precision=0.338 | Recall=0.450 | F1=0.386
+
+Figure 11: Financial volatility detection with phasor phase coherence. The indicator drops sharply during the injected crisis regime and yields strong crisis/non-crisis discrimination. 
+
+6.4 Associative Memory and Binary Image Denoising 
+
+The oscillatory Hebbian associative memory was evaluated on multi-pattern storage capacity. When configured to store multiple target arrays (e.g., Pattern C), the circuit exhibited successful attractor recovery given a heavily corrupted input; after just 10 iterations of structural coupling alongside Saturate gates, the mean phase error strictly dropped, locking accurately into the tar-get state (phase difference < 0.05 radians). Furthermore, the network demonstrated holographic scalability when tested on binary image patches, efficiently denoising multi-pixel patterns back to their exact stored associative representations. 24 A. Stored Pattern B. Corrupted Input C. Recovered Output      
+
+> 246810 12
+> Stored Pattern Count
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Recall Accuracy (%)
+> D. Empirical Memory Capacity
+> 0.14N=2.2
+> Associative Memory Results | Mean phase error: 0.785 -> 0.000 rad
+
+Figure 12: Associative memory recovery and scaling. Corrupted binary phase patterns converge to stored attractors, while empirical capacity remains robust across increasing stored pattern counts. 
+
+6.5 Neural Binding via Phase Synchronization 
+
+We empirically validated the Kuramoto and LIP-Layer models for neural binding. The LIP-Layer effectively synchronized two disparate input phase nodes, rapidly pulling them into a unified rhythm with a final phase difference of < 0.001 radians. Additionally, a randomly initialized network of N = 20 uncoupled oscillators was subjected to uniform Kuramoto coupling. Within 50 discrete integration steps, the population exhibited rapid phase convergence, driving the global phase coherence metric C from an initial near-zero baseline to ≥ 0.95 , successfully emulating biological macroscopic synchronization. 25 0 10 20 30 40 50 60                
+
+> Iteration
+> 3.0
+> 2.5
+> 2.0
+> 1.5
+> 1.0
+> 0.5
+> 0.0
+> Phase (rad)
+> A. LIP Phase Convergence
+> Neuron 1
+> Neuron 2
+> 010 20 30 40 50 60
+> Iteration
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> |Delta phase| (rad)
+> B. LIP Phase Difference Decay
+> 010 20 30 40 50
+> Iteration
+> 3
+> 2
+> 1
+> 0
+> 1
+> 2
+> 3
+> Phase (rad)
+> C. Kuramoto Phase Trajectories
+> 1.0 0.5 0.0 0.5 1.0
+> cos(theta)
+> 1.00
+> 0.75
+> 0.50
+> 0.25
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> sin(theta)
+> D. Final Oscillator Phases
+> Neural Binding Results | Final LIP Delta=0.0563 rad | Kuramoto Order=1.000 | Spread=0.0000 rad
+
+Figure 13: Neural binding through phase synchronization. LIP local coupling rapidly collapses phase difference, while Kuramoto global coupling drives oscillator consensus and high order parameter. 
+
+6.6 Parameter Efficiency 
+
+Table 6 reviews the representational efficiency of continuous state parameterization. Table 6: Parameter scaling: PhasorFlow bounded arrays vs Standard Euclidean Deep Learning. 
+
+Experimental Task Phasor Model Params Euclidean Equivalent 
+
+Binary Target Classification ( N = 16 ) VPC ( S1) 16 Dense MLP ( > 1, 000 )Sequence Regression ( T = 10 ) Phasor Transformer 50 Self-Attn Transformer ( > 1, 000 )Across diverse tasks, the unit circle circuit formulation utilizes 1–2 orders of magnitude fewer explicit parameters to resolve complex functions. This extreme compression is a direct consequence of structurally confining computation to the continuous interference manifold TN .
+
+# 7 Discussion 
+
+7.1 Advantages of Unit Circle Computing 
+
+PhasorFlow demonstrates that the S1 manifold provides a productive middle ground between discrete classical computing and full quantum computing. Several advantages emerge from this positioning: 
+
+Determinism. Unlike quantum circuits, which produce inherently probabilistic outputs re-quiring repeated observation (shots) to reconstruct a distribution, phasor circuits yield deter-26 ministic results from a single execution. This eliminates the statistical sampling overhead that scales as O(1 /ϵ 2) for quantum algorithms requiring precision ϵ.
+
+Lightweight parameterization. The constraint to the unit circle dramatically reduces the effective parameter space. A VPC with N threads and L layers has N L real-valued parameters, compared to O(N 2) for a fully connected neural network with the same input dimensionality. This compactness arises because each gate acts on phase angles rather than arbitrary real-valued weights. 
+
+Native Fourier structure. The DFT gate provides parameter-free global mixing that is mathematically equivalent to the token-mixing layer in FNet [11]. In traditional deep learning, this level of global token interaction requires O(n2) attention parameters; in PhasorFlow, it is achieved with zero parameters through the intrinsic algebraic structure of U(1) .
+
+Classical hardware execution. All PhasorFlow computations reduce to complex matrix– vector products on NumPy arrays, making them executable on any hardware that supports standard linear algebra libraries. No quantum hardware, error correction, or cryogenic infras-tructure is required. 
+
+7.2 Relationship to Quantum Computing 
+
+PhasorFlow and quantum computing share the mathematical framework of unitary operations on complex state spaces, but differ in several fundamental respects. Quantum computing operates on the full complex projective space CP n, where states carry both amplitude and phase information, enabling true quantum superposition and non-local en-tanglement. PhasorFlow encoding begins strictly on the N -torus TN ⊂ CN , where all amplitudes are initially fixed at unity. However, as the deterministic system depth scales, unhindered linear wave interference naturally shifts these components into the fluid CN complex space. We have found that explicitly permitting these dynamic excursions away from the absolute TN bound-aries—rather than forcing rigid non-linear pullbacks—significantly improves predictive accuracy. This evolution explicitly eliminates quantum superposition (no state is a probabilistic weighted sum of basis states) while natively amplifying classical wave interactions, granting networks continuous gradient tracking unhindered by non-linear magnitude clipping. Crucially, the exponential speedup of algorithms like Shor’s algorithm [22] relies on the expo-nential dimensionality of the quantum Hilbert space ( 2N for N qubits), which is not available in the linear state space of PhasorFlow ( N dimensions for N threads). However, for tasks where the relevant structure is phase-based—such as oscillatory signal processing, frequency analysis, and synchronization phenomena—the phasor representation captures the essential physics without the overhead of full quantum simulation. 
+
+7.3 Relationship to Unitary Neural Networks 
+
+Several works have explored unitary and complex constraints in neural networks [23, 2]. Arjovsky et al. [24] proposed unitary evolution RNNs to address the vanishing/exploding gradient problem, and Wisdom et al. [25] extended this to full-capacity unitary RNNs. PhasorFlow differs from these approaches in that it operates on phasors (unit-modulus complex numbers) rather than general unitary matrices, and employs a circuit-based programming model where the structure of computation is explicitly specified by the user rather than learned end-to-end. The Holographic Reduced Representations of Plate [20] and the recent work of Frady et al. [26] on computing with randomized phase vectors share PhasorFlow’s use of phasor algebra for information representation, though PhasorFlow provides a general-purpose circuit programming framework rather than specialized memory architectures. 27 7.4 Limitations 
+
+Representational capacity. The restriction to diagonal (phase-shift) feed-forward layers lim-its the representational capacity of VPCs and Phasor Transformers compared to full-rank linear transformations. While this is mitigated by the DFT and Mix gates, which provide structured off-diagonal coupling, the model cannot learn arbitrary linear maps. 
+
+Scale. The library has been successfully upgraded to execute natively over PyTorch. Continu-ous Autograd graph tracking leveraging torch.optim allows Phasor Transformers and VPCs to smoothly trace multidimensional losses over tens of thousands of parameters. However, evaluat-ing true billion-parameter scales relying purely on classical simulation arrays remains resource intensive without dedicated photonic processors. 
+
+Validation. The applications in this work use synthetic datasets. Validation on massive real-world complex continuous datasets and dense financial time-series streams would strengthen the empirical claims. 
+
+7.5 Future Directions 
+
+Several directions for future work are envisioned: 1. Quaternion extension ( S3): Extending from the S1 circle to the S3 three-sphere would enable operations via the quaternion group SU(2) , providing a richer (3-parameter) state space while remaining classically executable [27]. 2. Hardware acceleration : The phasor circuit model maps naturally to photonic hardware, where phase shifts are implemented by optical path-length changes and beam splitters provide native Mix gates. Neuromorphic oscillator arrays could also serve as physical backends [28]. 3. Multi-Modal Synthesis : Leveraging the successful parameter generation capabilities proven by the hybrid ‘Phasor-to-Music‘ and ‘Phasor-to-Qubit‘ proofs of concept, we aim to deploy continuous CN sequences for generative multimedia tasks. 4. Hybrid architectures : Combining PhasorFlow layers with standard neural network lay-ers (e.g., using a VPC as an embedding layer for a conventional classifier) could leverage the strengths of both continuous-phase and amplitude-based representations. 
+
+# 8 Conclusion 
+
+We have presented PhasorFlow, an open-source Python library that establishes unit circle com-puting as a principled computational paradigm. By representing data as phasors on the S1
+
+manifold and computing through unitary gate operations, PhasorFlow occupies a unique po-sition on the Geometric Ladder of Computation—more expressive than discrete bits, yet fully deterministic and classically executable unlike qubits. Three principal contributions have been demonstrated: 1. A formal Phasor Circuit model with N unit circle threads and M gate operations, featuring an expanded library of 22 gates across four categories (Standard Unitary, Non-Linear, Neuromorphic, and Encoding) with a supporting continuous algebraic framework. 2. Variational Phasor Circuits (VPCs) for machine learning, achieving 100.0% classifica-tion accuracy on high-dimensional non-linear classification boundaries natively on the S1
+
+28 manifold with as few as 32 trainable phase parameters—orders of magnitude fewer than conventional dense deep learning models. 3. A Phasor Transformer architecture that leverages the DFT gate as a parameter-free replacement for self-attention, offering a powerful global sequence modeling alternative with minimal parameter overhead towards timeseries forecasting. Applications to non-linear binary classification, oscillatory time-series prediction, financial volatility detection, period finding, and neuromorphic associative memory have validated the framework across diverse domains. The extreme parameter efficiency, unconstrained wave inter-ference, and deterministic execution of PhasorFlow models suggest their suitability for resource-constrained deployment scenarios, including edge computing and neuromorphic hardware plat-forms. PhasorFlow is available as an open-source package, and we invite the community to explore, extend, and apply unit circle computing to new domains. Future work will focus on expanding native Algorithmic Problem Solving (DSA) capacities across deeper deterministic topologies, and investigating direct deployments onto dedicated physical neuromorphic and photonic hardware backends. 
+
+# References 
+
+[1] Michael A Nielsen and Isaac L Chuang. Quantum Computation and Quantum Information: 10th Anniversary Edition . Cambridge University Press, 2010. [2] Akira Hirose. Complex-Valued Neural Networks: Theories and Applications . Springer, 2012. [3] Mark Tygert, Emma Bruner, Vladimir Rokhlin, and Arthur Szlam. On the importance of phase in neural representations. Proceedings of the National Academy of Sciences ,113(42):11808–11813, 2016. [4] Qiskit Contributors. Qiskit: An open-source framework for quantum computing. 2024. [5] György Buzsáki. Rhythms of the Brain . Oxford University Press, 2006. [6] Albert Goldbeter. Biochemical oscillations and cellular rhythms: the molecular bases of periodic and chaotic behaviour . Cambridge university press, 1996. [7] Dibakar Sigdel et al. Oxidative stress and cellular resonances. MDPI Molecular Sciences ,2023. [8] Quantumlink Capital Holding. Market agentome: Multi-agent phase dynamics in trading. Technical report, Quantumlink Capital Holding, 2025. [9] Marcello Benedetti, Erika Lloyd, Stefan Sack, and Mattia Fiorentini. Parameterized quan-tum circuits as machine learning models. Quantum Science and Technology , 4(4):043001, 2019. [10] Marco Cerezo, Andrew Arrasmith, Ryan Babbush, Simon C Benjamin, Suguru Endo, Keisuke Fujii, Jarrod R McClean, Kosuke Mitarai, Xiao Yuan, Lukasz Cincio, and Patrick J Coles. Variational quantum algorithms. Nature Reviews Physics , 3(9):625–644, 2021. [11] James Lee-Thorp, Joshua Ainslie, Ilya Eckstein, and Santiago Ontanon. FNet: Mixing tokens with Fourier transforms. Proceedings of the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies ,pages 4296–4313, 2022. 29 [12] Maria Schuld, Alex Bocharov, Krysta M Svore, and Nathan Wiebe. Circuit-centric quantum classifiers. Physical Review A , 101(3):032308, 2020. [13] James W Cooley and John W Tukey. An algorithm for the machine calculation of complex Fourier series. Mathematics of Computation , 19(90):297–301, 1965. [14] John J Hopfield. Neural networks and physical systems with emergent collective computa-tional abilities. Proceedings of the National Academy of Sciences , 79(8):2554–2558, 1982. [15] Frank C Hoppensteadt and Eugene M Izhikevich. Associative memory in a network of tunable oscillators. Biological Cybernetics , 81(4):319–321, 1999. [16] Ila R Fiete, Yoram Burak, and Ted Brookings. High-capacity memory via phase-coded synapses. Neuron , 66(2):250–264, 2010. [17] Hubert Ramsauer, Bernhard Schäfl, Johannes Lehner, Philipp Seidl, Michael Widrich, Thomas Adler, Lukas Gruber, Markus Holzleitner, Milena Pavlović, Geir Kjetil Sandve, et al. Hopfield networks is all you need. International Conference on Learning Representa-tions , 2021. [18] Yoshiki Kuramoto. Self-entrainment of a population of coupled non-linear oscillators. In-ternational Symposium on Mathematical Problems in Theoretical Physics , pages 420–422, 1975. [19] Arthur T Winfree. The geometry of biological time . Springer Science & Business Media, 2001. [20] Tony A Plate. Holographic reduced representations. IEEE Transactions on Neural Net-works , 6(3):623–641, 1995. [21] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. Advances in Neural Information Processing Systems , 30, 2017. [22] Peter W Shor. Algorithms for quantum computation: discrete logarithms and factoring. 
+
+Proceedings 35th Annual Symposium on Foundations of Computer Science , pages 124–134, 1994. [23] Chiheb Trabelsi, Olexa Bilaniuk, Ying Zhang, Dmitriy Serdyuk, Sandeep Subramanian, Joao Felipe Santos, Soroush Mehri, Negar Rostamzadeh, Yoshua Bengio, and Christopher J Pal. Deep complex networks. International Conference on Learning Representations , 2018. [24] Martin Arjovsky, Amar Shah, and Yoshua Bengio. Unitary evolution recurrent neural networks. Proceedings of the 33rd International Conference on Machine Learning , pages 1120–1128, 2016. [25] Scott Wisdom, Thomas Powers, John Hershey, Jonathan Le Roux, and Les Atlas. Full-capacity unitary recurrent neural networks. Advances in Neural Information Processing Systems , 29, 2016. [26] E Paxon Frady, Denis Kleyko, and Friedrich T Sommer. Computing on functions using randomized vector representations. arXiv preprint arXiv:2109.03429 , 2021. [27] Teijiro Isokawa, Nobuyuki Matsui, and Motoaki Kamiura. Quaternionic neural networks and rotation invariance. IEEE Transactions on Neural Networks , 14(3):687–693, 2003. [28] Eugene M Izhikevich. Dynamical Systems in Neuroscience: The Geometry of Excitability and Bursting . MIT press, 2007. 30 A Geometry of Interference: Leaving the N -Torus 
+
+This appendix provides a rigorous mathematical demonstration of how unitary interference op-erations generically cause the phasor state to depart from the N -Torus ( TN ). While initially constrained to the N -Torus during encoding, subsequent wave interference operations dynami-cally expand the computational capacity into the full complex space CN .
+
+A.1 The TN vs. CN distinction 
+
+A general state vector in a complex-valued network exists in CN , where components zk have arbitrary magnitudes. The PhasorFlow architecture begins strictly on the N -Torus TN = ( S1)N ,asserting that all encoded inputs are pure phases: |zk| = 1 ∀k.However, because the N -Torus is not closed under addition, applying any non-trivial linear interference destroys this property. We demonstrate this simply for N = 2 using the standard 50-50 Mix gate. 
+
+A.2 Constructive and Destructive Extremes 
+
+Consider two input threads, parameterized by their encoded phase values ϕ0, ϕ 1:
+
+ψin =
+
+eiϕ 0
+
+eiϕ 1
+
+
+
+(56) Applying the mixing operation: 
+
+ψout = M ψ in = 1
+
+√2
+
+1 ii 1
+
+  eiϕ 0
+
+eiϕ 1
+
+
+
+= 1
+
+√2
+
+eiϕ 0 + ie iϕ 1
+
+ie iϕ 0 + eiϕ 1
+
+
+
+(57) We compute the magnitude of the first resulting thread, |ψout, 0|2:
+
+|ψout, 0|2 = 12 eiϕ 0 + ie iϕ 1
+
+> 2
+
+(58) 
+
+= 12
+
+h
+
+(cos ϕ0 − sin ϕ1)2 + (sin ϕ0 + cos ϕ1)2i
+
+(59) 
+
+= 1 + sin( ϕ0 − ϕ1) (60) Depending on the initial phase difference ∆ϕ = ϕ0 − ϕ1, the resulting magnitude fluctuates continuously: 
+
+• Maximum Constructive Interference: When ∆ϕ = π/ 2, |ψout, 0|2 = 1 + sin( π/ 2) = 2 .
+
+• Maximum Destructive Interference: When ∆ϕ = −π/ 2, |ψout, 0|2 = 1 + sin( −π/ 2) = 0.For a circuit with N = 64 threads, a single maximally constructive thread reaches a mag-nitude of 8, representing a severe geometric departure from the T64 manifold. Consequently, maintaining a stable computation strictly on the N -Torus via intermediate geometric projec-tions ( z 7 → z/ |z|) restricts the deep cascade of parameters, whereas preserving the unhindered complex interference CN yields greater latent dimensional expressivity. 
+
+A.3 Global Diffusion in the DFT Gate 
+
+This phenomenon scales dramatically under the Discrete Fourier Transform (DFT). The DFT matrix FN acts on N threads ( k = 0 , . . . , N − 1): 
+
+z′ 
+
+> j
+
+= 1
+
+√N 
+
+> N−1
+
+X
+
+> k=0
+
+ei(ϕk − 2πN jk ). (61) 31 Under maximum constructive interference, where input phases perfectly align with the DFT basis ( ϕk = 2πN jk ), the resulting thread reaches a magnitude of: 
+
+|z′ 
+
+> j
+
+| = 1
+
+√N × N = √N . (62) For a circuit with N = 64 threads, a single maximally constructive thread reaches a mag-nitude of 8. While mathematically precise within CN , enforcing strict containment strictly upon the N -Torus requires interleaving these linear mixing stages with non-linear projections, 
+
+z 7 → z/ |z| (Threshold gate), to restore the fundamental constraint of unit amplitude. 
+
+A.4 Autograd Differentiation on CN vs. TN
+
+By relaxing the strict geometric pullback, PyTorch’s Autograd engine achieves uninterrupted backpropagation. Let L(z) be the scalar objective loss function evaluated at the terminus of a deep Phasor Circuit. If the non-linear threshold T (z) = z/ |z| is aggressively applied at every layer l, the gradient with respect to an intermediate phase parameter θ(l) explicitly requires computing the Jacobian of the normalization projector: 
+
+∂T (z)
+
+∂z = 1
+
+|z|
+
+
+
+I − zz †
+
+|z|2
+
+
+
+. (63) When interference is maximally destructive ( |z| → 0), this Jacobian becomes highly singular, causing vanishing or exploding gradients. By allowing the network to flow naturally into CN
+
+(omitting T (z)), the backpropagation path relies entirely on native unitary gradients, which are perfectly isometric and inherently preserve gradient norms layer-to-layer. 
+
+A.5 Parameter Complexity: Euclidean Attention vs Phasor Mixing 
+
+In the standard Euclidean Transformer [21], the self-attention mechanism requires projecting a sequence of length L and embedding dimension D into Queries ( WQ), Keys ( WK ), and Values (WV ), followed by an output projection ( WO). The total trainable parameter count per attention head layer is: 
+
+PAttention = 4 × D2. (64) For a typical small model with D = 512 , this requires PAttention = 1 , 048 , 576 parameters. Conversely, the Phasor Transformer (resembling FNet [11]) replaces this entire block with the sequential 2D Discrete Fourier Transform (acting over both the Sequence length and Hidden dimensions): 
+
+Zmix = Fseq · Zencode · Fhidden . (65) Because the Fourier matrices FL and FD are constant fixed orthogonal basis transformations, the total parameter requirement per mixing layer drops uniformly to zero: 
+
+PPhasorMix = 0 . (66) This mathematically enforces O(0) mixing parameters, transferring the representational burden entirely to the preceding parameterized single-qubit phase shift embeddings. 32

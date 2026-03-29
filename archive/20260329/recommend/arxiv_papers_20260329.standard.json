@@ -1,0 +1,917 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-03-29T19:53:00.098998+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 2,
+    "deep_divecandidates": 106,
+    "deep_cap": 7,
+    "deep_selected": 11,
+    "quick_candidates": 149,
+    "quick_skim_target": 12,
+    "quick_selected": 12
+  },
+  "deep_dive": [
+    {
+      "id": "2603.21606v1",
+      "title": "mSFT: Addressing Dataset Mixtures Overfiting Heterogeneously in Multi-task SFT",
+      "abstract": "Current language model training commonly applies multi-task Supervised Fine-Tuning (SFT) using a homogeneous compute budget across all sub-datasets. This approach is fundamentally sub-optimal: heterogeneous learning dynamics cause faster-learning tasks to overfit early while slower ones remain under-fitted. To address this, we introduce mSFT, an iterative, overfitting-aware search algorithm for multi-task data mixtures. mSFT trains the model on an active mixture, identifies and excludes the earliest overfitting sub-dataset, and reverts to that specific optimal checkpoint before continuing. Extensive evaluations demonstrate that mSFT consistently outperforms 4 baselines across 10 benchmarks and 6 base models. Further analysis confirms mSFT maintains robust gains across diverse dataset sizes, task granularities, and is insensitive to its single new hyperparameter (compute budget). Notably, at low compute budget, mSFT can improve performance while lowering training FLOPs. Ultimately, mSFT establishes a practical overfitting-aware algorithm for multi-task SFT that maximizes the potential of models across diverse data mixtures.",
+      "authors": [
+        "Woosung Koh",
+        "Jeyoung Jeon",
+        "Youngjin Song",
+        "Yujin Cheon",
+        "Soowon Oh",
+        "Jaehyeong Choi",
+        "Se-Young Yun"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-03-23T06:01:51+00:00",
+      "link": "https://arxiv.org/pdf/2603.21606v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Multi-task Supervised Fine-Tuning algorithm for language models",
+      "llm_evidence_cn": "语言模型的多任务监督微调算法",
+      "llm_evidence": "语言模型的多任务监督微调算法",
+      "canonical_evidence": "语言模型的多任务监督微调算法",
+      "llm_tldr_en": "mSFT is an iterative algorithm that optimizes data mixtures to prevent overfitting in multi-task SFT.",
+      "llm_tldr_cn": "mSFT是一种迭代算法，通过优化数据混合比例来防止多任务监督微调中的过拟合。",
+      "llm_tldr": "mSFT是一种迭代算法，通过优化数据混合比例来防止多任务监督微调中的过拟合。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Supervised fine-tuning and instruction tuning methods",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.20939v1",
+      "title": "User Preference Modeling for Conversational LLM Agents: Weak Rewards from Retrieval-Augmented Interaction",
+      "abstract": "Large language models are increasingly used as personal assistants, yet most lack a persistent user model, forcing users to repeatedly restate preferences across sessions. We propose Vector-Adapted Retrieval Scoring (VARS), a pipeline-agnostic, frozen-backbone framework that represents each user with long-term and short-term vectors in a shared preference space and uses these vectors to bias retrieval scoring over structured preference memory. The vectors are updated online from weak scalar rewards from users' feedback, enabling personalization without per-user fine-tuning. We evaluate on \\textsc{MultiSessionCollab}, an online multi-session collaboration benchmark with rich user preference profiles, across math and code tasks. Under frozen backbones, the main benefit of user-aware retrieval is improved interaction efficiency rather than large gains in raw task accuracy: our full VARS agent achieves the strongest overall performance, matches a strong Reflection baseline in task success, and reduces timeout rate and user effort. The learned long-term vectors also align with cross-user preference overlap, while short-term vectors capture session-specific adaptation, supporting the interpretability of the dual-vector design. Code, model, and data are available at https://github.com/YurenHao0426/VARS.",
+      "authors": [
+        "Yuren Hao",
+        "Shuhaib Mehri",
+        "ChengXiang Zhai",
+        "Dilek Hakkani-Tür"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.HC",
+        "cs.IR",
+        "stat.ML"
+      ],
+      "published": "2026-03-21T20:44:32+00:00",
+      "link": "https://arxiv.org/pdf/2603.20939v1",
+      "tags": [
+        "keyword:AI LLM",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "User preference modeling for conversational LLM agents",
+      "llm_evidence_cn": "对话式大语言模型智能体的用户偏好建模",
+      "llm_evidence": "对话式大语言模型智能体的用户偏好建模",
+      "canonical_evidence": "对话式大语言模型智能体的用户偏好建模",
+      "llm_tldr_en": "Develops a framework for personalizing LLM agents using retrieval-augmented interaction and weak rewards.",
+      "llm_tldr_cn": "开发了一个利用检索增强交互和弱奖励来实现大模型智能体个性化的框架。",
+      "llm_tldr": "开发了一个利用检索增强交互和弱奖励来实现大模型智能体个性化的框架。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.21584v1",
+      "title": "SSAM: Singular Subspace Alignment for Merging Multimodal Large Language Models",
+      "abstract": "Multimodal large language models (MLLMs) achieve strong performance by jointly processing inputs from multiple modalities, such as vision, audio, and language. However, building such models or extending them to new modalities often requires large paired datasets and substantial computational resources. Since many pretrained MLLMs (e.g., vision-language or audio-language) are publicly available, we ask whether we can merge them into a single MLLM that can handle multiple modalities? Merging MLLMs with different input modalities remains challenging, partly because of differences in the learned representations and interference between their parameter spaces. To address these challenges, we propose Singular Subspace Alignment and Merging (SSAM), a training-free model merging framework that unifies independently trained specialist MLLMs into a single model capable of handling any combination of input modalities. SSAM maintains modality-specific parameter updates separately and identifies a shared low-rank subspace for language-related parameter updates, aligns them within this subspace, and merges them to preserve complementary knowledge while minimizing parameter interference. Without using any multimodal training data, SSAM achieves state-of-the-art performance across four datasets, surpassing prior training-free merging methods and even jointly trained multimodal models. These results demonstrate that aligning models in parameter space provides a scalable and resource-efficient alternative to conventional joint multimodal training.",
+      "authors": [
+        "Md Kaykobad Reza",
+        "Ameya Patil",
+        "Edward Ayrapetian",
+        "M. Salman Asif"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CV"
+      ],
+      "published": "2026-03-23T05:24:52+00:00",
+      "link": "https://arxiv.org/pdf/2603.21584v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "merging multimodal large language models",
+      "llm_evidence_cn": "多模态大语言模型合并",
+      "llm_evidence": "多模态大语言模型合并",
+      "canonical_evidence": "多模态大语言模型合并",
+      "llm_tldr_en": "Introduces SSAM to merge different multimodal LLMs into a single model without large paired datasets.",
+      "llm_tldr_cn": "提出SSAM方法，无需大规模配对数据即可将不同模态的LLM合并为统一模型。",
+      "llm_tldr": "提出SSAM方法，无需大规模配对数据即可将不同模态的LLM合并为统一模型。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.22017v1",
+      "title": "AdditiveLLM2: A Multi-modal Large Language Model for Additive Manufacturing",
+      "abstract": "This work presents AdditiveLLM2 a multi-modal, domain adapted large language model built upon the instruction tuned variant of the Gemma 3 model using a relatively small dataset of around 50 million tokens. The dataset (AdditiveLLM2-OA) consists of open-access additive manufacturing journal articles with data extracted for the domain adaptive pretraining and visual instruction tuning processes. Various stages of the developed model are evaluated with the Additive-Manufacturing-Benchmark which consists of additive manufacturing domain specific tasks compiled published resources. AdditiveLLM2 exhibits proficiency in both language and vision based tasks, achieving accuracies upwards of 90% in general additive manufacturing knowledge. This domain adaptive pretraining and instruction tuning strategy outline an accessible specialization method for large language models to a domain such as additive manufacturing.",
+      "authors": [
+        "Peter Pak",
+        "Amir Barati Farimani"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-03-23T14:28:10+00:00",
+      "link": "https://arxiv.org/pdf/2603.22017v1",
+      "tags": [
+        "keyword:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Instruction tuned variant of Gemma 3 for domain adaptation",
+      "llm_evidence_cn": "用于领域自适应的Gemma 3指令微调变体",
+      "llm_evidence": "用于领域自适应的Gemma 3指令微调变体",
+      "canonical_evidence": "用于领域自适应的Gemma 3指令微调变体",
+      "llm_tldr_en": "Develops a multi-modal LLM for additive manufacturing using domain-specific instruction tuning.",
+      "llm_tldr_cn": "利用领域特定指令微调开发了用于增材制造的多模态大语言模型。",
+      "llm_tldr": "利用领域特定指令微调开发了用于增材制造的多模态大语言模型。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Supervised fine-tuning and instruction tuning methods",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.22186v1",
+      "title": "Enhancing Document-Level Machine Translation via Filtered Synthetic Corpora and Two-Stage LLM Adaptation",
+      "abstract": "In Machine Translation, Large Language Models (LLMs) have generally underperformed compared to conventional encoder-decoder systems and thus see limited adoption. However, LLMs excel at modeling contextual information, making them a natural fit for document-level translation tasks where coherence across sentences is crucial. Despite this potential, document-level MT with LLMs faces two key challenges: (1) the scarcity of large-scale, high-quality document-level parallel data; and (2) the propensity of LLMs to introduce hallucinations and omissions during generation. To address these challenges, we propose a two-stage fine-tuning strategy leveraging LLM-augmented document-level data. First, we augment data by converting summarization data into document-level parallel data using a LLM, and then filter it using multiple metrics, leveraging sacreBLEU, COMET, and LaBSE-based cosine similarity-to improve data quality. Finally, we employ a two-stage fine-tuning strategy: first fine-tuning on the abundant sentence-level MT resources, and then on the filtered document-level corpus.",
+      "authors": [
+        "Ireh Kim",
+        "Tesia Sker",
+        "Chanwoo Kim"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "published": "2026-03-23T16:48:22+00:00",
+      "link": "https://arxiv.org/pdf/2603.22186v1",
+      "tags": [
+        "keyword:AI LLM",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Two-stage LLM adaptation and fine-tuning for document-level translation",
+      "llm_evidence_cn": "针对文档级翻译的两阶段大语言模型适配与微调",
+      "llm_evidence": "针对文档级翻译的两阶段大语言模型适配与微调",
+      "canonical_evidence": "针对文档级翻译的两阶段大语言模型适配与微调",
+      "llm_tldr_en": "Enhances document-level machine translation using synthetic corpora and a two-stage LLM fine-tuning strategy.",
+      "llm_tldr_cn": "通过合成语料库和两阶段大模型微调策略增强文档级机器翻译。",
+      "llm_tldr": "通过合成语料库和两阶段大模型微调策略增强文档级机器翻译。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Supervised fine-tuning and instruction tuning methods",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.22910v1",
+      "title": "EchoKV: Efficient KV Cache Compression via Similarity-Based Reconstruction",
+      "abstract": "The increasing memory demand of the Key-Value (KV) cache poses a significant bottleneck for Large Language Models (LLMs) in long-context applications. Existing low-rank compression methods often rely on irreversible parameter transformations, sacrificing the flexibility to switch back to full-precision inference when memory is abundant. In this paper, we propose EchoKV, a flexible KV cache compression scheme that enables on-demand transitions between standard and compressed inference. Unlike traditional compression-decompression paradigms, EchoKV utilizes a lightweight network to reconstruct the residual KV components from a partial subset, leveraging intrinsic inter-layer and intra-layer similarities among attention heads. We further introduce a two-stage fine-tuning strategy that allows for rapid, low-cost training (e.g., ~1 A100 GPU-hour for a 7B model). Experimental results on LongBench and RULER demonstrate that EchoKV consistently outperforms existing methods across various compression ratios while maintaining high throughput for short-context scenarios.",
+      "authors": [
+        "Yixuan Wang",
+        "Shiyu Ji",
+        "Yijun Liu",
+        "Qingfu Zhu",
+        "Wanxiang Che"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-03-24T07:58:42+00:00",
+      "link": "https://arxiv.org/pdf/2603.22910v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "KV cache compression for large language models",
+      "llm_evidence_cn": "大语言模型的 KV 缓存压缩",
+      "llm_evidence": "大语言模型的 KV 缓存压缩",
+      "canonical_evidence": "大语言模型的 KV 缓存压缩",
+      "llm_tldr_en": "Introduces EchoKV for efficient and flexible KV cache compression via similarity-based reconstruction.",
+      "llm_tldr_cn": "提出 EchoKV，通过基于相似性的重构实现高效且灵活的大模型 KV 缓存压缩。",
+      "llm_tldr": "提出 EchoKV，通过基于相似性的重构实现高效且灵活的大模型 KV 缓存压缩。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Large Language Model architectures and methodologies",
+      "matched_requirement_id": "req-8",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.23231v1",
+      "title": "PERMA: Benchmarking Personalized Memory Agents via Event-Driven Preference and Realistic Task Environments",
+      "abstract": "Empowering large language models with long-term memory is crucial for building agents that adapt to users' evolving needs. However, prior evaluations typically interleave preference-related dialogues with irrelevant conversations, reducing the task to needle-in-a-haystack retrieval while ignoring relationships between events that drive the evolution of user preferences. Such settings overlook a fundamental characteristic of real-world personalization: preferences emerge gradually and accumulate across interactions within noisy contexts. To bridge this gap, we introduce PERMA, a benchmark designed to evaluate persona consistency over time beyond static preference recall. Additionally, we incorporate (1) text variability and (2) linguistic alignment to simulate erratic user inputs and individual idiolects in real-world data. PERMA consists of temporally ordered interaction events spanning multiple sessions and domains, with preference-related queries inserted over time. We design both multiple-choice and interactive tasks to probe the model's understanding of persona along the interaction timeline. Experiments demonstrate that by linking related interactions, advanced memory systems can extract more precise preferences and reduce token consumption, outperforming traditional semantic retrieval of raw dialogues. Nevertheless, they still struggle to maintain a coherent persona across temporal depth and cross-domain interference, highlighting the need for more robust personalized memory management in agents. Our code and data are open-sourced at https://github.com/PolarisLiu1/PERMA.",
+      "authors": [
+        "Shuochen Liu",
+        "Junyi Zhu",
+        "Long Shu",
+        "Junda Lin",
+        "Yuhao Chen",
+        "Haotian Zhang",
+        "Chao Zhang",
+        "Derong Xu",
+        "Jia Li",
+        "Bo Tang",
+        "Zhiyu Li",
+        "Feiyu Xiong",
+        "Enhong Chen",
+        "Tong Xu"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-03-24T14:04:11+00:00",
+      "link": "https://arxiv.org/pdf/2603.23231v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Benchmarking long-term memory and personalization in LLMs",
+      "llm_evidence_cn": "大语言模型长期记忆与个性化的基准测试",
+      "llm_evidence": "大语言模型长期记忆与个性化的基准测试",
+      "canonical_evidence": "大语言模型长期记忆与个性化的基准测试",
+      "llm_tldr_en": "Introduces PERMA to evaluate how LLM agents adapt to evolving user preferences over time.",
+      "llm_tldr_cn": "引入PERMA基准，评估大语言模型智能体如何随时间适应不断演变的用户偏好。",
+      "llm_tldr": "引入PERMA基准，评估大语言模型智能体如何随时间适应不断演变的用户偏好。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.24941v1",
+      "title": "Beyond Attention Magnitude: Leveraging Inter-layer Rank Consistency for Efficient Vision-Language-Action Models",
+      "abstract": "Vision-Language-Action (VLA) models excel in robotic manipulation but suffer from significant inference latency due to processing dense visual tokens. Existing token reduction methods predominantly rely on attention magnitude as a static selection. In this work, we challenge this assumption, revealing that high-attention tokens are task-dependent and can even degrade policy performance. To address this, we introduce \\textbf{TIES} (\\textbf{T}au-guided \\textbf{I}nter-layer \\textbf{E}fficient \\textbf{S}election), a dynamic framework guided by inter-layer token ranking consistency. By adaptively balancing attention magnitude with ranking consistency, TIES ensures robust token selection without requiring additional training. On the CogACT + SIMPLER benchmark, TIES improves average success rates by 6\\% while reducing token usage by 78\\%, and demonstrate strong generalization across diverse decoders and benchmarks.",
+      "authors": [
+        "Peiju Liu",
+        "Jinming Liu",
+        "Xipeng Qiu",
+        "Xuanjing Huang"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.CL"
+      ],
+      "published": "2026-03-26T02:13:03+00:00",
+      "link": "https://arxiv.org/pdf/2603.24941v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "attention mechanisms and vision-language-action models",
+      "llm_evidence_cn": "注意力机制与视觉-语言-动作模型",
+      "llm_evidence": "注意力机制与视觉-语言-动作模型",
+      "canonical_evidence": "注意力机制与视觉-语言-动作模型",
+      "llm_tldr_en": "Proposes TIES for efficient token selection in VLA models by leveraging inter-layer rank consistency.",
+      "llm_tldr_cn": "提出TIES框架，利用层间排名一致性实现VLA模型的高效令牌选择。",
+      "llm_tldr": "提出TIES框架，利用层间排名一致性实现VLA模型的高效令牌选择。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Transformer based models and attention mechanisms",
+      "matched_requirement_id": "req-9",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.25181v1",
+      "title": "VolDiT: Controllable Volumetric Medical Image Synthesis with Diffusion Transformers",
+      "abstract": "Diffusion models have become a leading approach for high-fidelity medical image synthesis. However, most existing methods for 3D medical image generation rely on convolutional U-Net backbones within latent diffusion frameworks. While effective, these architectures impose strong locality biases and limited receptive fields, which may constrain scalability, global context integration, and flexible conditioning. In this work, we introduce VolDiT, the first purely transformer-based 3D Diffusion Transformer for volumetric medical image synthesis. Our approach extends diffusion transformers to native 3D data through volumetric patch embeddings and global self-attention operating directly over 3D tokens. To enable structured control, we propose a timestep-gated control adapter that maps segmentation masks into learnable control tokens that modulate transformer layers during denoising. This token-level conditioning mechanism allows precise spatial guidance while preserving the modeling advantages of transformer architectures. We evaluate our model on high-resolution 3D medical image synthesis tasks and compare it to state-of-the-art 3D latent diffusion models based on U-Nets. Results demonstrate improved global coherence, superior generative fidelity, and enhanced controllability. Our findings suggest that fully transformerbased diffusion models provide a flexible foundation for volumetric medical image synthesis. The code and models trained on public data are available at https://github.com/Cardio-AI/voldit.",
+      "authors": [
+        "Marvin Seyfarth",
+        "Salman Ul Hassan Dar",
+        "Yannik Frisch",
+        "Philipp Wild",
+        "Norbert Frey",
+        "Florian André",
+        "Sandy Engelhardt"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-03-26T08:51:46+00:00",
+      "link": "https://arxiv.org/pdf/2603.25181v1",
+      "tags": [
+        "keyword:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Diffusion Transformers for volumetric synthesis",
+      "llm_evidence_cn": "用于体积合成的扩散Transformer",
+      "llm_evidence": "用于体积合成的扩散Transformer",
+      "canonical_evidence": "用于体积合成的扩散Transformer",
+      "llm_tldr_en": "Introduces VolDiT, a 3D Diffusion Transformer for high-fidelity volumetric medical image synthesis.",
+      "llm_tldr_cn": "引入了VolDiT，一种用于高保真体积医学图像合成的3D扩散Transformer。",
+      "llm_tldr": "引入了VolDiT，一种用于高保真体积医学图像合成的3D扩散Transformer。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Generative artificial intelligence algorithms and models",
+      "matched_requirement_id": "req-12",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.25406v1",
+      "title": "MMaDA-VLA: Large Diffusion Vision-Language-Action Model with Unified Multi-Modal Instruction and Generation",
+      "abstract": "Vision-Language-Action (VLA) models aim to control robots for manipulation from visual observations and natural-language instructions. However, existing hierarchical and autoregressive paradigms often introduce architectural overhead, suffer from temporal inconsistency and long-horizon error accumulation, and lack a mechanism to capture environment dynamics without extra modules. To this end, we present MMaDA-VLA, a fully native pre-trained large diffusion VLA model that unifies multi-modal understanding and generation in a single framework. Our key idea is a native discrete diffusion formulation that embeds language, images, and continuous robot controls into one discrete token space and trains a single backbone with masked token denoising to jointly generate a future goal observation and an action chunk in parallel. Iterative denoising enables global, order-free refinement, improving long-horizon consistency while grounding actions in predicted future visual outcomes without auxiliary world models. Experiments across simulation benchmarks and real-world tasks show state-of-the-art performance, achieving 98.0% average success on LIBERO and 4.78 average length on CALVIN.",
+      "authors": [
+        "Yang Liu",
+        "Pengxiang Ding",
+        "Tengyue Jiang",
+        "Xudong Wang",
+        "Wenxuan Song",
+        "Minghui Lin",
+        "Han Zhao",
+        "Hongyin Zhang",
+        "Zifeng Zhuang",
+        "Wei Zhao",
+        "Siteng Huang",
+        "Jinkui Shi",
+        "Donglin Wang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-03-26T12:55:51+00:00",
+      "link": "https://arxiv.org/pdf/2603.25406v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Large diffusion vision-language-action model",
+      "llm_evidence_cn": "大型扩散视觉-语言-动作模型",
+      "llm_evidence": "大型扩散视觉-语言-动作模型",
+      "canonical_evidence": "大型扩散视觉-语言-动作模型",
+      "llm_tldr_en": "Presents a native discrete diffusion VLA model that unifies multi-modal understanding and robot control.",
+      "llm_tldr_cn": "提出一种原生离散扩散VLA模型，统一了多模态理解与机器人控制生成。",
+      "llm_tldr": "提出一种原生离散扩散VLA模型，统一了多模态理解与机器人控制生成。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2603.25460v1",
+      "title": "CLAR: CIF-Localized Alignment for Retrieval-Augmented Speech LLM-Based Contextual ASR",
+      "abstract": "Speech LLM-based ASR often struggles with named entities and long-tail words due to strong internal language-model priors. Retrieval-augmented biasing can help, but its effectiveness depends on accurate hotword localization in full-utterance speech under weak supervision. We propose CLAR, a dual-encoder speech-text retriever that uses Continuous Integrate-and-Fire (CIF) to learn monotonic token-level alignments without timestamps. With length-aware localized matching, CLAR anchors short-entity acoustic cues and reduces representation dilution and attention drift. The retriever is trained with a multi-granularity objective combining global and local segment-level contrastive losses and a CIF quantity constraint. At inference, top-ranked hotwords are injected as contextual prompts for the Speech LLM, improving recognition without shallow fusion. Experiments show that CLAR significantly improves hotword retrieval and reduces both CER and B-WER against strong contextual ASR baselines.",
+      "authors": [
+        "Shangkun Huang",
+        "Huan Shen",
+        "Wei Zou",
+        "Yunzhang Chen"
+      ],
+      "primary_category": "cs.SD",
+      "categories": [
+        "cs.SD"
+      ],
+      "published": "2026-03-26T13:59:49+00:00",
+      "link": "https://arxiv.org/pdf/2603.25460v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Retrieval-augmented speech LLM for contextual ASR",
+      "llm_evidence_cn": "用于上下文语音识别的检索增强语音大模型",
+      "llm_evidence": "用于上下文语音识别的检索增强语音大模型",
+      "canonical_evidence": "用于上下文语音识别的检索增强语音大模型",
+      "llm_tldr_en": "Proposes CLAR to improve named entity recognition in speech LLMs via localized retrieval alignment.",
+      "llm_tldr_cn": "提出CLAR，通过局部检索对齐改进语音大模型对命名实体的识别。",
+      "llm_tldr": "提出CLAR，通过局部检索对齐改进语音大模型对命名实体的识别。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2603.15871v1",
+      "title": "Counteractive RL: Rethinking Core Principles for Efficient and Scalable Deep Reinforcement Learning",
+      "abstract": "Following the pivotal success of learning strategies to win at tasks, solely by interacting with an environment without any supervision, agents have gained the ability to make sequential decisions in complex MDPs. Yet, reinforcement learning policies face exponentially growing state spaces in high dimensional MDPs resulting in a dichotomy between computational complexity and policy success. In our paper we focus on the agent's interaction with the environment in a high-dimensional MDP during the learning phase and we introduce a theoretically-founded novel paradigm based on experiences obtained through counteractive actions. Our analysis and method provide a theoretical basis for efficient, effective, scalable and accelerated learning, and further comes with zero additional computational complexity while leading to significant acceleration in training. We conduct extensive experiments in the Arcade Learning Environment with high-dimensional state representation MDPs. The experimental results further verify our theoretical analysis, and our method achieves significant performance increase with substantial sample-efficiency in high-dimensional environments.",
+      "authors": [
+        "Ezgi Korkmaz"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-03-16T19:59:37+00:00",
+      "link": "https://arxiv.org/pdf/2603.15871v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "efficient and scalable deep reinforcement learning paradigm",
+      "llm_evidence_cn": "高效且可扩展的深度强化学习范式",
+      "llm_evidence": "高效且可扩展的深度强化学习范式",
+      "canonical_evidence": "高效且可扩展的深度强化学习范式",
+      "llm_tldr_en": "Proposes Counteractive RL to address state space explosion in high-dimensional environments.",
+      "llm_tldr_cn": "提出Counteractive RL，旨在解决高维环境下强化学习的决策效率与扩展性问题。",
+      "llm_tldr": "提出Counteractive RL，旨在解决高维环境下强化学习的决策效率与扩展性问题。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Reinforcement learning from human feedback and algorithms",
+      "matched_requirement_id": "req-11",
+      "selection_source": "carryover_cache",
+      "paper_id": "2603.15871v1",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2603.20623v1",
+      "title": "MINISA: Minimal Instruction Set Architecture for Next-gen Reconfigurable Inference Accelerator",
+      "abstract": "Modern reconfigurable AI accelerators rely on rich mapping and data-layout flexibility to sustain high utilization across matrix multiplication, convolution, and emerging applications beyond AI. However, exposing this flexibility through fine-grained micro-control results in prohibitive control overhead of fetching configuration bits from off-chip memory. This paper presents MINISA, a minimal instruction set that programs a reconfigurable accelerator at the granularity of Virtual Neurons (VNs), the coarsest control granularity that retains flexibility of hardware and the finest granularity that avoids unnecessary control costs. First, we introduce FEATHER+, a modest refinement of FEATHER, that eliminates redundant on-chip replication needed for runtime dataflow/layout co-switching and supports dynamic cases where input and weight data are unavailable before execution for offline layout manipulation. MINISA then abstracts control of FEATHER+ into three layout-setting instructions for input, weight, and output VNs and a single mapping instruction for setting dataflow. This reduces the control and instruction footprint while preserving the legal mapping and layout space supported by the FEATHER+. Our results show that MINISA reduces geometric mean off-chip instruction traffic by factors ranging from 35x to (4x10^5)x under various sizes under 50 GEMM workloads spanning AI (GPT-oss), FHE, and ZKP. This eliminates instruction-fetch stalls that consume 96.9% of micro-instruction cycles, yielding up to 31.6x end-to-end speedup for 16x256 FEATHER+. Our code: https://github.com/maeri-project/FEATHER/tree/main/minisa.",
+      "authors": [
+        "Jianming Tong",
+        "Devansh Jain",
+        "Yujie Li",
+        "Charith Mendis",
+        "Tushar Krishna"
+      ],
+      "primary_category": "cs.AR",
+      "categories": [
+        "cs.AR",
+        "cs.PL"
+      ],
+      "published": "2026-03-21T03:36:35+00:00",
+      "link": "https://arxiv.org/pdf/2603.20623v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Minimal instruction set architecture for reconfigurable AI inference accelerators",
+      "llm_evidence_cn": "用于可重构AI推理加速器的最小指令集架构",
+      "llm_evidence": "用于可重构AI推理加速器的最小指令集架构",
+      "canonical_evidence": "用于可重构AI推理加速器的最小指令集架构",
+      "llm_tldr_en": "Presents MINISA, a minimal ISA for AI accelerators to reduce control overhead in inference.",
+      "llm_tldr_cn": "提出MINISA，一种用于AI加速器的最小指令集，旨在降低推理过程中的控制开销。",
+      "llm_tldr": "提出MINISA，一种用于AI加速器的最小指令集，旨在降低推理过程中的控制开销。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "State of the art artificial intelligence algorithms and research papers",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2603.20631v1",
+      "title": "LassoFlexNet: Flexible Neural Architecture for Tabular Data",
+      "abstract": "Despite their dominance in vision and language, deep neural networks often underperform relative to tree-based models on tabular data. To bridge this gap, we incorporate five key inductive biases into deep learning: robustness to irrelevant features, axis alignment, localized irregularities, feature heterogeneity, and training stability. We propose \\emph{LassoFlexNet}, an architecture that evaluates the linear and nonlinear marginal contribution of each input via Per-Feature Embeddings, and sparsely selects relevant variables using a Tied Group Lasso mechanism. Because these components introduce optimization challenges that destabilize standard proximal methods, we develop a \\emph{Sequential Hierarchical Proximal Adaptive Gradient optimizer with exponential moving averages (EMA)} to ensure stable convergence. Across $52$ datasets from three benchmarks, LassoFlexNet matches or outperforms leading tree-based models, achieving up to a $10$\\% relative gain, while maintaining Lasso-like interpretability. We substantiate these empirical results with ablation studies and theoretical proofs confirming the architecture's enhanced expressivity and structural breaking of undesired rotational invariance.",
+      "authors": [
+        "Kry Yik Chau Lui",
+        "Cheng Chi",
+        "Kishore Basu",
+        "Yanshuai Cao"
+      ],
+      "primary_category": "stat.ML",
+      "categories": [
+        "stat.ML",
+        "cs.LG"
+      ],
+      "published": "2026-03-21T03:59:47+00:00",
+      "link": "https://arxiv.org/pdf/2603.20631v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Neural architecture for tabular data using Lasso mechanism",
+      "llm_evidence_cn": "使用Lasso机制的表格数据神经架构",
+      "llm_evidence": "使用Lasso机制的表格数据神经架构",
+      "canonical_evidence": "使用Lasso机制的表格数据神经架构",
+      "llm_tldr_en": "Introduces LassoFlexNet, a neural architecture designed to improve deep learning performance on tabular data.",
+      "llm_tldr_cn": "引入LassoFlexNet，一种旨在提升深度学习在表格数据上表现的神经架构。",
+      "llm_tldr": "引入LassoFlexNet，一种旨在提升深度学习在表格数据上表现的神经架构。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Artificial Intelligence algorithms and foundational theories",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2603.15886v2",
+      "title": "PhasorFlow: A Python Library for Unit Circle Based Computing",
+      "abstract": "We present PhasorFlow, an open-source Python library introducing a computational paradigm operating on the $S^1$ unit circle. Inputs are encoded as complex phasors $z = e^{iθ}$ on the $N$-Torus ($\\mathbb{T}^N$). As computation proceeds via unitary wave interference gates, global norm is preserved while individual components drift into $\\mathbb{C}^N$, allowing algorithms to natively leverage continuous geometric gradients for predictive learning. PhasorFlow provides three core contributions. First, we formalize the Phasor Circuit model ($N$ unit circle threads, $M$ gates) and introduce a 22-gate library covering Standard Unitary, Non-Linear, Neuromorphic, and Encoding operations with full matrix algebra simulation. Second, we present the Variational Phasor Circuit (VPC), analogous to Variational Quantum Circuits (VQC), enabling optimization of continuous phase parameters for classical machine learning tasks. Third, we introduce the Phasor Transformer, replacing expensive $QK^TV$ attention with a parameter-free, DFT-based token mixing layer inspired by FNet. We validate PhasorFlow on non-linear spatial classification, time-series prediction, financial volatility detection, and neuromorphic tasks including neural binding and oscillatory associative memory. Our results establish unit circle computing as a deterministic, lightweight, and mathematically principled alternative to classical neural networks and quantum circuits. It operates on classical hardware while sharing quantum mechanics' unitary foundations. PhasorFlow is available at https://github.com/mindverse-computing/phasorflow.",
+      "authors": [
+        "Dibakar Sigdel",
+        "Namuna Panday"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-03-16T20:28:53+00:00",
+      "link": "https://arxiv.org/pdf/2603.15886v2",
+      "tags": [
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "library covering neuromorphic operations and unit circle computing",
+      "llm_evidence_cn": "涵盖类脑神经形态操作和单位圆计算的库",
+      "llm_evidence": "涵盖类脑神经形态操作和单位圆计算的库",
+      "canonical_evidence": "涵盖类脑神经形态操作和单位圆计算的库",
+      "llm_tldr_en": "Introduces PhasorFlow, a library for unit circle based computing including neuromorphic operations.",
+      "llm_tldr_cn": "介绍了 PhasorFlow，一个基于单位圆计算的库，支持类脑神经形态等计算操作。",
+      "llm_tldr": "介绍了 PhasorFlow，一个基于单位圆计算的库，支持类脑神经形态等计算操作。",
+      "llm_tags": [
+        "query:snn"
+      ],
+      "matched_query_tag": "query:snn",
+      "matched_query_text": "Neuromorphic computing hardware and algorithms",
+      "matched_requirement_id": "req-2",
+      "selection_source": "carryover_cache",
+      "paper_id": "2603.15886v2",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2603.20656v1",
+      "title": "Sinkhorn Based Associative Memory Retrieval Using Spherical Hellinger Kantorovich Dynamics",
+      "abstract": "We propose a dense associative memory for empirical measures (weighted point clouds). Stored patterns and queries are finitely supported probability measures, and retrieval is defined by minimizing a Hopfield-style log-sum-exp energy built from the debiased Sinkhorn divergence. We derive retrieval dynamics as a spherical Hellinger Kantorovich (SHK) gradient flow, which updates both support locations and weights. Discretizing the flow yields a deterministic algorithm that uses Sinkhorn potentials to compute barycentric transport steps and a multiplicative simplex reweighting. Under local separation and PL-type conditions we prove basin invariance, geometric convergence to a local minimizer, and a bound showing the minimizer remains close to the corresponding stored pattern. Under a random pattern model, we further show that these Sinkhorn basins are disjoint with high probability, implying exponential capacity in the ambient dimension. Experiments on synthetic Gaussian point-cloud memories demonstrate robust recovery from perturbed queries versus a Euclidean Hopfield-type baseline.",
+      "authors": [
+        "Aratrika Mustafi",
+        "Soumya Mukherjee"
+      ],
+      "primary_category": "stat.ML",
+      "categories": [
+        "stat.ML",
+        "cs.AI",
+        "cs.LG",
+        "math.OC",
+        "math.ST"
+      ],
+      "published": "2026-03-21T05:25:15+00:00",
+      "link": "https://arxiv.org/pdf/2603.20656v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Dense associative memory retrieval dynamics",
+      "llm_evidence_cn": "稠密联想记忆检索动力学",
+      "llm_evidence": "稠密联想记忆检索动力学",
+      "canonical_evidence": "稠密联想记忆检索动力学",
+      "llm_tldr_en": "Proposes a dense associative memory for probability measures using Sinkhorn-based retrieval dynamics.",
+      "llm_tldr_cn": "提出一种基于 Sinkhorn 检索动力学的概率测度稠密联想记忆模型。",
+      "llm_tldr": "提出一种基于 Sinkhorn 检索动力学的概率测度稠密联想记忆模型。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Artificial Intelligence algorithms and foundational theories",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2603.20684v1",
+      "title": "Centrality-Based Pruning for Efficient Echo State Networks",
+      "abstract": "Echo State Networks (ESNs) are a reservoir computing framework widely used for nonlinear time-series prediction. However, despite their effectiveness, the randomly initialized reservoir often contains redundant nodes, leading to unnecessary computational overhead and reduced efficiency. In this work, we propose a graph centrality-based pruning approach that interprets the reservoir as a weighted directed graph and removes structurally less important nodes using centrality measures. Experiments on Mackey-Glass time-series prediction and electric load forecasting demonstrate that the proposed method can significantly reduce reservoir size while maintaining, and in some cases improving, prediction accuracy, while preserving the essential reservoir dynamics.",
+      "authors": [
+        "Sudip Laudari"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "math.OC"
+      ],
+      "published": "2026-03-21T06:55:50+00:00",
+      "link": "https://arxiv.org/pdf/2603.20684v1",
+      "tags": [
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Pruning for efficient Echo State Networks (reservoir computing)",
+      "llm_evidence_cn": "高效回声状态网络（储备池计算）的剪枝",
+      "llm_evidence": "高效回声状态网络（储备池计算）的剪枝",
+      "canonical_evidence": "高效回声状态网络（储备池计算）的剪枝",
+      "llm_tldr_en": "Proposes a graph centrality-based pruning method to improve the efficiency of Echo State Networks.",
+      "llm_tldr_cn": "提出一种基于图中心性的剪枝方法，以提高回声状态网络（ESN）的效率。",
+      "llm_tldr": "提出一种基于图中心性的剪枝方法，以提高回声状态网络（ESN）的效率。",
+      "llm_tags": [
+        "query:snn"
+      ],
+      "matched_query_tag": "query:snn",
+      "matched_query_text": "Neuromorphic computing hardware and algorithms",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2603.16104v1",
+      "title": "Efficient LLM Serving for Agentic Workflows: A Data Systems Perspective",
+      "abstract": "Agentic workflows are composed of sequences of interdependent Large Language Model (LLM) calls, and they have become a dominant workload in modern AI systems. These workflows exhibit extensive redundancy from overlapping prompts and intermediate results due to speculative and parallel exploration. Existing LLM serving systems, such as vLLM, focus on optimizing individual inference calls and overlook cross-call dependencies, leading to significant inefficiencies. This paper rethinks LLM and agent serving from a data systems perspective and introduces Helium, a workflow-aware serving framework that models agentic workloads as query plans and treats LLM invocations as first-class operators. Helium integrates proactive caching and cache-aware scheduling to maximize reuse across prompts, KV states, and workflows. Through these techniques, Helium bridges classic query optimization principles with LLM serving, achieving up to 1.56x speedup over state-of-the-art agent serving systems on various workloads. Our results demonstrate that end-to-end optimization across workflows is essential for scalable and efficient LLM-based agents.",
+      "authors": [
+        "Noppanat Wadlom",
+        "Junyi Shen",
+        "Yao Lu"
+      ],
+      "primary_category": "cs.MA",
+      "categories": [
+        "cs.MA",
+        "cs.AI",
+        "cs.DB"
+      ],
+      "published": "2026-03-17T04:03:18+00:00",
+      "link": "https://arxiv.org/pdf/2603.16104v1",
+      "tags": [
+        "keyword:AI LLM",
+        "query:AI LLM"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "efficient LLM serving and agentic workflows",
+      "llm_evidence_cn": "高效的大模型推理服务与智能体工作流",
+      "llm_evidence": "高效的大模型推理服务与智能体工作流",
+      "canonical_evidence": "高效的大模型推理服务与智能体工作流",
+      "llm_tldr_en": "Introduces Helium, a framework that optimizes LLM serving for agentic workflows using a data systems perspective.",
+      "llm_tldr_cn": "引入 Helium 框架，从数据系统角度优化智能体工作流中的大模型推理服务。",
+      "llm_tldr": "引入 Helium 框架，从数据系统角度优化智能体工作流中的大模型推理服务。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Recent developments in large language model architectures and training",
+      "matched_requirement_id": "req-14",
+      "selection_source": "carryover_cache",
+      "paper_id": "2603.16104v1",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2603.20801v1",
+      "title": "Large Neighborhood Search meets Iterative Neural Constraint Heuristics",
+      "abstract": "Neural networks are being increasingly used as heuristics for constraint satisfaction. These neural methods are often recurrent, learning to iteratively refine candidate assignments. In this work, we make explicit the connection between such iterative neural heuristics and Large Neighborhood Search (LNS), and adapt an existing neural constraint satisfaction method-ConsFormer-into an LNS procedure. We decompose the resulting neural LNS into two standard components: the destroy and repair operators. On the destroy side, we instantiate several classical heuristics and introduce novel prediction-guided operators that exploit the model's internal scores to select neighborhoods. On the repair side, we utilize ConsFormer as a neural repair operator and compare the original sampling-based decoder to a greedy decoder that selects the most likely assignments. Through an empirical study on Sudoku, Graph Coloring, and MaxCut, we find that adapting the neural heuristic to an LNS procedure yields substantial gains over its vanilla settings and improves its competitiveness with classical and neural baselines. We further observe consistent design patterns across tasks: stochastic destroy operators outperform greedy ones, while greedy repair is more effective than sampling-based repair for finding a single high-quality feasible assignment. These findings highlight LNS as a useful lens and design framework for structuring and improving iterative neural approaches.",
+      "authors": [
+        "Yudong W. Xu",
+        "Wenhao Li",
+        "Scott Sanner",
+        "Elias B. Khalil"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-03-21T12:53:02+00:00",
+      "link": "https://arxiv.org/pdf/2603.20801v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Neural heuristics for constraint satisfaction using Transformer-based models",
+      "llm_evidence_cn": "基于Transformer模型的约束满足神经启发式算法",
+      "llm_evidence": "基于Transformer模型的约束满足神经启发式算法",
+      "canonical_evidence": "基于Transformer模型的约束满足神经启发式算法",
+      "llm_tldr_en": "Adapts the ConsFormer model into a Large Neighborhood Search procedure for neural constraint satisfaction.",
+      "llm_tldr_cn": "将ConsFormer模型适配为大邻域搜索过程，用于神经约束满足任务。",
+      "llm_tldr": "将ConsFormer模型适配为大邻域搜索过程，用于神经约束满足任务。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "State of the art artificial intelligence algorithms and research papers",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2603.20860v1",
+      "title": "Restoring Neural Network Plasticity for Faster Transfer Learning",
+      "abstract": "Transfer learning with models pretrained on ImageNet has become a standard practice in computer vision. Transfer learning refers to fine-tuning pretrained weights of a neural network on a downstream task, typically unrelated to ImageNet. However, pretrained weights can become saturated and may yield insignificant gradients, failing to adapt to the downstream task. This hinders the ability of the model to train effectively, and is commonly referred to as loss of neural plasticity. Loss of plasticity may prevent the model from fully adapting to the target domain, especially when the downstream dataset is atypical in nature. While this issue has been widely explored in continual learning, it remains relatively understudied in the context of transfer learning. In this work, we propose the use of a targeted weight re-initialization strategy to restore neural plasticity prior to fine-tuning. Our experiments show that both convolutional neural networks (CNNs) and vision transformers (ViTs) benefit from this approach, yielding higher test accuracy with faster convergence on several image classification benchmarks. Our method introduces negligible computational overhead and is compatible with common transfer learning pipelines.",
+      "authors": [
+        "Xander Coetzer",
+        "Arné Schreuder",
+        "Anna Sergeevna Bosman"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-03-21T15:41:58+00:00",
+      "link": "https://arxiv.org/pdf/2603.20860v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "neural network plasticity and transfer learning optimization",
+      "llm_evidence_cn": "神经网络可塑性与迁移学习优化",
+      "llm_evidence": "神经网络可塑性与迁移学习优化",
+      "canonical_evidence": "神经网络可塑性与迁移学习优化",
+      "llm_tldr_en": "This paper explores restoring neural plasticity to improve the effectiveness of transfer learning fine-tuning.",
+      "llm_tldr_cn": "本文探讨了恢复神经网络可塑性以提高迁移学习微调效果的方法。",
+      "llm_tldr": "本文探讨了恢复神经网络可塑性以提高迁移学习微调效果的方法。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Artificial Intelligence algorithms and foundational theories",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2603.16123v1",
+      "title": "Functorial Neural Architectures from Higher Inductive Types",
+      "abstract": "Neural networks systematically fail at compositional generalization -- producing correct outputs for novel combinations of known parts. We show that this failure is architectural: compositional generalization is equivalent to functoriality of the decoder, and this perspective yields both guarantees and impossibility results. We compile Higher Inductive Type (HIT) specifications into neural architectures via a monoidal functor from the path groupoid of a target space to a category of parametric maps: path constructors become generator networks, composition becomes structural concatenation, and 2-cells witnessing group relations become learned natural transformations. We prove that decoders assembled by structural concatenation of independently generated segments are strict monoidal functors (compositional by construction), while softmax self-attention is not functorial for any non-trivial compositional task. Both results are formalized in Cubical Agda. Experiments on three spaces validate the full hierarchy: on the torus ($\\mathbb{Z}^2$), functorial decoders outperform non-functorial ones by 2-2.7x; on $S^1 \\vee S^1$ ($F_2$), the type-A/B gap widens to 5.5-10x; on the Klein bottle ($\\mathbb{Z} \\rtimes \\mathbb{Z}$), a learned 2-cell closes a 46% error gap on words exercising the group relation.",
+      "authors": [
+        "Karen Sargsyan"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "math.AT",
+        "math.CT"
+      ],
+      "published": "2026-03-17T05:08:30+00:00",
+      "link": "https://arxiv.org/pdf/2603.16123v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:SNN"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Foundational theory for neural network architectures",
+      "llm_evidence_cn": "神经网络架构的基础理论",
+      "llm_evidence": "神经网络架构的基础理论",
+      "canonical_evidence": "神经网络架构的基础理论",
+      "llm_tldr_en": "Develops a functorial perspective on neural architectures to improve compositional generalization.",
+      "llm_tldr_cn": "从范畴论角度构建神经网络架构，以提高组合泛化能力。",
+      "llm_tldr": "从范畴论角度构建神经网络架构，以提高组合泛化能力。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Artificial Intelligence algorithms and foundational theories",
+      "matched_requirement_id": "req-7",
+      "selection_source": "carryover_cache",
+      "paper_id": "2603.16123v1",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2603.20984v1",
+      "title": "Joint Surrogate Learning of Objectives, Constraints, and Sensitivities for Efficient Multi-objective Optimization of Neural Dynamical Systems",
+      "abstract": "Biophysical neural system simulations are among the most computationally demanding scientific applications, and their optimization requires navigating high-dimensional parameter spaces under numerous constraints that impose a binary feasible/infeasible partition with no gradient signal to guide the search. Here, we introduce DMOSOPT, a scalable optimization framework that leverages a unified, jointly learned surrogate model to capture the interplay between objectives, constraints, and parameter sensitivities. By learning a smooth approximation of both the objective landscape and the feasibility boundary, the joint surrogate provides a unified gradient that simultaneously steers the search toward improved objective values and greater constraint satisfaction, while its partial derivatives yield per-parameter sensitivity estimates that enable more targeted exploration. We validate the framework from single-cell dynamics to population-level network activity, spanning incremental stages of a neural circuit modeling workflow, and demonstrate efficient, effective optimization of highly constrained problems at supercomputing scale with substantially fewer problem evaluations. While motivated by and demonstrated in the context of computational neuroscience, the framework is general and applicable to constrained multi-objective optimization problems across scientific and engineering domains.",
+      "authors": [
+        "Frithjof Gressmann",
+        "Ivan Georgiev Raikov",
+        "Seung Hyun Kim",
+        "Mattia Gazzola",
+        "Lawrence Rauchwerger",
+        "Ivan Soltesz"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-03-22T00:06:28+00:00",
+      "link": "https://arxiv.org/pdf/2603.20984v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM",
+        "query:SNN"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Optimization of biophysical neural system simulations",
+      "llm_evidence_cn": "生物物理神经系统模拟的优化",
+      "llm_evidence": "生物物理神经系统模拟的优化",
+      "canonical_evidence": "生物物理神经系统模拟的优化",
+      "llm_tldr_en": "A scalable framework for multi-objective optimization of computationally demanding neural dynamical systems.",
+      "llm_tldr_cn": "一种用于高计算需求的神经动力学系统多目标优化的可扩展框架。",
+      "llm_tldr": "一种用于高计算需求的神经动力学系统多目标优化的可扩展框架。",
+      "llm_tags": [
+        "query:snn"
+      ],
+      "matched_query_tag": "query:snn",
+      "matched_query_text": "Spiking Neural Networks (SNN) architecture and theory",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2603.20927v1",
+      "title": "Active Inference for Physical AI Agents -- An Engineering Perspective",
+      "abstract": "Physical AI agents, such as robots and other embodied systems operating under tight and fluctuating resource constraints, remain far less capable than biological agents in open-ended real-world environments. This paper argues that Active Inference (AIF), grounded in the Free Energy Principle, offers a principled foundation for closing that gap. We develop this argument from first principles, following a chain from probability theory through Bayesian machine learning and variational inference to active inference and reactive message passing. From the FEP perspective, systems that maintain their structural and functional integrity over time can, under suitable assumptions, be described as minimizing variational free energy (VFE), and AIF operationalizes this by unifying perception, learning, planning, and control within a single computational objective. We show that VFE minimization is naturally realized by reactive message passing on factor graphs, where inference emerges from local, parallel computations. This realization is well matched to the constraints of physical operation, including hard deadlines, asynchronous data, fluctuating power budgets, and changing environments. Because reactive message passing is event-driven, interruptible, and locally adaptable, performance degrades gracefully under reduced resources while model structure can adjust online. We further show that, under suitable coupling and coarse-graining conditions, coupled AIF agents can be described as higher-level AIF agents, yielding a homogeneous architecture based on the same message-passing primitive across scales. Our contribution is not empirical benchmarking, but a clear theoretical and architectural case for the engineering community.",
+      "authors": [
+        "Bert de Vries"
+      ],
+      "primary_category": "stat.ML",
+      "categories": [
+        "stat.ML",
+        "cs.LG"
+      ],
+      "published": "2026-03-21T20:06:30+00:00",
+      "link": "https://arxiv.org/pdf/2603.20927v1",
+      "tags": [
+        "keyword:AI LLM",
+        "keyword:SNN",
+        "query:AI LLM"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Active Inference for physical AI agents",
+      "llm_evidence_cn": "物理AI智能体的主动推理",
+      "llm_evidence": "物理AI智能体的主动推理",
+      "canonical_evidence": "物理AI智能体的主动推理",
+      "llm_tldr_en": "Argues for Active Inference as a foundational theory for resource-constrained physical AI agents.",
+      "llm_tldr_cn": "论证了主动推理作为资源受限物理AI智能体基础理论的有效性。",
+      "llm_tldr": "论证了主动推理作为资源受限物理AI智能体基础理论的有效性。",
+      "llm_tags": [
+        "query:ai-llm"
+      ],
+      "matched_query_tag": "query:ai-llm",
+      "matched_query_text": "Artificial Intelligence algorithms and foundational theories",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}

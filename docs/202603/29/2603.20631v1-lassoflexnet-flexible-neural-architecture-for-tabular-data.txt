@@ -1,0 +1,3676 @@
+Title: LassoFlexNet: Flexible Neural Architecture for Tabular Data
+
+URL Source: https://arxiv.org/pdf/2603.20631v1
+
+Published Time: Tue, 24 Mar 2026 00:33:21 GMT
+
+Number of Pages: 49
+
+Markdown Content:
+# LASSO FLEX NET : A FLEXIBLE NEURAL ARCHITECTURE FOR 
+
+# TABULAR DATA 
+
+PREPRINT 
+
+Kry Yik Chau Lui *
+
+RBC Borealis 
+
+yikchau.y.lui@borealisai.com 
+
+Cheng Chi *
+
+RBC Borealis 
+
+cheng.chi@borealisai.com 
+
+Kishore Basu 
+
+RBC 
+
+kishore.basu@rbc.com 
+
+Yanshuai Cao 
+
+RBC Borealis 
+
+yanshuai.cao@borealisai.com 
+
+## ABSTRACT 
+
+Despite their dominance in vision and language, deep neural networks often underperform relative to tree-based models on tabular data. To bridge this gap, we incorporate five key inductive biases into deep learning: robustness to irrelevant features, axis alignment, localized irregularities, feature heterogeneity, and training stability. We propose LassoFlexNet , an architecture that evaluates the linear and nonlinear marginal contribution of each input via Per-Feature Embeddings, and sparsely selects relevant variables using a Tied Group Lasso mechanism. Because these components introduce optimization challenges that destabilize standard proximal methods, we develop a Sequential Hier-archical Proximal Adaptive Gradient optimizer with exponential moving averages (EMA) to ensure stable convergence. Across 52 datasets from three benchmarks, LassoFlexNet matches or outper-forms leading tree-based models, achieving up to a 10 % relative gain, while maintaining Lasso-like interpretability. We substantiate these empirical results with ablation studies and theoretical proofs confirming the architecture’s enhanced expressivity and structural breaking of undesired rotational invariance. 
+
+Keywords Machine Learning · Tabular Data · Sparse Deep Learning 
+
+## 1 Introduction 
+
+Despite the dominance of deep neural networks in vision and language [ 1, 2], tree-based methods such as XGBoost and CatBoost [ 3, 4 ] remain the default choice for tabular data. Grinsztajn et al. [5] identified three primary reasons for this performance gap: (1) robustness to uninformative features, (2) preservation of data orientation, and (3) the ability to learn irregular, localized functions. We argue that input heterogeneity-the mix of varying abstraction levels-is a fourth, overlooked but equally critical factor. Unlike homogeneous vision or text data, tabular datasets frequently mix raw physical measurements (e.g., headcount) with complex derived metrics (e.g., price-to-equity ratio). Standard neural networks linearly blend these disparate inputs into a shared representation space during the first layer, irreparably obscuring their marginal information. Tree-based models, conversely, recursively partition the input space in an axis-aligned manner, natively isolating heterogeneity and modeling sharp, step-like decision boundaries. Fusing these four inductive biases into deep learning while ensuring robust optimization requires moving fundamentally beyond architectures amenable to standard stochastic gradient descent. We propose LassoFlexNet , an architecture engineered to mimic the coordinate-wise localized flexibility of trees, coupled with a novel optimization algorithm to resolve the resulting non-convex non-smooth training dynamics. Our primary contributions are: 
+
+> ∗
+
+Equal contribution 
+
+> arXiv:2603.20631v1 [stat.ML] 21 Mar 2026
+
+LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+1. Tabular-Native Architecture : We introduce a Tied Group Lasso mechanism that operates on non-linear Per-Feature Embeddings rather than raw inputs. Furthermore, we rigorously prove that Piecewise Linear Encoding (PLE) fundamentally breaks the undesired rotational invariance of neural networks [ 6] and amplifies functional expressivity for localized irregularities ( Propositions 6.1 and 6.2). 2. Stable Proximal Optimization : We derive a Sequential Hierarchical Proximal Adaptive Gradient optimizer with exponential moving averages (Seq-Hier-Prox-EMA) . This algorithm decouples the optimization trajectory, ensuring the Lasso selection mechanism and the deep MLP-Mixer module [ 7] learn synergistically, overcoming the severe training instabilities of prior sparse neural methods like LassoNet [8]. 3. State-of-the-Art Empirical Performance : Across 52 datasets spanning three recent benchmarks [ 9, 10 ], 
+
+LassoFlexNet consistently matches or surpasses leading tree-based models, achieving up to a 10% relative improvement, while providing high-fidelity feature importance metrics. Overall, LassoFlexNet bridges the representational and optimization gaps between neural networks and decision trees, offering a principled, robust foundation for deep tabular learning. 
+
+## 2 Related Work 
+
+Lasso-Based Approaches. Lasso regression [ 11 ] utilizes ℓ1 regularization for variable selection, typically solved via proximal gradient methods. LassoNet [ 8] extends this paradigm to deep learning by employing a linear skip connection to guide a neural module. While theoretically sound for inducing feature sparsity, LassoNet frequently underperforms on modern tabular benchmarks (as shown in Sec. 7) and fails to serve as a reliable alternative to tree-based models. 
+
+LassoFlexNet addresses these deficiencies through two critical innovations: • Architecture : Rather than performing selection on raw inputs, we introduce Per-Feature Embeddings (PFE) combined with a Tied Group Lasso mechanism. This enables feature selection on learned, nonlinear represen-tations, capturing marginal predictive contributions that raw inputs might obscure. • Optimization : We replace LassoNet’s joint optimization with a sequential procedure utilizing proximal adaptive gradients stabilized via exponential moving averages (EMA). 
+
+Neural Networks on Tabular Data. The broader landscape of deep tabular learning has focused heavily on adapting interaction modules to rival decision trees. Models such as TabNet [ 12 ] and FT-Transformer [ 13 ] leverage attention and feature-interaction mechanisms. Recently, TabM [ 14 ] enhanced these backbones via parameter-efficient ensembling, improving generalization through diverse predictions. 
+
+In-Context and Retrieval-Based Methods. An orthogonal class of modern methods focuses on retrieval and in-context learning. TabR [ 15 ] utilizes a retrieval-augmented design to query similar training examples at inference. Alternatively, TabPFN [ 16 ] and its successor TabPFN-v2.5 [ 17 ] operate as pre-trained in-context learners optimized over diverse synthetic and real datasets, an approach that TabICL [ 18 ] scales further into a foundation model. However, the quadratic complexity of their attention mechanisms, coupled with inherent context window limitations, restricts these approaches primarily to small-to-medium datasets, leaving scalable, tree-competitive representation learning an open problem that LassoFlexNet directly targets. Table 1: LassoFlexNet components addressing tabular data challenges.            
+
+> Error Inductive Bias Solution
+> Generalization Robustness to irrelevant features; axis alignment Lasso Linear Skip Connection with Tied Group Lasso Optimization Stable training Sequential Hierarchi-cal Proximal Adaptive Gradient optimizer +EMA Approximation Axis alignment, localized irregularities; heterogene-ity; complex interactions PLE; PFE; MLP-Mixer Module
+
+2LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+## 3 Design Principles for Tabular Inductive Biases 
+
+To rival the performance of tree-based models, neural architectures must natively encode five critical inductive biases: robustness to irrelevant features, axis alignment, localized irregularities, feature heterogeneity, and training stability (1). We formalize our design approach by decomposing the test loss into three distinct error components—generalization, optimization, and approximation: 
+
+LTest = LTest − L Train 
+
+| {z }
+
+> Generalization Error
+
++ LTrain − L Train, Min 
+
+| {z }
+
+> Optimization Error
+
++ LTrain, Min 
+
+| {z }
+
+> Approximation Error
+
+(1) 
+
+LassoFlexNet structurally bounds these errors via targeted architectural and algorithmic interventions (summarized in Table 1): • Approximation Error : To model localized irregularities and manage feature heterogeneity, we utilize 
+
+Piecewise Linear Encoding (PLE) [ 19 ] and Per-Feature Embeddings (PFE) . A subsequent MLP-Mixer Module [7] captures complex cross-feature interactions. • Generalization Error : To preserve axis orientation and strictly mitigate overfitting to irrelevant features, we construct a Linear Skip Connection governed by a Tied Group Lasso penalty over the learned embeddings. • Optimization Error : To guarantee stable convergence across these high-capacity, non-homogeneous modules, we derive a Seq-Hier-Prox-Adam-EMA optimizer. Sections 4 and 5 detail these components mathematically, before Section 6 analyzes how they jointly satisfy the required inductive biases. 
+
+## 4 Architecture 
+
+4.1 Preliminaries: LassoNet 
+
+LassoNet [ 8 ] integrates feature selection by augmenting a standard neural module, NN W (x), with a linear skip connection, β⊤x, yielding the prediction ˆy = β⊤x + NN W (x). The linear coefficients β and neural weights W are jointly optimized via a hierarchical penalty: 
+
+min  
+
+> β,W
+
+L(β, W ) + λ∥β∥1 s.t. ∥W (1)  
+
+> i, _
+
+∥∞ ≤ M |βi| (2) where W (1)  
+
+> i, _
+
+denotes the outgoing weights from the i-th input. This ℓ1 penalty promotes strict sparsity on β, while the 
+
+ℓ∞ constraint ensures that a feature can only be utilized by the neural network if its corresponding linear counterpart is non-zero. However, LassoNet’s reliance on raw input correlations severely limits its ability to capture nonlinear feature importance. Furthermore, its joint Hier-Prox optimization often suffers from poor, unstable training dynamics (analyzed in Section 6.1). 
+
+4.2 LassoFlexNet Overview 
+
+LassoFlexNet (Figure 1) circumvents these limitations via a three-component design: (1) independent per-feature neural networks zi = NN ϕi (xi) utilizing Piecewise Linear Encoding (PLE) and Per-Feature Embedding (PFE); (2) a Tied Group Linear Skip Connection β⊤ ¯z, operating on the mean-pooled representation ¯zi of each embedding; and (3) a deep MLP-Mixer [ 7 ] module τ · NN W (z), where τ acts as a soft-curriculum scale to control the inductive bias toward simplicity if τ < 1 and towards expressivity if τ > 1 (Eq. 3). Formally, we define: 
+
+z = [ . . . , zi, . . . ], ¯z = [ . . . , mean (zi), . . . ]ˆy = β⊤ ¯z + τ · NN W (z) (3) 
+
+βLasso = arg min  
+
+> β
+
+L(ϕ, β, W ) + λ∥β∥1
+
+s.t. ∥W (1)  
+
+> i, _
+
+∥∞ ≤ M |βLasso ;i|
+
+where i indexes the i-th feature. 3LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Figure 1: LassoFlexNet architecture: Per-Feature Embedding (PLE for numerical, one-hot for categorical), Linear Skip Connection, and the MLP-Mixer Module. 
+
+4.2.1 Piecewise Linear Encoding and Per-Feature Embedding 
+
+To inherently adapt to tabular heterogeneity, PLE [ 19 ] partitions each numerical feature xi into Ki distinct intervals via decision tree splits {bi,k }. The resulting encoding PLE (xi) = ei = [ ei, 1, . . . , e i,K i ] is defined as: 
+
+ei,t = max 
+
+
+
+0, min 
+
+
+
+1, xi − bi,t −1
+
+bi,t − bi,t −1
+
+ 
+
+(4) This formulation generates Ki · k localized gradients during backpropagation, lifting the neural capacity at a linear rate to successfully capture highly irregular, localized target dependencies (proved rigorously in Appendix D). Subsequently, PFE transforms ei through an independent per-feature ResNet block: hi,l = hi,l −1 +
+
+LN (ReLU (Wi,l hi,l −1 + bi,l )) . To ensure that the feature selection via the magnitude of β remains valid and in-terpretable [ 20 ], the final embedding PFE (ei) is normalized via parameter-free BatchNorm ( μ = 0 , σ = 1 ). Unlike existing soft regularization attempts [ 21 ], PFE supports arbitrary architectural depth and allows exact feature removal via proximal gradients. 
+
+4.2.2 Tied Group Lasso Mechanism 
+
+LassoNet’s fundamental reliance on raw inputs ignores nonlinear dependencies, risking a scenario where "the blind guide the blind" if the linear skip connection converges slower than the highly-expressive neural module. LassoFlexNet 
+
+resolves this tension through two mechanisms: 
+
+Selection via Nonlinear Embeddings. We apply the linear skip connection strictly to the mean-pooled embeddings 
+
+¯zi. This mathematically implements a Tied Group Lasso , wherein a single scalar βi controls the entire i-th embedded group. This weight-sharing severely reduces parameter count and enables feature selection based on rich nonlinear representations, while preserving interpretability since z is rigorously pre-normalized. 
+
+Soft Curriculum Learning. To prevent the expressive MLP-Mixer module from instantly dominating the training trajectory and bypassing feature selection, we may scale its output by τ < 1 (Eq. 3). This structurally downscales the Mixer gradients, forcing early convergence of the linear, selection-guiding components. This Lasso-Mixer pairing is 4LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+vital for tabular generalization; without it, the Mixer rapidly overfits small tabular datasets, while substituting a simpler MLP fatally reduces representational capacity (demonstrated in Sec. 6.1). 
+
+## 5 Optimization 
+
+LassoNet’s foundational methodological contribution is its Hier-Prox-Gradient (HPG) optimization (Algorithm 3 in App. A.1), which enables strict feature sparsity under stochastic optimization. Let ( ˜θ, ˜W ) denote the proximal-processed parameters. HPG operates by interleaving two steps: (1) an unconstrained regular update via SGD, ( ˜θt−1, ˜Wt−1) →
+
+(θt, W t), and (2) a proximal operation enforcing the hierarchical constraint, (θt, W t) → ( ˜θt, ˜Wt). If λ = 0 , the HPG reduces to SGD. While LassoFlexNet adopts this alternating structure (Algorithm 1), we fundamentally redesign the proximal operator to overcome three severe failure modes of HPG. 
+
+Algorithm 1 Update Algorithm for LassoNet / LassoFlexNet 
+
+1: Input: training dataset X ∈ Rn×d, training labels Y , Lasso parameter β, neural model gW (·), number of epochs 
+
+N , hierarchy multiplier M , path multiplier ε, learning rate η
+
+2: Initialize and train the feed-forward network on the loss L(β, W )
+
+3: Initialize the penalty path, λ = [0 , λ 1 · · · , ], and the number of active features, k = d.
+
+4: for λ ∈ λ do 
+
+5: while k > 0 do 
+
+6: for b = 1 to N do 
+
+7: Compute ∇L(β, W )
+
+8: Update (β, W ) via SGD (LassoNet or LassoFlexNet) or Adam (LassoFlexNet only) 
+
+9: if λ̸ = 0 then 
+
+10: Update (β, W (1) ) by Hier-Prox (LassoNet) or Seq-Hier-Prox (LassoFlexNet) 
+
+11: end if 
+
+12: end for 
+
+13: Update k to be the number of non-zero coordinates of β
+
+14: end while 
+
+15: end for 
+
+We improve in three ways: 1) joint →sequential optimization; 2) proximal gradient →proximal adaptive gradient; 3) EMA stabilization. Algorithm 2 details our method: 
+
+Algorithm 2 LassoFlexNet Seq-Hier-Prox Adam EMA Operator 
+
+1: procedure SEQ -H IER -P ROX -A DAM -EMA( β, W (1) , β EMA , W (1) 
+
+> EMA
+
+; λ, M ) ▷ β, W (1) can come from Adam 
+
+2: for j = 1 to d do 
+
+3: ˜βj = Sign( β) · |S λ(βEMA ,j )| ▷ Sequential: Lasso first 
+
+4: Sort |W (1)  
+
+> EMA ,j
+
+| into |W (1) 
+
+> EMA ,(j, 1)
+
+| ≥ · · · ≥ | W (1) 
+
+> EMA ,(j,K )
+
+|
+
+5: for m = 0 to K do 
+
+6: wm = M  
+
+> 1+ m M 2
+
+Sλ
+
+
+
+| ˜βj | + M
+
+> m
+
+X
+
+> i=1
+
+|W (1) 
+
+> EMA ,(j,i )
+
+|
+
+
+
+7: end for 
+
+8: Find first ˜m : |W (1)  
+
+> EMA ,(j, ˜m+1)
+
+| ≤ w ˜m ≤ | W (1)  
+
+> EMA ,(j, ˜m)
+
+|
+
+9: ˜W (1)  
+
+> j
+
+= Sign( W (1)  
+
+> j
+
+) min  w ˜m, |W (1)  
+
+> EMA ,j
+
+|
+
+10: end for 
+
+11: return ( ˜β, ˜W (1) )
+
+12: end procedure 
+
+Conventions: W(j,K +1) = 0 , W(j, 0) = + ∞, min and | · | are elementwise. 
+
+Joint Optimization Blinds Lasso Guidance. LassoNet relies on linear skip connections to robustly guide the neural module away from irrelevant features. However, its joint optimization of θ and W (1) mathematically undermines this intent. HPG computes a shared scalar w ˜m to update both parameters: 
+
+˜θj = 1
+
+M · sign (θj ) · w ˜m, ˜W (1)  
+
+> j
+
+= sign (W (1)  
+
+> j
+
+) · min( w ˜m, |W (1)  
+
+> j
+
+|)
+
+5LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Because w ˜m is dominated by the massive parameter count of W (1) , the update trajectory biases heavily toward the neural module, effectively sidelining the skip connection. This does not contradict LassoNet’s proximal global optimum lemma [ 8], as that lemma only guarantees optimality for the points returned by the optimizer along specific trajectories ,not the global learning objective itself. 
+
+Sequential Optimization: Lasso-First Guidance. LassoFlexNet structurally prioritizes the skip connection via a sequential optimization scheme. Let Sλ·ηt (·) denote the soft-thresholding operator [ 22 ]. Given the unconstrained update β, we first solve for the independent Lasso parameter ˜β:
+
+˜β = Sλ·ηt (β) = arg min 
+
+> b
+
+ 12ηt
+
+∥β − b∥22 + λ∥b∥1
+
+
+
+(5) Subsequently, we optimize ˜W under a constraint strictly guided by the newly computed ˜β:
+
+˜W = arg min 
+
+> U
+
+ 12 ∥U − W ∥22 + ¯λ∥U ∥1
+
+
+
+s.t. ∥U ∥∞ ≤ M · ∥ ˜β∥2
+
+This decoupling (Algorithm 2) ensures ˜β dictates feature selection autonomously, while W strictly obeys the resulting boundary. 
+
+Adaptive Integration: Proximal Adam. LassoNet relies on a constant-rate SGD with Nesterov momentum, which exhibits high variance and instability. We extend the proximal gradient framework to accommodate Adam’s adaptive, per-coordinate learning rates ηi,t . The unconstrained update step becomes: 
+
+βi,t = βi,t −1 − ηi,t · mt = βi,t −1 − η mt
+
+√νt + ϵ
+
+Crucially, the proximal operation (Equation 5) remains separable [ 23 ] under this diagonal preconditioning. The constraint enforcement thus decomposes into a per-coordinate soft-thresholding step: 
+
+˜βi,t +1 = arg min 
+
+> bi
+
+ (bi − βi,t )2
+
+2ηi,t 
+
++ λ|bi|
+
+
+
+= sign( βi,t ) max ( |βi,t | − λη i,t , 0) 
+
+Stable EMA-Enhanced Proximal Gradients. Proximal methods were historically designed for full-batch deter-ministic optimization and often suffer under stochastic regimes. While Adam mitigates gradient variance, instability persists in sparse neural models due to constraint boundaries. We introduce exponential moving averages (EMA) applied directly to the parameters during the sequential proximal evaluation—a novel stabilization technique for sparse networks. Unlike standard post-hoc parameter EMA [ 24 ], we embed it natively within the backward pass parameter update (Algorithm 2), guaranteeing stable convergence when combined with the τ -induced curriculum learning. 
+
+## 6 Theoretical Analysis of Tabular Inductive Biases 
+
+As formalized in Sections 1 and 3, robust deep tabular models must satisfy five criteria: (1) resilience to irrelevant features, (2) preservation of data orientation, (3) capacity for localized irregularities, (4) processing of heterogeneous inputs, and (5) stable training dynamics. Here, we theoretically and empirically validate how LassoFlexNet fulfills these requirements. 
+
+(1) Resilience to Irrelevant Features. Ng [6] (Theorem 3.1) demonstrated that ℓ1 regularization robustly learns even when irrelevant features exponentially outnumber training samples. By applying a Tied Group Lasso over the nonlinear per-feature embeddings (Sec. 4.2.2), LassoFlexNet inherits this strict feature-selection capability, extending the principles of LassoNet [8] into nonlinear representation spaces. 
+
+(2) Preservation of Data Orientation. Neural networks traditionally suffer from rotational invariance, whereas decision trees natively respect the original, meaningful coordinate axes—a critical factor in their tabular superiority. While Lasso regularization implicitly breaks this invariance [ 6], premature dense feature interactions would destroy this property. We rigorously prove that the coordinate-wise encoding alone (PLE) actively breaks rotational invariance (detailed proof in App. C): 
+
+Proposition 6.1 (PLE Breaks Rotational Invariance (Informal)) . If a learning algorithm A is rotationally invariant, but an encoding scheme Φ is not rotationally equivariant, then the composite algorithm A ◦ Φ loses rotational invariance. We provide an explicit counter-example in the infinite Neural Tangent Kernel (NTK) regime. 
+
+6LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+This is consistent with the empirical observations in [14, 19]. 
+
+(3) Capacity for Localized Irregularities. Beyond breaking invariance, we mathematically establish that PLE yields expressivity benefits without inflating the parameter count, making it ideal for the highly irregular manifolds common in tabular data (proof in App. D): 
+
+Proposition 6.2 (PLE Expressivity (Informal)) . Allocating Ti segments for feature xi via PLE yields a Ti-fold increase in functional expressivity without requiring additional learnable parameters, actively facilitating the modeling of localized irregularities. 
+
+Sec. 6.1 empirically validates the benefits of PLE. 
+
+(4) Processing Heterogeneous Inputs. Tabular variables often originate from distinct sensing modalities or abstraction levels. While Transformers and MLPs indiscriminately blend these inputs via early linear projections, LassoFlexNet 
+
+utilizes independent PFE modules. Because the downstream Mixer requires a homogeneous vector space, end-to-end backpropagation structurally forces the individual PFE blocks to map highly heterogeneous raw inputs into a unified, normalized latent manifold. 
+
+(5) Stabilizing Training Dynamics. While proximal gradient operators grant robustness to irrelevant features, they notoriously destabilize stochastic optimization. To formalize this, we analyze the training dynamics of LassoNet’s joint Hier-Prox operator (proofs in App. E): 
+
+Proposition 6.3 (Hier-Prox Hard-Constraint Convergence (Informal)) . Under standard stochastic optimization regular-ity assumptions, the convergence of LassoNet’s Hier-Prox is bounded by: 
+
+EF (yt) − F (y⋆) ≤ ρt F (y0) − F (y⋆) + CNoise η2σ2 
+
+> θ,W 1
+
++ CSign Flip P[Jump t], (ρ < 1) .
+
+While the first two terms represent standard stochastic proximal convergence, the non-convex nature of the hierarchical constraint induces jump discontinuities, yielding the unique CSign Flip P[Jump t] error term. This penalty is particularly devastating for LassoFlexNet : because β operates on dynamically evolving PFE representations (rather than static inputs), the variance Var( ∇β) inflates, driving up the probability of sign flips ( P[Jump t]) and rupturing the training trajectory. To eliminate this pathological jump discontinuity, we analyze a convex relaxation of the hierarchical constraint (App. F): 
+
+Proposition 6.4 (Hier-Prox Convex Relaxation Convergence (Informal)) . Under identical conditions, the convex relaxation of the Hier-Prox operator yields: 
+
+EF (yt) − F (y⋆) ≤ ρt F (y0) − F (y⋆) + CNoise η2σ2
+
+> θ,W 1
+
+Crucially, the relaxed formulation not only annihilates the jump-discontinuity error term, but the resulting algorithmic derivation mathematically decouples the optimization of the skip coefficients β from the neural weights W .This reveals a fundamental tradeoff: the hard constraint (Prop. 6.3) strictly enforces feature sparsity, while the convex relaxation (Prop. 6.4) guarantees stable convergence. Our proposed Seq-Hier-Prox-EMA (Algorithm 2) resolves this tension. By retaining the hard ℓ∞ constraint but adopting the sequential update strategy dictated by the convex relaxation, we safely decouple the optimization dynamics. 
+
+Remark 6.5 . While Propositions 6.3 and 6.4 rely on stylized assumptions, they provide concrete theoretical intuition: coupled hierarchical proximal constraints fail under high variance due to sign-flip discontinuities. Our sequential, EMA-smoothed algorithm systematically neutralizes this failure mode, a theoretically motivated claim comprehensively validated by our ablation studies in Section 6.1. 
+
+6.1 Ablation Study over Architecture and Optimization Design Choices 
+
+We conduct an ablation study on the California Housing dataset to evaluate LassoFlexNet ’s components, reporting RMSE (lower is better) in Table 2. The full model achieves an RMSE of 0.4047 (on average). Removing EMA from Seq-Hier-Prox increases RMSE to 
+
+0.4195 , confirming EMA’s role in stabilizing training. Replacing the Mixer with an MLP backbone of similar depth (MLP 1) or similar numbers of parameters (MLP 2) yields RMSE of 0.8453 , and 0.8406, respectively. This instability is remedied substantially by the inclusion of HyperGrad, but is still not competitive with LassoFlex. Replacing Seq-Hier-Prox with LassoNet’s Hier-Prox harms performance (RMSE 0.4320 ), as the joint optimization undermines the linear skip connection. Using Adam without proximal gradients yields 0.4272 , highlighting the necessity of proximal methods for feature selection. Setting τ = 1 (disabling curriculum learning) marginally improves RMSE to 0.4004 ,although the variance in this regime is higher. Using learnable BatchNorm causes overfitting ( 0.4191 ). The Mixer alone 7LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Table 2: Ablation study on the California Housing dataset. Ablations done on Linear LassoNet and LassoFlexNet 
+
+regression. Each value is reported as mean ± std (min, max) over 10 runs with different seeds.                                                                   
+
+> Ablation Test RMSE (Linear) LassoNet
+> Baseline Linear LassoNet 0.5263 ±0.0103 (0.5100, 0.5362) AdamHGD 0.5294 ±0.0088 (0.5073, 0.5352) Adam 0.5291 ±0.0082 (0.5090, 0.6044)
+> LassoFlexNet
+> Baseline LassoFlexNet 0.4047 ±0.0069 (0.3954, 0.4180)
+> τ= 1 0.4004 ±0.0095 (0.3812, 0.4136) Adam Warmup + Nesterov 0.4050 ±0.0089 (0.3874, 0.4190) Adam Optimizer with HGD 0.4089 ±0.0077 (0.3934, 0.4183) Hybrid Adaptive Lambda 0.4109 ±0.0129 (0.3967, 0.4314) Linear PFE Layers 0.4145 ±0.0068 (0.4064, 0.4241) Learnable BatchNorm Layers 0.4191 ±0.0096 (0.4034, 0.4357) No EMA 0.4195 ±0.0108 (0.4010, 0.4435)
+> τ= 1 , no skip (Mixer only) 0.4221 ±0.0117 (0.4027, 0.4325) Original Proximal Grad. w/ no EMA 0.4320 ±0.0097 (0.4208, 0.4532) Adam w/ no Proximal Gradient 0.4272 ±0.0098 (0.4146, 0.4516) No PLE 0.4387 ±0.0124 (0.4086, 0.4538) Linear LassoNet + PLE 0.5226 ±0.0098 (0.5050, 0.5343) No PFE 0.5371 ±0.0166 (0.5144, 0.5770) MLP 1 (same width/depth) w/ HGD 0.4768 ±0.0079 (0.4649, 0.4859) MLP 2 (same # params) w/ HGD 0.4548 ±0.0101 (0.4338, 0.4655) MLP 1 (same width/depth) 0.8453 ±0.2016 (0.5815, 1.0330) MLP 2 (same # params) 0.8406 ±0.2009 (0.5815, 1.0329)
+
+(with HyperGrad) performs poorly ( 0.4221 ), and the original LassoNet (with Adam or HyperGrad) yields 0.5294 and 
+
+0.5291 , respectively. Each component—EMA, Seq-Hier-Prox, fixed BatchNorm and the Mixer component contributes significantly to LassoFlexNet ’s performance. 
+
+## 7 Comprehensive Benchmarking 
+
+We evaluate LassoFlexNet across 52 datasets spanning three rigorous benchmarks: a feature selection suite [ 25 ], TabZilla [ 26 ], and TabRed [ 10 ]. Across these diverse regimes, LassoFlexNet consistently outperforms state-of-the-art deep tabular models (e.g., FT-Transformer [ 13 ], TabM [ 14 ]) and gradient-boosted trees (e.g., XGBoost [ 3 ], CatBoost [ 4]). Comprehensive experimental settings are detailed in Appendix B.2. Additional analyses regarding hyperparameter robustness and the generalization impact of Seq-Hier-Prox are provided in Appendices A.3 and A.2, respectively. 
+
+7.1 Feature Selection Under Noise 
+
+We first assess the capability of LassoFlexNet to isolate relevant signals amidst severe noise. We utilize the feature selection benchmark from Cherepanova et al. [25] , which corrupts 12 standard datasets by injecting either purely random noise features (Table 3) or highly correlated second-order features (Table 4) at extraneous rates of 50% and 75% .
+
+Baselines and Protocol. We compare our end-to-end architecture against traditional sequential “two-stage” pipelines. In these baselines, a dedicated feature selection algorithm (e.g., Lasso, LassoNet, XGBoost) first filters the inputs before passing them to a downstream deep model (MLP or FT-Transformer). Crucially, we evaluate these baselines in an 
+
+oracle setting : they are explicitly provided with the ground-truth number of relevant features ( k). In stark contrast, 
+
+LassoFlexNet operates blindly, autonomously discovering the sparse support set during training without any prior knowledge of k. Results. Despite this severe informational disadvantage, LassoFlexNet consistently outperforms the oracle two-stage pipelines. On the random noise benchmark, it achieves top-3 performance in 8/12 datasets at the 50% 
+
+noise rate and 7/12 at the 75% rate. This confirms that selecting features based on learned, nonlinear representations via a Tied Group Lasso is more robust than linear pre-filtering. 
+
+7.2 TabZilla Performance Benchmarks Benchmark and Baselines. To evaluate robustness across highly diverse data distributions, we utilize the TabZilla benchmark suite [ 26 ]. From its collection of the 36 hardest classification tasks, we select the subset of 35 datasets containing numerical or mixed features. We compare LassoFlexNet against six formidable competitors, representing both the gradient-boosted decision tree (GBDT) family (XGBoost [ 3], CatBoost [ 4 ], LightGBM [ 27 ]) and state-of-the-art deep tabular models (DeepFM [ 28 ] and TabM [ 14 ]). Protocol and Results. We adopt a rigorous two-stage evaluation 
+
+> 2
+
+5 seeds because one seed leads to unstable training. 
+
+8LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+% FS Method AL CH CO EY GE HE HI HO JA MI OT YE 50 No FS + MLP 0.941 -0.480 0.961 0.538 0.466 0.366 0.798 -0.622 0.703 -0.911 0.773 -0.801 Univariate + MLP 0.960 -0.447 0.970 0.575 0.515 0.379 0.811 -0.549 0.715 -0.891 0.808 -0.776 Lasso + MLP 0.949 -0.454 0.969 0.547 0.458 0.378 0.812 -0.575 0.715 -0.907 0.805 -0.774 
+
+1L Lasso + MLP 0.952 -0.453 0.969 0.564 0.473 0.380 0.811 -0.568 0.715 -0.897 0.796 -0.773 
+
+AGL + MLP 0.958 -0.512 0.969 0.578 0.495 0.386 0.813 -0.557 0.718 -0.898 0.791 -0.783 LassoNet + MLP 0.954 -0.445 0.969 0.495 0.383 0.386 0.811 -0.557 0.705 -0.907 0.783 -0.776 AM + MLP 0.953 -0.444 0.968 0.554 0.498 0.382 0.813 -0.566 0.722 -0.904 0.801 -0.777 RF + MLP 0.955 -0.444 0.969 0.554 0.498 0.382 0.813 -0.566 0.722 -0.904 0.801 -0.777 XGBoost + MLP 0.956 -0.448 0.969 0.590 0.502 0.385 0.812 -0.560 0.720 -0.893 0.800 -0.774 Deep Lasso + MLP 0.959 -0.443 0.968 0.573 0.485 0.383 0.814 -0.549 0.720 -0.894 0.802 -0.776 No FS + FT 0.959 -0.432 0.966 0.673 0.500 0.384 0.817 -0.577 0.730 -0.902 0.813 -0.792 Univariate + FT 0.963 -0.424 0.970 0.700 0.519 0.389 0.819 -0.554 0.733 -0.897 0.819 -0.788 Lasso + FT 0.952 -0.419 0.969 0.703 0.504 0.392 0.817 -0.594 0.728 -0.999 0.820 -0.998 1L Lasso + FT 0.963 -0.423 0.969 0.722 0.489 0.389 0.819 -0.577 0.732 -0.904 0.819 -0.775 
+
+AGL + FT 0.899 -0.419 0.969 0.701 0.480 0.386 0.822 -0.586 0.733 -0.915 0.814 -0.586 LassoNet + FT 0.963 -0.423 0.970 0.690 0.481 0.392 0.818 -0.559 0.733 -0.904 0.808 -0.789 AM + FT 0.962 -0.432 0.969 0.703 0.504 0.392 0.817 -0.568 0.735 -0.903 0.820 -0.789 RF + FT 0.962 -0.432 0.970 0.715 0.591 0.395 0.820 -0.558 0.737 -0.900 0.820 -0.791 XGBoost + FT 0.963 -0.420 0.970 0.725 0.572 0.400 0.819 -0.568 0.734 -0.898 0.820 -0.789 Deep Lasso + FT 0.962 -0.419 0.969 0.703 0.504 0.392 0.817 -0.560 0.733 -0.900 0.817 -0.788 
+
+Ours: LassoFlexNet 0.962 -0.409 0.969 0.720 0.609 0.396 0.819 -0.567 0.730 -0.897 0.815 -0.775 
+
+75 No FS + MLP 0.925 -0.527 0.955 0.502 0.417 0.348 0.778 -0.674 0.671 -0.917 0.749 -0.812 Univariate + MLP 0.960 -0.447 0.970 0.575 0.502 0.381 0.810 -0.549 0.713 -0.890 0.806 -0.776 Lasso + MLP 0.959 -0.454 0.967 0.543 0.491 0.381 0.811 -0.612 0.716 -0.907 0.802 -0.789 1L Lasso + MLP 0.957 -0.448 0.968 0.555 0.432 0.380 0.809 -0.572 0.717 -0.903 0.799 -0.775 
+
+AGL + MLP 0.954 -0.447 0.968 0.561 0.429 0.386 0.809 -0.571 0.719 -0.901 0.762 -0.777 LassoNet + MLP 0.958 -0.452 0.966 0.528 0.475 0.383 0.809 -0.555 0.705 -0.913 0.768 -0.794 RF + MLP 0.949 -0.453 0.968 0.584 0.610 0.386 0.814 -0.585 0.718 -0.902 0.808 -0.784 XGBoost + MLP 0.958 -0.451 0.969 0.576 0.583 0.382 0.810 -0.568 0.720 -0.892 0.804 -0.774 
+
+Deep Lasso + MLP 0.957 -0.446 0.969 0.569 0.479 0.387 0.814 -0.559 0.721 -0.893 0.800 -0.774 Ours: LassoFlexNet 0.958 -0.411 0.968 0.665 0.602 0.392 0.810 -0.572 0.721 -0.895 0.805 -0.776 
+
+Table 3: Feature selection benchmark on datasets with random extra features. Reports accuracy (classification) and negative RMSE (regression). Bold indicates top-3 performance per dataset at 50% and 75%. “No FS” indicates training without FS, as done for LassoFlexNet , which performs end-to-end feature selection. 
+
+% FS method AL CH CO EY GE HE HI HO JA MI OT YE 50 No FS + MLP 0.946 -0.475 0.965 0.557 0.525 0.370 0.802 -0.607 0.703 -0.909 0.778 -0.797 Univariate + MLP 0.955 -0.451 0.966 0.556 0.514 0.346 0.810 -0.620 0.717 -0.920 0.795 -0.828 Lasso + MLP 0.955 -0.449 0.968 0.548 0.512 0.382 0.813 -0.602 0.713 -0.903 0.796 -0.795 1L Lasso + MLP 0.955 -0.447 0.968 0.566 0.515 0.382 0.812 -0.581 0.718 -0.902 0.795 -0.780 AGL + MLP 0.953 -0.450 0.968 0.588 0.538 0.386 0.813 -0.561 0.722 -0.902 0.796 -0.780 LassoNet + MLP 0.955 -0.452 0.969 0.570 0.556 0.382 0.811 -0.551 0.719 -0.905 0.795 -0.777 
+
+AM + MLP 0.955 -0.449 0.967 0.583 0.527 0.381 0.814 -0.555 0.722 -0.905 0.797 -0.780 RF + MLP 0.951 -0.453 0.967 0.574 0.568 0.383 0.810 -0.565 0.724 -0.904 0.788 -0.786 XGBoost + MLP 0.954 -0.454 0.969 0.583 0.510 0.385 0.815 -0.553 0.722 -0.892 0.803 -0.779 Deep Lasso + MLP 0.955 -0.447 0.968 0.577 0.525 0.388 0.815 -0.567 0.721 -0.895 0.801 -0.776 
+
+No FS + FT 0.960 -0.430 0.967 0.686 0.576 0.345 0.812 -0.574 0.733 -0.920 0.809 -0.826 Univariate + FT 0.963 -0.422 0.965 0.681 0.574 0.387 0.820 -0.586 0.732 -0.937 0.812 -0.915 Lasso + FT 0.952 -0.422 0.936 0.697 0.556 0.389 0.820 -0.570 0.731 -0.899 0.816 -0.795 1L Lasso + FT 0.962 -0.419 0.969 0.718 0.571 0.392 0.820 -0.552 0.735 -0.914 0.816 -0.830 AGL + FT 0.906 -0.426 0.969 0.697 0.591 0.393 0.820 -0.572 0.736 -0.903 0.813 -0.790 LassoNet + FT 0.962 -0.426 0.970 0.679 0.578 0.392 0.820 -0.549 0.734 -0.901 0.817 -0.790 AM + FT 0.962 -0.424 0.969 0.680 0.572 0.392 0.820 -0.557 0.735 -0.898 0.806 -0.793 RF + FT 0.962 -0.422 0.969 0.711 0.600 0.387 0.819 -0.548 0.735 -0.897 0.816 -0.790 XGBoost + FT 0.963 -0.422 0.970 0.706 0.564 0.392 0.821 -0.561 0.736 -0.898 0.809 -0.788 Deep Lasso + FT 0.961 -0.422 0.968 0.725 0.577 0.393 0.821 -0.598 0.736 -0.898 0.801 -0.776 Ours: LassoFlexNet 0.960 -0.415 0.970 0.712 0.599 0.390 0.817 -0.590 0.731 -0.903 0.809 -0.780 No FS + MLP 0.921 -0.516 0.956 0.518 0.503 0.356 0.788 -0.632 0.686 -0.913 0.762 -0.808 Univariate + MLP 0.955 -0.569 0.941 0.510 0.495 0.347 0.742 -0.620 0.686 -0.921 0.779 -0.838 Lasso + MLP 0.948 -0.454 0.963 0.565 0.490 0.373 0.810 -0.593 0.717 -0.903 0.795 -0.791 1L Lasso + MLP 0.955 -0.444 0.967 0.549 0.495 0.380 0.811 -0.576 0.715 -0.903 0.797 -0.779 
+
+AGL + MLP 0.928 -0.566 0.967 0.548 0.490 0.382 0.811 -0.574 0.714 -0.904 0.788 -0.780 
+
+LassoNet + MLP 0.947 -0.452 0.969 0.539 0.533 0.383 0.805 -0.572 0.708 -0.908 0.791 -0.785 RF + MLP 0.952 -0.450 0.963 0.547 0.533 0.372 0.805 -0.573 0.716 -0.903 0.765 -0.788 XGBoost + MLP 0.954 -0.515 0.968 0.571 0.530 0.381 0.811 -0.571 0.721 -0.895 0.800 -0.784 Deep Lasso + MLP 0.959 -0.441 0.968 0.554 0.517 0.386 0.813 -0.563 0.718 -0.898 0.804 -0.778 Ours: LassoFlexNet 0.955 -0.422 0.963 0.675 0.579 0.382 0.811 -0.588 0.718 -0.905 0.801 -0.785 
+
+Table 4: Benchmarking feature selection methods for MLP and FT-Transformer downstream models on datasets with corrupted features . We report performance of models trained on features selected by different FS algorithms in terms of accuracy for classification and negative RMSE for regression problems. % refers to percent of extra features in the dataset: either 50% or 75% features are second-order. Bold font indicates the top-3 performance and lower rank indicates better overall result, and the comparisons are done for a given dataset at a noise level (50 or 75). protocol. For each dataset, we first perform a hyperparameter search on a single fold, selecting the configuration that minimizes validation log-loss on a hold-out split. Using these fixed hyperparameters, we then report the final performance across a separate 5-fold cross-validation. Figure 2 illustrates the distribution of accuracy differentials between the baselines and our method. Because the y-axis represents (Benchmark Accuracy −LassoFlexNet Accuracy ),values below zero indicate that LassoFlexNet outperformed the competitor. The results demonstrate consistent 9LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Figure 2: Relative performance distribution of 6 benchmark methods compared to LassoFlexNet across 35 TabZilla datasets. The y-axis represents the difference in accuracy (Benchmark v.s. LassoFlexNet ). Thus, values below zero indicate that LassoFlexNet outperforms the competing method. The boxplots summarize the variance across different datasets. Table 5: TabRed Benchmark Results               
+
+> Dataset \Model CatBoost LightGBM RF XGBoost TabM-mini LassoFlexNet ecom-offers (class. AUC) 0.6507 ± 0.0554 [6] 0.6317 ± 0.0538 [6] 0.6447 ± 0.0529 [6] 0.6447 ± 0.0628 [6]
+> 0.6533 ± 0.0603 [6]
+> 0.6322 ± 0.0419 [6] homecredit-default (class. AUC) 0.8211 ± 0.0115 [6] 0.8092 ± 0.0110 [6] 0.7365 ± 0.0168 [6] 0.8046 ± 0.0136 [6]
+> 0.8413 ± 0.0102 [6]
+> 0.8365 ± 0.0096 [6] homesite-insurance (class. AUC) 0.9559 ± 0.0088 [6] 0.9576 ± 0.0075 [6] 0.8414 ± 0.0168 [6] 0.9568 ± 0.0088 [6] 0.9557 ± 0.0083 [6]
+> 0.9605 ± 0.0071 [6]
+> cooking-time (reg. RMSE) 0.4718 ± 0.0084 [6] 0.4899 ± 0.0095 [6] 0.5192 ± 0.0062 [6] 0.4866 ± 0.0108 [6] 0.5629 ± 0.0157 [6]
+> 0.4658 ± 0.0093 [6]
+> delivery-eta (reg. RMSE) 0.5370 ± 0.0094 [6]
+> 0.5641 ± 0.0095 [6] 0.5701 ± 0.0079 [6] 0.5425 ± 0.0086 [6] 0.6121 ± 0.0057 [5] 0.5375 ± 0.0104 [6] maps-routing (reg. RMSE) 0.1665 ± 0.0015 [6] 0.1641 ± 0.0015 [6] 0.1746 ± 0.0012 [6] 0.1709 ± 0.0018 [6] 0.1656 ± 0.0021 [6]
+> 0.1619 ± 0.0013 [6]
+> sberbank-housing (reg. RMSE) 0.2585 ± 0.0171 [6] 0.2568 ± 0.0171 [6] 0.2908 ± 0.0141 [6] 0.2761 ± 0.0254 [6] 0.2769 ± 0.0098 [5] 2
+> 0.2544 ± 0.0138 [6]
+> weather (reg. RMSE) 1.5922 ± 0.0565 [6] 1.6272 ± 0.0735 [6] 2.4514 ± 0.0994 [6] 1.5632 ± 0.0766 [6] 2.2434 ± 0.1835 [6]
+> 1.5591 ± 0.0764 [6]
+
+superiority: LassoFlexNet outperforms all six baselines in the majority of tasks, exhibiting a robust downward shift in the error distributions. 
+
+7.3 TabRed: Robustness to Distribution Shift Benchmark and Protocol. Standard tabular benchmarks often rely on i.i.d. shuffling, which masks the temporal distribution shifts prevalent in real-world applications. To assess robustness under these challenging conditions, we evaluate LassoFlexNet on the TabRed benchmark [ 10 ]. Adopting the TabZilla protocol, we aggregate performance across six splits per dataset: three randomized splits and three strict temporal splits (where the training data strictly precedes the test data in time). This rigorously tests the model’s ability to generalize to future, shifted distributions. 
+
+Results. Table 5 details the performance of LassoFlexNet against leading GBDT methods and the state-of-the-art neural model TabM-mini. LassoFlexNet establishes a new state-of-the-art, achieving the best performance in 5 out of 8 tasks. In the remaining tasks, it remains highly competitive; for instance, it trails the top performer (CatBoost) by a negligible margin of 0.0005 RMSE in delivery-eta , and ranks second in homecredit-default . This consistent performance across both randomized and temporal splits highlights LassoFlexNet ’s superior capacity to handle real-world tabular heterogeneity and non-stationarity. 10 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+## 8 Conclusion 
+
+We introduced LassoFlexNet , a novel neural architecture accompanied by a novel optimization algorithm that sets the new state-of-the-art for tabular deep learning. The method is designed specifically to address five challenges: (i) resilience to irrelevant features; (ii) respect for data orientations; (iii) the ability to learn complex and irregular functions; (iv) the capability to model a larger number of heterogeneous inputs; and (v) stability and robustness in training. LassoFlexNet bridges the gap between tree-based and neural methods, offering a practical solution for tabular data. 11 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+## References 
+
+[1] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In 
+
+Proceedings of the IEEE conference on computer vision and pattern recognition , pages 770–778, 2016. [2] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. Advances in neural information processing systems , 30, 2017. [3] Tianqi Chen and Carlos Guestrin. Xgboost: A scalable tree boosting system. In Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining , 2016. [4] Liudmila Prokhorenkova, Gleb Gusev, Aleksandr Vorobev, Anna Veronika Dorogush, and Andrey Gulin. Catboost: unbiased boosting with categorical features. In Advances in Neural Information Processing Systems , 2018. [5] Léo Grinsztajn, Edouard Oyallon, and Gaël Varoquaux. Why do tree-based models still outperform deep learning on typical tabular data? Advances in neural information processing systems , 35:507–520, 2022. [6] Andrew Y Ng. Feature selection, l 1 vs. l 2 regularization, and rotational invariance. In Proceedings of the twenty-first international conference on Machine learning , page 78, 2004. [7] Ilya O Tolstikhin, Neil Houlsby, Alexander Kolesnikov, Lucas Beyer, Xiaohua Zhai, Thomas Unterthiner, Jessica Yung, Andreas Steiner, Daniel Keysers, Jakob Uszkoreit, et al. Mlp-mixer: An all-mlp architecture for vision. 
+
+Advances in neural information processing systems , 34:24261–24272, 2021. [8] Ismael Lemhadri, Feng Ruan, Louis Abraham, and Robert Tibshirani. Lassonet: A neural network with feature sparsity. Journal of Machine Learning Research , 22(127):1–29, 2021. [9] Valeriia Cherepanova, Roman Levin, Gowthami Somepalli, Jonas Geiping, C. Bayan Bruss, Andrew G Wilson, Tom Goldstein, and Micah Goldblum. A performance-driven benchmark for feature selection in tabular deep learning. In A. Oh, T. Naumann, A. Globerson, K. Saenko, M. Hardt, and S. Levine, editors, Advances in Neural Information Processing Systems , volume 36, pages 41956–41979. Curran Associates, Inc., 2023. URL https://proceedings.neurips.cc/paper_files/paper/2023/file/ 82f39c7409155b74d15d73b048f06771-Paper-Datasets_and_Benchmarks.pdf .[10] Ivan Rubachev, Nikolay Kartashev, Yury Gorishniy, and Artem Babenko. Tabred: Analyzing pitfalls and filling the gaps in tabular deep learning benchmarks. In The Thirteenth International Conference on Learning Representations , 2025. URL https://openreview.net/forum?id=L14sqcrUC3 .[11] Robert Tibshirani. Regression shrinkage and selection via the lasso. Journal of the Royal Statistical Society Series B: Statistical Methodology , 58(1):267–288, 1996. [12] Sercan Ö Arik and Tomas Pfister. Tabnet: Attentive interpretable tabular learning. In Proceedings of the AAAI conference on artificial intelligence , volume 35, pages 6679–6687, 2021. [13] Yury Gorishniy, Ivan Rubachev, Valentin Khrulkov, and Artem Babenko. Revisiting deep learning models for tabular data. Advances in neural information processing systems , 34:18932–18943, 2021. [14] Yury Gorishniy, Akim Kotelnikov, and Artem Babenko. Tabm: Advancing tabular deep learning with parameter-efficient ensembling. In The Thirteenth International Conference on Learning Representations , 2025. URL 
+
+https://openreview.net/forum?id=Sd4wYYOhmY .[15] Yury Gorishniy, Ivan Rubachev, Nikolay Kartashev, Daniil Shlenskii, Akim Kotelnikov, and Artem Babenko. Tabr: Tabular deep learning meets nearest neighbors. In The Twelfth International Conference on Learning Representations , 2024. URL https://openreview.net/forum?id=rhgIgTSSxW .[16] Noah Hollmann, Samuel Müller, Katharina Eggensperger, and Frank Hutter. Tabpfn: A transformer that solves small tabular classification problems in a second, 2023. URL https://arxiv.org/abs/2207.01848 .[17] Léo Grinsztajn, Klemens Flöge, Oscar Key, Felix Birkel, Philipp Jund, Brendan Roof, Benjamin Jäger, Dominik Safaric, Simone Alessi, Adrian Hayler, Mihir Manium, Rosen Yu, Felix Jablonski, Shi Bin Hoo, Anurag Garg, Jake Robertson, Magnus Bühler, Vladyslav Moroshan, Lennart Purucker, Clara Cornu, Lilly Charlotte Wehrhahn, Alessandro Bonetto, Bernhard Schölkopf, Sauraj Gambhir, Noah Hollmann, and Frank Hutter. Tabpfn-2.5: Advancing the state of the art in tabular foundation models, 2025. URL https://arxiv.org/abs/2511.08667 .[18] Jingang QU, David Holzmüller, Gaël Varoquaux, and Marine Le Morvan. TabICL: A tabular foundation model for in-context learning on large data. In Forty-second International Conference on Machine Learning , 2025. URL 
+
+https://openreview.net/forum?id=0VvD1PmNzM .[19] Yury Gorishniy, Ivan Rubachev, and Artem Babenko. On embeddings for numerical features in tabular deep learning. In NeurIPS , 2022. [20] Jerome Friedman. The elements of statistical learning: Data mining, inference, and prediction. (No Title) , 2009. 12 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+[21] Akihito Sudo, Teng Teck Hou, Masaki Yamaguchi, and Yoshinori Tone. Lassolayer: Nonlinear feature selection by switching one-to-one links. arXiv preprint arXiv:2108.12165 , 2021. [22] Neal Parikh, Stephen Boyd, et al. Proximal algorithms. Foundations and trends® in Optimization , 1(3):127–239, 2014. [23] Stephen Boyd and Lieven Vandenberghe. Convex optimization . Cambridge university press, 2004. [24] Pavel Izmailov, Dmitrii Podoprikhin, Timur Garipov, Dmitry Vetrov, and Andrew Gordon Wilson. Averaging weights leads to wider optima and better generalization. arXiv preprint arXiv:1803.05407 , 2018. [25] Valeriia Cherepanova, Roman Levin, Gowthami Somepalli, Jonas Geiping, C. Bruss, Andrew Wilson, Tom Goldstein, and Micah Goldblum. A performance-driven benchmark for feature selection in tabular deep learning. In NeurIPS 2023 Second Table Representation Learning Workshop , 2023. URL https://openreview.net/ forum?id=PxEY7pBb6F .[26] Duncan McElfresh, Sujay Khandagale, Jonathan Valverde, Vishak Prasad C, Benjamin Feuer, Chinmay Hegde, Ganesh Ramakrishnan, Micah Goldblum, and Colin White. When do neural nets outperform boosted trees on tabular data? 2023. [27] Guolin Ke, Qi Meng, Thomas Finley, Taifeng Wang, Weidong Chen, Weidong Ma, Qi Ye, and Tie-Yan Liu. Lightgbm: A highly efficient gradient boosting decision tree. In Advances in Neural Information Processing Systems , volume 30, pages 3146–3154, 2017. [28] Huifeng Guo, Ruiming Tang, Yunming Ye, Zhenguo Li, and Xiuqiang He. Deepfm: a factorization-machine based neural network for ctr prediction. arXiv preprint arXiv:1703.04247 , 2017. [29] Jonathan Ho, Ajay Jain, and Pieter Abbeel. Denoising diffusion probabilistic models. Advances in neural information processing systems , 33:6840–6851, 2020. [30] Takuya Akiba, Shotaro Sano, Toshihiko Yanase, Takeru Ohta, and Masanori Koyama. Optuna: A next-generation hyperparameter optimization framework. In Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining , pages 2623–2631, 2019. [31] Arthur Jacot, Franck Gabriel, and Clément Hongler. Neural tangent kernel: Convergence and generalization in neural networks. Advances in neural information processing systems , 31, 2018. [32] Ismael Lemhadri, Feng Ruan, Louis Abraham, and Robert Tibshirani. Lassonet: A neural network with feature sparsity. Journal of Machine Learning Research , 22(127):1–29, 2021. 13 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+## A Appendix: Background and More Experiments 
+
+A.1 LassoNet Training Algorithm Algorithm 3 LassoNet Hierarchical Proximal Operator [8] 
+
+1: procedure HIER -P ROX (θ, W (1) ; λ, M )
+
+2: for j = 1 to d do 
+
+3: Sort |W (1)  
+
+> j
+
+| into |W (1) (j, 1) | ≥ · · · ≥ | W (1) (j,K )|
+
+4: for m = 0 to K do 
+
+5: wm = M  
+
+> 1+ m M 2
+
+Sλ
+
+
+
+|θj | + M
+
+> m
+
+X
+
+> i=1
+
+|W (1) (j,i )|
+
+
+
+6: end for 
+
+7: Find first ˜m : |W (1) (j, ˜m+1) | ≤ w ˜m ≤ | W (1) (j, ˜m)|
+
+8: ˜θj = 1 
+
+> M
+
+sign( θj ) w ˜m
+
+9: ˜W (1)  
+
+> j
+
+= sign( W (1)  
+
+> j
+
+) min  w ˜m, |W (1)  
+
+> j
+
+|
+
+10: end for 
+
+11: return (˜θ, ˜W (1) )
+
+12: end procedure 
+
+Notation: d is the number of features; K is first-layer width. 
+
+A.2 Lambda-Training Improvements Over Pre-Trained Models 
+
+In this section, we evaluate the additional generalization gains provided by the λ-training stage (utilizing our proposed Seq-Hier-Prox-EMA optimizer) compared to the baseline pre-trained models. For each dataset (GE, EY, and CH), we randomly initialized 300 LassoFlexNet models with diverse hyperparameter configurations. We first pre-trained each model for 200 epochs, followed by a λ-training phase of 100 epochs at each λ value (both utilizing early stopping). We then compared the validation metrics of the final λ-trained models against their pre-trained counterparts. The results are visualized in Figure 3. 0.50 0.55 0.60 0.65 0.70    
+
+> Pretrained acc
+> 0.50
+> 0.55
+> 0.60
+> 0.65
+> 0.70
+> Lambda acc
+> lambda training improvements for classification (GE, EY) 0.46 0.44 0.42 0.40
+> Pretrained loss
+> 0.46
+> 0.44
+> 0.42
+> 0.40
+> Lambda loss
+> lambda training improvements for regression (CH)
+
+Figure 3: Validation performance comparison between 300 lambda-trained models with its corresponding pre-trained model: GE, EY classification tasks (left, higher acc means better, so left of y=x means lambda improves ); CH regression (right, lower the loss magnitude means better, so left of y=x means lambda improves )14 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Our empirical results across both classification and regression tasks demonstrate that the vast majority of data points lie above the y = x line (or to the left, depending on the metric orientation), indicating a consistent, strict improvement in validation metrics over the pre-trained baseline. Points situated directly on the y = x identity line correspond to specific hyperparameter configurations where λ-training yielded no marginal gain; in these instances, the early-stopping mechanism simply reverted the final model to the pre-trained weights. This consistently positive delta demonstrates the efficacy of our λ-training phase and the stability of the proposed Seq-Hier-Prox-EMA algorithm. Furthermore, because λ-training relies entirely on the learned skip weights β accurately capturing feature importance to constrain the neural module W (1) , this experiment implicitly confirms that β is successfully learned during the pre-training stage, validating the end-to-end LassoFlexNet pipeline. Figure 4 provides a detailed trajectory of LassoFlexNet training on the California Housing dataset. Training is governed by early stopping based on validation loss. The pre-training phase halts at the epoch indicated by the red vertical line, after which the λ-training phase activates and continues to drive the validation loss down, even as the training loss naturally rises due to the increasing ℓ1 penalty from the λ-training (Seq-Hier-Prox-EMA). The EMA validation loss comes from the EMA of the model weights ensemble. It further lowers the validation loss by smoothing out the noise from the model weights ensemble, similar to EMA in diffusion models [29]. 
+
+Figure 4: LassoFlexNet model improves generalization gap. Validation continues to go down, as training loss goes up. 
+
+A.3 LassoFlexNet Hyperparameter Sensitivity Analysis 
+
+To evaluate the sensitivity of LassoFlexNet to hyperparameter configurations, we conducted extensive experiments across 39 distinct feature selection benchmarks (each representing a unique combination of dataset and noise settings). We restricted this sensitivity analysis to classification tasks to facilitate standardized result aggregation, as accuracy is strictly bounded within [0 , 1] . For each task, we sampled 100 hyperparameter configurations following the distributions detailed in Table 6 (Appendix B.2). Figure 5 presents the resulting distribution of validation scores via box plots, with red annotations denoting one standard deviation of the validation accuracy for each task. We observe that LassoFlexNet’s performance is highly robust to hyperparameter variations, evidenced by the narrow variance distributions across the vast majority of the benchmarks. 
+
+A.4 Targeted Experiment: The Failure of Joint Optimization 
+
+To explicitly test the failure modes of the original LassoNet architecture, we construct an artificial dataset governed by the following generating function: 
+
+y = β⊤∗ x + α · NN R(x) + γ · ϵ (6) where β∗ represents the ground-truth linear correlations. Only a sparse subset of elements in β∗ are large, while the remainder are exactly or approximately zero. NN R is a fixed, randomly initialized neural network used to inject non-linearity, and ϵ ∼ N (0 , 1) is standard Gaussian noise. The scalars α and γ ∈ [0 , 1] control the strength of the non-linearity and noise, respectively. Notably, by setting α = 0 , we isolate whether LassoNet can successfully uncover pure linear relations, decoupling the model’s performance from its core theoretical assumption (that linear correlations can adequately constrain nonlinear relations). 15 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT CH 0.75 Random CH 0.5 Corrupted CH 0.5 Secondorder CH 0.5 Random HI 0.5 Corrupted HI 0.75 Random HI 0.5 Secondorder HI 0.75 Secondorder HI 0.5 Random CH 0.75 Secondorder CH 0.75 Corrupted HI 0.75 Corrupted OT 0.5 Random OT 0.5 Corrupted GE 0.5 Corrupted EY 0.75 Secondorder EY 0.5 Random EY 0.75 Random GE 0.5 Secondorder GE 0.75 Secondorder GE 0.75 Corrupted EY 0.5 Corrupted GE 0.5 Random EY 0.75 Corrupted GE 0.75 Random EY 0.5 Secondorder HO 0.5 Secondorder HE 0.75 Secondorder JA 0.5 Corrupted HO 0.75 Random HO 0.75 Secondorder JA 0.75 Random JA 0.5 Random HO 0.5 Corrupted JA 0.75 Corrupted HO 0.75 Corrupted HO 0.5 Random JA 0.5 Secondorder 
+
+Datasets       
+
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> Validation Scores Distribution
+> 0.011 0.007 0.007 0.007 0.004 0.005 0.004 0.005 0.004 0.008 0.012 0.005 0.005 0.005 0.014 0.022 0.025 0.027 0.023 0.022 0.016 0.029 0.018 0.019 0.018 0.023 0.011 0.004 0.007 0.016 0.014 0.009 0.008 0.014 0.009 0.021 0.015 0.006
+
+Sensitivity of Model to Hyperparameters 
+
+Figure 5: Sensitivity to hyperparameters of LassoFlexNet evaluated on 39 classification tasks The success of LassoNet hinges entirely on the pre-training stage, where the linear skip weights β must converge toward the true sparse support β∗. Only with this accurate foundation can the subsequent λ-training phase effectively utilize β to enforce feature sparsity on the non-linear components. We trained the original LassoNet model on this artificial dataset with strong linear signals ( α = 0 ) and visualized the evolution of the training loss, validation loss, and skip weights over time. The results, averaged over ten random seeds (varying the initialization of β and the neural weights, but keeping β∗ fixed), are shown in Figure 6. 
+
+Figure 6: Average loss and skip weights evolution for original LassoNet during training across 10 runs As observed in the skip weight evolution plot (Figure 6, right), the linear LassoNet fails to isolate the strong ground-truth linear weights; the trajectories of the important features (black lines) remain hopelessly entangled with the non-important features (colored lines). This training dynamic fatally undermines the premise of using skip weights to constrain feature participation. If the skip weights β fail to separate important from unimportant features during pre-training, the subsequent λ-training phase will constrain the hidden layers using corrupted guidance. It is highly unlikely that proximal λ-training can reverse this adverse initialization, rendering the intended end-to-end feature selection ineffective. Our intuition for this failure is as follows: the linear component of the model, β⊤x, is a significantly weaker learner than the nonlinear component NN W (x). During joint training, the optimization trajectory is dominated by NN W (x),preventing β⊤x from independently uncovering the ground-truth linear signal. In over-parameterized regimes, the 16 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+global loss can be minimized even if the skip weights fail to prioritize the correct features. Because there is no structural curriculum enforcing "learn the linear part first, the nonlinear part next", β’s ideal gradient share is dispersed into the neural module. We validate this intuition by modifying the original LassoNet architecture slightly. Instead of ˆy = β⊤x + MLP( x), we introduce a small scalar τ such that ˆy = β⊤x + τ · MLP( x). This modification acts as a soft curriculum on the joint learning dynamics, suppressing the MLP’s gradients and encouraging the linear weights to dominate early training. We plot the identical experiment setting τ = 0 .001 in Figure 7. Under this soft curriculum, the learned skip weights for the 
+
+Figure 7: Average loss and skip weights evolution for original LassoNet with small scalar on the MLP part during training across 10 runs important features cleanly separate from the unimportant ones. Note that the train and validation losses decrease at a slower overall pace with τ = 0 .001 . This convergence rate difference further corroborates our hypothesis that the unconstrained MLP was previously dominating the optimization dynamics at the expense of the linear skip connection. 
+
+## B Appendix: LassoFlexNet Main Module Architecture 
+
+MLP-Mixer Modification: Enforcing the Hierarchical Bottleneck. The main neural module of LassoFlexNet utilizes the MLP-Mixer architecture proposed by Tolstikhin et al. [7] . The original MLP-Mixer consists of per-patch linear embeddings, Mixer blocks, and a classifier head. Each Mixer block contains one feature-mixing MLP and one embedding-mixing MLP, each consisting of two fully-connected layers and a GELU nonlinearity, alongside residual connections, dropout, and LayerNorm. In LassoFlexNet, our Per-Feature Embedding (PFE) module connects directly to the Mixer blocks. Crucially, our Tied Group Lasso skip module is designed to constrain the feature-mixing MLP within the first Mixer block. To ensure the skip module strictly gates all information flow—analogous to the first hidden layer in the original LassoNet—we designate the feature-mixing MLP of the first Mixer block as the sole computational bottleneck. Consequently, we explicitly omit the LayerNorm and residual connections in this initial block to prevent any information bypass that would circumvent the hierarchical constraint. This architectural modification is illustrated in Figure 8. 
+
+B.1 Proximal Gradient Weight Evolution Comparison 
+
+In this section, we empirically compare the training dynamics of LassoNet’s original Hier-Prox operator against our proposed Seq-Hier-Prox operator. We initialize a pre-trained LassoFlexNet model and iteratively apply either Hier-Prox or Seq-Hier-Prox to update the skip weights β and the first-layer neural weights W (1) .The model is pre-trained on the California Housing dataset augmented with 50% random noise [ 25 ]. We set the curriculum scalar τ = 0 .1 to ensure β is robustly learned during pre-training. For the iterative proximal updates, we use a fixed linear sequence of λ values ranging from 10 −5 to 10 −2. To ensure robust observations, we sample different values of the constraint multiplier M and inject Gaussian noise into the loaded pre-trained weights across multiple random seeds. We record the evolution paths for β and W (1) for each seed and report the average trajectory. The loaded pre-trained skip weights ( β) and first hidden layer weights ( W (1) ) are visualized in Figure 9. As shown, the pre-trained skip weights successfully capture feature importance, exhibiting distinct magnitudes (some close to zero, others large) that separate the true features from the injected noise. Conversely, the distribution of the hidden weights W (1) remains relatively uniform. The objective of the subsequent λ-training is to utilize these 17 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT Num Features 
+
+> Embedding Dim
+
+T 
+
+> Embedding Dim  Num Features
+> MLP 1
+> MLP 1
+> MLP 1
+
+T
+
+> Layer Norm  MLP 2
+> MLP 2
+> MLP 2
+> MLP 2
+> MLP 2
+> Residual connections
+> NN W(z)
+> Main Module (Mixer)
+> LS β(z)
+> Skip Module
+> Constrain
+
+Feature-Mixing Embedding-Mixing 
+
+Figure 8: Details of the main module for LassoFlexNet, Mixer architecture is used 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15  
+
+> Features
+> 0.2
+> 0.1
+> 0.0
+> 0.1
+> 0.2
+> Values
+> Pretrained model skip weights ( )
+
+(a) Skip (Feature Importance) 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15  
+
+> Features
+> Neurons
+> Pretrained model first hidden layer weights (W1)
+> 0.2
+> 0.1
+> 0.0
+> 0.1
+> 0.2
+> Weight Magnitude
+
+(b) W1 (First Fully Connected Layer Weights) 
+
+Figure 9: Visualizations of pre-trained LassoFlexNet model skip weights and W1 weights informative skip weights to constrain W (1) , ensuring that unimportant features do not participate in the neural network’s computations. 
+
+Failure of Original Hier-Prox. The average evolution of β and W (1) under the original Hier-Prox operator is visualized in Figure 10. Before any proximal updates (iteration 0), the skip weights are cleanly separated. However, the moment the joint proximal gradient update begins, the skip weights β become heavily influenced by the dense, noisier first hidden layer weights W (1) . Consequently, the ability of β to guide W (1) toward sparsity is severely weakened, and the critical feature importance learned during the pre-training stage is rapidly washed away. 
+
+Success of Seq-Hier-Prox. We next examine the evolution under LassoFlexNet’s Seq-Hier-Prox operator (Figure 11). Because the sequential update mathematically decouples the parameters, the skip weights evolve smoothly without any initial jump discontinuities. The λ-training phase effectively leverages the feature importance learned during pre-training. As a result, the first hidden layer weights W (1) become cleanly sparse over time, successfully gating the neural network computations to ignore irrelevant features. Based on these dynamics, we utilize Seq-Hier-Prox-EMA for all experiments in Section 7. 
+
+B.2 Experimental Settings for Section 7 
+
+In this section, we detail the experimental configurations used in Section 7. For LassoFlexNet, the pre-training stage is set to a maximum of 200 epochs, and the λ-training stage runs for a maximum of 100 epochs per λ value. We employ an early-stopping patience of 20 epochs for both stages. During λ-training, if the validation loss does not improve for 20 epochs at the current λ, the training automatically advances to the next λ value in the sequence. 18 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 0 200 400 600 800 1000 
+
+> Epochs
+> 0.2
+> 0.1
+> 0.0
+> 0.1
+> 0.2
+> Values
+> Average Evolution of Skip Weights for original prox grad
+
+Figure 10: Average evolution of skip weights (left) and W1 hidden layer weights (right) over original Hier-Prox updates 0 200 400 600 800 1000 
+
+> Epochs
+> 0.2
+> 0.1
+> 0.0
+> 0.1
+> 0.2
+> Values
+> Average Evolution of Skip Weights for coordinate prox grad
+
+Figure 11: Average evolution of skip weights (left) and W1 hidden layer weights (right) over Seq-Hier-Prox updates For feature selection benchmark result in Section 7.1, we directly take the result in [ 25 ] for all benchmark methods, and we use exact same setting for getting our LassoFlexNet result: We use the default train, val and test split used in [25 ], which is [0.65, 0.15, 0.2]; we conduct hyperparameter tuning for LassoFlexNet for 100 iterations using Bayesian optimization engine Optuna [ 30 ], and we use the Bayesian sampler’s suggested hyperparameter from iterations to iteration. The objective for this hyperparameters tuning is again the model’s validation metrics. The results presented in Table 3 are model’s test metrics with best hyperparameters, calculated across 10 random model initializations with different seeds. For FT-transformers and MLP, the hyperparameters and their respective ranges remain consistent with those reported in [25]. The specific hyperparameters for LassoFlexNet are detailed in Table 6. For TabZilla and TabRed benchmark results in Section 7.2, we again use Bayesian optimization engine Optuna [ 30 ]with ASHA (Asynchronous Successive Halving Algorithm). For each algorithm for each dataset, we tune the model only using validation metrics from 1 fold split, and uses this split to tune objective validation loss. For both classification tasks and regression tasks, we use sklearn’s log loss as the validation and test metrics for classification and MSE loss for regression. The box plot results in Figure 2 for each algorithm are best test metrics over 40 hyperparameters tuning trials, averaged across another 5 unseen random splits. For all benchmark methods, we use the same implementations as in [26]. 
+
+Computing environment: We conduct our experiments in a Slurm managed environment for batched parallel jobs, and for each individual run or experiment we use a single GPU (A100 or V100), depending on dataset sizes. 
+
+λ Path: In LassoFlexNet, the λ path controls the regularization strength schedule. In this section, we describe our simple scheduling. Concretely, we construct the λ path using polynomial spacing. p = 0 .95 is our experiment, the other hyperpameters are searched by Optuna. 19 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Hyperparameter Range Step/Scale 
+
+Mini batch sizes 512–2048 scaled by 2 Number of Mixer blocks 2–5 1MLP1&2 hidden dimension 64–512 scaled by 2 Feature embedding output dimension 8–32 2Number of bins used in PLE 4–32 2Tau (scalar multiplied with N N W ) 0.01–2.0 Uniform ResNet dropout 0.05–0.25 Uniform Main module dropout 0.05–0.25 Uniform Number of ResNet layers 2–5 1ResNet layers dimension 8–32 1Learning rate (lr) 1 × 10 −4–1 × 10 −3 Loguniform AdamW weight decay 1 × 10 −6–1 × 10 −3 Loguniform Table 6: Hyperparameters of LassoFlexNet Tuned by Optuna and Their Ranges, in Feature Selection and TabZilla Benchmarks 
+
+Hyperparameter Range Step/Scale 
+
+Mini batch sizes 1024–4096 scaled by 2 Number of Mixer blocks 2–6 1MLP1&2 hidden dimension 64–512 scaled by 2 Feature embedding output dimension 8–32 2Number of bins used in PLE 16–64 2Tau (scalar multiplied with N N W ) 0.01–2.0 Uniform ResNet dropout 0.05–0.5 Uniform Main module dropout 0.05–0.25 Uniform Number of ResNet layers 2–8 1ResNet layers dimension 8–32 1Learning rate (lr) 1 × 10 −5–1 × 10 −3 Loguniform AdamW weight decay 1 × 10 −6–1 × 10 −3 Loguniform Table 7: Hyperparameters of LassoFlexNet Tuned by Optuna and Their Ranges, in TabRed Benchmark 
+
+λ0 := lambda_start , S := lambda_seq_size , p := power ,λE := 
+
+lambda_end , if provided 
+
+λ0 · lambda_multiplier , otherwise 
+
+bi := λ1/p  
+
+> 0
+
++ iS − 1
+
+
+
+λ1/p E − λ1/p 
+
+> 0
+
+
+
+, i = 0 , . . . , S − 1,λi := bpi , i = 0 , . . . , S − 1.
+
+We generate the λ sequence using the exponent-scaled schedule defined above. This design is motivated by empirical observations: under a simple linear schedule, we found that λ-training primarily reduces validation loss during the early, smaller λ values, whereas larger λ values later in the sequence rarely yield improvements. This indicates that a linear sequence is overly fine-grained at the beginning and too coarse at the end. By applying an exponent p < 1, we skew the distribution of λ values to grow more rapidly at the beginning and more slowly at the end, thereby uniformizing the marginal impact of each step in the sequence. In our hyperparameter search, the starting value λ0 is sampled from the interval [10 −8, 10 −6], and the 
+
+lambda_multiplier is sampled from [10 3, 10 5].
+
+## C Appendix: PLE Breaks Rotational Invariance 
+
+Piecewise Linear Encoding (PLE) for tabular data is intentionally axis-aligned : it encodes each numerical feature with a coordinate-wise piecewise linear map defined by feature-wise breakpoints. This section explains, in two phases, why 20 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+this design breaks rotational invariance in the sense of [ 6], and why adding a powerful downstream model such as an neural nets trained by SGD, does not restore rotational invariance. 
+
+Phase 1 (NTK approach). In the wide/lazy regime, SGD-trained MLPs behave like kernel regression with an orthogonally invariant neural tangent kernel (NTK) [ 31 ]. The induced kernel on raw inputs is the NTK applied to encoded vectors. If the encoder is not rotation-equivariant, the induced kernel is not rotation-invariant, which yields an explicit counterexample. 
+
+Phase 2 (general obstruction). Even beyond NTK, if the downstream learning rule is itself symmetric to orthogonal changes of coordinates in feature space, then the only way the end-to-end raw-space algorithm can be rotationally invariant is if the encoder intertwines raw rotations with feature-space orthogonal maps. PLE generally does not. 
+
+C.1 Setup and definitions C.1.1 Rotational invariance 
+
+Let O(n) = {M ∈ Rn×n : M ⊤M = I} denote the orthogonal group [ 6 ]. A labeled dataset of size m is S =
+
+{(x(i), y (i))}mi=1 with x(i) ∈ Rn. For M ∈ O(n), define the rotated dataset 
+
+M S := {(M x (i), y (i))}mi=1 .
+
+Definition C.1 (Rotational invariance of a learning algorithm) . Let L be a (possibly randomized) learning algorithm. We write L[S]( x) for the prediction (a random variable if L is randomized) obtained by training L on S and evaluating at x. We say: • L is rotationally invariant (deterministic) if for all S, M ∈ O(n), and x,
+
+L[S]( x) = L[M S ]( M x ).
+
+• L is rotationally invariant (randomized) if for all S, M ∈ O(n), and x, the random variables L[S]( x) and 
+
+L[M S ]( M x ) have the same distribution. 
+
+C.1.2 A concrete PLE map (coordinate-wise, piecewise linear) 
+
+For a single scalar feature x ∈ [b0, b T ], fix breakpoints b0 < b 1 < · · · < b T and segment lengths ∆t = bt − bt−1 > 0.Define the clipping operator clip( u) = min {1, max {0, u }} .
+
+Definition C.2 (PLE for one feature) . The piecewise linear encoding (PLE) map ϕ : [ b0, b T ] → RT is 
+
+ϕ(x) :=  ϕ1(x), . . . , ϕ T (x), ϕt(x) := clip 
+
+ x − bt−1
+
+∆t
+
+
+
+.
+
+For an n-dimensional input x = ( x1, . . . , x n), we use a coordinate-wise encoder (with possibly different Tj per coordinate): 
+
+Φ( x) :=  ϕ(1) (x1), ϕ (2) (x2), . . . , ϕ (n)(xn) ∈ RD , D := 
+
+> n
+
+X
+
+> j=1
+
+Tj .
+
+In practical PLE for tabular data, the breakpoints are often data-dependent (e.g., learned from axis-aligned trees), but not learned end to end with the neural nets. The counterexamples below hold for any fixed breakpoints, consistent with practice. 
+
+C.2 Phase 1: Counterexample via the NTK/kernel-regression view of SGD-trained MLPs 
+
+The main observation in this section is that we can explicitly construct a counterexample for a simple MLP. Because NTK theory approximately reduces the analysis of wide neural networks to kernel regression, demonstrating a symmetry break in the induced kernel is sufficient to prove that the network breaks rotational invariance. 
+
+C.2.1 From wide MLP + SGD to kernel regression 
+
+Consider an MLP fθ : RD → R trained on encoded data {(zi, y i)}mi=1 with zi ∈ RD by (stochastic) gradient descent on squared loss. In the wide-network, lazy-training regime (weights move little from initialization), the training dynamics linearize around the initialization θ0 and are governed by the neural tangent kernel (NTK), 
+
+KNTK (z, z ′) := ⟨∇ θ fθ0 (z), ∇θ fθ0 (z′)⟩.
+
+21 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+In this regime, the learned predictor is (approximately, and exactly in the infinite-width gradient-flow limit) the kernel regression / kernel ridge solution with kernel KNTK [31]. 
+
+Key symmetry property. For standard isotropic random initialization of fully-connected networks, the limiting NTK is 
+
+orthogonally invariant in input space: 
+
+KNTK (Qz, Qz ′) = KNTK (z, z ′) ∀ Q ∈ O(D). (7) Intuitively: there is no preferred coordinate system in feature space. 
+
+C.2.2 Applying the NTK to PLE + MLP 
+
+Fix a raw dataset S = {(xi, y i)}mi=1 ⊂ Rn × R. Define encoded points 
+
+zi := Φ( xi) ∈ RD .
+
+The NTK view says that training the MLP on PLE features is (approximately) kernel regression with kernel KNTK 
+
+applied to {zi}.This induces a raw-space kernel (possibly data-dependent, if Φ is data-dependent): 
+
+KS (x, x ′) := KNTK (Φ( x), Φ( x′)) . (8) 
+
+What rotational invariance would force. If the end-to-end pipeline x 7 → Φ( x) 7 → (SGD-trained MLP) were rotationally invariant, then for every M ∈ O(n), the induced kernels would satisfy 
+
+KS (xi, x j ) = KM S (M x i, M x j ) for all training pairs (i, j ), (9) because kernel regression predictions are determined by the Gram matrix on the training set (and its interaction with test points). We now show equation 9 fails for PLE via a fully explicit computation. 
+
+C.2.3 An explicit counterexample: Rotation leads to different inner products 
+
+We work in raw dimension n = 2 . Use the same PLE map on each coordinate with breakpoints −1, 0, 1 (so T = 2 ,
+
+∆1 = ∆ 2 = 1 ). For a scalar x ∈ [−1, 1] , the 2-dimensional PLE is 
+
+ϕ(x) = ( ϕ1(x), ϕ 2(x)) , ϕ1(x) = clip( x + 1) , ϕ2(x) = clip( x),
+
+and the full encoder is Φ( x1, x 2) = ( ϕ(x1), ϕ (x2)) ∈ R4.Let the two raw training points be 
+
+x(1) := (0 .5, 0) , x(2) := (0 , 0.5) .
+
+Compute their encodings: 
+
+ϕ(0 .5) = (1 , 0.5) , ϕ(0) = (1 , 0) ,
+
+so 
+
+z1 = Φ( x(1) ) = (1 , 0.5, 1, 0) , z2 = Φ( x(2) ) = (1 , 0, 1, 0.5) .
+
+Hence 
+
+⟨z1, z 1⟩ = 2 .25 , ⟨z2, z 2⟩ = 2 .25 , ⟨z1, z 2⟩ = 2 .0.
+
+Now rotate raw space by 45 ◦:
+
+M := 1
+
+√2
+
+1 −11 1
+
+
+
+∈ O(2) .
+
+Then 
+
+M x (1) =
+
+ 12√2 , 12√2
+
+
+
+≈ (0 .3536 , 0.3536) , M x (2) =
+
+
+
+− 12√2 , 12√2
+
+
+
+≈ (−0.3536 , 0.3536) .
+
+Encode these rotated points: 
+
+ϕ(0 .3536) = (1 , 0.3536) , ϕ(−0.3536) = (0 .6464 , 0) ,
+
+so 
+
+z′ 
+
+> 1
+
+= Φ( M x (1) ) = (1 , 0.3536 , 1, 0.3536) , z′ 
+
+> 2
+
+= Φ( M x (2) ) = (0 .6464 , 0, 1, 0.3536) .
+
+A direct dot-product computation gives 
+
+⟨z′
+
+> 1
+
+, z ′
+
+> 1
+
+⟩ = 2 .25 , ⟨z′
+
+> 2
+
+, z ′
+
+> 2
+
+⟩ ≈ 1.5429 , ⟨z′
+
+> 1
+
+, z ′
+
+> 2
+
+⟩ ≈ 1.7714 .
+
+In particular, the feature-space geometry has changed: for example ⟨z1, z 2⟩ = 2 .0 while ⟨z′
+
+> 1
+
+, z ′
+
+> 2
+
+⟩ ≈ 1.7714 . The rotation leads to changes on the NTK component. We summarize these as a lemma: 22 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Lemma C.3 (PLE breaks Gram-matrix matching for dot-product kernels) . Let k : RD × RD → R be any kernel that is a nonconstant function of the inner product ⟨z, z ′⟩ and the norms ∥z∥ , ∥z′∥. For the PLE encoder Φ, there exists a Gram matrix  k(zi, z j ) 
+
+> i,j ∈1,2
+
+that changes under the rotation M .
+
+C.2.4 Turning kernel mismatch into a prediction mismatch 
+
+A kernel regressor (e.g., kernel ridge regression) trained on a dataset is determined by the Gram matrix on the training set. Therefore, once the Gram matrix differs between S and M S , we can force a change in predictions by an appropriate choice of labels. To keep the algebra transparent, we illustrate this using kernel ridge regression with the linear kernel k(z, z ′) = ⟨z, z ′⟩
+
+and a ridge penalty of λ = 0 .1. Let y = (1 , −1) be the label vector for (x(1) , x (2) ). Substituting any fixed, non-degenerate dot-product kernel would yield the same conclusion. 
+
+Example 1 (Explicit prediction mismatch for kernel ridge regression) . With the setup above, kernel ridge regression trained on {(z1, y 1), (z2, y 2)} and evaluated at x(1) yields a different prediction than kernel ridge regression trained on the rotated dataset and evaluated at M x (1) .Proof. Kernel ridge regression has the closed form 
+
+f (x) = k⊤ 
+
+> x
+
+(K + λI )−1y, (kx)j := k(z, z j ), z := Φ( x),
+
+where Kij = k(zi, z j ). For the unrotated dataset, 
+
+K =
+
+2.25 2.02.0 2.25 
+
+
+
+, kx(1) = (2 .25 , 2.0) .
+
+A direct computation gives f (x(1) ) ≈ 0.7143 .For the rotated dataset, 
+
+K′ =
+
+ 2.25 1.7714 1.7714 1.5429 
+
+
+
+, kM x (1) = (2 .25 , 1.7714) ,
+
+and solving the same linear system gives f ′(M x (1) ) ≈ 0.5276 . Therefore f (x(1) )̸ = f ′(M x (1) ), so the learning rule is not rotationally invariant. 
+
+C.2.5 The NTK conclusion 
+
+Example 1 used the linear kernel only to keep arithmetic transparent. Lemma C.3 shows that for a broad class of dot-product kernels, including standard fully-connected NTKs, the Gram matrix changes under rotations once we insert a PLE map. We summarize the counter-example discussion into a proposition. 
+
+Proposition C.4 (Phase 1 conclusion: not rotationally invariant in the NTK/lazy regime) . Consider the end-to-end pipeline: raw input x ∈ Rn is encoded by a coordinate-wise PLE map Φ, then a fully-connected MLP is trained on 
+
+Φ( x) by SGD in the wide/lazy regime. Assume the limiting NTK satisfies the orthogonal invariance property equation 7 and is nonconstant in ⟨z, z ′⟩ and norms. Then the resulting learning algorithm is not rotationally invariant. Proof. By the NTK theory, the learned predictor is kernel regression with kernel KNTK on encoded points, i.e., the induced kernel equation 8 on raw inputs. Lemma C.3 provides a dataset S and rotation M for which the Gram matrix on the training set differs between S and M S . Since kernel regression predictions depend on the Gram matrix, there exists a label vector for which predictions differ at corresponding test points (Example 1). 
+
+Remark C.5 (Finite width: why the message typically persists) . Theorem C.4 is a statement about the lazy/wide regime where SGD is well-approximated by kernel regression. At finite width, SGD no longer exactly equals kernel regression. However, the source of symmetry breaking remains: Φ is axis-aligned and generally not rotation-equivariant. Thus, unless training uses additional mechanisms that explicitly enforce rotational invariance in raw space, one should not expect invariance to hold in general. 
+
+C.3 Phase 2: A general obstruction — invariance cannot be recovered without encoder equivariance 
+
+Phase 1 used the NTK story (SGD behaves like a kernel method) to make the failure concrete. We now present a more general, kernel-free viewpoint that applies to non-lazy regimes. 23 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+C.3.1 Two symmetry notions (raw space vs feature space) 
+
+Let S = {(xi, y i)}mi=1 be a raw dataset. Let ΦS : Rn → RD be a (possibly data-dependent) encoder and define the encoded dataset 
+
+ZS := {(zi, y i)}mi=1 , zi := Φ S (xi).
+
+A downstream learning algorithm A maps an encoded dataset Z to a predictor A(Z) : RD → Y . The end-to-end learner is 
+
+L[S]( x) := A(ZS ) ΦS (x).
+
+Definition C.6 (Orthogonal invariance of the downstream learner) . For Q ∈ O(D), define QZ := {(Qz i, y i)}mi=1 . We say A is orthogonally invariant if for all datasets Z, all Q ∈ O(D), and all feature vectors z ∈ RD ,
+
+A(QZ )( Qz ) = A(Z)( z).
+
+This captures the idea that the downstream training has no preferred coordinate system in feature space. (For example, standard fully-connected networks with isotropic initialization and SGD dynamics satisfy this kind of invariance in an idealized sense.) 
+
+C.3.2 A sufficient condition for end-to-end rotational invariance 
+
+The next definition isolates the only way a feature-space orthogonal symmetry can translate back to the original space rotational symmetry. 
+
+Definition C.7 (Encoder equivariance up to a feature-space orthogonal map) . The encoder family {ΦS } is rotation-equivariant up to feature orthogonals if for every raw dataset S and every M ∈ O(n), there exists QS,M ∈ O(D) such that for all raw inputs x,
+
+ΦM S (M x ) = QS,M ΦS (x).
+
+(Here QS,M may depend on S and M , but must be a single global orthogonal map, independent of x.) 
+
+Proposition C.8 (Sufficiency: encoder equivariance + feature-space invariance implies raw rotational invariance) . If A
+
+is orthogonally invariant (Definition C.6) and Φ is rotation-equivariant up to a feature-space orthogonal (Definition C.7), then the composite learner L[S]( x) = A(ZS )(Φ S (x)) is rotationally invariant. Proof. Fix S, M , x. Let Q := QS,M be from Definition C.7. For each training point xi,
+
+ΦM S (M x i) = QΦS (xi),
+
+so ZM S = QZ S . Also ΦM S (M x ) = QΦS (x). Therefore 
+
+L[M S ]( M x ) = A(ZM S )(Φ M S (M x )) = A(QZ S )( QΦS (x)) = A(ZS )(Φ S (x)) = L[S]( x),
+
+where we used orthogonal invariance of A in the third equality. 
+
+C.3.3 The obstruction: without encoder equivariance, invariance has no reason to hold 
+
+Proposition C.8 gives a necessary condition for rotational invariance: the encoder must provide a global orthogonal alignment QS,M between the two encoded problems. When the encoder fails this, a symmetric downstream learner has no canonical way to “undo” the rotation, because the rotated problem is not simply an orthogonal reparameterization of the original in feature space. To state this as a rigorous impossibility, we need one mild nondegeneracy: the learner should actually react to changes in the geometry of the input cloud. This extra condition will imply the encoder equivariance is nearly necessary. 
+
+Definition C.9 (Non-degeneracy: separation property) . We say a downstream learning algorithm A is separating if the following holds: whenever two encoded datasets Z = {(zi, y i)} and Z′ = {(z′
+
+> i
+
+, y i)} (same labels, different feature vectors) are not related by any single orthogonal map, i.e., ̸∃ Q ∈ O(D) s.t. z′ 
+
+> i
+
+= Qz i ∀i, 
+
+then there exists some query z ∈ RD for which the predictions differ: 
+
+A(Z)( z)̸ = A(Z′)( z).
+
+This property is satisfied by many standard algorithms (e.g., kernel ridge regression with a nondegenerate kernel, linear ridge regression, and wide-MLP training in the NTK regime). 24 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Theorem C.10 (Obstruction: symmetry cannot restore invariance without encoder equivariance) . Assume learning algorithm A is orthogonally invariant and separating. If the encoder family {ΦS } is not rotation-equivariant up to a feature-space orthogonal map (Definition C.7), then the composite learner L = A ◦ Φ is not rotationally invariant. Proof. Because encoder equivariance fails, there exist S and M ∈ O(n) such that no Q ∈ O(D) satisfies 
+
+ΦM S (M x i) = QΦS (xi) for all training inputs xi in S. Thus the encoded datasets ZS and ZM S are not related by any orthogonal transform in feature space. By the separating property, there exists a query feature vector z such that 
+
+A(ZS )( z)̸ = A(ZM S )( z′).
+
+Choose a raw query x and set z = Φ S (x), z′ = Φ M S (M x ). Then 
+
+L[S]( x) = A(ZS )(Φ S (x)) ̸ = A(ZM S )(Φ M S (M x )) = L[M S ]( M x ),
+
+so L is not rotationally invariant. 
+
+Remark C.11 (Stochastic analogues) . If we replace the deterministic equality in Definition C.9 and Theorem C.10 by expectation, we can produce the stochastic analogues that cover neural nets trained by SGD. 
+
+C.3.4 SGD-trained MLPs cannot unlearn the rotation under PLE 
+
+Theorem C.10 clarifies a few subtle but important points. • Expressivity is not the issue. An MLP is a universal approximator; in principle, with enough data, it can learn complicated functions that may correlate with a rotated target concept. • Algorithmic rotational invariance is the issue. Rotational invariance is a statement about the learning procedure :for every dataset and every rotation, training on S and testing at x must agree with training on M S and testing at 
+
+M x .• PLE breaks the symmetry before SGD begins. Coordinate-wise PLE creates axis-aligned “kinks” (breakpoints) and saturations. A generic raw rotation changes how points fall relative to these kinks. Unless the encoder is rotation-equivariant up to a global orthogonal map in feature space, a symmetric training rule (such as standard SGD on an MLP with isotropic initialization) has no canonical mechanism that forces it to output a rotationally invariant predictor. 
+
+C.4 Discussion: why breaking rotational invariance is often the point in tabular learning 
+
+Rotational invariance is attractive when the coordinate system is arbitrary (e.g., images after whitening). Tabular data is often different: coordinates correspond to semantically meaningful features, and feature selection or axis-aligned splits can be beneficial. Specifically, tabular datasets frequently contain noisy, irrelevant features; a rotationally invariant model would inextricably mix these with informative features, degrading performance. In fact, [ 6] gives lower bounds showing that any rotationally invariant learner can be forced to require Ω( n) samples on an “easy” one-feature threshold problem after an adversarial rotation. From that perspective, PLE’s axis alignment is not a bug: it is a deliberate inductive bias toward feature-wise heterogeneity. 
+
+## D Appendix: PLE Brings in Extra Localized Expressivity 
+
+PLE increases capacity in a manner ideally suited for tabular problems: it creates bin-local degrees of freedom (local slopes) with localized training dynamics (zero cross-bin interference in the slope NTK, which is ideal for capturing localized irregularities), while simultaneously increasing the effective dimension of the standard (value) NTK. 
+
+Scope . We work in the simplest setting of a single numerical feature x ∈ [b0, b T ] and compare: (i) a linear model on top of PLE (“linear-on-PLE”); and (ii) a one-hidden-layer scalar ReLU MLP on the raw scalar (“MLP-without-PLE”). In other words, we investigate the benefits of PLE for a single numerical feature. 
+
+D.1 Setup and notation Definition D.1 (Knots, bins, and bin index) . Fix knots 
+
+b0 < b 1 < · · · < b T , I := [ b0, b T ], ∆t := bt − bt−1 > 0.
+
+25 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+For x ∈ (b0, b T ), define the bin index s(x) ∈ { 1, . . . , T } by 
+
+s(x) = t ⇐⇒ x ∈ (bt−1, b t).
+
+Let the boundary set be B := {b0, . . . , b T }.
+
+Definition D.2 (Clipping operator) . For u ∈ R, define clip( u) := min {1, max {0, u }} ∈ [0 , 1] .
+
+Definition D.3 (Piecewise linear encoding (PLE) map for one feature) . Define ϕ : I → RT by ϕ(x) =(ϕ1(x), . . . , ϕ T (x)) , where for t ∈ { 1, . . . , T },
+
+ϕt(x) := clip 
+
+ x − bt−1
+
+∆t
+
+
+
+. (10) Equivalently, 
+
+ϕt(x) = 
+
+
+
+0, x ≤ bt−1,x − bt−1
+
+∆t
+
+, bt−1 ≤ x ≤ bt,
+
+1, x ≥ bt.
+
+Remark D.4 (“Almost everywhere” (a.e.) differentiability convention) . All derivatives with respect to x are understood on I \ B (and similarly for MLPs, away from their kink set). At points where a piecewise-linear function is not differentiable, any selection of subgradient can be used; this affects only a measure-zero set in x and does not change the kernel identities stated “a.e.”. 
+
+D.2 Phase 1: Linear-on-PLE is exactly the linear spline class (full derivation) Definition D.5 (Linear-on-PLE model) . Given (w, c ) ∈ RT × R, define 
+
+fw,c (x) := c + w⊤ϕ(x), x ∈ I. 
+
+Definition D.6 (Linear spline space with knots {bt}). Let S(b0: T ) denote the set of continuous functions s : I → R
+
+that are affine on each bin [bt−1, b t]. Equivalently, s ∈ S (b0: T ) iff there exist slopes (α1, . . . , α T ) ∈ RT and a base value s(b0) ∈ R such that, for x ∈ [bt−1, b t],
+
+s(x) = s(b0) + 
+
+> t−1
+
+X
+
+> j=1
+
+αj ∆j + αt(x − bt−1). (11) 
+
+Theorem D.7 (Spline equivalence with explicit forward formula and converse) . The class {fw,c : ( w, c ) ∈ RT × R}
+
+equals S(b0: T ). Moreover: 1. (Forward / explicit spline form). Fix (w, c ). For x ∈ (bt−1, b t) (so t = s(x)), 
+
+fw,c (x) = c +
+
+> t−1
+
+X
+
+> j=1
+
+wj + wt
+
+x − bt−1
+
+∆t
+
+. (12) 
+
+Hence fw,c is a continuous linear spline with per-bin slope 
+
+∂xfw,c (x) = ws(x)
+
+∆s(x)
+
+for x ∈ I \ B . (13) 
+
+2. (Converse / explicit weight construction). Given any spline s ∈ S (b0: T ) with representation equation 11, define 
+
+c := s(b0), wt := αt∆t (t = 1 , . . . , T ). (14) 
+
+Then fw,c (x) = s(x) for all x ∈ I.Proof. We proceed in explicit steps. 
+
+Step 1: Evaluate ϕ(x) inside a bin. Fix x ∈ (bt−1, b t) with t = s(x). From Definition D.3: 
+
+ϕj (x) = 
+
+
+
+1, j ≤ t − 1 (since x ≥ bj ),x − bt−1
+
+∆t
+
+, j = t, 
+
+0, j ≥ t + 1 (since x ≤ bj−1).
+
+26 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Step 2: Expand w⊤ϕ(x). Using the binwise values above, 
+
+w⊤ϕ(x) = 
+
+> t−1
+
+X
+
+> j=1
+
+wj · 1 + wt · x − bt−1
+
+∆t
+
++
+
+> T
+
+X
+
+> j=t+1
+
+wj · 0 = 
+
+> t−1
+
+X
+
+> j=1
+
+wj + wt
+
+x − bt−1
+
+∆t
+
+.
+
+Adding c gives equation 12. This shows fw,c is affine on each bin and continuous at the knots (the formula matches at endpoints), hence fw,c ∈ S (b0: T ).
+
+Step 3: Compute the per-bin slope. For x ∈ (bt−1, b t), differentiating equation 12 yields 
+
+∂xfw,c (x) = wt
+
+∆t
+
+,
+
+which is equation 13. 
+
+Step 4: Converse construction. Let s ∈ S (b0: T ) be written as equation 11. Define (w, c ) by equation 14. Fix 
+
+x ∈ (bt−1, b t). Then using equation 12, 
+
+fw,c (x) = c +
+
+> t−1
+
+X
+
+> j=1
+
+wj + wt
+
+x − bt−1
+
+∆t
+
+= s(b0) + 
+
+> t−1
+
+X
+
+> j=1
+
+αj ∆j + αt∆t
+
+x − bt−1
+
+∆t
+
+.
+
+Canceling ∆t in the last term gives exactly equation 11: 
+
+fw,c (x) = s(b0) + 
+
+> t−1
+
+X
+
+> j=1
+
+αj ∆j + αt(x − bt−1) = s(x).
+
+By continuity, equality holds for all x ∈ I.
+
+Corollary D.8 (Kinks at knots and the “generic kink” condition) . Let fw,c be linear-on-PLE. For an interior knot bt
+
+(t = 1 , . . . , T − 1), the spline is differentiable at bt iff the left and right slopes match: 
+
+wt
+
+∆t
+
+= wt+1 
+
+∆t+1 
+
+.
+
+Equivalently, bt is a kink iff wt
+
+> ∆t
+
+̸ = wt+1  
+
+> ∆t+1
+
+. In particular, if w is drawn from a distribution with a density on RT , then with probability 1 all interior knots are kinks. Proof. The left derivative at bt equals the slope on (bt−1, b t), i.e. wt/∆t, and the right derivative equals the slope on 
+
+(bt, b t+1 ), i.e. wt+1 /∆t+1 , by equation 13. Equality of one-sided derivatives is equivalent to differentiability at bt. The probability-one statement follows because {w : wt/∆t = wt+1 /∆t+1 } is a codimension-1 hyperplane in RT .
+
+Remark D.9 . Theorem D.7 formally identifies linear-on-PLE with the linear spline function class. Next, we bound the number of hidden units a standard ReLU MLP requires to match this knot complexity, before quantifying PLE’s 
+
+localized learning behavior via NTK analysis. 
+
+D.3 Phase 2: Degrees of freedom vs a 1-hidden-layer scalar ReLU MLP (knot counting) Definition D.10 (MLP-without-PLE: one-hidden-layer scalar ReLU net) . Fix width m ∈ N. Consider 
+
+fθ (x) = 
+
+> m
+
+X
+
+> r=1
+
+ar ReLU( wr x + br ) + c, ReLU( u) = max {0, u }, (15) with parameters θ = ( a, w, b, c ) ∈ Rm × Rm × Rm × R.
+
+Proposition D.11 (Knot counting for one-hidden-layer ReLU) . For any fixed parameters θ, the function x 7 → fθ (x) is continuous piecewise linear on R with at most m interior breakpoints (kinks). Consequently, to represent a generic 
+
+spline in S(b0: T ) having T − 1 distinct interior knots, a one-hidden-layer ReLU net must have width 
+
+m ≥ T − 1.
+
+27 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Proof. For each neuron r, the map x 7 → ReLU( wr x + br ) is piecewise linear with a single possible kink at the point where wr x + br = 0 (if wr̸ = 0 ), i.e. 
+
+x⋆r = − br
+
+wr
+
+.
+
+If wr = 0 , then ReLU( wr x + br ) = ReLU( br ) is constant and contributes no kink. Therefore, the kink set of the sum equation 15 is contained in the union of the individual kink locations {x⋆r : wr̸ = 0 }, so it has at most m distinct points. This proves the first claim. For the consequence, note that a generic spline with knots exactly at b1, . . . , b T −1 has T − 1 distinct interior kink locations. Since a width-m network can have at most m distinct kink locations, representing such a spline requires 
+
+m ≥ T − 1.
+
+Remark D.12 (Why this comparison is the right one) . Deep ReLU nets can create many breakpoints, but the key point here is structural: without PLE, breakpoint locations must be learned by the network ; with PLE, the knot grid is built into the representation and learning can focus on per-bin slopes . Next, we discuss the localized slope learning given by PLE. 
+
+D.4 Phase 3: Training dynamics via kernels — value NTK vs slope NTK 
+
+The preceding sections demonstrate that PLE increases expressivity by adopting the strengths of tree-based methods to create explicit breakpoints. We now formalize another structural benefit: PLE’s training dynamics are inherently more localized, making them ideal for modeling local irregularities in numerical tabular data. We prove this using Neural Tangent Kernel (NTK) techniques. 
+
+D.4.1 Standard (value) NTK: definitions and explicit formulas Definition D.13 (Value Jacobian and value NTK) . For a parameterized model fθ (x), define the value Jacobian 
+
+Jval (x) := ∇θ fθ (x),
+
+and the (finite-width) value NTK 
+
+Kval (x, x ′) := ⟨Jval (x), J val (x′)⟩.
+
+Further background can be found in Jacot et al. [31]. 
+
+Proposition D.14 (Value NTK for linear-on-PLE is explicit and nonlocal across bins) . For linear-on-PLE (Defini-tion D.5) with parameters θ = ( w, c ),
+
+Jval (x) = ( ϕ(x) | 1) ∈ RT +1 , KPLE val (x, x ′) = 1 + ⟨ϕ(x), ϕ (x′)⟩.
+
+Moreover, for x ∈ (bs−1, b s) and x′ ∈ (bt−1, b t) with s = s(x) and t = s(x′), letting 
+
+α(x) := x − bs−1
+
+∆s
+
+∈ (0 , 1) , α(x′) := x′ − bt−1
+
+∆t
+
+∈ (0 , 1) ,
+
+we have the closed form 
+
+⟨ϕ(x), ϕ (x′)⟩ = (min {s, t } − 1) + 
+
+
+
+α(x), s < t, α(x)α(x′), s = t, α(x′), s > t. 
+
+In particular, KPLE val (x, x ′) is typically nonzero even when s(x)̸ = s(x′).Proof. For θ = ( w, c ), we have ∇wfw,c (x) = ϕ(x) and ∂f w,c (x)/∂c = 1 , hence Jval (x) = ( ϕ(x) | 1) and the kernel formula follows by dot product. For the binwise closed form, use the explicit structure of ϕ on a bin: if x ∈ (bs−1, b s) then 
+
+ϕj (x) = 
+
+
+
+1, j ≤ s − 1,α(x), j = s, 
+
+0, j ≥ s + 1 ,
+
+and similarly for x′. Taking the dot product, only coordinates j ≤ min {s, t } contribute. If s < t , then ϕs(x′) = 1 and 
+
+ϕj (x′) = 1 for j ≤ s − 1, giving ⟨ϕ(x), ϕ (x′)⟩ = ( s − 1) + α(x). If s = t, the only fractional coordinate is j = s,giving (s − 1) + α(x)α(x′). The case s > t is symmetric. 28 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Proposition D.15 (Exact value NTK for a one-hidden-layer ReLU MLP (no PLE)) . For the MLP equation 15, define 
+
+zr (x) := wr x + br and Ir (x) := 1{zr (x) > 0}. For x away from the kink set {zr (x) = 0 }, the value Jacobian has entries 
+
+∂f θ (x)
+
+∂a r
+
+= ReLU( zr (x)) , ∂f θ (x)
+
+∂w r
+
+= ar x Ir (x), ∂f θ (x)
+
+∂b r
+
+= ar Ir (x), ∂f θ (x)
+
+∂c = 1 .
+
+Consequently, for such x, x ′,
+
+KMLP val (x, x ′) = 1 + 
+
+> m
+
+X
+
+> r=1
+
+h
+
+ReLU( zr (x)) ReLU( zr (x′)) + a2 
+
+> r
+
+(1 + xx ′) Ir (x)Ir (x′)
+
+i
+
+. (16) 
+
+Proof. We compute derivatives neuron-by-neuron. First, ∂f /∂a r = ReLU( zr (x)) is immediate. Next, 
+
+∂ReLU( z)/∂z = Ir (x) away from z = 0 , so by chain rule: 
+
+∂f ∂w r
+
+= ar
+
+∂ReLU( zr (x)) 
+
+∂z r
+
+· ∂z r (x)
+
+∂w r
+
+= ar Ir (x) · x, ∂f ∂b r
+
+= ar Ir (x) · 1.
+
+Also ∂f /∂c = 1 .Now take the dot product of value Jacobians at x and x′ and sum contributions blockwise: • (a)-block: mX
+
+> r=1
+
+ReLU( zr (x)) ReLU( zr (x′)) .
+
+• (w)-block: mX
+
+> r=1
+
+(ar x Ir (x)) ( ar x′ Ir (x′)) = 
+
+> m
+
+X
+
+> r=1
+
+a2 
+
+> r
+
+xx ′ Ir (x)Ir (x′).
+
+• (b)-block: mX
+
+> r=1
+
+a2 
+
+> r
+
+Ir (x)Ir (x′).
+
+• c-block: 1.Combining these terms gives equation 16. 
+
+Remark D.16 (Effective dimension / rank: PLE increases value-kernel rank) . Consider training on a finite dataset 
+
+{xi}ni=1 ⊂ (b0, b T ). The Gram matrix of the value kernel for linear-on-PLE is 
+
+
+
+KPLE val (xi, x j )
+
+
+
+> i,j
+
+= 11 ⊤ + ΦΦ ⊤, Φ ∈ Rn×T , Φi, : = ϕ(xi)⊤.
+
+Hence rank( KPLE val ) ≤ T + 1 , and for generic data spanning many bins, the rank is typically close to T + 1 .By contrast, for the raw linear model f (x) = βx +c (no PLE), we have Jval (x) = ( x, 1) and thus Kval (x, x ′) = xx ′ +1 ,whose Gram matrix has rank at most 2. This formalizes that PLE increases the number of independent “directions” in which function values can be fitted in the kernel (lazy-training) picture. 
+
+Remark D.17 (Refinement under local input changes: PLE’s value kernel is cumulative and continuous) . Both KPLE val 
+
+and KMLP val can be nonlocal. However, KPLE val (x, x ′) varies continuously with x within each bin and changes only at the fixed knots {bt}, giving a cumulative “similarity” structure along the scalar feature (Proposition D.14). In contrast, for fixed MLP parameters, KMLP val (x, x ′) changes its algebraic form whenever x crosses one of the learned thresholds 
+
+−br /w r (activation pattern changes), which can produce more abrupt changes in similarity as a function of x. This is a qualitative comparison (not a nonlocality claim): it describes how PLE induces a stable, pre-specified partition of 
+
+x-space. 29 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+D.4.2 Slope NTK: definitions and exact finite-width formulas Definition D.18 (Slope function, slope Jacobian, and slope NTK) . For a model fθ (x) that is differentiable in x on 
+
+I \ B , define the slope function 
+
+gθ (x) := ∂xfθ (x) (x ∈ I \ B ),
+
+the slope Jacobian 
+
+Jslope (x) := ∇θ gθ (x),
+
+and the slope NTK 
+
+Kslope (x, x ′) := ⟨Jslope (x), J slope (x′)⟩, x, x ′ ∈ I \ B .
+
+Remark D.19 (Why slope NTK is meaningful) . The standard NTK describes learning dynamics of function values 
+
+fθ (x). The slope NTK describes learning dynamics of the derived scalar quantity ∂xfθ (x), i.e. a (coordinate) partial derivative. This makes “local shape” learning explicit: it quantifies how parameter updates slopes at different inputs. 
+
+Proposition D.20 (Exact slope NTK for a one-hidden-layer ReLU MLP (no PLE)) . For the MLP equation 15, for x
+
+away from the kink set {zr (x) = 0 },
+
+gθ (x) = ∂xfθ (x) = 
+
+> m
+
+X
+
+> r=1
+
+ar wr Ir (x).
+
+Moreover, for such x (in the “a.e.” sense of Remark D.4), 
+
+∂g θ (x)
+
+∂a r
+
+= wr Ir (x), ∂g θ (x)
+
+∂w r
+
+= ar Ir (x), ∂g θ (x)
+
+∂b r
+
+= 0 , ∂g θ (x)
+
+∂c = 0 .
+
+Consequently, for x, x ′ away from the kink set, 
+
+KMLP slope (x, x ′) = 
+
+> m
+
+X
+
+> r=1
+
+(w2 
+
+> r
+
++ a2 
+
+> r
+
+) Ir (x)Ir (x′). (17) 
+
+Proof. For x with zr (x)̸ = 0 , we have ∂xReLU( zr (x)) = Ir (x) · ∂xzr (x) = Ir (x) wr . Thus, 
+
+gθ (x) = ∂xfθ (x) = 
+
+> m
+
+X
+
+> r=1
+
+ar ∂xReLU( zr (x)) = 
+
+> m
+
+X
+
+> r=1
+
+ar wr Ir (x).
+
+Treating Ir (x) as constant in parameters for this fixed x (valid a.e.), differentiate: 
+
+∂g ∂a r
+
+= wr Ir (x), ∂g ∂w r
+
+= ar Ir (x),
+
+and ∂g/∂b r = ∂g/∂c = 0 a.e. (the dependence on br enters only through the gate, whose derivative is supported on the measure-zero set zr (x) = 0 ). Finally, take the dot product of slope Jacobians at x and x′. Only the (a) and (w) blocks contribute, giving 
+
+KMLP slope (x, x ′) = 
+
+> m
+
+X
+
+> r=1
+
+h
+
+(wr Ir (x))( wr Ir (x′)) + ( ar Ir (x))( ar Ir (x′)) 
+
+i
+
+=
+
+> m
+
+X
+
+> r=1
+
+(w2 
+
+> r
+
++ a2 
+
+> r
+
+)Ir (x)Ir (x′),
+
+which is equation 17. 
+
+Proposition D.21 (Exact slope NTK for linear-on-PLE is diagonal across bins) . For linear-on-PLE with parameters 
+
+θ = ( w, c ), for x ∈ (bt−1, b t),
+
+gw,c (x) = ∂xfw,c (x) = wt
+
+∆t
+
+, ∇wgw,c (x) = 1∆t
+
+et, ∂g w,c (x)
+
+∂c = 0 .
+
+Therefore, for x, x ′ ∈ I \ B ,
+
+KPLE slope (x, x ′) = 1{s(x) = s(x′)}
+
+∆2
+
+> s(x)
+
+. (18) 
+
+In particular, if s(x)̸ = s(x′) then KPLE slope (x, x ′) = 0 (no cross-bin interference for slope learning). Proof. For x ∈ (bt−1, b t), Theorem D.7 gives ∂xfw,c (x) = wt/∆t. Differentiating g(x) = wt/∆t with respect to w
+
+yields ∇wg(x) = (1 /∆t)et, and ∂g/∂c = 0 . Taking dot products between the one-hot vectors gives equation 18. 30 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Remark D.22 (Slope NTKs reveal that PLE expressivity is decoupled and localized) . Comparing the slope NTKs 
+
+KMLP slope (x, x ′) and KPLE slope (x, x ′) provides a clear picture of PLE’s expressivity benefits. The PLE slope kernel is strictly localized: two inputs x and x′ interact during slope updates if and only if they fall within the same bin. This enables highly precise, decoupled learning of local sensitivities, which is perfectly suited for modeling localized irregularities in numerical features. 
+
+Remark D.23 (Extension: one-hidden-layer MLP on top of PLE (why diagonality can fail)) . If a ReLU MLP is applied to ϕ(x), e.g. 
+
+hΘ(x) = 
+
+> m
+
+X
+
+> r=1
+
+ar ReLU( u⊤ 
+
+> r
+
+ϕ(x) + br ),
+
+then (a.e.) ∂xhΘ(x) = P 
+
+> r
+
+ar 1{u⊤ 
+
+> r
+
+ϕ(x) + br > 0} (u⊤ 
+
+> r
+
+ϕ′(x)) . Since ϕ′(x) is one-hot by bin, u⊤ 
+
+> r
+
+ϕ′(x) selects a bin-dependent coordinate of ur . However, the gate 1{u⊤ 
+
+> r
+
+ϕ(x) + br > 0} can still couple different bins, so exact bin-diagonality like equation 18 is not guaranteed in general. 
+
+## E Appendix: Hier-Prox Convergence to a Noisier Ball and its Local Optimality 
+
+The practical LassoNet update applies a stochastic gradient step with stepsize η > 0, then applies the hierarchical proximal operator with fixed (λ, M ) for many epochs. 
+
+Algorithm 4 Stochastic Hier-Prox update with fixed (η, λ, M )
+
+Require: initial y0 = ( θ0, W 0), stepsize η > 0, prox weight λ > 0, hierarchy parameter M > 0 
+
+> 1:
+
+for t = 0 , 1, 2, . . . do  
+
+> 2:
+
+obtain stochastic gradient gt (e.g. minibatch gradient) of f at yt 
+
+> 3:
+
+zt ← yt − ηg t 
+
+> 4:
+
+yt+1 ← Ψλ,M (zt) ▷ LassoNet Hier-Prox operator (blockwise sorting per feature)  
+
+> 5:
+
+end for 
+
+We analyze the constant-hyperparameter regime used in practice (learning rate η and regularization λ held independent and constant over many epochs), which naturally leads to a Lyapunov analysis in function values for the composite potential F (y) = ηf (y) + Ω( y). Under (i) exact global solution of each proximal subproblem by H IER -P ROX , (ii) boundedness of iterates on a visited domain, (iii) L-smoothness of f , and (iv) a local proximal-PL inequality stated for the exact hierarchical prox-gradient mapping, we prove a master recursion 
+
+∆t+1 ≤ (1 − c)∆ t + Cnoise η2σ2 + Csign R2qt,
+
+where ∆t = E[F (yt) − F (y⋆)] and qt is the probability that stochastic gradient noise flips the active sign/branch between the noiseless and noisy pre-prox points. We then give SNR/margin bounds on qt (Chebyshev), making explicit how weak signals (small margin) lead to large branch-switch variance, causing training instability. 
+
+E.1 Practical algorithmic scaling and the Lyapunov function E.1.1 The stochastic update 
+
+We focus on the block of parameters to which H IER -P ROX is applied: 
+
+y = ( θ, W ) ∈ Rd × Rd×K ,
+
+where θ ∈ Rd act as feature “gates” and W ∈ Rd×K are the first-layer weights (row j is Wj, ·) of the MLP NN. Let 
+
+f : Rd+dK → R be the (possibly nonconvex) smooth training loss as a function of this block. 3
+
+Training uses a stochastic gradient gt (e.g. a minibatch gradient) and then applies the hierarchical proximal map: 
+
+zt = yt − ηg t, yt+1 = Ψ( zt), (19) where the proximal mapping is 
+
+Ψ( z) ∈ arg min 
+
+> y
+
+
+
+Ω( y) + 12 ∥y − z∥2
+
+
+
+. (20) Where Ω( y) is defined in the subsequent section. 
+
+> 3In the full neural network, other parameters may also be present; one can view them as frozen for our analysis.
+
+31 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+E.1.2 The hierarchical regularizer/constraint 
+
+The LassoNet hierarchical structure couples each (θj , W j, ·) through 
+
+∥Wj, ·∥∞ ≤ M |θj | (j = 1 , . . . , d ),
+
+and adds an ℓ1 penalty λ∥θ∥1. We package these into an extended-valued function Ω : Rd+dK → R ∪ { +∞} :
+
+Ω( θ, W ) := λ ∥θ∥1 +
+
+> d
+
+X
+
+> j=1
+
+1 ∥Wj, ·∥∞ ≤ M |θj | , (21) where 1{·} is 0 if the condition holds and +∞ otherwise. 
+
+Remark E.1 (Why this scaling differs from standard proximal-gradient textbooks) . Classical proximal-gradient methods typically use arg min y {Ω( y) + 12η ∥y − z∥2}, so that Ω is scaled by η. In the original LassoNet training regime, η, λ,and M are typically treated as independent constants over many epochs. The proximal step equation 20 therefore has a fixed quadratic weight 1/2. To obtain a clean descent identity, we analyze the Lyapunov function F in the next section, rather than f + Ω .
+
+E.1.3 The Lyapunov function 
+
+Define the potential 
+
+F (y) := ηf (y) + Ω( y). (22) The key intuition is that equation 19 is precisely a stochastic descent method for F when η is small enough, up to additional terms coming from noise and branch switching. 
+
+E.1.4 Assumptions Assumption E.2 (Bounded iterates / bounded prox outputs) . There exists R > 0 such that ∥yt∥ ≤ R almost surely for all t. Equivalently (and slightly more robustly), we may assume ∥Ψ( zt)∥ ≤ R almost surely. 
+
+Assumption E.3 (Unbiased gradients and bounded conditional variance) . The stochastic gradients satisfy E[gt | yt] = 
+
+∇f (yt) and 
+
+E∥ξt∥2 | yt
+
+ ≤ σ2, ξt := gt − ∇ f (yt).
+
+Assumption E.4 (Coordinate-wise noise variances) . For each t and j, the conditional variance of the gate-noise coordinate is bounded: 
+
+Eξ2 
+
+> θ,j,t
+
+| yt
+
+ ≤ ν2
+
+> j,t
+
+.
+
+Assumption E.5 (L-smoothness of the loss) . The function f has L-Lipschitz gradient on a neighborhood containing 
+
+{yt}:
+
+f (y′) ≤ f (y) + ⟨∇ f (y), y ′ − y⟩ + L
+
+2 ∥y′ − y∥2 .
+
+Assumption E.6 (Proximal-PL inequality for F ). There exists μPL > 0 and a reference value F ⋆ such that for all iterates yt, 12 ∥G(yt)∥2 ≥ μPL 
+
+ F (yt) − F ⋆.
+
+E.2 Geometry of H IER -P ROX : union of cones and branchwise convex prox 
+
+The mapping Ψ in equation 20 is separable across features j because Ω in equation 21 is a sum of featurewise terms and the squared norm decomposes into a sum. Thus it suffices to study the one-feature problem and then lift the results to the full map. 
+
+E.2.1 One feature: the feasible set is a union of two convex cones 
+
+Fix one feature and drop index j. Write the input to the proximal map as x = ( v, u ) ∈ R × RK , and the proximal variable as (b, w ) ∈ R × RK , corresponding to (θj , W j, ·).Define the feasible set 
+
+C := (b, w ) ∈ R × RK : ∥w∥∞ ≤ M |b| .
+
+Introduce the two sign cones 
+
+C+ := {(b, w ) : b ≥ 0, ∥w∥∞ ≤ M b }, C− := {(b, w ) : b ≤ 0, ∥w∥∞ ≤ − M b },
+
+so that C = C+ ∪ C −. Each C± is a closed convex cone, but their union is nonconvex. 32 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+E.2.2 Branchwise proximal maps and firm nonexpansiveness 
+
+Define the one-feature branch objective 
+
+Gs(b, w ) := λs b + 1Cs (b, w ), s ∈ { +1 , −1}.
+
+Since Cs is convex and b 7 → λs b is linear, Gs is proper, closed, and convex. 
+
+Definition E.7 (One-feature branch optimization problem) . For s ∈ {± 1} define 
+
+ψ(s)(x) := arg min 
+
+> (b,w )∈R×RK
+
+
+
+Gs(b, w ) + 12 ∥(b, w ) − x∥2
+
+
+
+. (23) We will show the branch problem’s optimum is well defined. 
+
+Lemma E.8 (Two-branch convexification and uniqueness on each branch) . For each s ∈ { +1 , −1}, the set Cs is a nonempty closed convex set. For each (v, u ), the branch problem min ψ(s) has a unique minimizer ψ(s)(v, u ).Proof. Step 1 (Closed convexity). Consider s = +1 ; the case s = −1 follows by the change of variables (b, W ) 7 →
+
+(−b, W ). We can write 
+
+C+ = {(b, W ) : b ≥ 0} ∩ 
+
+> K
+
+\
+
+> i=1
+
+{(b, W ) : −M b ≤ Wi ≤ M b }.
+
+Each set on the right is closed and convex; intersections preserve both. Nonemptiness holds since (0 , 0) is feasible. 
+
+Step 2 (Strong convexity). The quadratic term (b, W ) 7 → 12 (v − b)2 + 12 ∥u − W ∥2 is 1-strongly convex. Adding the linear term λsb preserves strong convexity. Restricting to a closed convex set by adding ιCs retains strong convexity on the domain. 
+
+Step 3 (Existence and uniqueness). Coercivity of the quadratic ensures existence of a minimizer; strong convexity implies uniqueness. 
+
+Definition E.9 (Global minimizer set) . Let ψset (v, u ) be the (possibly set-valued) global minimizer set of equation 23: 
+
+ψset (v, u ) := arg min  
+
+> (b,W )∈C
+
+12 (v − b)2 + 12 ∥u − W ∥2 + λ|b|.
+
+Lemma E.10 (Global minimizers lie on one of the two branches) . For any (v, u ),
+
+ψset (v, u ) ⊆ { ψ(+1) (v, u ), ψ (−1) (v, u )}.
+
+Moreover, if the two branch optimal values differ, then the global minimizer is unique. Proof. Since C = C+ ∪ C −, the global optimum equals the minimum of the two branch optima. On C+, |b| = b and the objective equals G+1 (b, w ) + 12 ∥(b, w ) − x∥2; on C−, |b| = −b and the objective equals G−1(b, w ) + 12 ∥(b, w ) − x∥2.Any global minimizer must lie in one branch and therefore must coincide with that branch’s unique minimizer (Lemma E.8). If branch values differ, only one branch attains the minimum, yielding uniqueness. 
+
+Lemma E.11 (Branch map is a convex proximal operator) . For each s ∈ {± 1}, the map ψ(s) is the proximal operator of the convex function Gs:
+
+ψ(s)(x) = prox Gs (x).
+
+In particular, ψ(s) is firmly nonexpansive and thus 1-Lipschitz: 
+
+ψ(s)(x) − ψ(s)(x′) 2
+
+≤ ⟨ ψ(s)(x) − ψ(s)(x′), x − x′⟩ ≤ ∥ x − x′∥2 .
+
+Proof. Fix the sign s. By definition equation 23 and lemma E.10, ψ(s)(x) is exactly the minimizer of Gs(·) + 12 ∥ · − x∥2,which is the definition of prox Gs (x). Firm nonexpansiveness is a standard property of proximal operators of proper closed convex functions. 33 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+E.2.3 The global one-feature map and sign selection 
+
+The H IER -P ROX rule selects a sign branch based on the input v. We define sign(0) := +1 as a deterministic tie-breaking convention. 
+
+Definition E.12 (Global one-feature map) . Define ψ : R × RK → R × RK by 
+
+ψ(v, u ) := ψ(sign( v)) (v, u ).
+
+Lemma E.13 (Sign selection is globally optimal except at ties) . Let x = ( v, u ) and let (b⋆, w ⋆) be any minimizer of the one-feature proximal problem 
+
+min 
+
+> (b,w )∈C
+
+
+
+λ|b| + 12 (b − v)2 + 12 ∥w − u∥2
+
+
+
+.
+
+If v̸ = 0 , then every minimizer satisfies sign( b⋆) = sign( v). When v = 0 , both signs can be optimal, and we select the 
+
++ branch by convention. Proof. Fix any feasible pair (b, w ) ∈ C . Because the constraint depends on |b|, the pair (−b, w ) is also feasible and has the same λ|b| and ∥w − u∥2 terms. The difference in objective values is entirely in the quadratic: 
+
+12 (b − v)2 − 12 (−b − v)2 = 12
+
+ b2 − 2bv + v2 − (b2 + 2 bv + v2) = −2bv. 
+
+If v > 0 and b > 0, this difference is negative, so (b, w ) is strictly better than (−b, w ). If v > 0 and b < 0, then (−b, w )
+
+is strictly better. Thus for v > 0 any minimizer must have b ≥ 0. An analogous argument gives b ≤ 0 when v < 0.When v = 0 , the two objectives are equal for ±b, so ties are possible. 
+
+E.2.4 Lifting to d features 
+
+Define the full mapping Ψ in equation 20 by applying the one-feature map ψ featurewise. Equivalently, define the sign pattern of a point z = ( θ, W ) by 
+
+s(z) := (sign( θ1), . . . , sign( θd)) ∈ {± 1}d,
+
+and let Ψ(s) denote the map obtained by applying the branch maps ψ(sj ) to each feature j. Then 
+
+Ψ( z) = Ψ (s(z)) (z), and for each fixed s, Ψ(s) is firmly nonexpansive (hence 1-Lipschitz). 
+
+E.2.5 A negative result: the global map need not be Lipschitz 
+
+The next proposition makes precise what cannot be extended from standard proximal mappings. 
+
+Proposition E.14 (Discontinuity at the sign boundary; not globally Lipschitz) . Consider the one-feature case K = 1 
+
+with parameters M > 0 and λ ≥ 0. Fix an input u > 0 and define the one-feature HIER -P ROX map v 7 → ψ(v, u ) = (b(v), w (v)) . If M u > λ , then 
+
+lim  
+
+> v↓0
+
+b(v) = + M u − λ
+
+1 + M 2 , lim  
+
+> v↑0
+
+b(v) = − M u − λ
+
+1 + M 2 ,
+
+while b(0) = + M u −λ  
+
+> 1+ M2
+
+under the convention sign(0) = +1 . In particular, the map v 7 → ψ(v, u ) is discontinuous at 
+
+v = 0 and therefore not Lipschitz. Proof. With K = 1 , the constraint is |w| ≤ M |b| and the one-feature prox problem is 
+
+min 
+
+> b,w
+
+
+
+λ|b| + 12 (b − v)2 + 12 (w − u)2 : |w| ≤ M |b|
+
+
+
+.
+
+For any fixed b, the minimizer over w is the Euclidean projection of u onto [−M |b|, M |b|], hence 
+
+w⋆(b) = min {u, M |b|} (since u > 0) ,
+
+and the resulting reduced objective is 
+
+ϕv (b) = λ|b| + 12 (b − v)2 + 12
+
+ u − M |b|2+,
+
+34 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+where (t)+ = max {t, 0}. This function is convex in b (sum of convex terms), hence it has a unique minimizer except for a possible tie at v = 0 .We first analyze v ≥ 0 and minimize over b ≥ 0 (Lemma E.13 shows the minimizer has b ≥ 0). On b ∈ [0 , u/M ], we have (u − M b )+ = u − M b and 
+
+ϕv (b) = λb + 12 (b − v)2 + 12 (u − M b )2.
+
+Differentiating gives 
+
+ϕ′ 
+
+> v
+
+(b) = λ + ( b − v) − M (u − M b ) = (1 + M 2)b + λ − v − M u. 
+
+Setting ϕ′ 
+
+> v
+
+(b) = 0 yields the unique critical point 
+
+b+(v) = M u + v − λ
+
+1 + M 2 .
+
+When M u > λ and v ≥ 0 is sufficiently small, b+(v) > 0. Moreover b+(v) < u/M holds for all u > 0 (a direct rearrangement), so this critical point lies in the region where the expression is valid. Since ϕv is convex, this b+(v) is the unique minimizer for v ≥ 0 in this regime. By symmetry of ϕv in the pair (b, v ) through |b| and |v| (and again Lemma E.13), for v ≤ 0 the minimizer is 
+
+b(v) = −b+(|v|). Therefore, as v ↓ 0,
+
+b(v) → M u − λ
+
+1 + M 2 , and as v ↑ 0, b(v) → − M u − λ
+
+1 + M 2 .
+
+Under the convention sign(0) = +1 , b(0) = b+(0) = M u −λ  
+
+> 1+ M2
+
+, so the map is discontinuous at 0.
+
+Remark E.15 (Interpretation) . The example shows that if the first-layer weight input u is large, the constraint |w| ≤ M |b|
+
+can force the optimal gate magnitude |b| to remain bounded away from 0, even when v ≈ 0. Then an infinitesimal change of sign in v can flip the sign of b while keeping its magnitude almost constant, creating a jump. This is exactly the “branch-switch” phenomenon that our stochastic analysis must track. 
+
+E.3 Piecewise Lipschitz + jump: the instability decomposition 
+
+We now state the key inequality that replaces global Lipschitz continuity. The proof is short because it reduces to “nonexpansive on each branch” plus “bounded jump across branches.” 
+
+Remark E.16 (How boundedness is justified in practice) . In practical deep-learning pipelines, boundedness is often enforced implicitly or explicitly: (i) warm-start training brings parameters into a stable region before enabling H IER -PROX ; (ii) gradient clipping or weight decay prevents divergence; (iii) early stopping prevents excursions to extreme regions. For a theoretical note, we state boundedness as an assumption because it is exactly what controls the jump size. 
+
+Lemma E.17 (Piecewise nonexpansive with a jump term) . Let Ψ be the full HIER -P ROX map and assume Assump-tion E.2. Then for all x, x ′ ∈ Rd+dK ,
+
+∥Ψ( x) − Ψ( x′)∥2 ≤ ∥ x − x′∥2 + J2 1{s(x)̸ = s(x′)}, with J := 2 R. 
+
+Proof. If s(x) = s(x′), then Ψ( x) = Ψ (s)(x) and Ψ( x′) = Ψ (s)(x′) for the same sign pattern s. Since each branch map is firmly nonexpansive and the full map is a product of branch maps, ∥Ψ( x) − Ψ( x′)∥ ≤ ∥ x − x′∥, hence the squared inequality holds with no J term. If s(x)̸ = s(x′), then by Assumption E.2, 
+
+∥Ψ( x) − Ψ( x′)∥ ≤ ∥ Ψ( x)∥ + ∥Ψ( x′)∥ ≤ 2R, 
+
+so ∥Ψ( x) − Ψ( x′)∥2 ≤ 4R2 = J2. Combining the two cases yields the claim. 
+
+Corollary E.18 (Expectation form with conditional branch-switch probability) . Fix a σ-field F and random variables 
+
+X, X ′ measurable w.r.t. F. Let B := {s(X)̸ = s(X′)} and define q := P(B | F ). Then 
+
+E∥Ψ( X) − Ψ( X′)∥2 | F  ≤ E∥X − X′∥2 | F  + J2q. 
+
+Proof. Apply Lemma E.17 pointwise and take conditional expectation. 35 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+E.3.1 A simple signal-to-noise bound for branch switching (Chebyshev) 
+
+We now connect qt to a familiar ML notion: margin versus noise .
+
+Definition E.19 (Noise and margin for the gate coordinates) . Let ξt := gt − ∇ f (yt) be the stochastic gradient noise, and define the “noiseless” pre-prox point 
+
+¯zt := yt − η∇f (yt), zt = ¯ zt − ηξ t.
+
+Write ¯zt = ( ¯θt, ¯Wt) and define the coordinate-wise margins 
+
+mj,t := |(¯θt)j | (j = 1 , . . . , d ).
+
+Define the branch mismatch event 
+
+Bt := {s(zt)̸ = s(¯ zt)}, qt(yt) := P(Bt | yt).
+
+Lemma E.20 (Chebyshev SNR bound for branch switches) . Under Definition E.19 and Assumption E.4, 
+
+qt(yt) ≤
+
+> d
+
+X
+
+> j=1
+
+η2ν2
+
+> j,t
+
+m2
+
+> j,t
+
+, with the convention 00 = 0 .
+
+Proof. A branch switch occurs if at least one coordinate changes sign: 
+
+Bt ⊆
+
+> d
+
+[
+
+> j=1
+
+n
+
+sign(( ¯θt)j − ηξ θ,j,t )̸ = sign(( ¯θt)j )
+
+o
+
+.
+
+For a fixed j with mj,t > 0, a sign change implies |ηξ θ,j,t | ≥ mj,t . Therefore, by the union bound and Chebyshev’s inequality, 
+
+qt(yt) ≤
+
+> d
+
+X
+
+> j=1
+
+P
+
+
+
+|ξθ,j,t | ≥ mj,t 
+
+η yt
+
+
+
+≤
+
+> d
+
+X
+
+> j=1
+
+E[ξ2 
+
+> θ,j,t
+
+| yt](mj,t /η )2 ≤
+
+> d
+
+X
+
+> j=1
+
+η2ν2
+
+> j,t
+
+m2
+
+> j,t
+
+.
+
+If mj,t = 0 , the bound is vacuous; we adopt the convention 0/0 = 0 .
+
+Remark E.21 (Margin collapse is exactly when instability can appear) . When some margin mj,t becomes small (feature enters/exits, or gate hovers near 0), even moderate noise can create frequent sign flips, making qt large. This is where the extra sign-switch penalty can dominate. 
+
+E.4 Deterministic descent in function values (no convexity needed) E.4.1 The deterministic prox-gradient map 
+
+Define the deterministic map 
+
+T (y) := Ψ  y − η∇f (y), G(y) := y − T (y).
+
+The vector G(y) is the prox-gradient mapping ; it vanishes exactly at fixed points of T .
+
+Lemma E.22 (Prox optimality inequality) . Let y+ = Ψ( z) for some z. Then for all y,
+
+Ω( y+) + 12 y+ − z 2 ≤ Ω( y) + 12 ∥y − z∥2 .
+
+Proof. This is immediate from the definition equation 20 of Ψ as an argmin. 
+
+Lemma E.23 (Deterministic descent for F ). Under Assumption E.5, if η ≤ 1/L , then for all y,
+
+F (T (y)) ≤ F (y) − 1 − ηL 
+
+2 ∥G(y)∥2 .
+
+Proof. Let z = y − η∇f (y) and y+ = T (y) = Ψ( z). Apply Lemma E.22 with y as the comparator: 
+
+Ω( y+) + 12 y+ − z 2 ≤ Ω( y) + 12 ∥y − z∥2 .
+
+36 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Expanding z = y − η∇f (y) gives 
+
+y+ − z 2 = (y+ − y) + η∇f (y) 2 = y+ − y 2 + 2 η⟨∇ f (y), y + − y⟩ + η2 ∥∇ f (y)∥2 ,
+
+and ∥y − z∥2 = η2 ∥∇ f (y)∥2. Canceling the common η2 ∥∇ f (y)∥2 /2 term yields 
+
+Ω( y+) + 12 y+ − y 2 + η⟨∇ f (y), y + − y⟩ ≤ Ω( y).
+
+By L-smoothness, 
+
+f (y+) ≤ f (y) + ⟨∇ f (y), y + − y⟩ + L
+
+2 y+ − y 2 .
+
+Multiply by η and add to the previous inequality to obtain 
+
+F (y+) ≤ F (y) − 1 − ηL 
+
+2 y+ − y 2 .
+
+Finally, ∥y+ − y∥ = ∥G(y)∥ by definition, completing the proof. 
+
+Remark E.24 (No convexity is used here) . Lemma E.23 uses only L-smoothness of f and exact optimality of the proximal subproblem. It does not assume convexity of f or Ω. The role of proximal-PL in the next section is to turn “descent” into a linear rate .
+
+E.5 A proximal-PL condition and how to certify it locally 
+
+Remark E.25 (What F ⋆ represents) . If F attains a minimum on the relevant region, one can take F ⋆ = min y F (y).More generally (in nonconvex settings), proximal-PL can be stated relative to a set of global minimizers or even relative to a best-achievable value along the trajectory. For simplicity, we keep the scalar F ⋆.
+
+E.5.1 Local certification heuristics 
+
+The proximal-PL condition is an assumption, but it is not arbitrary. Below are two practically relevant routes that can justify it locally .• Stable sign pattern + margin. If the sign pattern s(y − η∇f (y)) remains fixed on a region and the margins are bounded away from 0, then Ψ reduces to a single convex proximal operator Ψ(s) on that region. In that case, standard arguments for composite problems on convex sets can be used to derive PL-type inequalities. • Empirical local regularity. In deep learning, it is common that training dynamics enter a well-conditioned region after warm-start. Proximal-PL can be viewed as a formalization of “loss landscape is locally sharp” for the relevant trajectory, after the hier-prox operation. 
+
+Remark E.26 (We do not require global PL) . Nothing in the stochastic analysis requires proximal-PL to hold for all 
+
+y ∈ Rd+dK . It only needs to hold along (or near) the iterates that the algorithm visits. 
+
+E.6 Stochastic recursion: noise + sign-switch penalty E.6.1 A conditional descent inequality Lemma E.27 (Stochastic descent with a noise cross term) . Assume Assumptions E.5 and E.3. If η ≤ 1/L , then almost surely 
+
+F (yt+1 ) ≤ F (yt) − 1 − ηL 
+
+2 ∥yt+1 − yt∥2 − η⟨ξt, y t+1 − yt⟩.
+
+Proof. Apply Lemma E.22 to yt+1 = Ψ( zt) with comparator y = yt and zt = yt − ηg t:
+
+Ω( yt+1 ) + 12 ∥yt+1 − zt∥2 ≤ Ω( yt) + 12 ∥yt − zt∥2 .
+
+Expand as in Lemma E.23: 
+
+Ω( yt+1 ) + 12 ∥yt+1 − yt∥2 + η⟨gt, y t+1 − yt⟩ ≤ Ω( yt).
+
+By L-smoothness, 
+
+ηf (yt+1 ) ≤ ηf (yt) + η⟨∇ f (yt), y t+1 − yt⟩ + ηL 
+
+2 ∥yt+1 − yt∥2 .
+
+Add the two inequalities, use F = ηf + Ω , and substitute gt = ∇f (yt) + ξt to get the claim. 37 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Lemma E.28 (Young inequality removes the cross term) . Fix any α > 0. Then 
+
+−η⟨ξt, y t+1 − yt⟩ ≤ η2
+
+2α ∥ξt∥2 + α
+
+2 ∥yt+1 − yt∥2 .
+
+Proof. This is the inequality −⟨ a, b ⟩ ≤ 12α ∥a∥2 + α 
+
+> 2
+
+∥b∥2 with a = ηξ t and b = yt+1 − yt.
+
+Corollary E.29 (Conditional descent in terms of E ∥yt+1 − yt∥2). Under Assumptions E.5 and E.3, if η ≤ 1/L and 
+
+α = (1 − ηL )/2, then 
+
+EF (yt+1 ) | yt
+
+ ≤ F (yt) − 1 − ηL 
+
+4 E∥yt+1 − yt∥2 | yt
+
+ + η2
+
+1 − ηL E∥ξt∥2 | yt
+
+.
+
+Proof. Combine Lemma E.27 and Lemma E.28 and take conditional expectation. 
+
+E.6.2 Relating E ∥yt+1 − yt∥2 to the deterministic prox-gradient mapping 
+
+Let ¯zt = yt − η∇f (yt) and ¯yt+1 := T (yt) = Ψ(¯ zt). Then G(yt) = yt − ¯yt+1 .
+
+Lemma E.30 (Lower bound with a branch-switch penalty) . Assume Assumptions E.2 and E.3. Then 
+
+E∥yt+1 − yt∥2 | yt
+
+ ≥ 12 ∥G(yt)∥2 − η2σ2 − J2qt(yt), J = 2 R, 
+
+where qt(yt) = P(s(zt)̸ = s(¯ zt) | yt).Proof. Write 
+
+yt+1 − yt = (¯ yt+1 − yt) + ( yt+1 − ¯yt+1 ) = −G(yt) + ( yt+1 − ¯yt+1 ).
+
+Using the inequality ∥a + b∥2 ≥ 12 ∥a∥2 − ∥ b∥2 (valid for all vectors a, b ), we obtain 
+
+∥yt+1 − yt∥2 ≥ 12 ∥G(yt)∥2 − ∥ yt+1 − ¯yt+1 ∥2 .
+
+Now apply Corollary E.18 with F = σ(yt), X = zt and X′ = ¯ zt:
+
+E∥yt+1 − ¯yt+1 ∥2 | yt
+
+ = E∥Ψ( zt) − Ψ(¯ zt)∥2 | yt
+
+ ≤ E∥zt − ¯zt∥2 | yt
+
+ + J2qt(yt).
+
+Finally, zt − ¯zt = −ηξ t, so E[∥zt − ¯zt∥2 | yt] = η2E[∥ξt∥2 | yt] ≤ η2σ2. Substituting into the previous inequality completes the proof. 
+
+E.6.3 The master recursion Theorem E.31 (One-step recursion: noise + sign-switch penalty) . Assume Assumptions E.5, E.2, E.3, and E.6, and let 
+
+η ≤ 1/L . Define ∆t := E[F (yt) − F ⋆]. Then 
+
+E[F (yt+1 ) | yt] − F ⋆ ≤
+
+
+
+1 − 1 − ηL 
+
+4 μPL 
+
+
+
+(F (yt) − F ⋆) + Cnoise η2σ2 + Csign J2qt(yt),
+
+where J = 2 R and 
+
+Cnoise = 1 − ηL 
+
+4 + 11 − ηL , Csign = 1 − ηL 
+
+4 .
+
+Proof. Start from Corollary E.29 and plug in Lemma E.30: 
+
+E[F (yt+1 ) | yt] ≤ F (yt) − 1 − ηL 
+
+4
+
+ 12 ∥G(yt)∥2 − η2σ2 − J2qt(yt)
+
+
+
++ η2
+
+1 − ηL σ2
+
+= F (yt) − 1 − ηL 
+
+8 ∥G(yt)∥2 +
+
+ 1 − ηL 
+
+4 + 11 − ηL 
+
+
+
+η2σ2 + 1 − ηL 
+
+4 J2qt(yt).
+
+Now apply the proximal-PL inequality (Assumption E.6) at yt: 12 ∥G(yt)∥2 ≥ μPL (F (yt) − F ⋆), i.e. ∥G(yt)∥2 ≥
+
+2μPL (F (yt) − F ⋆). Substitute this lower bound into the negative term to obtain the stated contraction. 
+
+Corollary E.32 (Unconditional recursion) . Under the assumptions of Theorem E.31, 
+
+∆t+1 ≤
+
+
+
+1 − 1 − ηL 
+
+4 μPL 
+
+
+
+∆t + Cnoise η2σ2 + Csign J2 E[qt(yt)] .
+
+Proof. Take expectation of Theorem E.31 over yt.38 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+E.7 Summary theorem and interpretations E.7.1 A clean bound under a margin condition 
+
+To obtain a fully explicit bound, we now assume a margin lower bound. This is a standard “signal-to-noise” assumption: the deterministic pre-prox gates do not hover near zero. 
+
+Assumption E.33 (Uniform margin lower bound) . There exist constants m1, . . . , m d > 0 such that for all t,
+
+mj,t = |(¯θt)j | ≥ mj almost surely. 
+
+Theorem E.34 (Linear convergence to a “noise + sign” neighborhood) . Assume Assumptions E.5, E.2, E.3, E.6, E.4, and E.33, and let η ≤ 1/L . Define 
+
+ρ := 1 − 1 − ηL 
+
+4 μPL ∈ (0 , 1) .
+
+Then for all t ≥ 0,
+
+∆t ≤ ρt∆0 + 11 − ρ
+
+Cnoise η2σ2 + Csign J2 η2
+
+> d
+
+X
+
+> j=1
+
+sup t ν2
+
+> j,t
+
+m2
+
+> j
+
+ , J = 2 R. 
+
+Proof. By Lemma E.20 and Assumption E.33, 
+
+qt(yt) ≤
+
+> d
+
+X
+
+> j=1
+
+η2ν2
+
+> j,t
+
+m2
+
+> j,t
+
+≤ η2
+
+> d
+
+X
+
+> j=1
+
+ν2
+
+> j,t
+
+m2
+
+> j
+
+.
+
+Taking expectation yields the same bound for E[qt(yt)] . Plug this into Corollary E.32 to obtain a linear recursion 
+
+∆t+1 ≤ ρ∆t + βη 2, with β equal to the parenthesized constant. Unrolling the recursion gives the stated formula. 
+
+E.7.2 Interpretations 
+
+Remark E.35 (When H IER -P ROX behaves like standard Prox-SGD) . If the margin lower bound holds (gates are not near zero), then the branch-switch probability scales like η2 and is typically small. In that regime, the last term in Theorem E.34 is of the same order as the usual SGD noise term. 
+
+Remark E.36 (When instability is expected) . If some margins collapse (gates hover near 0), the bound in Lemma E.20 becomes large, and sign flips can occur frequently. Theorem E.31 then predicts a large additive penalty, which can dominate the dynamics even when σ2 is moderate. This matches the empirical observation that feature enter/exit events are periods of instability. 
+
+E.7.3 Variance transfer viewpoint 
+
+The piecewise nonexpansiveness inequality also yields a “variance transfer” message. 
+
+Proposition E.37 (Variance transfer: within-branch nonexpansive, across-branch penalty) . Let X be a random pre-prox input and let ¯X be an independent copy with the same sign pattern (i.e. s(X) = s( ¯X) almost surely). Then 
+
+Var(Ψ( X)) ≤ Var( X) (nonexpansive). In general, for any X,
+
+E ∥Ψ( X) − EΨ( X)∥2 ≤ E ∥X − EX∥2 + J2 P(s(X)̸ = s(EX)) ,
+
+so variance can increase only through a branch-switch-type event. Proof. The first statement follows from firm nonexpansiveness on a fixed branch. The second statement is a direct application of Lemma E.17 with x′ = EX and Jensen’s inequality. 
+
+E.8 Discussion: why variance reduction is a promising direction 
+
+The master recursion (Theorem E.31) isolates two drivers of the final neighborhood size: 1. the classical noise term, scaling like η2σ2;2. the sign-switch term, scaling like J2 E[qt(yt)] , which itself can be controlled by a margin-to-noise ratio. This suggests a practical research direction: stabilize HIER -P ROX by reducing gradient noise , thereby reducing both 
+
+σ2 and the switch probability. While full variance-reduction methods (SVRG/SAGA) can be costly in deep learning, lighter-weight options (larger batch size, gradient accumulation, EMA smoothing, etc.) may already reduce sign flips noticeably. 39 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Takeaway. LassoNet’s hierarchical feature-selection mechanism introduces a fundamental discrete instability channel. Our analysis proves that controlling this channel—particularly the variance induced by gate sign transitions—is critical for stable convergence. This theoretical insight directly motivates the exponential moving average (EMA) stabilization introduced in our Seq-Hier-Prox-EMA algorithm, which effectively dampens the branch-switch probability qt by reducing the effective gradient noise. 
+
+E.9 LassoFlexNet Training Algorithm 5 Update Algorithm for LassoFlexNet  
+
+> 1:
+
+Input: training dataset X ∈ Rn×d, training labels Y , linear skip module LS β , per-feature embedding ResNet 
+
+NN ϕ(·), main neural network NN W (·) (e.g. Mixer), number of epochs B, hierarchy constrain multiplier M ,lambda path λSeq = [ λ0, · · · , λ N ], learning rate α, 
+
+> 2:
+
+Initialize and train the joint model on the loss L(β, ϕ, W ) 
+
+> 3:
+
+Initialize the penalty, λ = λ0, and the number of active features, k = d 
+
+> 4:
+
+while k > 0 do  
+
+> 5:
+
+Get λ ∈ λSeq iteratively  
+
+> 6:
+
+for b = 1 to B do  
+
+> 7:
+
+Compute gradient of the loss w.r.t to (β, ϕ, W ) using back-propagation  
+
+> 8:
+
+Update β ← β − α∇β L, ϕ ← ϕ − α∇ϕL, and W ← W − α∇W L 
+
+> 9:
+
+Update ( ˜β, ˜ϕ, ˜W (1) ) ← Coordinate Hier-Prox (β, ϕ, W (1) , αλ, M ) 
+
+> 10:
+
+end for  
+
+> 11:
+
+Update k to be the number of non-zero coordinates of β 
+
+> 12:
+
+end while E.10 Proximal Local Optimality: Coordinate Hierarchical Proximal Gradient Derivation 
+
+Our derivation is based on Proposition 1 in [32], which we provide here for completeness and reference: 
+
+Proposition 1 (Joint optimization): Fix v ∈ Rk and U ∈ RK . (Note: the two integers k, K can be different) Let us consider the problem: 
+
+minimize  
+
+> (b,W )12
+
+ ∥v − b∥22 + ∥U − W ∥22
+
+ + λ∥b∥2 + ¯λ∥W ∥1
+
+subject to ∥W ∥∞ ≤ M · ∥ b∥2.
+
+[ 32 ] derives the sufficient and necessary condition for characterizing the global optimum (b∗, W ∗) of the above optimization problem: 1. Let us order the coordinates {| Ui|} i∈[K] in decreasing order 
+
+U(1) ≥ U(2) ≥ . . . ≥ U(K) .
+
+and define for each s ∈ [K] = {0, 1, . . . , K } the value bs by 
+
+bs = 11 + sM 2
+
+
+
+1 − as
+
+∥v∥2
+
+
+
+> +
+
+v where as = λ − M
+
+> s
+
+X
+
+> i=1
+
+  U(i) − ¯λ .
+
+Then b∗ = bs∗ where s∗ ∈ [K] is the unique s ∈ [K] such that 
+
+M ∥bs∥2 ∈ S¯λ
+
+  U(s+1) 
+
+ , S¯λ
+
+  U(s)
+
+ .
+
+By convention S¯λ
+
+  U(K+1) 
+
+ = 0 and S¯λ
+
+  U(0) 
+
+ = ∞.2. The W ∗ must satisfy 
+
+W ∗ = sign( U ) min {M ∥b∗∥2 , S¯λ(|U |)} .
+
+Sequential Optimization: In contrast to the joint optimization of Hier-Prox, we propose a sequential (coordinate-wise) proximal update, alternating between b and W . By decoupling the variables, we replace the complex joint projection with two simpler, closed-form proximal steps. While this sequential approach yields different training dynamics and fixed points compared to joint Hier-Prox, it is highly effective in practice. We validate the empirical superiority of this Seq-Hier-Prox approach in our experiments. For our application, we care about only the standard Lasso, instead of group Lasso, i.e. b is a scalar. Our derivations will follow this case accordingly. 40 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Linear skip layer step for b: We first characterize the following global optimum with respect to b:
+
+b∗ = argmin 
+
+> b
+
+12
+
+ (v − b)2 + ∥U − W ∥22
+
+ + λ|b| + ¯λ∥W ∥1
+
+= argmin 
+
+> b
+
+12 (v − b)2 + λ|b|
+
+= Sλ(v)
+
+This is the standard proximal mapping for Lasso regression [ 22 ], whose optimum is given by the soft-thresholding operator Sλ(v).
+
+Neural first layer step for W : Next, we solve for the global optimum with respect to W :
+
+minimize 
+
+> W
+> 12
+
+ |v − b|22 + ∥U − W ∥22
+
+ + λ|b| + ¯λ∥W ∥1
+
+subject to ∥W ∥∞ ≤ M · | b|
+
+Since we are not solving (b, W ) jointly: 
+
+minimize 
+
+> W
+> 12
+
+ ∥U − W ∥22
+
+ + ¯λ∥W ∥1
+
+subject to ∥W ∥∞ ≤ M · | b|
+
+Proposition 2 (Sequential or Iterative Optimization): Fix v ∈ Rk and U ∈ RK (Note: the two integers k, K can be different). The solutions to the following sequential optimization problem are solved sequentially as follows: 1. b∗ is solved by standard proximal gradient method: 
+
+b∗ = argmin 
+
+> b
+
+12
+
+ (v − b)2 + ∥U − W ∥22
+
+ + λ|b| + ¯λ∥W ∥1
+
+= argmin 
+
+> b
+
+12 (v − b)2 + λ|b|
+
+= Sλ(v)
+
+where Sλ is the soft-thresholding operator. 2. W ∗ is solved by (partial or coordinate) Hierarchical proximal gradient method: 
+
+W ∗ = argmin     
+
+> Ws.t. ∥W∥∞≤M·| b∗|
+
+12
+
+ (v − b∗)2 + ∥U − W ∥22
+
+ + λ|b∗| + ¯λ∥W ∥1
+
+= argmin     
+
+> Ws.t. ∥W∥∞≤M·| b∗|
+
+12
+
+ ∥U − W ∥22
+
+ + ¯λ∥W ∥1
+
+= sign( U ) min {M |b∗|, S¯λ(|U |)}
+
+where S¯λ is the soft-thresholding operator. 
+
+Proof. The first optimization problem is well known and is addressed by the standard proximal gradient and we omit the details. Readers can refer to [23]. The derivation technique for the second problem is identical to the one in LassoNet. The key observation is their derivation for W does not depend on b being jointly optimized. We provide here for clarity and completeness. We start by proving the claim below: for some w ∈ R+
+
+Claim : W ∗ = sign( U ) min {M · | b|, S¯λ(|U |)} .Denote w = M |b∗|, where b∗ is solved in prior step above, as a constant for current step. By definition, W ∗ is the minimum of the below optimization problem: 
+
+minimize  
+
+> W
+> 12
+
+∥U − W ∥2 
+
+> F
+
++ ¯λ∥W ∥1
+
+subject to ∥W ∥∞ ≤ M |b∗| = w. 
+
+41 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+The key observation is that the constraint ∥W ∥∞ ≤ M |b∗| can be written as separate inequality constraints where each constraint is described by a convex function: 
+
+∥W ∥∞ ≤ M |b∗|
+
+This is equivalent to: 
+
+|wk| ≤ M |b∗| for all k where W = [ w1, · · · , w K ] and each wk is a scalar. Since 12 ∥U − W ∥2 
+
+> F
+
++ ¯λ∥W ∥1 is also a convex function, the strong duality holds since Slater’s condition holds (Section 5.2.3 in [23]). Thereby, we know for some dual variable s ∈ RK 
+
+> +
+
+, W ∗ minimizes the Lagrangian function below: 
+
+W ∗ = argmin  
+
+> W∈RK
+
+12 ∥U − W ∥22 +
+
+> K
+
+X
+
+> j=1
+
+sj |Wj | + ¯λ∥W ∥1.
+
+Next, let’s take subgradient and get that W ∗ needs to satisfy, 
+
+W ∗ 
+
+> j
+
+− Uj +  ¯λ + sj
+
+ v∗ 
+
+> j
+
+= 0 for some v∗ 
+
+> j
+
+∈ ∂   W ∗
+
+> j
+
+ .sj
+
+  W ∗ 
+
+> j
+
+− w = 0 .sj ≥ 0, and W ∗ 
+
+> j
+
+≤ w. 
+
+Now we divide our discussion into two cases: 1. sj = 0 . The KKT condition shows Uj = W ∗ 
+
+> j
+
++ ¯λv ∗ 
+
+> j
+
+for some v∗ 
+
+> j
+
+∈ ∂   W ∗
+
+> j
+
+. This implies that W ∗ 
+
+> j
+
+= S¯λ (Uj ),which is possible if and only if |S ¯λ (Uj )| ≤ w.2. sj > 0. The KKT condition gives W ∗ 
+
+> j
+
+= w. Since Uj = W ∗ 
+
+> j
+
++  ¯λ + sj
+
+ v∗ 
+
+> j
+
+for v∗ 
+
+> j
+
+∈ ∂   W ∗
+
+> j
+
+, it implies 
+
+sign  v∗
+
+> j
+
+ = sign  W ∗
+
+> j
+
+ = sign ( Uj ). Hence W ∗ 
+
+> j
+
+= sign ( Uj ) w. Note if w̸ = 0 , then we must have v∗ 
+
+> j
+
+= sign  W ∗
+
+> j
+
+ =sign ( Uj ). Thus, having some sj > 0 with Uj = W ∗ 
+
+> j
+
++  ¯λ + sj
+
+ v∗ 
+
+> j
+
+is equivalent to |S ¯λ (Uj )| > w .Summarizing the above discussion, we see that W ∗ must satisfy 
+
+W ∗ 
+
+> j
+
+= sign ( Uj ) min {w, S¯λ (|Uj |)}
+
+## F Appendix: Convergence of the Convex Hier-Prox Relaxation to a Smaller Noise Neighborhood 
+
+F.1 Background 
+
+LassoNet’s original hierarchical proximal operator couples a feature-gate θj and the first-layer weights Wj, · ∈ RK
+
+through the hard constraint 
+
+∥Wj, ·∥∞ ≤ M |θj |,
+
+and computes a per-feature prox by sorting the coordinates of Wj, ·. This induces a piecewise proximal map: under stochastic gradients, the update can jump when the active-set/sign pattern changes, and a function-value recursion typically contains an additional “noise + sign-switch” instability term. This is due to the nonconvex nature of the problem: union of two convex cones is not convex. In this section we propose a convex, M -scaled, coordinate-wise (sequential) relaxation that keeps the intended meaning of the constraint parameter M (the scale linking the gate and the first-layer row), while yielding a globally well-behaved proximal mapping (single-valued, firmly nonexpansive). The resulting stochastic recursion features noise only (no sign-switch penalty). Our goal is to use the calculation to propose more stable algorithmic variants. 
+
+Key modeling choice (explicit M via scaled block). For each feature j, define the scaled block 
+
+xj := 
+
+ θj
+
+Wj, ·/M 
+
+
+
+∈ RK+1 , (M > 0) .
+
+42 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+We replace the hard hierarchy by the convex surrogate 
+
+Ω( θ, W ) := α∥θ∥1 + λw∥W ∥1 + β
+
+> d
+
+X
+
+> j=1
+
+∥xj ∥2, (α, λ w, β ≥ 0) .
+
+To retain an iterative two closed-form proximal implementation , we apply the proximal step in the scaled coordinate 
+
+fW := W/M (equivalently, a diagonal preconditioner in the original variables). This yields a per-feature update that is literally “ ℓ1-soft-threshold on θj ” followed by “group ℓ2 shrink on (θj , fWj, ·)”, in closed form. We provide a proof of a master function-value recursion under a proximal-PL condition, matching Appendix E. 
+
+F.2 Setup: scaled coordinates, stochastic update, and Lyapunov F.2.1 Original variables and M -scaled coordinates 
+
+Let θ ∈ Rd denote feature gates and let W ∈ Rd×K be first-layer weights (row j is Wj, · ∈ RK ). Let forig (θ, W ) be the (possibly nonconvex) smooth training loss as a function of this block. 4
+
+Fix M > 0 and define the scaled first-layer weights 
+
+fW := W/M. 
+
+Define the scaled loss 
+
+f (θ, fW ) := forig (θ, M fW ). (24) We work in the scaled variable 
+
+x := ( θ, fW ) ∈ Rd × Rd×K .
+
+After computing fW , we map back to original weights by W = M fW .
+
+Remark F.1 (How gradients rescale) . By the chain rule, ∇fW f (θ, fW ) = M ∇W forig (θ, M fW ). Thus implementing SGD on (θ, fW ) corresponds to using a diagonal preconditioner on the W -block in the original variables. This is precisely the mechanism that makes the M -scaled prox step admit a clean closed form. 
+
+F.2.2 Stochastic proximal-gradient update in scaled coordinates 
+
+Training uses a stochastic gradient gt (e.g. a minibatch gradient) for the scaled loss f followed by a proximal map: 
+
+zt = xt − ηg t, xt+1 = Ψ( zt), (25) where η > 0 is a constant step size and 
+
+Ψ( z) ∈ arg min 
+
+> x
+
+n
+
+Ω( x) + 12 ∥x − z∥2o
+
+. (26) 
+
+Remark F.2 (Equivalent view as a preconditioned proximal step in original variables) . Writing x = ( θ, fW ) and 
+
+W = M fW , the scaled proximal problem 
+
+Ψ( z) ∈ arg min 
+
+> x
+
+Ω( x) + 12 ∥x − z∥2
+
+is equivalent (under the change of variables fW = W/M ) to a preconditioned proximal step in the original variables: 
+
+(θ+, W +) ∈ arg min 
+
+> θ,W
+
+
+
+Ω( θ, W ) + 12 ∥θ − v∥22 + 12M 2 ∥W − U ∥2
+
+> F
+
+
+
+,
+
+where (v, U ) is the corresponding original-coordinate input to the prox. Thus the algorithm uses the natural M -dependent metric on the W -block; this is exactly what preserves a two-closed-form implementation. 
+
+F.2.3 The Lyapunov function 
+
+Following the existing value-function analysis, define 
+
+F (x) := ηf (x) + Ω( x). (27) The recursion we prove is in F (xt).
+
+> 4Other network parameters are treated as frozen.
+
+43 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+F.3 The M -scaled convex surrogate and the two-step coordinate-wise prox F.3.1 Penalty with explicit M
+
+Definition F.3 (M -scaled sparse-group hierarchical surrogate) . Fix parameters α ≥ 0, λw ≥ 0, and β ≥ 0, and fix 
+
+M > 0. Define Ω : Rd+dK → R (in scaled coordinates x = ( θ, fW )) by 
+
+Ω( θ, fW ) := α ∥θ∥1 + λwM fW 1
+
++ β
+
+> d
+
+X
+
+> j=1
+
+ θj
+
+fWj, ·
+
+
+
+> 2
+
+. (28) Equivalently, in original variables (θ, W ),
+
+Ω( θ, W ) = α∥θ∥1 + λw∥W ∥1 + β
+
+> d
+
+X
+
+> j=1
+
+ θj
+
+Wj, ·/M 
+
+
+
+> 2
+
+.
+
+Remark F.4 (Prox parameter on the scaled weights) . Because ∥W ∥1 = M ∥fW ∥1, the ℓ1 coefficient acting on fW in the scaled-coordinate prox is aligned with the original parameter λw via the shorthand: 
+
+¯λ := λwM. 
+
+This is the parameter that appears in Proposition F.9. 
+
+Remark F.5 (Interpretation) . The group term P 
+
+> j
+
+∥(θj , fWj, ·)∥2 encourages feature-level coupling : if θj is pushed towards zero, then (in the same group) fWj, · is also shrunk. The parameter M calibrates what it means for the row Wj, ·
+
+to be “large” relative to the gate θj .
+
+F.3.2 Proximal mapping facts (convex case) Lemma F.6 (Firm nonexpansiveness of a convex prox) . If Ω is proper, closed, and convex, then the proximal mapping 
+
+Ψ in equation 26 is single-valued and firmly nonexpansive: 
+
+∥Ψ( z) − Ψ( z′)∥2 ≤ ⟨ Ψ( z) − Ψ( z′), z − z′⟩ ≤ ∥ z − z′∥2 , ∀z, z ′.
+
+In particular, Ψ is 1-Lipschitz. Remark F.7 . Lemma F.6 is the key structural simplification compared to the original Hier-Prox: here Ω is convex, hence 
+
+Ψ is globally well-behaved (no branch jumps). 
+
+F.3.3 Per-feature prox and a closed-form optimality proposition 
+
+Because Ω in equation 28 is separable across features [ 23 ], the proximal problem equation 26 decomposes into d
+
+independent (K + 1) -dimensional subproblems. 
+
+Definition F.8 (Soft-thresholding) . For τ ≥ 0, define Sτ : R → R by 
+
+Sτ (u) := sign( u) ( |u| − τ )+, (a)+ := max {a, 0}.
+
+For vectors/matrices, apply Sτ entrywise. 
+
+Proposition F.9 (Closed form for the per-feature prox with explicit M and ℓ1 on W ). Fix v ∈ R and a row vector 
+
+eU ∈ RK (the scaled-row input), and parameters α ≥ 0, ¯λ ≥ 0, and β ≥ 0. Consider the convex proximal subproblem in scaled coordinates :
+
+min  
+
+> b∈R,ew∈RK
+
+12 (b − v)2 + 12 ∥ ew − eU ∥22 + α|b| + ¯λ∥ ew∥1 + β
+
+ b
+
+ew
+
+
+
+> 2
+
+. (29) 
+
+Then the unique minimizer (b⋆, ew⋆) exists and is given by the following two-step closed form: 1. (Coordinate soft-threshold) Define 
+
+˜b := Sα(v), ˜w := S¯λ( eU ) (coordinatewise) .
+
+44 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+2. (Group ℓ2 shrink) Let 
+
+r := 
+
+q
+
+˜b2 + ∥ ˜w∥22, κ := 
+
+
+
+1 − βr
+
+
+
+> +
+
+(κ = 0 if r = 0) .
+
+Then 
+
+(b⋆, ew⋆) = κ (˜b, ˜w).
+
+Equivalently, 
+
+(b⋆, ew⋆) = 
+
+((0 , 0) , r ≤ β, 
+
+(1 − β/r ) ( ˜b, ˜w), r > β. 
+
+Proof. Problem equation 29 is strictly convex because of the quadratic terms, hence has a unique minimizer (Appendix E). Let x := ( b, ew) ∈ R1+ K and y := ( v, eU ) ∈ R1+ K . Define the convex regularizer on R1+ K ,
+
+h(x) := α|b| + ¯λ∥ ew∥1 + β∥x∥2.
+
+Then equation 29 is exactly the proximal problem 
+
+x⋆ = prox h(y) := arg min  
+
+> x
+> 12
+
+∥x − y∥22 + h(x).
+
+By standard subgradient optimality for proximal maps [22, 23], x⋆ is the unique point satisfying 
+
+y − x⋆ ∈ ∂h (x⋆). (30) 
+
+Step 1: the coordinatewise ℓ1 prox. Let 
+
+˜x := ( ˜b, ˜w) :=  Sα(v), S¯λ( eU ).
+
+The defining property of soft-thresholding is precisely the proximal optimality condition for the separable ℓ1 term: 
+
+y − ˜x ∈ ∂ α|b| + ¯λ∥ ew∥1
+
+
+
+> x=˜ x
+
+. (31) (Indeed, for each coordinate, S is the proximal map of the absolute value.) 
+
+Step 2: add the group ℓ2 term. If ˜x = 0 , then r = 0 and the claimed formula gives x⋆ = 0 , which satisfies equation 30 because ∂(β∥x∥2) x=0 = {u : ∥u∥2 ≤ β}.Assume now ˜x̸ = 0 , so r = ∥˜x∥2 > 0. If r ≤ β then κ = 0 and x⋆ = 0 ; this is optimal because y ∈ ∂h (0) can be verified by combining equation 31 at 0 with ˜x ∈ β B2 (since ∥˜x∥2 = r ≤ β). Now consider r > β , so κ = 1 − β/r ∈ (0 , 1) and define x⋆ := κ˜x. Then ∥x⋆∥2 = κr > 0 and therefore 
+
+∂(β∥x∥2) x=x⋆ =
+
+
+
+β x⋆
+
+∥x⋆∥2
+
+
+
+=
+
+
+
+β ˜xr
+
+
+
+.
+
+Moreover, 
+
+y − x⋆ = ( y − ˜x) + (1 − κ)˜ x with 1 − κ = β/r. 
+
+By equation 31, the first term belongs to ∂(α|b| + ¯λ∥ ew∥1) evaluated at ˜x. Since x⋆ = κ˜x has the same sign and sparsity pattern as ˜x (scaling by a positive scalar), the same subgradient selection is valid at x⋆, i.e. 
+
+y − ˜x ∈ ∂(α|b| + ¯λ∥ ew∥1) x=x⋆ .
+
+The second term satisfies 
+
+(1 − κ)˜ x = βr ˜x ∈ ∂(β∥x∥2) x=x⋆ .
+
+Combining the two pieces yields y − x⋆ ∈ ∂h (x⋆), proving equation 30 and hence optimality. 45 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Remark F.10 (Back to original variables and where M appears) . At feature j, let (vj , eUj ) be the scaled-coordinate input to the prox (a block of zt), and let U orig  
+
+> j
+
+:= M eUj denote the corresponding original-coordinate row. With the shorthand ¯λ = λwM , Proposition F.9 returns 
+
+(θ+ 
+
+> j
+
+, fW +
+
+> j, ·
+
+) = κj
+
+ Sα(vj ), S¯λ( eUj ), κj =
+
+1 − β
+
+q
+
+Sα(vj )2 + ∥S ¯λ( eUj )∥22
+
+
+
+> +
+
+.
+
+Mapping back yields 
+
+W + 
+
+> j, ·
+
+= M fW + 
+
+> j, ·
+
+= κj M S¯λ( eUj ).
+
+Equivalently, since S¯λ( eUj ) = 1 
+
+> M
+
+Sλw M 2 (U orig  
+
+> j
+
+),
+
+W + 
+
+> j, ·
+
+= κj Sλw M 2 (U orig  
+
+> j
+
+), κj =
+
+1 − β
+
+q
+
+Sα(vj )2 + ∥S λw M 2 (U orig  
+
+> j
+
+)∥22/M 2
+
+
+
+> +
+
+.
+
+When λw = 0 , the intermediate soft-thresholding disappears and we recover the previous special case W + 
+
+> j, ·
+
+= κj U orig  
+
+> j
+
+.
+
+Coordinate-wise (sequential) implementation. Per feature j, the proximal step is computed by two explicit substeps: 1. soft-threshold the gate coordinate: ˜vj = Sα(vj );2. shrink the concatenated block (˜ vj , eUj ) by κj = (1 − β/r j )+ with rj =
+
+q
+
+˜v2 
+
+> j
+
++ ∥ eUj ∥22.This is parallel across features. 
+
+F.4 Deterministic descent in function values (no convexity of f needed) Assumption F.11 (L-smoothness) . The function f is L-smooth: for all x, x ′,
+
+f (x′) ≤ f (x) + ⟨∇ f (x), x ′ − x⟩ + L
+
+2 ∥x′ − x∥2 .
+
+Lemma F.12 (A key proximal inequality) . Let z ∈ Rd+dK and let x+ = Ψ( z) be defined by equation 26. Then for every x ∈ Rd+dK ,
+
+Ω( x+) + 12 x+ − z 2 ≤ Ω( x) + 12 ∥x − z∥2 − 12 x − x+ 2 . (32) 
+
+Proof. Define ϕ(x) := Ω( x) + 12 ∥x − z∥2. Then ϕ is 1-strongly convex. Hence for all x and all g ∈ ∂ϕ (x+),
+
+ϕ(x) ≥ ϕ(x+) + ⟨g, x − x+⟩ + 12 x − x+ 2 .
+
+At the minimizer x+ we can take g = 0 , yielding ϕ(x) ≥ ϕ(x+) + 12 ∥x − x+∥2, i.e. equation 32. 
+
+Lemma F.13 (Deterministic one-step descent in F ). Assume f is L-smooth and 0 < η ≤ 12L . Let g = ∇f (x) and define z = x − ηg and x+ = Ψ( z). Then 
+
+F (x+) ≤ F (x) − 14 x − x+ 2 . (33) 
+
+Proof. Apply Lemma F.12 with z = x − η∇f (x) and comparator x:
+
+Ω( x+) + 12 x+ − (x − η∇f (x)) 2 ≤ Ω( x) + 12 ∥x − (x − η∇f (x)) ∥2 − 12 x − x+ 2 .
+
+The middle term is 12 η2∥∇ f (x)∥2. Expand the left square: 
+
+x+ − (x − η∇f (x)) 2 = x+ − x 2 + 2 η⟨∇ f (x), x + − x⟩ + η2 ∥∇ f (x)∥2 .
+
+Cancel the η2∥∇ f (x)∥2 terms and rearrange: 
+
+Ω( x+) + 12 x+ − x 2 + η⟨∇ f (x), x + − x⟩ ≤ Ω( x) − 12 x − x+ 2 .
+
+46 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Rearrange: 
+
+Ω( x+) ≤ Ω( x) − x − x+ 2 − η⟨∇ f (x), x + − x⟩. (34) Now apply L-smoothness (Assumption F.11) with x′ = x+:
+
+f (x+) ≤ f (x) + ⟨∇ f (x), x + − x⟩ + L
+
+2 x+ − x 2 .
+
+Multiply by η and add to equation 34: 
+
+F (x+) ≤ F (x) − x − x+ 2 + ηL 
+
+2 x+ − x 2 .
+
+With η ≤ 1/(2 L), we get 1 − ηL/ 2 ≥ 3/4, hence 
+
+F (x+) ≤ F (x) − 34 x − x+ 2 ,
+
+which is stronger than equation 33. 
+
+F.5 A proximal-PL condition (function-value landscape) Definition F.14 (Proximal-gradient mapping) . Define the (scaled) proximal-gradient mapping for F (x) = ηf (x)+Ω( x)
+
+as 
+
+G(x) := x − Ψ x − η∇f (x).
+
+Definition F.15 (Proximal-PL condition in function values) . We say F satisfies a proximal-PL condition with constant 
+
+μ > 0 if for all x, 12 ∥G(x)∥2 ≥ μ F (x) − F ⋆, F ⋆ := inf  
+
+> x
+
+F (x). (35) 
+
+F.6 Stochastic recursion: noise only (no sign-switch penalty) Assumption F.16 (Unbiased gradients and bounded conditional variance) . The stochastic gradients satisfy E[gt | xt] = 
+
+∇f (xt) and 
+
+E∥ξt∥2 | xt
+
+ ≤ σ2, ξt := gt − ∇ f (xt).
+
+F.6.1 A conditional descent inequality Lemma F.17 (Stochastic descent with a noise cross term) . Assume Assumption F.11 and Assumption F.16. If η ≤ 1/L ,then almost surely 
+
+F (xt+1 ) ≤ F (xt) − 1 − ηL 
+
+2 ∥xt+1 − xt∥2 − η⟨ξt, x t+1 − xt⟩.
+
+Proof. Apply Lemma F.12 to xt+1 = Ψ( zt) with comparator x = xt and zt = xt − ηg t:
+
+Ω( xt+1 ) + 12 ∥xt+1 − zt∥2 ≤ Ω( xt) + 12 ∥xt − zt∥2 .
+
+Expand the squares: 
+
+∥xt+1 − zt∥2 = ∥xt+1 − xt∥2 + 2 η⟨gt, x t+1 − xt⟩ + η2 ∥gt∥2 , ∥xt − zt∥2 = η2 ∥gt∥2 .
+
+Cancel the η2∥gt∥2 terms and rearrange: 
+
+Ω( xt+1 ) + 12 ∥xt+1 − xt∥2 + η⟨gt, x t+1 − xt⟩ ≤ Ω( xt).
+
+By L-smoothness (Assumption F.11) with x′ = xt+1 :
+
+f (xt+1 ) ≤ f (xt) + ⟨∇ f (xt), x t+1 − xt⟩ + L
+
+2 ∥xt+1 − xt∥2 .
+
+Multiply by η and add: 
+
+F (xt+1 ) ≤ F (xt) − 1 − ηL 
+
+2 ∥xt+1 − xt∥2 − η⟨gt − ∇ f (xt), x t+1 − xt⟩.
+
+Since ξt = gt − ∇ f (xt), this is the claim. 47 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+F.6.2 Removing the noise cross term (Young’s inequality) Corollary F.18 (Conditional expectation form) . Under the assumptions of Lemma F.17, we have 
+
+E[F (xt+1 ) | xt] ≤ F (xt) − 1 − ηL 
+
+4 E[∥xt+1 − xt∥2 | xt] + η2
+
+1 − ηL E[∥ξt∥2 | xt].
+
+Proof. Start from Lemma F.17 and take conditional expectation: 
+
+E[F (xt+1 ) | xt] ≤ F (xt) − 1 − ηL 
+
+2 E[∥xt+1 − xt∥2 | xt] − ηE[⟨ξt, x t+1 − xt⟩ | xt].
+
+Use Cauchy–Schwarz and Young: 
+
+−η⟨ξt, x t+1 − xt⟩ ≤ η ∥ξt∥ ∥ xt+1 − xt∥ ≤ 1 − ηL 
+
+4 ∥xt+1 − xt∥2 + η2
+
+1 − ηL ∥ξt∥2 .
+
+Take conditional expectation and plug in. 
+
+F.6.3 Relating the stochastic step length to the deterministic prox-gradient mapping 
+
+Define the deterministic proximal-gradient step at xt:
+
+¯zt := xt − η∇f (xt), ¯xt+1 := Ψ(¯ zt).
+
+Lemma F.19 (Lower bound on the stochastic step length (convex prox case)) . For any t,
+
+E[∥xt+1 − xt∥2 | xt] ≥ 12 ∥G(xt)∥2 − E[∥xt+1 − ¯xt+1 ∥2 | xt],
+
+and moreover 
+
+E[∥xt+1 − ¯xt+1 ∥2 | xt] ≤ η2E[∥ξt∥2 | xt].
+
+Proof. Note that xt+1 − xt = ( xt+1 − ¯xt+1 ) + (¯ xt+1 − xt) and ¯xt+1 − xt = −G(xt) by definition. Hence 
+
+∥xt+1 − xt∥2 = ∥(xt+1 − ¯xt+1 ) − G(xt)∥2 ≥ 12 ∥G(xt)∥2 − ∥ xt+1 − ¯xt+1 ∥2 .
+
+Take conditional expectation to get the first inequality. For the second inequality, note that zt = ¯ zt − ηξ t and by Lemma F.6, Ψ is 1-Lipschitz: 
+
+∥xt+1 − ¯xt+1 ∥ = ∥Ψ( zt) − Ψ(¯ zt)∥ ≤ ∥ zt − ¯zt∥ = η ∥ξt∥ .
+
+Square and take conditional expectation. 
+
+F.6.4 Master recursion in function values Theorem F.20 (Master recursion under proximal-PL: linear-to-noise-ball) . Assume f is L-smooth (Assumption F.11) and 0 < η ≤ 12L . Assume the stochastic gradient model (Assumption F.16). Assume F (x) = ηf (x) + Ω( x) satisfies proximal-PL with constant μ > 0 (Definition F.15). Let ∆t := E[F (xt) − F ⋆], where F ⋆ := inf x F (x). Then the iterates equation 25 satisfy 
+
+∆t+1 ≤
+
+
+
+1 − μ(1 − ηL )4
+
+
+
+∆t + η2σ2
+
+ 1 − ηL 
+
+4 + 11 − ηL 
+
+
+
+. (36) 
+
+In particular, ∆t converges linearly to a neighborhood of radius O
+
+ η2σ2
+
+> μ
+
+
+
+, and if σ = 0 then ∆t converges linearly to 
+
+0.Proof. Start from Corollary F.18 and bound the conditional step length using Lemma F.19: 
+
+E[F (xt+1 ) | xt] ≤ F (xt) − 1 − ηL 
+
+4 E[∥xt+1 − xt∥2 | xt] + η2
+
+1 − ηL E[∥ξt∥2 | xt]
+
+≤ F (xt) − 1 − ηL 
+
+4
+
+ 12 ∥G(xt)∥2 − E[∥xt+1 − ¯xt+1 ∥2 | xt]
+
+
+
++ η2
+
+1 − ηL E[∥ξt∥2 | xt].
+
+48 LassoFlexNet: Flexible Neural Architecture for Tabular Data PREPRINT 
+
+Using the second bound in Lemma F.19, we have E[∥xt+1 − ¯xt+1 ∥2 | xt] ≤ η2E[∥ξt∥2 | xt]. Substitute this and simplify: 
+
+E[F (xt+1 ) | xt] ≤ F (xt) − 1 − ηL 
+
+8 ∥G(xt)∥2 + η2E[∥ξt∥2 | xt]
+
+ 1 − ηL 
+
+4 + 11 − ηL 
+
+
+
+.
+
+Now apply proximal-PL (Definition F.15):  
+
+> 12
+
+∥G(xt)∥2 ≥ μ(F (xt) − F ⋆) =⇒ ∥G(xt)∥2 ≥ 2μ(F (xt) − F ⋆).
+
+Therefore, 
+
+E[F (xt+1 ) − F ⋆ | xt] ≤
+
+
+
+1 − μ(1 − ηL )4
+
+
+
+(F (xt) − F ⋆) + η2E[∥ξt∥2 | xt]
+
+ 1 − ηL 
+
+4 + 11 − ηL 
+
+
+
+.
+
+Finally, take total expectation and use E[∥ξt∥2 | xt] ≤ σ2 to obtain equation 36. 
+
+F.7 Interpretations and implementation notes 
+
+Remark F.21 (What improves relative to Hier-Prox) . The original Hier-Prox mapping is piecewise-defined and can jump when active sets/sign patterns change; this creates an additional instability term (e.g. a “jump size” squared times a switch probability) in a function-value recursion. With the convex surrogate equation 28, the prox map is globally firmly nonexpansive (Lemma F.6), so the recursion equation 36 has noise only .
+
+Remark F.22 (What we give up) . We no longer enforce the hard hierarchy ∥Wj, ·∥∞ ≤ M |θj |. Instead, we encourage the gate and the row weights to shrink jointly via the convex sparse-group penalty on (θj , W j, ·/M ). This is often favorable when stability and simple proximal geometry are prioritized. 
+
+Two closed-form prox steps (featurewise). Given the pre-prox iterate in scaled coordinates for feature j, i.e. (vj , eUj ),do: 1. Soft-threshold the gate: ˜vj = Sα(vj ).2. Group shrink: rj =
+
+q
+
+˜v2 
+
+> j
+
++ ∥ eUj ∥22 and κj = (1 − β/r j )+. Return (θ+ 
+
+> j
+
+, fW +
+
+> j, ·
+
+) = κj (˜ vj , eUj ) and map back 
+
+W + 
+
+> j, ·
+
+= M fW +
+
+> j, ·
+
+.
+
+M -tuning intuition. In the group-shrink step, ∥ eUj ∥2 = ∥U orig  
+
+> j
+
+∥2/M . Thus increasing M makes ∥ eUj ∥2 smaller and tends to increase shrinkage (smaller κj ), which matches the intuition that large M enforces a tighter coupling between the gate and the row weights. 
+
+Remark F.23 . This convex relaxation approach provides theoretical evidence that decoupling the updates of the Lasso gates and the neural network parameters can lead to significantly better training stability. 49
