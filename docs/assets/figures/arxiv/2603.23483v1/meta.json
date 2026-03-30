@@ -1,0 +1,54 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.23483v1/fig-001.webp",
+      "caption": "Fig. 4. Ablation on the gating threshold of SpecEyes. Lowering the threshold increases speedup at cost of accuracy. Dashed horizontal lines indicate baseline accuracy.",
+      "page": 9,
+      "index": 1,
+      "width": 986,
+      "height": 469
+    },
+    {
+      "url": "assets/figures/arxiv/2603.23483v1/fig-002.webp",
+      "caption": "Fig. 3. KDE of confidence scores for correct vs. incorrect samples on V* (Qwen3-VL-2B). ∆ measures gating discriminability via peak distance. Compared to the noticeable overlap in baselines (a, b, d), our (c) Smin",
+      "page": 9,
+      "index": 2,
+      "width": 986,
+      "height": 183
+    },
+    {
+      "url": "assets/figures/arxiv/2603.23483v1/fig-003.webp",
+      "caption": "Fig. 2. Pipeline overview of SpecEyes. A batch of B queries passes through a four-phase funnel. I: ML screens tool necessity, splitting queries into tool-free and tool-required. II: A stateless MS speculatively answers all tool-free queries with token-level logits. III: An answer separability score Ssep gates each answer; those above τ are accepted directly. IV: Remaining queries fall back to the full agentic loop. The funnel yields ≈1/(1−βα)× throughput speedup.",
+      "page": 4,
+      "index": 3,
+      "width": 974,
+      "height": 385
+    },
+    {
+      "url": "assets/figures/arxiv/2603.23483v1/fig-004.webp",
+      "caption": "Fig. 5. Ablation on serving batch size. Larger batches amortize the stateless speculative stage, improving speedup with diminishing marginal gains as the stateful agentic fallback becomes the bottleneck. Curves report end-to-end speedup over the serial agentic baseline (1.0×).",
+      "page": 10,
+      "index": 4,
+      "width": 986,
+      "height": 239
+    },
+    {
+      "url": "assets/figures/arxiv/2603.23483v1/fig-005.webp",
+      "caption": "Fig. 6. Ablation on Top-K in separability-based gating. Larger K consistently increases speedup but may reduce accuracy, suggesting that K acts as a knob that tunes speculative aggressiveness.",
+      "page": 10,
+      "index": 5,
+      "width": 986,
+      "height": 199
+    },
+    {
+      "url": "assets/figures/arxiv/2603.23483v1/fig-006.webp",
+      "caption": "Fig. 1. Motivation and overview of SpecEyes. Top: Agentic MLLMs evaluate each query via a Markovian sequence of stateful tool invocations of depth D. This strict causal dependency prohibits parallelization, imposing a serving complexity of O(BDC) for B queries, where C denotes the tool per-step inference cost. Bottom: SpecEyes enables agentic-level speculative bypass with a stateless small model and an answer-separability gate. Here, β is the fraction of tool-free candidates after screening (Sec. 3.4) and α is the acceptance rate of speculative answers among them (Secs. 3.2 and 3.3), averaging 80% and 71% across all benchmarks, respectively. All reported accuracy and speedup values are averaged across V* [52], HR-Bench [50], and POPE [26].",
+      "page": 2,
+      "index": 6,
+      "width": 736,
+      "height": 439
+    }
+  ]
+}

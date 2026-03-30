@@ -1,0 +1,78 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.25687v1/fig-001.webp",
+      "caption": "Figure 1: Neural scaling for weather emulation. We pretrain several models using continual training (constant learning rates with periodic cooldowns; see §3), and we identify compute-optimal regimes to train the neural emulator so that neither data nor model size saturate at different compute budgets. At each FLOP budget, several model sizes (up to 400M) are trained to different dataset sizes to form IsoFLOPs that demonstrate the tradeoff between model and data size. Unlike NLP models, these systems are trained for multiple epochs (indicated by vertical dotted lines), causing samples to be revisited after the first epoch and effectively be treated as pseudo-samples. We fit parabolas to each IsoFLOP, and we track the compute-optimal model at each budget.",
+      "page": 1,
+      "index": 1,
+      "width": 441,
+      "height": 432
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25687v1/fig-002.webp",
+      "caption": "Figure 5: Optimal model sizes as a function of compute. (left) Similar to Fig. 1, we show the validation loss as a function of model size for different compute budgets. For each budget, the different model sizes are trained to a different number of iterations to create an IsoFLOP. We track the minima for each IsoFLOP (through a fitted parabola). (middle) We fit an empirical scaling law to find the optimal model size for any FLOP budget and project to 2.25E+21 FLOPs to find the optimal model. (right) We also project the loss to the final FLOP value—the measured loss at this FLOP value is saturated at 0.005.",
+      "page": 7,
+      "index": 2,
+      "width": 1022,
+      "height": 277
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25687v1/fig-003.webp",
+      "caption": "Figure 6: RMSE performance of compute-optimal Swin vs baselines. The 204M Swin (compute-optimal 6E+19 FLOPs) outperforms NWP / HRES and is on-par with GraphCast when evaluated over initial conditions in 2020. The model is cooled down with 4 step AR. With more steps (8 step AR), the performance gap reduces at longer lead times, as expected (GraphCast finetunes with 2–12 step AR).",
+      "page": 7,
+      "index": 3,
+      "width": 1025,
+      "height": 305
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25687v1/fig-004.webp",
+      "caption": "Figure 9: Predictions from the 204M parameter model: We show the ground truth ERA5, the prediction, and the error in physical units for four variables. The predicted forecasts also qualitatively match the ground truth.",
+      "page": 14,
+      "index": 4,
+      "width": 1042,
+      "height": 814
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25687v1/fig-005.webp",
+      "caption": "Figure 12: Tropical Cyclone (TC) visualization and tracks before Typhoon Hagibis made landfall in Japan: We reproduce the TC analysis from [33]. We show the ERA5 ground truth for specific humidity at 700hPa on October 12, 2019, 06 UTC in the top left. The following three rows show the Swin predictions at the same time from all the closest compute-optimal models (between 6E17 and 6E19 FLOPs, initialized 1, 3, and 5 days earlier, respectively. The last column shows the PSD for the predictions (zoomed into the high wavenumbers). Forecasts initialized 1 day earlier show that all models capture the TC structure, although the larger models produce systematically sharper features, which is also reflected in the PSD. For initializations 3 and 5 days earlier, the smaller models fail to capture the TC structure, exhibiting patching artifacts and generally inconsistent blending of physical features. This behavior is likewise evident in the PSD as artificial high-wavenumber energy. In contrast, the larger models consistently capture the TC across all lead times. The last row shows the TC track from the different initializations. Although a deterministic model is insufficient for accurately assessing track performance, some variability among the different models is seen.",
+      "page": 18,
+      "index": 5,
+      "width": 1030,
+      "height": 856
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25687v1/fig-006.webp",
+      "caption": "Figure 7: RMSE performance of the closest compute-optimal Swin models at each compute budget. We find that RMSE at extended forecast horizons, up to 240 hours, consistently improves with increased compute. However, at the highest compute levels, the rollout performance begins to exhibit signs of saturation.",
+      "page": 8,
+      "index": 6,
+      "width": 1025,
+      "height": 346
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25687v1/fig-007.webp",
+      "caption": "Figure 13: Training and validation loss as a function of iterations for different models: We show the training curves for all the (closest) compute-optimal models. All losses were logged at a frequency of 2000 iterations except the 1.3B model that was logged at a frequency of 10,000 iterations. The training and validation loss curves track each other closely. However, for the 1.3B model, we observe significant overfitting.",
+      "page": 19,
+      "index": 7,
+      "width": 506,
+      "height": 333
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25687v1/fig-008.webp",
+      "caption": "Figure 2: Loss behavior for cosine vs constant LR with cooldown. (left) LR schedules: The cosine schedule follows a half-cosine decay after a fixed warmup, while the constant+cooldown has a constant LR after the same fixed warmup, but then cools down rapidly to 0 at the end. The cooldowns happen at the last 5% of iterations. (right) Loss vs iterations for different Swinmodels: The validation loss of the model continuously trained with a constant LR and cooled down to different iteration counts (here 5% of the total iteration is used as a cooldown period) shows better losses compared to the Swin trained from scratch with different cosine schedulers that match the total iteration count.",
+      "page": 5,
+      "index": 8,
+      "width": 866,
+      "height": 284
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25687v1/fig-009.webp",
+      "caption": "Figure 3: Loss as a function of total iterations used for cooldown. We show the MSE over 36 hours (6 autoregressive steps) of prediction averaged over the validation data (2017). The MSE loss decreases predictably with longer cooldown durations and this is true over multistep predictions. At around 5%, the gains start to diminish. The loss behavior also holds when the cooldown is repurposed with 4-step AR loss that allows for lower errors across the longer horizon.",
+      "page": 5,
+      "index": 9,
+      "width": 425,
+      "height": 296
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.21676v1/fig-001.webp",
+      "caption": "Figure 3: Accuracy heatmap for the relational composition task over unstructured text. Without task-aligned structural inductive biases (no adjacency masking; while RoPE is retained for local word order, the fully shuffled input facts ensure that 1D relative positions carry no meaningful structural signal), the task exhibits a strictly monotonic increase in difficulty. The invariant reasoning core discovers latent pointer-chasing routes, achieving solid OOD generalization at depths 6 and 7 when additional thinking steps are provided. Dashed lines mark the training boundaries in both the depth and step dimensions.",
+      "page": 8,
+      "index": 1,
+      "width": 795,
+      "height": 586
+    },
+    {
+      "url": "assets/figures/arxiv/2603.21676v1/fig-002.webp",
+      "caption": "Figure 2: Accuracy heatmap for the nested boolean expression evaluation task. Compared to the graph task, the computational frontier here is more gradual. The model exhibits robust out-of-distribution generalization with graceful degradation, maintaining >90% accuracy up to depth 14. Notice that the performance remains highly stable even when the model is unrolled for 24 steps (well beyond the training range of 4–16 steps), which validates the effectiveness of our design.",
+      "page": 7,
+      "index": 2,
+      "width": 790,
+      "height": 524
+    },
+    {
+      "url": "assets/figures/arxiv/2603.21676v1/fig-003.webp",
+      "caption": "Figure 1: Accuracy heatmap for the graph reachability task. A sharp computational frontier exists along the diagonal, confirming the strict 1-hop = 1-step physical constraint enforced by adjacency masking. The model generalizes perfectly to 8 hops (OOD) with sufficient steps, but collapses abruptly to chance (∼50%) at 10 hops. Dashed vertical lines mark the step training boundary (5–8 thinking steps); columns outside this range are also OOD, yet accuracy is preserved.",
+      "page": 6,
+      "index": 3,
+      "width": 796,
+      "height": 586
+    }
+  ]
+}

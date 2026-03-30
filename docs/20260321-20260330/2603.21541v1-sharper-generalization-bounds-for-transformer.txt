@@ -1,0 +1,2491 @@
+Title: Sharper Generalization Bounds for Transformer
+
+URL Source: https://arxiv.org/pdf/2603.21541v1
+
+Published Time: Tue, 24 Mar 2026 01:45:57 GMT
+
+Number of Pages: 19
+
+Markdown Content:
+# Sharper Generalization Bounds for Transformer 
+
+Yawen Li * 1 Tao Hu * 1 Zhouhui Lian 2 Wan Tian † 2 3 Yijie Peng † 4 5 6 Huiming Zhang 7 Zhongyi Li 7
+
+## Abstract 
+
+This paper studies generalization error bounds for Transformer models. Based on the offset Rademacher complexity, we derive sharper gen-eralization bounds for different Transformer ar-chitectures, including single-layer single-head, single-layer multi-head, and multi-layer Trans-formers. We first express the excess risk of Trans-formers in terms of the offset Rademacher com-plexity. By exploiting its connection with the empirical covering numbers of the corresponding hypothesis spaces, we obtain excess risk bounds that achieve optimal convergence rates up to con-stant factors. We then derive refined excess risk bounds by upper bounding the covering num-bers of Transformer hypothesis spaces using ma-trix ranks and matrix norms, leading to precise, architecture-dependent generalization bounds. Fi-nally, we relax the boundedness assumption on feature mappings and extend our theoretical re-sults to settings with unbounded (sub-Gaussian) features and heavy-tailed distributions. 
+
+## 1. Introduction 
+
+Transformer-based models have become a central compo-nent of modern machine learning systems and have achieved remarkable success across a wide range of application do-mains (Chang et al., 2024; de Santana Correia & Colombini, 2022). Originally developed for sequence modeling tasks (Vaswani et al., 2017), Transformers now underpin state-of-the-art performance in natural language processing (Wang et al., 2019; Zhang et al., 2023), computer vision (Han et al., 
+
+> 1
+
+School of Mathematical Sciences, Capital Normal University, 100048 Beijing, China 2Wangxuan Institute of Computer Tech-nology, Peking University, China, 100871 3Advanced Institute of Information Technology, Peking University 4PKU-Wuhan Insti-tute for Artificial Intelligence 5Xiangjiang Laboratory, Changsha 410000, China 6Guanghua School of Management, Peking Univer-sity, Beijing, China, 100871 7School of Artificial Intelligence, Beihang University, 100191 Beijing, China. Correspondence to: Wan Tian <wantian61@foxmail.com >, Yijie Peng <pengyi-jie@gsm.pku.edu.cn >.
+
+2022), and reinforcement learning (Chen et al., 2021a; Hu et al., 2024) . Their architectural flexibility and strong em-pirical performance have also led to widespread adoption in large-scale foundation models. Despite their empirical success, understanding the gen-eralization behavior of Transformer models remains a fundamental theoretical challenge. Providing sharp and architecture-aware generalization error bounds is essen-tial for explaining their empirical robustness and for de-veloping principled insights into the role of architectural design in learning performance. Existing nonparametric and functional-analytic approaches remain limited in explaining the generalization behavior of deep models: nonparametric theories typically rely on H ¨older-type smoothness assump-tions on the target function (Schmidt-Hieber, 2020; Bos & Schmidt-Hieber, 2022) , yielding error bounds that charac-terize worst-case function classes and thus fail to capture the adaptivity of deep networks in high-dimensional structured settings; analyses based on Sobolev and related function spaces primarily focus on approximation properties and are often derived under idealized or infinite-sample assump-tions (Yang, 2025; Ding et al., 2025; Meng & Ming, 2022; Ma et al., 2022), providing insufficient characterization of finite-sample statistical errors and the influence of training algorithms. In this work, we analyze the generalization ability of Trans-former models from a complexity-based perspective. Com-pared with analyses relying on smoothness or approximation assumptions, complexity-based approaches yield general-ization bounds that explicitly depend on the sample size, model scale, and parameter norms, making them more suit-able for modern deep models such as Transformers with large parameterization and highly complex architectures. The core idea of this approach is to characterize the excess risk by means of complexity measures of the hypothesis space, and then derive upper bounds on these measures, typ-ically based on structural properties of the hypothesis class, such as its covering number or Vapnik–Chervonenkis (VC) dimension (Blumer et al., 1989). The excess risk evaluate the performance of the estimator bfn:
+
+E( bfn; ℓ) := R( bfn) − inf  
+
+> g∈J
+
+R(g), (1) where J is a target function class. If F ⊊ J (the misspeci-1
+
+> arXiv:2603.21541v1 [cs.LG] 23 Mar 2026 Sharper Generalization Bounds for Transformer
+
+fied setting), this term decomposes into estimation error and approximation error. Different complexity measures yield different convergence rates for the excess risk. Using Gaussian complexity or global Rademacher complexity typically leads to a conver-gence rate of O(1 /√n) (Zhang, 2023), where n denotes the sample size. In contrast to global Rademacher complexity, local Rademacher complexity is a data-dependent complex-ity measure that focuses on “local” subsets of the hypothe-sis space—particularly those functions with small empiri-cal risk—thus avoiding overly pessimistic penalties on the entire function class (Bartlett et al., 2005). This enables sharper generalization bounds with a faster convergence rate of O(1 /n ). However, this approach relies on an assumption about the noise level of the loss function—specifically, that the variance of the loss is upper-bounded by its expecta-tion—known as the Bernstein condition—which may be difficult to verify in real-world applications. More recently, offset Rademacher complexity, introduced by Liang et al. (Liang et al., 2015), denoted by 
+
+Roff  
+
+> n
+
+(F, β ) = E
+
+"
+
+sup  
+
+> f∈F
+
+1
+
+n
+
+> n
+
+X
+
+> i=1
+
+τif (Xi) − βf (Xi)2
+
+#
+
+,
+
+has been proposed as a penalized variant of global Rademacher complexity. It achieves the optimal conver-gence rate without explicitly imposing the Bernstein con-dition. This measure has been successfully applied to a wide range of models—including parametric models, non-parametric models, and neural networks—to improve con-vergence rates (Duan et al., 2023). Given these theoretical advancements, several studies have already explored the generalization error of Transformers from different perspec-tives. Our contributions can be summarized as follows: • We provide optimal convergence rates for the excess risk of various Transformer architectures, taking their structural parameters into account. Specifically, we first derive the relationship between the excess risk and offset Rademacher complexity for single-layer single-head, single-layer multi-head, and multi-layer Trans-formers, and then establish the connection between offset Rademacher complexity and the empirical cov-ering numbers of the corresponding hypothesis spaces, which yields the optimal convergence rate of O(1 /n ).• We analyze the covering number upper bounds of Transformers from two perspectives—rank and norm—thereby obtaining precise generalization error bounds for Transformer models. • We extend our theoretical findings that require certain boundedness assumptions (e.g., on feature maps), to unbounded (sub-Gaussian) and heavy-tailed settings. Finally, we demonstrate the applicability of our theo-retical results to regression and classification tasks, as well as to scenarios involving robust loss functions. 
+
+## 2. Related Work 
+
+Regarding generalization theory for Transformers, Trauger & Tewari (2023) derive sequence-length–independent bounds for single-layer Transformers via covering-number control of associated linear classes, highlighting how low-rank structure can tighten complexity and yielding 
+
+O(1 /√n) rates. Similarly, Truong (2024) develop norm-and rank-dependent bounds using (global) Rademacher complexity, also independent of sequence length. Beyond capacity-based analyses, Havrilla & Liao (2024) explain empirical scaling laws through a benign-overfitting lens when data concentrate on low-dimensional manifolds, while Zhang et al. (2025) further connect generalization error to training dynamics by distinguishing benign versus harmful overfitting under label-flip noise. Recent work has also expanded toward regime- and task-structured guarantees: Mwigo & Dasgupta (2026) establish norm/Rademacher bounds for shallow Transformers trained by gradient descent in the lazy-training regime; Huang et al. (2025) provide a formal framework for length generalization in causal Transformers with learnable absolute positional encodings; Alokhina & Li (2026) characterize size gener-alization on variable-size geometric inputs via discrete-to-continuous approximation under stable positional encod-ings; and Zhang et al. (2026) derive bit-wise Rademacher-complexity bounds for Transformer channel decoders, lever-aging sparsity from parity-check masked attention to tighten covering arguments. Despite this progress, many existing re-sults rely on global complexity measures and consequently yield conservative (often suboptimal) excess-risk rates, and they typically impose boundedness assumptions on feature mappings; in contrast, our work extends the theory to un-bounded (sub-Gaussian) features and further to heavy-tailed distributions. 
+
+## 3. Preliminaries 
+
+In this section, we establish the mathematical framework used throughout the paper. We begin by defining the Trans-former architecture—spanning single-head, multi-head, and multi-layer variants—and then formalize the statistical learn-ing setup, including the loss functions, risk definitions, and the complexity measures that underpin our generalization analysis. 
+
+3.1. Self-Attention and Transformers 
+
+Unlike standard feedforward networks with fixed connectiv-ity, Transformers utilize a self-attention mechanism where 2Sharper Generalization Bounds for Transformer 
+
+weights are data-dependent and recomputed for every input. This allows each position in a sequence (e.g., a token in text) to attend to all other positions, preserving long-range dependencies. Let X ∈ RT ×d denote the input sequence with length T
+
+and embedding dimension d. We define the row-wise soft-max operator, softmax : RT ×T → RT ×T , such that for any matrix A, the entry (i, j ) of softmax( A) is given by 
+
+exp( Aij )/ PTk=1 exp( Aik ). Let σ : R → R be an element-wise Lσ -Lipschitz activation function with σ(0) = 0 .
+
+Single-Head Attention. A single attention head is param-eterized by matrices WQ, W K ∈ Rd×d, Wv ∈ Rd×k, and 
+
+Wc ∈ Rk×d. For notational convenience, we denote the query-key interaction matrix as WQK := WQW ⊤ 
+
+> K
+
+. The output of a single-head layer is defined as: 
+
+fSH (X) = σ  softmax  XW QK X⊤ XW v
+
+ Wc
+
+∈ RT ×d. (2) To obtain a scalar prediction for regression or classification, we assume the input sequence contains a special token (e.g., 
+
+[CLS] ). Let Y[CLS] ∈ Rd be the row corresponding to this token in the output of (2) . The final prediction is given by 
+
+w⊤Y[CLS] , where w ∈ Rd is a learnable readout vector. 
+
+Multi-Head Attention. In a multi-head Transformer with H heads, the model aggregates the outputs of inde-pendent heads. Let the h-th head be parameterized by 
+
+{Wh,Q , W h,K , W h,v , W h,c }. The layer output is given by: 
+
+fMH (X)=
+
+> H
+
+X
+
+> h=1
+
+σ  softmax  XW h,QK X⊤ XW h,v 
+
+ Wh,c . (3) The scalar prediction is obtained via the readout vec-tor w applied to the aggregated [CLS] representation: 
+
+w⊤(PHh=1 (Yh)[CLS] ).
+
+Multi-Layer Architecture. Deep Transformers are con-structed by stacking layers, often incorporating normaliza-tion to aid optimization. Let X(l) denote the input to the l-th layer, with X(1) = X. The l-th block is parameterized by 
+
+W(l) = {W (l) 
+
+> QK
+
+, W (l) 
+
+> v
+
+, W (l) 
+
+> c
+
+}. We define the intermediate attention mapping as: 
+
+Φ( X(l); W(l)):= σ
+
+
+
+softmax 
+
+
+
+X(l)W (l) 
+
+> QK
+
+(X(l))⊤
+
+X(l)W (l)
+
+> v
+
+
+
+W (l) 
+
+> c
+
+.
+
+(4) Let Πnorm denote a row-wise normalization operator (e.g., projection onto the unit ℓ2-ball). The recursive update for the (l + 1) -th layer input is defined as: 
+
+X(l+1) = Π norm 
+
+
+
+σ
+
+
+
+Πnorm 
+
+
+
+Φ( X(l); W(l))
+
+ 
+
+. (5) 
+
+Table 1. Classification accuracies for naive Bayes and flexible Bayes on various data sets. 
+
+MODEL DEFINITION PARAMETERS 
+
+SINGLE -H EAD EQ. (2) WQK ∈ Rd×d,Wv ∈ Rd×k , W c ∈ Rk×d
+
+MULTI -H EAD EQ. (3) {Wh,QK , W h,v , W h,c }Hh=1 
+
+MULTI -L AYER EQ. (5) {W (l) 
+
+> QK
+
+, W (l) 
+
+> v
+
+, W (l) 
+
+> c
+
+}Ll=1 
+
+This formulation encapsulates the dimension-preserving nature of the Transformer block while explicitly accounting for normalization and activation steps crucial for theoretical stability. 
+
+3.2. Excess Risk and Complexity Measures 
+
+We consider the supervised learning setting with input-output pairs Z = ( X, Y ) ∈ Z := X ×Y , where X ⊆ RT ×d
+
+and Y ⊆ R. We are given an i.i.d. sample D = {Zi}ni=1 
+
+drawn from an unknown distribution P.A Transformer with parameters W ∈ W induces a predictor 
+
+fW : X → R. For a loss function ℓ : Y × R → [0 , ∞), the hypothesis class is denoted by F := {fW : W ∈ W} . The empirical risk minimizer (ERM) is defined as: 
+
+bfn ∈ arg min   
+
+> f∈F
+
+Rn(f ), (6) where 
+
+Rn(f ) := 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+ℓ(Yi, f (Xi)) . (7) The population risk is R(f ) := EZ∼P [ℓ(Y, f (X))] . We evaluate the performance of the estimator via the excess risk 
+
+in (1). To derive convergence rates, we utilize the Offset Rademacher Complexity (Liang et al., 2015), which typ-ically yields faster rates (e.g., O(1 /n )) compared to stan-dard Rademacher complexity ( O(1 /√n)) without requiring hard-to-verify variance assumptions. 
+
+Definition 3.1 (Offset Rademacher Complexity) . Let H
+
+be a class of real-valued functions defined on Z. Given a sample Z = ( Z1, . . . , Z n) and a parameter β > 0, the conditional offset Rademacher complexity is: 
+
+Roff  
+
+> n
+
+(H, β | Z):= Eτ
+
+"
+
+sup 
+
+> h∈H
+
+1
+
+n
+
+> n
+
+X
+
+> i=1
+
+τih(Zi) − βn
+
+> n
+
+X
+
+> i=1
+
+h(Zi)2
+
+!# 
+
+,
+
+(8) where τ = (τ1, . . . , τ n) are i.i.d. Rademacher vari-ables. The unconditional complexity is Roff  
+
+> n
+
+(H, β ) := 
+
+EZ[Roff  
+
+> n
+
+(H, β | Z)] .3Sharper Generalization Bounds for Transformer 
+
+## 4. Excess Risk of Transformers 
+
+In this section, we analyze the generalization perfor-mance of Transformer models via the framework of off-set Rademacher complexity. We derive excess risk bounds that achieve fast convergence rates of order O(1 /n ) under standard regularity assumptions. 
+
+4.1. Single-Layer Single-Head Transformer 
+
+We begin by defining the class of excess loss functions. Let 
+
+F denote the hypothesis class of single-layer, single-head Transformers as defined in (2) . We consider the function class 
+
+G := X 7 → g(X; f ) | f ∈ F ,
+
+where 
+
+g(X; f ) := EY |X
+
+ℓ(Y, f (X)) − ℓ(Y, f ⋆(X)) X.
+
+Here, f ⋆ ∈ arg min f ∈F E[ℓ(Y, f (X))] denotes the popula-tion risk minimizer within the class. The offset Rademacher complexity (Liang et al., 2015) for this class is defined as: 
+
+Roff  
+
+> n
+
+(G, β ):= ED,τ
+
+"
+
+sup  
+
+> f∈F
+
+1
+
+n
+
+> n
+
+X
+
+> i=1
+
+τi g(Xi; f ) − βn
+
+> n
+
+X
+
+> i=1
+
+g(Xi; f )2
+
+!# 
+
+,
+
+where τ = ( τi)ni=1 are i.i.d. Rademacher variables indepen-dent of the sample D. Let the Transformer be parameterized by W = {Wv , W c, W QK , w }. We impose the following regularity assumptions on the parameters and the data gen-erating process. 
+
+Assumption 4.1 (Bounded Parameters) . There exist posi-tive constants Bv , B c, B QK , B w such that: 
+
+∥Wv ∥2→2 ≤ Bv , ∥Wc∥2→2 ≤ Bc,
+
+∥WQK ∥2→2 ≤ BQK , ∥w∥2 ≤ Bw.
+
+Assumption 4.2 (Bounded Target and Inputs) . There exist constants B, B X < ∞ such that, almost surely: 
+
+|f ⋆(X)| ≤ B and ∥X∥2→2 ≤ BX ,
+
+where X ∈ RT ×d denotes the input matrix. 
+
+Assumption 4.3 (Lipschitz Continuity of Excess Risk) .
+
+There exists a constant κ > 0 such that for all X ∈ X 
+
+and f1, f 2 ∈ F :
+
+g(X; f1) − g(X; f2) ≤ κ f1(X) − f2(X) .
+
+assumption 4.3 is satisfied by standard loss functions (e.g., logistic or absolute loss) when ℓ(Y, ·) is κ-Lipschitz, and by the squared loss under the bounded output assumptions implied by assumptions 4.1 and 4.2. 
+
+Theorem 4.4. Suppose assumptions 4.1, 4.2, and 4.3 hold. Let bfn be the empirical risk minimizer. Then: 
+
+ED
+
+h
+
+E  bfn; ℓi
+
+≤ 4 Roff 
+
+> n
+
+
+
+G, 1
+
+MSH 
+
+
+
++ inf   
+
+> f∈F
+
+E f ; ℓ,
+
+where MSH := 2 κB + 2 κB wBcBv Lσ BX .
+
+The penalty parameter β = 1 /M SH captures the joint ef-fect of the Lipschitz constant κ, the activation smoothness 
+
+Lσ , and the magnitude of the parameters and inputs. This constant serves as a bound on the variance of the excess loss. 
+
+Corollary 4.5. Under the assumptions of Theorem 4.4, for any δ > 0, the excess risk satisfies: 
+
+ED
+
+h
+
+E  bfn; ℓi
+
+≤ 2MSH 
+
+n
+
+
+
+1 + log EX
+
+N∞(δ, F, X)
+
++ 8 κ δ + inf   
+
+> f∈F
+
+E(f ) ,
+
+where N∞(δ, F, X) denotes the ℓ∞-covering number of F
+
+on the sample X.
+
+Corollary 4.5 demonstrates that the single-head Transformer achieves an O(1 /n ) convergence rate (modulo logarithmic factors), improving upon the O(1 /√n) rates typical of stan-dard Rademacher analysis. The covering number N∞ links this bound to the metric entropy of the function class. 
+
+4.2. Single-Layer Multi-Head Transformers 
+
+We extend the analysis to the class FMH of single-layer Transformers with H heads, as defined in (3) . We generalize the regularity assumptions as follows: 
+
+Assumption 4.6. The inner excess risk satisfies assump-tion 4.3. Furthermore, for each head h ∈ { 1, . . . , H }, the parameters satisfy the bounds in assumption 4.1, and the inputs satisfy assumption 4.2. 
+
+Theorem 4.7. Suppose assumption 4.6 holds. The empirical risk minimizer for the single-layer multi-head Transformer satisfies: 
+
+ED
+
+h
+
+E( bfn; ℓ)
+
+i
+
+≤ 4Roff 
+
+> n
+
+
+
+G, 1
+
+MMH 
+
+
+
++ inf  
+
+> f∈F MH
+
+E(f ; ℓ),
+
+where MMH := 2 κB + 2 κHB wBcBv Lσ BX .
+
+The constant MMH scales linearly with the number of heads 
+
+H, reflecting the increased capacity and potential variance of the aggregated representation. 
+
+Corollary 4.8. Under the assumptions of Theorem 4.7, for any δ > 0:
+
+ED
+
+h
+
+E( bfn; ℓ)
+
+i
+
+≤ 2MMH 
+
+n (1 + log EX[N∞(δ, FMH , X)]) + 8 κδ + inf  
+
+> f∈F MH
+
+E(f ; ℓ).
+
+4Sharper Generalization Bounds for Transformer 
+
+4.3. Multi-Layer Transformers 
+
+Finally, we consider the class FML of Transformers with multiple layers. The complexity of deep architectures intro-duces dependencies on the network depth in the covering number. 
+
+Assumption 4.9 (Bounded Parameters for Multi-Layer Mod-els) . There exist constants Bv , B c, B QK , B w < ∞ such that for every layer, the parameter matrices are spectrally bounded by Bv , B c, B QK respectively, and the final readout satisfies ∥w∥2 ≤ Bw.
+
+Assumption 4.10 (Regularity of Multi-Layer Risk) . The inner excess risk satisfies assumption 4.3. The target func-tion satisfies |f ⋆(X)| ≤ B, and the network inputs satisfy 
+
+∥X∥2→2 ≤ BX . Furthermore, the parameters satisfy as-sumption 4.9. 
+
+Theorem 4.11. Suppose assumption 4.10 holds. The empir-ical risk minimizer for the multi-layer Transformer satisfies: 
+
+ED
+
+h
+
+E( bfn; ℓ)
+
+i
+
+≤ 4Roff 
+
+> n
+
+
+
+G, 12κ(B + Bw)
+
+
+
++ inf  
+
+> f∈F ML
+
+E(f ; ℓ).
+
+Remark 4.12 . Note that the penalty parameter in Theorem 4.11 depends explicitly on the readout bound Bw and the tar-get bound B, assuming the output of the final Transformer block is normalized (as is common in practice with Layer-Norm). However, the complexity of the hidden layers and the depth of the network are implicitly captured within the covering number term in the following corollary. 
+
+Corollary 4.13. Under the assumptions of Theorem 4.11, for any δ > 0:
+
+ED
+
+h
+
+E( bfn; ℓ)
+
+i
+
+≤ 4κ(B + Bw)
+
+n ×
+
+(1 + log EX[N∞(δ, FML , X)]) + 8 κδ + inf  
+
+> f∈F ML
+
+E(f ; ℓ).
+
+## 5. Parameter-Dependent Excess Risk Bounds 
+
+Building on the general framework established in Section 4, we now derive sharper excess risk bounds by explic-itly controlling the covering numbers of the Transformer hypothesis class. We consider two distinct regimes: (1) 
+
+norm-based bounds , which constrain the ℓ1,1 magnitude of the parameters, and (2) rank-based bounds , which exploit the low-rank structure of the weight matrices. Due to space constraints, the single-layer and multi-head generalization bounds discussed in this section are presented in Appendix B. 
+
+5.1. Norm-Based Excess Risk Bounds 
+
+We first refine our parameter assumptions to enable tighter control via norm-based covering numbers. Following Trauger and Tewari (Trauger & Tewari, 2023), we impose constraints on the ℓ1,1 norms of the weight matrices, which is natural for deriving bounds independent of the sequence length. 
+
+Assumption 5.1 (Norm-Bounded Parameters) . There exist constants Bv , B c, B QK , B w < ∞ such that: 
+
+∥Wv ∥1,1 ≤ Bv , ∥Wc∥1,1 ≤ Bc,
+
+∥WQK ∥1,1 ≤ BQK , ∥w∥2 ≤ Bw.
+
+Furthermore, we assume the input token representations are bounded. Let x[CLS] denote the representation of the classification token. We assume ∥x[CLS] ∥2 ≤ Bx almost surely. We adopt the following covering number assumption for linear operators, which is a standard result in statistical learning theory (see, e.g., (Trauger & Tewari, 2023, Lemma 3.6)).This lemma provides a sequence-length-independent generalized bound, offering theoretical assurance for the stability of Transformer models’ generalization capabili-ties in long-sequence tasks. It mitigates the risk of un-controlled generalization errors arising from increasing se-quence lengths. This work provides theoretical support for applying Transformers in long-sequence scenarios such as long-text processing and high-dimensional time series prediction (e.g., financial time series, meteorological ob-servations), thereby enhancing the model’s applicability in complex real-world scenarios. 
+
+Lemma 5.2 (Linear Covering Number) . For the function class Hlin = {x 7 → W x | ∥ W ∥1,1 ≤ BW }, the ϵ-covering number satisfies: 
+
+log N (ϵ, Hlin , ∥ · ∥ 2) ≤ C1B2
+
+> x
+
+B2
+
+> W
+
+ϵ2 ,
+
+where C1 is a universal constant depending on the geometry of the space. 
+
+Theorem 5.3 (Multi-Layer Norm-Based Bound) . Suppose assumptions 4.3, 5.1 and Lemma 5.2 hold. The empirical risk minimizer satisfies: 
+
+ED[E( bfn; ℓ)] ≤ 4( κB + κB w)
+
+n
+
+
+
+1 + log (γML + ηML )3
+
+δ2
+
+
+
++ 8 κδ + inf  
+
+> f∈F ML
+
+E(f ; ℓ).
+
+Here, defining αi = QLj=i Lσ BcBv (1 + 4 BQK ), we have: 
+
+τi =α2/3 
+
+> i
+
++ (2 αiLσ BcBv )2/3 + ( αiLσ Bv )2/3,γML =C1/31 (2 Lσ BcBv α1BwB2
+
+> x
+
+)2/3
+
++ C1/31 B2/3
+
+> x
+
+
+
+1 + ( α1Bw)2/3 + ( α1BwLσ Bv )2/3
+
+,ηML =C1/31 B2/3
+
+> wL
+
+X
+
+> i=2
+
+τi.
+
+5Sharper Generalization Bounds for Transformer 
+
+Remark 5.4 . Our norm-based bounds depend explicitly on the parameter norms rather than the sequence length T .This represents an improvement over Trauger and Tewari (Trauger & Tewari, 2023) by providing tighter control through the offset Rademacher complexity framework. 
+
+5.2. Rank-Based Excess Risk Bounds 
+
+Next, we exploit the low-rank structure of the parameter matrices to derive alternative bounds. We combine the rank-based covering numbers for linear models (Truong, 2024) with our offset complexity analysis. 
+
+Assumption 5.5 (Rank-Structure and Inputs) . We assume the parameter matrices have ranks bounded by rv , r c, r QK .The target function and inputs satisfy |f ⋆(X)| ≤ B,
+
+∥X∥2→2 ≤ BX , and ∥x[CLS] ∥2 ≤ Bx almost surely. Deep networks exhibit significantly tighter generalization bounds when possessing low-rank or quasi-low-rank struc-tures: their sample complexity no longer scales with total parameters but is instead governed by the effective rank and spectral norm of the weight matrix. For instance, Ledent et al. derived generalization bounds based on the Schatten −p
+
+norm for rank-sparse networks, demonstrating that model complexity scales with the rank of layers (Ledent et al., 2025); Pinto et al. proved via Gaussian complexity that deep networks with low-rank layers exhibit smaller functional class complexity (Pinto et al., 2024). The generalization capability of Transformers may rely more on the inherent low-rank constraints of the attention mechanism than on the total number of model parameters (Truong, 2024). Thus, low-rank generalization bounds provide a theoretical di-rection and potential mechanism for explaining why large Transformers maintain strong generalization performance even with extremely massive parameters. To optimize the covering number allocation across different components, we utilize the following lemma, seeing (Truong, 2024, Theorem 4). 
+
+Corollary 5.6 (Optimal Covering Allocation) . Let 
+
+ri, C i, β i ≥ 0 for i ∈ [m]. The solution to the optimiza-tion problem: 
+
+min 
+
+> ϵ1,...,ϵ m
+> m
+
+X
+
+> i=1
+
+riCi log 
+
+ riB2
+
+> X
+
+ϵ2
+
+> i
+
+
+
+, subject to 
+
+> m
+
+X
+
+> i=1
+
+βiϵi = ϵ, 
+
+is given by Pmi=1 riCi log( b2 
+
+> i
+
+/ϵ 2), where bi =     
+
+> (BXβi
+> Pmj=1 rjCj)1/2
+> r1/2
+> iC1/2
+> i
+
+.
+
+Assumption 5.7 (Rank-Based Covering Number) . For the function class Hrank = {x 7 → W x | rank( W ) ≤
+
+r, ∥W ∥2 ≤ BW }, the ϵ-covering number satisfies: 
+
+log N (ϵ, Hrank , ∥ · ∥ 2) ≤ C1r log 
+
+ rB 2
+
+> x
+
+B2
+
+> W
+
+ϵ2
+
+
+
+.
+
+Theorem 5.8 (Multi-Layer Rank-Based Bound) . Suppose assumption 5.5 and Assumption 5.7 hold. The empirical risk minimizer satisfies: 
+
+ED[E( bfn; ℓ)] ≤ 4( κB + κB w)
+
+n 1 + 
+
+> m
+
+X
+
+> i=1
+
+riCi log 
+
+ b2
+
+> i
+
+δ2
+
+!
+
++ 8 κδ + inf  
+
+> f∈F ML
+
+E(f ; ℓ).
+
+Here, the effective bounds bi are derived using Corollary 5.6 with weights βk defined recursively: 
+
+βk =
+
+
+
+1 k = 1 ,αk−1Bw 2 ≤ k ≤ L + 1 ,αk−L−1BwLσ Bv L + 2 ≤ k ≤ 2L + 1 ,αk−2L−12Lσ BcBv Bw 2L + 2 ≤ k ≤ 3L + 1 .
+
+Remark 5.9 . This result demonstrates that the excess risk is controlled by the sum of ranks across layers, offering a significantly tighter bound than full-rank spectral norm ap-proaches, particularly for compressed or sparse Transformer models. 
+
+## 6. Excess Risk Bounds under Unbounded Assumptions 
+
+In previous sections, we assumed bounded inputs, which is often violated in practice. In natural language processing, embedding norms may grow with sequence length T (Zhou et al., 2025), while in vision-language models, image patch embeddings typically follow unbounded continuous distri-butions (Li et al., 2022). Such boundedness assumptions therefore fail to capture model behavior on high-dynamic-range inputs. In classical Rademacher complexity analysis, generaliza-tion bounds typically rely on boundedness of the input (Bartlett & Mendelson, 2002) to control the functional class complexity of linear models or neural networks. How-ever, when inputs are unbounded, bounds directly relying on input norms may fail. Even loss function truncation, such as M-truncation (Bartlett & Mendelson, 2002), log-truncation (Catoni, 2012), smooth/Huber-type truncation (Maurer, 2016), or the extension of Catoni’s robust trun-cation(Xu et al., 2023; Coluccia, 2015), cannot guarantee bounded Rademacher complexity, as functional sensitivity to inputs may still cause excessive empirical process volatil-ity. To address this issue, Høgsgaard and Paudice replacing standard empirical averaging with Median-of-Means (MoM) estimation yields generalization bounds for unbounded in-puts (Høgsgaard & Paudice, 2025). In this section, we extend our analysis to unbounded in-puts by employing truncation techniques. We analyze two regimes: (1) inputs following a sub-Gaussian distribution, 6Sharper Generalization Bounds for Transformer 
+
+where tails decay exponentially, and (2) inputs following a 
+
+heavy-tailed distribution, requiring robust loss functions. 
+
+6.1. Excess Risk Bounds under the Sub-Gaussian Assumption 
+
+We first consider the case where the input X is unbounded but concentrates around its mean. First, we present the ma-trix form of the concentration inequality (see, e.g., (Tropp, 2015, Theorem 4.1.1)) 
+
+Lemma 6.1 (Matrix Gaussian & Rademacher Series) . Con-sider a finite sequence {Bk} of fixed complex matrices with dimension d1 × d2, and let {γk} be a finite sequence of in-dependent standard normal variables. Introduce the matrix Gaussian series 
+
+Z = X
+
+> k
+
+γkBk.
+
+Let v(Z) be the matrix variance statistic of the sum: 
+
+v(Z) = max {∥ E(ZZ ∗)∥ , ∥E(Z∗Z)∥} 
+
+= max 
+
+( X
+
+> k
+
+BkB∗ 
+
+> k
+
+, X
+
+> k
+
+B∗ 
+
+> k
+
+Bk
+
+)
+
+.
+
+Then 
+
+E∥Z∥ ≤ p2v(Z) log( d1 + d2).
+
+Furthermore, for all t ≥ 0,
+
+P {∥ Z∥ ≥ t} ≤ (d1 + d2) exp 
+
+
+
+− t2
+
+2v(Z)
+
+
+
+.
+
+The same bounds hold when we replace {γk} by a finite se-quence {gk} of independent Rademacher random variables. 
+
+Assumption 6.2 (Unbounded Sub-Gaussian Inputs) . The in-put X ∈ RT ×d follows a sub-Gaussian distribution. Specif-ically, there exists a matrix variance proxy 
+
+ν(X) := max {∥ E[X⊤X]∥2, ∥E[XX ⊤]∥2}
+
+such that for any t > 0:
+
+P(∥X∥F ≥ t) ≤ (T + d) exp 
+
+ −t2
+
+2ν(X)2
+
+
+
+. (9) The target function f ⋆ is also assumed to be unbounded but with finite moments compatible with the input distribution. To handle unboundedness, we introduce a truncation opera-tor TM with threshold M > 0:
+
+XM := TM (X) = 
+
+(X if ∥X∥F ≤ M, M X 
+
+> ∥X∥F
+
+if ∥X∥F > M. (10) Let FM denote the class of Transformer functions oper-ating on the truncated input domain {X : ∥X∥F ≤ M }.The truncation error is controlled by the tail probability of the event Etrunc = {∥ X∥F > M }, which satisfies 
+
+P(Etrunc ) ≤ (T + d) exp( −M 2/2ν(X)2). We define the truncated empirical risk minimizer as: 
+
+bf (M ) 
+
+> n
+
+∈ arg min  
+
+> f∈F M
+
+1
+
+n
+
+> n
+
+X
+
+> i=1
+
+ℓ(Yi, f (Xi,M )) . (11) 
+
+Assumption 6.3 (Lipschitz Continuity for Truncated Class) .
+
+There exists κ > 0 such that for any M > 0 and all X, the excess risk satisfies the Lipschitz assumption: 
+
+|g(X; f1)−g(X; f2)| ≤ κ|f1(X)−f2(X)|, ∀f1, f 2 ∈ F M .
+
+Theorem 6.4 (Single-Layer Sub-Gaussian Bound) . Suppose assumption 6.3 holds, and the network parameters satisfy the norm-based constraints of Theorem B.1. Let bf (M ) 
+
+> n
+
+be the empirical risk minimizer on the truncated domain. Then: 
+
+ED[E( bfn; ℓ)] ≤ 4( κB + κB wBcBv Lσ BX )
+
+n
+
+
+
+1 + log γ3SH 
+
+δ2
+
+
+
++ Terr (M ) + 8 κδ + inf  
+
+> f∈F SH
+
+E(f ; ℓ),
+
+where the truncation error term is Terr (M ) =
+
+O
+
+
+
+κν (X)( T + d)e−M 2/2ν(X)2 
+
+. The complexity terms 
+
+γSH follow the definitions in Theorem B.1 with BX replaced by the truncation threshold M .
+
+Theorem 6.5 (Multi-Head Sub-Gaussian Bound) . Suppose assumption 6.3 holds, and the network parameters satisfy the norm-based constraints of Theorem B.2. Let bf (M ) 
+
+> n
+
+be the empirical risk minimizer on the truncated domain. Then: 
+
+ED[E( bfn; ℓ)] ≤ 4( κB + κHB wBcBv Lσ BX )
+
+n
+
+
+
+1 + log γ3MH 
+
+δ2
+
+
+
++ Terr (M ) + 8 κδ + inf  
+
+> f∈F MH
+
+E(f ; ℓ),
+
+where the truncation error term is Terr (M ) =
+
+O
+
+
+
+κν (X)( T + d)e−M 2/2ν(X)2 
+
+. The complexity terms 
+
+γMH follow the definitions in Theorem B.2 with BX re-placed by the truncation threshold M .
+
+Theorem 6.6 (Multi-Layer Sub-Gaussian Bound) . Suppose assumption 6.3 holds, and the network parameters satisfy the norm-based constraints of Theorem 5.3. Let bf (M ) 
+
+> n
+
+be the empirical risk minimizer on the truncated domain. Then: 
+
+ED[E( bf (M ) 
+
+> n
+
+; ℓ)] ≤ 4( Bκ + Bwκ)
+
+n
+
+
+
+1 + log (γM + ηM )3
+
+δ2
+
+
+
++ Terr (M ) + 8 κδ + inf  
+
+> f∈F M
+
+E(f ; ℓ),
+
+where the truncation error term is Terr (M ) =
+
+O
+
+
+
+κν (X)( T + d)e−M 2/2ν(X)2 
+
+. The complexity terms 
+
+γM , η M follow the definitions in Theorem 5.3 with BX re-placed by the truncation threshold M .
+
+7Sharper Generalization Bounds for Transformer 
+
+Remark 6.7 . The bound exhibits a trade-off controlled by 
+
+M . The complexity term grows as log( M ), while the trun-cation error decays exponentially as exp( −M 2). Choosing 
+
+M ≍ √log n balances these terms, yielding an overall con-vergence rate of eO( √log nn ), which is nearly optimal and consistent with finite-dimensional results. 
+
+6.2. Excess Risk Bounds under Heavy-Tailed Assumptions 
+
+In many scenarios, data distributions exhibit polynomial tail decay rather than exponential. If the tail of this dis-tribution is heavier than any exponential distribution, i.e., for all μ > 0, we have lim sup x→∞   
+
+> ¯F(x)
+> e−μx
+
+= ∞, then this distribution is considered a heavy-tailed distribution (Nair et al., 2022). For example, the Pareto distribution or the 
+
+t-distribution satisfy P(|X| > x ) ∝ x−β for some β > 0.Under such heavy-tailed assumptions, standard empirical risk minimization may fail or yield suboptimal rates (Ostro-vskii & Bach, 2021). 
+
+Assumption 6.8 (Heavy-Tailed Inputs) . The input X fol-lows a heavy-tailed distribution with tail index β > 2.specifically, there exists a constant C > 0 such that: 
+
+P(∥X∥F > x ) ≤ Cx −β , ∀x > 0. (12) To achieve robust estimation, we employ a robust loss func-tion ℓψ , such as the Catoni loss (Catoni, 2012) or the gener-alized logarithmic truncation loss proposed by Chen et al. (Chen et al., 2021b). These losses dampen the influence of outliers. We define the robust estimator: 
+
+bf ψn ∈ arg min  
+
+> f∈F
+
+1
+
+n
+
+> n
+
+X
+
+> i=1
+
+ℓψ (Yi, f (Xi)) . (13) 
+
+Theorem 6.9 (Single-Head Heavy-Tailed Bound) . Suppose assumptions 6.8 and 5.5 hold, and we employ a robust loss 
+
+ℓψ . The excess risk of the single-layer multi-head Trans-former satisfies: 
+
+ED[E( bfn; ℓ)] ≤ 4( κB + κB wBcBv Lσ BX )
+
+n ]×
+
+(1 + log Nrank ,S) + Cβ M 2−β + 8 κδ + inf  
+
+> f∈F SH
+
+E(f ; ℓ),
+
+where the complexity terms Nrank ,S follow the definitions in Theorem B.4 with BX replaced by the truncation threshold 
+
+M . The term Cβ M 2−β represents the single-tail truncation bias. 
+
+Theorem 6.10 (Multi-Head Heavy-Tailed Bound) . Suppose assumptions 6.8 and 5.5 hold, and we employ a robust loss 
+
+ℓψ . The excess risk of the single-layer multi-head Trans-former satisfies: 
+
+ED[E( bfn; ℓ)] 
+
+≤ 4( κB + κHB wBcBv Lσ BX )
+
+n (1 + log Nrank ,M )+ Cβ M 2−β + 8 κδ + inf  
+
+> f∈F MH
+
+E(f ; ℓ),
+
+where the complexity terms Nrank ,M follow the definitions in Theorem B.5 with BX replaced by the truncation threshold 
+
+M . The term Cβ M 2−β represents the heavy-tail truncation bias. 
+
+Theorem 6.11 (Multi-Layer Heavy-Tailed Bound) . Sup-pose assumptions 6.8 and 5.5 hold, and we employ a robust loss ℓψ . The excess risk of the single-layer multi-head Trans-former satisfies: 
+
+ED[E( bf ψn ; ℓψ )] ≤ 4 fMψ
+
+n (1 + Nrank ,M L )+ Cβ M 2−β + 8 κδ + inf   
+
+> f∈F
+
+E(f ; ℓψ ),
+
+where fMψ depends on the Lipschitz constant of the robust loss and parameter bounds in Theorem 5.8, and The com-plexity terms Nrank ,ML from Theorem 5.8 with BX replaced by the truncation threshold M . The term Cβ M 2−β repre-sents the heavy-tail truncation bias. Remark 6.12 . Here, the convergence rate is limited by the tail index β. The complexity grows logarithmically with M ,but the bias decays polynomially as M −(β−2) . To balance the O( log Mn ) variance and O(M −(β−2) ) bias, the optimal truncation threshold is M ≍ n 1 
+
+> β−2
+
+. This yields a slower convergence rate of roughly O(n− β−2 
+
+> β−1
+
+), reflecting the fun-damental difficulty of learning from heavy-tailed data. 
+
+## 7. Conclusion 
+
+In this paper, we derived sharper generalization bounds for Transformer models through the lens of offset Rademacher complexity. Our analysis yielded fast excess-risk rates of order O(1 /n ) for single-head, multi-head, and multi-layer architectures, while explicitly capturing architecture-dependent structure via low-rank and norm-based parameter controls. Moreover, we extended these guarantees beyond bounded feature assumptions to more practical regimes with unbounded sub-Gaussian inputs and heavy-tailed distribu-tions. We leave two directions for future work. First, it would be of interest to develop an information-theoretic account of Transformer generalization, using mutual-information–based tool (Asadi et al., 2018) to quantify how self-attention propagates and potentially compresses task-relevant information. Second, deriving PAC-Bayes bounds 8Sharper Generalization Bounds for Transformer 
+
+Alquier (2021) tailored to Transformers and stochastic opti-mization may better capture the implicit regularization of modern training pipelines, and could lead to a more unified understanding of generalization and learning dynamics in large-scale foundation models. 
+
+## Impact Statement 
+
+This paper presents work whose goal is to advance the field of Machine Learning. There are many potential societal consequences of our work, none which we feel must be specifically highlighted here. 
+
+## References 
+
+Alokhina, A. and Li, P. From small to large: Generalization bounds for transformers on variable-size inputs, 2026. URL https://arxiv.org/abs/2512.12805 .Alquier, P. User-friendly introduction to pac-bayes bounds. 
+
+arXiv preprint arXiv:2110.11216 , 2021. Asadi, A., Abbe, E., and Verd ´u, S. Chaining mutual infor-mation and tightening generalization bounds. Advances in Neural Information Processing Systems , 31, 2018. Bartlett, P. L. and Mendelson, S. Rademacher and gaussian complexities: Risk bounds and structural results. Journal of machine learning research , 3(Nov):463–482, 2002. Bartlett, P. L., Bousquet, O., and Mendelson, S. Local rademacher complexities. Annals of Statistics , pp. 1497– 1537, 2005. Blumer, A., Ehrenfeucht, A., Haussler, D., and Warmuth, M. K. Learnability and the vapnik-chervonenkis dimen-sion. Journal of the ACM (JACM) , 36(4):929–965, 1989. Bos, T. and Schmidt-Hieber, J. Convergence rates of deep relu networks for multiclass classification. Electronic Journal of Statistics , 16(1):2724–2773, 2022. Catoni, O. Challenging the empirical mean and empirical variance: a deviation study. In Annales de l’IHP Proba-bilit´ es et statistiques , volume 48, pp. 1148–1185, 2012. Chang, Y., Wang, X., Wang, J., Wu, Y., Yang, L., Zhu, K., Chen, H., Yi, X., Wang, C., Wang, Y., et al. A survey on evaluation of large language models. ACM transactions on intelligent systems and technology , 15(3):1–45, 2024. Chen, L., Lu, K., Rajeswaran, A., Lee, K., Grover, A., Laskin, M., Abbeel, P., Srinivas, A., and Mordatch, I. De-cision transformer: Reinforcement learning via sequence modeling. 2021a. Chen, P., Jin, X., Li, X., and Xu, L. A generalized catoni’s m-estimator under finite α-th moment assumption with 
+
+α ∈ (1 , 2) . Electronic Journal of Statistics , 15(2):5523– 5544, 2021b. Coluccia, A. Regularized covariance matrix estimation via empirical bayes. IEEE signal processing letters , 22(11): 2127–2131, 2015. de Santana Correia, A. and Colombini, E. L. Attention, please! a survey of neural attention models in deep learn-ing. Artificial Intelligence Review , 55(8):6037–6124, 2022. Ding, Z., Duan, C., Jiao, Y., and Yang, J. Z. Semi-supervised deep sobolev regression: Estimation and variable selec-tion by requ neural network. IEEE transactions on infor-mation theory , 71(4):2955–2981, 2025. Duan, C., Jiao, Y., Kang, L., Lu, X., and Yang, J. Z. Fast excess risk rates via offset rademacher complexity. In 
+
+Proceedings of the 40th International Conference on Ma-chine Learning , volume 202, Honolulu, Hawaii, USA, 2023. PMLR. Han, K., Wang, Y., Chen, H., Chen, X., Guo, J., Liu, Z., Tang, Y., Xiao, A., Xu, C., Xu, Y., et al. A survey on vision transformer. IEEE transactions on pattern analysis and machine intelligence , 45(1):87–110, 2022. Havrilla, A. and Liao, W. Understanding scaling laws with statistical and approximation theory for transformer neu-ral networks on intrinsically low-dimensional data. arXiv preprint arXiv:2411.06646 , 2024. Høgsgaard, M. M. and Paudice, A. Uniform mean estima-tion for heavy-tailed distributions via median-of-means. 2025. Hu, S., Shen, L., Zhang, Y., Chen, Y., and Tao, D. On trans-forming reinforcement learning with transformers: The development trajectory. IEEE Transactions on Pattern Analysis and Machine Intelligence , 46(12):8580–8599, 2024. Huang, X., Yang, A., Bhattamishra, S., Sarrof, Y., Krebs, A., Zhou, H., Nakkiran, P., and Hahn, M. A formal frame-work for understanding length generalization in trans-formers, 2025. URL https://arxiv.org/abs/ 2410.02140 .Ledent, A., Alves, R., and Lei, Y. Generalization bounds for rank-sparse neural networks. In Proceedings of the 28th International Conference on Artificial Intelligence and Statistics , volume 244, pp. 2145–2153, 2025. Li, M., Xu, R., Wang, S., Zhou, L., Lin, X., Zhu, C., Zeng, M., Ji, H., and Chang, S.-F. Clip-event: Connecting text and images with event structures. pp. 16399–16408. IEEE, 2022. 9Sharper Generalization Bounds for Transformer 
+
+Liang, T., Rakhlin, A., and Sridharan, K. Learning with square loss: Localization through offset rademacher com-plexity. In Conference on Learning Theory , pp. 1260– 1285. PMLR, 2015. Ma, C., Wu, L., et al. The barron space and the flow-induced function spaces for neural network models. Constructive Approximation , 55(1):369–406, 2022. Maurer, A. Vector-valued rademacher complexities. Journal of Machine Learning Research , 17(169):1–20, 2016. Meng, Y. and Ming, P. A new function space from barron class and application to neural network approximation. 
+
+Communications in Computational Physics , 32(5):1361– 1400, 2022. Mwigo, B. and Dasgupta, A. Generalization bound for a shallow transformer trained using gradient descent. Trans-actions on Machine Learning Research , 2026. ISSN 2835-8856. URL https://openreview.net/ forum?id=t3iUeMOT8Z .Nair, J., Wierman, A., and Zwart, B. The Fundamentals of Heavy Tails: Properties, Emergence, and Estimation .Cambridge Series in Statistical and Probabilistic Mathe-matics. Cambridge University Press, 2022. Ostrovskii, D. M. and Bach, F. Finite-sample analysis of m-estimators using self-concordance. Electronic Journal of Statistics , 15:326–391, 2021. Pinto, A., Rangamani, A., and Poggio, T. On generalization bounds for neural networks with low rank layers. arXiv preprint arXiv:2411.13733 , 2024. Schmidt-Hieber, J. Nonparametric regression using deep neural networks with relu activation function. The Annals of Statistics , 48(4):1875, 2020. Trauger, J. and Tewari, A. Sequence length indepen-dent norm-based generalization bounds for transformers. 
+
+arXiv preprint arXiv:2310.13088 , 2023. Tropp, J. A. An introduction to matrix concentration inequal-ities. Foundations and Trends® in Machine Learning , 8 (1–2):1–230, 2015. Truong, L. V. On rank-dependent generalisation error bounds for transformers. arXiv preprint arXiv:2410.11500 , 2024. Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., and Polosukhin, I. At-tention is all you need. Advances in neural information processing systems , 30, 2017. Wang, Q., Li, B., Xiao, T., Zhu, J., Li, C., Wong, D. F., and Chao, L. S. Learning deep transformer models for machine translation. arXiv preprint arXiv:1906.01787 ,2019. Xu, L., Yao, F., Yao, Q., and Zhang, H. Non-asymptotic guarantees for robust statistical learning under infinite variance assumption. Journal of machine learning re-search , 24, 2023. Yang, Y. On the optimal approximation of sobolev and besov functions using deep relu neural networks. Applied and computational harmonic analysis , 79, 2025. Zhang, H., Song, H., Li, S., Zhou, M., and Song, D. Asurvey of controllable text generation using transformer-based pre-trained language models. ACM Computing Surveys , 56(3):1–37, 2023. Zhang, Q., Chen, B., Jiang, Y., and Xia, S.-T. Generalization bounds for transformer channel decoders, 2026. URL 
+
+https://arxiv.org/abs/2601.06969 .Zhang, T. Mathematical analysis of machine learning algo-rithms . Cambridge University Press, 2023. Zhang, Y., Wu, Z., Li, J., and Liu, Y. Understanding gen-eralization in transformers: Error bounds and training dynamics under benign and harmful overfitting, 2025. URL https://arxiv.org/abs/2502.12508 .Zhou, Y., Dai, S., Cao, Z., Zhang, X., and Xu, J. Length-induced embedding collapse in plm-based models. In 
+
+Proceedings of the 63rd Annual Meeting of the Associ-ation for Computational Linguistics (Volume 1: Long Papers) , pp. 28767–28791, July 2025. 10 Sharper Generalization Bounds for Transformer 
+
+## A. Proofs in Section 4 
+
+A.1. Proof of Theorem 4.4 
+
+Proof. Let F denote the hypothesis class. For any f ∈ F , we define the excess loss function g(·; f ) as: 
+
+g(X, Y ; f ) := ℓ(Y, f (X)) − ℓ(Y, f ⋆(X)) ,
+
+where f ⋆ minimizes the population risk. Specifically for the single-head Transformer, let f (X) = w⊤Y[CLS] , where Y[CLS] 
+
+is the output token representation. Let bfn be the empirical risk minimizer. We decompose the expected excess risk as follows: 
+
+ED[E( bfn; ℓ)] = ED
+
+h
+
+E(X,Y )[g(X, Y ; bfn)] 
+
+i
+
+= ED
+
+"
+
+E(X,Y )[g(X, Y ; bfn)] − 3
+
+n
+
+> n
+
+X
+
+> i=1
+
+g(Xi, Y i; bfn) + 3
+
+n
+
+> n
+
+X
+
+> i=1
+
+g(Xi, Y i; bfn)
+
+#
+
+.
+
+Since bfn minimizes the empirical risk, for any f ∈ F , P g(Zi; bfn) ≤ P g(Zi; f ). Taking the supremum over the class F:
+
+ED[E( bfn; ℓ)] ≤ ED
+
+"
+
+sup  
+
+> f∈F
+
+E[g(Z; f )] − 3
+
+n
+
+> n
+
+X
+
+> i=1
+
+g(Zi; f )
+
+!# 
+
++ 3 ED
+
+"
+
+1
+
+n
+
+> n
+
+X
+
+> i=1
+
+g(Zi; f ⋆)
+
+#
+
+≤ EX sup  
+
+> f∈F
+
+E[g(Z; f )] − 3
+
+n
+
+> n
+
+X
+
+> i=1
+
+g(Zi; f )
+
+!
+
++ 3 inf   
+
+> f∈F
+
+E(f ; ℓ),
+
+where the last term accounts for the approximation error if f ⋆ /∈ F .We now bound the magnitude of the function class to determine the appropriate penalty. Using the Lipschitz continuity of the activation σ (with σ(0) = 0 ) and the property that ∥softmax( ·)∥2 ≤ 1, we have: 
+
+∥σ
+
+
+
+W ⊤ 
+
+> v
+
+X⊤ 
+
+> (i)
+
+softmax( X(i)WQK X⊤)
+
+
+
+∥2 ≤ Lσ ∥W ⊤ 
+
+> v
+
+∥2∥X⊤
+
+> (i)
+
+∥2∥softmax( ·)∥2
+
+≤ Lσ Bv BX .
+
+Consequently, the output token representation Y[CLS] is bounded by: 
+
+∥Y[CLS] ∥2 ≤ ∥ W ⊤ 
+
+> c
+
+∥2∥σ(·)∥2 ≤ Bc(Lσ Bv BX ).
+
+Using the Lipschitz property of the loss function ℓ (constant κ), the value of the excess loss is bounded. Let M denote this upper bound: 
+
+0 ≤ g(X; f ) ≤ κ|f (X) − f ⋆(X)| ≤ κ|f ⋆(X)| + κ∥w∥2∥Y[CLS] ∥2
+
+≤ κB + κB wBcBv Lσ BX =: M. 
+
+Therefore, we can rewrite the supremum term. Using the inequality z − 3μ ≤ 2( z − μ) − z . . . implies we can bound the expectation by the offset complexity. Specifically, we aim to bound: 
+
+A := EX sup  
+
+> f∈F
+
+E[g] − 3
+
+n
+
+> n
+
+X
+
+> i=1
+
+g(Zi)
+
+!
+
+.
+
+Following the symmetrization technique with ghost samples X′ = {X′ 
+
+> i
+
+}ni=1 and Rademacher variables τ (Duan et al., 2023), we have: 
+
+A ≤ EX,X′ sup  
+
+> f∈F
+
+2
+
+n
+
+> n
+
+X
+
+> i=1
+
+(g(X′ 
+
+> i
+
+; f ) − g(Xi; f )) − 1
+
+nM 
+
+> n
+
+X
+
+> i=1
+
+(g(X′ 
+
+> i
+
+; f )2 + g(Xi; f )2)
+
+!
+
+= 2 EX,X′,τ sup  
+
+> f∈F
+
+1
+
+n
+
+> n
+
+X
+
+> i=1
+
+τi(g(X′ 
+
+> i
+
+; f ) − g(Xi; f )) − 12nM 
+
+> n
+
+X
+
+> i=1
+
+(g(X′ 
+
+> i
+
+; f )2 + g(Xi; f )2)
+
+!
+
+.
+
+11 Sharper Generalization Bounds for Transformer 
+
+Separating the terms for X and X′, this equates to: 
+
+A ≤ 2EX′,τ sup  
+
+> f∈F
+
+1
+
+n
+
+> n
+
+X
+
+> i=1
+
+τig(X′ 
+
+> i
+
+; f ) − 12nM 
+
+> n
+
+X
+
+> i=1
+
+g(X′ 
+
+> i
+
+; f )2
+
+!
+
++ 2 EX,τ sup  
+
+> f∈F
+
+1
+
+n
+
+> n
+
+X
+
+> i=1
+
+(−τi)g(Xi; f ) − 12nM 
+
+> n
+
+X
+
+> i=1
+
+g(Xi; f )2
+
+!
+
+= 4 Roff 
+
+> n
+
+
+
+G, 12M
+
+
+
+.
+
+Substituting M = κB + κB wBcBv Lσ BX yields the theorem statement. 
+
+A.2. Proofs of Corollaries 4.5, 4.13 and Theorem 4.7 
+
+Proof of Corollary 4.5. Let MSH := κB +κB wBcBv Lσ BX denote the upper bound on the excess loss derived in Appendix A.1. Let Fδ be a minimal δ-cover of F with respect to the ℓ∞ norm on the sample X, such that |F δ | = N∞(δ, F, X). For any f ∈ F , there exists fδ ∈ F δ satisfying ∥f − fδ ∥∞ ≤ δ.We decompose the offset process. Using the κ-Lipschitz continuity of the excess loss g, we have: 
+
+1
+
+n
+
+> n
+
+X
+
+> i=1
+
+τig(Xi; f ) ≤ 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+τig(Xi; fδ ) + 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+|τi| g(Xi; f ) − g(Xi; fδ )
+
+≤ 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+τig(Xi; fδ ) + κδ. 
+
+For the quadratic penalty term, using the bound g(·) ≤ MSH and the Lipschitz property: 
+
+− 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+g(Xi; f )2 = − 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+g(Xi; fδ )2 + 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+ g(Xi; fδ )2 − g(Xi; f )2
+
+= − 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+g(Xi; fδ )2 + 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+ g(Xi; fδ ) + g(Xi; f )  g(Xi; fδ ) − g(Xi; f )
+
+≤ − 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+g(Xi; fδ )2 + 2MSH 
+
+n
+
+> n
+
+X
+
+> i=1
+
+g(Xi; fδ ) − g(Xi; f )
+
+≤ − 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+g(Xi; fδ )2 + 2 MSH κδ. 
+
+Combining these, the offset process over F is bounded by the process over the finite cover Fδ plus a discretization error: 
+
+sup  
+
+> f∈F
+
+1
+
+n
+
+> n
+
+X
+
+> i=1
+
+τig(Xi; f ) − βn
+
+> n
+
+X
+
+> i=1
+
+g(Xi; f )2
+
+!
+
+≤ max  
+
+> fδ∈F δ
+
+Ω( fδ ) + (1 + 2 βM SH ) κδ, 
+
+where Ω( fδ ) := 1
+
+> n
+
+Pni=1 τig(Xi; fδ ) − βn
+
+Pni=1 g(Xi; fδ )2.To bound the expectation of the maximum over the finite set Fδ , we use the tail integral formula E[Z] ≤ R ∞ 
+
+> 0
+
+P(Z > ξ )dξ .Following the technique in Duan et al. (Duan et al., 2023), for any fixed function h, Bennett’s inequality implies that 
+
+P(Ω( h) > ξ ) ≤ exp( −2nβξ ) provided β ≤ 1/(2 MSH ). Applying the union bound over Fδ :
+
+Eτ
+
+
+
+max  
+
+> fδ∈F δ
+
+Ω( fδ )
+
+
+
+≤
+
+Z ∞
+
+> 0
+
+min {1, N ∞(δ, F, X) exp( −2nβξ )} dξ 
+
+= log N∞(δ, F, X)2nβ +
+
+Z ∞ 
+
+> log N
+> 2nβ
+
+exp (log N − 2nβξ ) dξ 
+
+≤ 1 + log N∞(δ, F, X)2nβ .
+
+Substituting this back yields the stated corollary. 12 Sharper Generalization Bounds for Transformer 
+
+Proof of Theorem 4.7. The single-layer multi-head Transformer output is a sum of H independent single-head outputs. Consequently, the Lipschitz constant and the absolute bound of the function class scale linearly with H. Specifically, the excess risk is bounded by: 
+
+0 ≤ g(X; fMH ) ≤ κB + κHB wBcBv Lσ BX =: MMH .
+
+The remainder of the proof follows the identical logic as Theorem 4.4, substituting MSH with MMH .
+
+Proof of Corollary 4.13. For the multi-layer Transformer defined in Eq. (4) , the input to the final readout layer, denoted as 
+
+Y[CLS] , is the output of a normalization layer Πnorm . By definition, Πnorm projects vectors onto the unit ball (or a ball of fixed radius). Assuming standard LayerNorm or projection, we have ∥Y[CLS] ∥2 ≤ 1.Consequently, the magnitude of the scalar output is bounded solely by the readout weights: 
+
+|f (X)| = |w⊤Y[CLS] | ≤ ∥ w∥2∥Y[CLS] ∥2 ≤ Bw.
+
+This implies the excess loss is bounded by: 
+
+0 ≤ g(X; f ) ≤ κ(B + Bw).
+
+Applying the same discretization argument as in Corollary 4.5 with this tighter bound yields the result. 
+
+## B. Proofs in Section 5 
+
+B.1. Theorems B.1 and B.2 about Single-Head and Multi-Head Norm-Based Bound Theorem B.1 (Single-Head Norm-Based Bound) . Suppose assumptions 4.3, 5.1 and Lemma 5.2 hold. Then for the single-layer single-head Transformer, the empirical risk minimizer satisfies: 
+
+ED[E( bfn; ℓ)] 
+
+≤ 4( κB + κB wBcBv Lσ BX )
+
+n
+
+
+
+1 + log γ3SH 
+
+δ2
+
+
+
++ 8 κδ + inf  
+
+> f∈F SH
+
+E(f ; ℓ),
+
+where the complexity term is given by: 
+
+γSH =C1/31 B2/3
+
+> x
+
+h
+
+(BwLσ )2/3 + ( BwLσ BcBv )2/3i
+
++ C1/31 B2/3
+
+> x
+
+h
+
+(BwLσ BcBv )2/3 + 1 
+
+i
+
+.
+
+Theorem B.2 (Multi-Head Norm-Based Bound) . Under the assumptions of Theorem B.1, adapted for H heads, the empirical risk minimizer for the single-layer multi-head Transformer satisfies: 
+
+ED[E( bfn; ℓ)] 
+
+≤ 4( κB + κHB wBcBv Lσ BX )
+
+n
+
+
+
+1 + log γ3MH 
+
+δ2
+
+
+
++ 8 κδ + inf  
+
+> f∈F MH
+
+E(f ; ℓ),
+
+where 
+
+γMH =C1/31 B2/3
+
+> x
+
+h
+
+(HB wLσ )2/3 + 2( HB wLσ BcBv )2/3i
+
++ C1/31 B2/3 
+
+> x
+
+H2/3.
+
+B.2. Proofs for Theorems B.1, B.2, and 5.3 
+
+We begin by introducing Lemma B.3, which provides a bound on the covering number for linear function classes with 
+
+ℓ1,1-norm constraints. This lemma serves as a building block for the subsequent proofs. 13 Sharper Generalization Bounds for Transformer 
+
+Lemma B.3. Let N > d , and define the parameter space W = {W ∈ Rk×d | ∥ W ∥1,1 ≤ Bw}. Consider the function class 
+
+F = {x 7 → W x | W ∈ W} restricted to inputs satisfying ∥x∥2 ≤ Bx. Then, the empirical covering number satisfies: 
+
+log N∞(ϵ, F, N, ∥·∥ 2) ≤ B2
+
+> x
+
+B2
+
+> w
+
+ϵ2 log(2 dk + 1) .
+
+Proof of Theorem B.1. To bound the covering number of the single-head Transformer, we construct a cover for the composite function by combining covers of its constituent linear operators. Let Wϵ be an ϵw-cover of the readout weights {w ∈ Rd | ∥ w∥2 ≤ Bw}. Similarly, let Wv,ϵ , Wc,ϵ , and WQK,ϵ be covers for the Value, Output, and Query-Key matrices, respectively, at resolutions ϵv , ϵ c, ϵ QK .First, we establish the relationship between the spectral norm and the ℓ1,1 norm. Using the Cauchy-Schwarz inequality, for any x ∈ Rd:
+
+∥W x ∥2 = X
+
+> j
+
+xj W:,j 
+
+> 2
+
+=
+
+vuuutX
+
+> j
+
+xj W:,j 
+
+
+
+> ⊤
+
+X
+
+> k
+
+xkW:,k 
+
+!
+
+≤
+
+sX
+
+> j,k
+
+|xj || xk|∥ W:,j ∥2∥W:,k ∥2 =
+
+X
+
+> j
+
+|xj |∥ W:,j ∥2
+
+
+
+≤ ∥ x∥2
+
+X
+
+> j
+
+∥W:,j ∥22
+
+
+
+> 1/2
+
+.
+
+Since ∥v∥2 ≤ ∥ v∥1, we have pP ∥W:,j ∥22 ≤ P∥W:,j ∥2 = ∥W ∥2,1 ≤ ∥ W ∥1,1. Thus, ∥W ∥2→2 ≤ ∥ W ∥1,1.We define the approximated output Y[CLS] ,ϵ using the parameters from the covers. The difference in the scalar output is bounded by: 
+
+|w⊤Y[CLS] − w⊤ 
+
+> ϵ
+
+Y[CLS] ,ϵ | ≤ ∥ w∥2∥Y[CLS] − Y[CLS] ,ϵ ∥2 + |(w − wϵ)⊤Y[CLS] ,ϵ |≤ Bw∥Y − Yϵ∥2,∞ + ϵw.
+
+Expanding ∥Y − Yϵ∥2,∞ using the Lipschitz property of the activation σ and the Softmax operator (and applying the triangle inequality recursively), we obtain: 
+
+|w⊤Y[CLS] − w⊤ 
+
+> ϵ
+
+Y[CLS] ,ϵ | ≤ ϵw + BwϵcLσ
+
++ BwBcLσ ϵv BX
+
++ 2 BwBcBv Lσ ϵQK BX .
+
+(Note: The constants in the inequality above correspond to the Lipschitz constants derived from the matrix products and activation functions). To minimize the total covering number, we minimize the sum of the log-covering numbers of individual components subject to the total error being bounded by ϵ. This yields the optimization problem: 
+
+min   
+
+> ϵc,ϵ QK ,ϵ v,ϵ w
+
+X
+
+> j∈{ c,QK,v,w }
+
+C1B2
+
+> j
+
+ϵ2
+
+> j
+
+, (14) subject to the linear constraint derived from the error decomposition: 
+
+ϵw + ϵc(BwLσ ) + ϵv (BwLσ Bc) + ϵQK (2 BwLσ BcBv ) ≤ ϵ. (15) Solving this using Lagrange multipliers yields the complexity term γSH presented in the theorem. The total covering number is the product of the individual covering numbers, so the log-covering number is the sum, resulting in the bound 
+
+log( γ3SH /ϵ 2).14 Sharper Generalization Bounds for Transformer 
+
+Proof of Theorem B.2. The proof follows the structure of the single-head case. For a multi-head Transformer with H heads, the output is a sum of H independent heads. By the triangle inequality, the total approximation error is bounded by the sum of errors of each head: 
+
+w⊤
+
+> H
+
+X
+
+> h=1
+
+Yh − w⊤
+
+> ϵH
+
+X
+
+> h=1
+
+Yh,ϵ ≤
+
+> H
+
+X
+
+> h=1
+
+w⊤Yh − w⊤ 
+
+> ϵ
+
+Yh,ϵ ≤ ϵ. (16) Since the parameter bounds are identical for each head, we distribute the error budget uniformly. The optimization problem becomes analogous to (14) but sums over all parameters in all H heads. The resulting covering number reflects the increased dimensionality, yielding the term γMH .
+
+Proof of Theorem 5.3. We construct a cover for the multi-layer network by taking the Cartesian product of covers for each layer. Let Wtotal be the product space: 
+
+Wtotal = W(1)  
+
+> c,ϵ
+
+⊗ W (1)  
+
+> v,ϵ
+
+⊗ W (1)  
+
+> QK,ϵ
+
+⊗ · · · ⊗ W (L) 
+
+> c,ϵ
+
+⊗ W (L) 
+
+> v,ϵ
+
+⊗ W (L) 
+
+> QK,ϵ
+
+⊗ W ϵ.
+
+We aim to show that for any valid set of parameters W 1: L+1 , there exists W 1: L+1  
+
+> ϵ
+
+∈ W total such that: 
+
+gscalar (X; W 1: L+1 , w ) − gscalar (X; W 1: L+1  
+
+> ϵ
+
+, w ϵ) ≤ ϵ. (17) Using the Cauchy-Schwarz inequality and a recursive expansion (peeling argument) similar to Trauger and Tewari (Trauger & Tewari, 2023), we decompose the error. The error at layer L propagates to the output through the readout vector w.The total error is bounded by the sum of the readout error ϵw and the accumulated errors from previous layers, weighted by the Lipschitz constants of subsequent layers. Specifically: 
+
+|gscalar (X) − gϵ
+
+> scalar
+
+(X)|≤ ϵw + BwLX
+
+> i=1
+
+αi
+
+
+
+ϵ(i) 
+
+> c
+
++ Lσ Bcϵ(i) 
+
+> v
+
++ 2 Lσ BcBv ϵ(i)
+
+> QK
+
+
+
+, (18) where αi = QLj=i+1 Lσ BcBv (1 + 4 BQK ) represents the product of Lipschitz constants from layer i + 1 to L.The covering number bound is obtained by solving the minimization problem for P log N (ϵj ) subject to the constraint defined by (18) . Using Lagrange multipliers, we derive the optimal ϵj for each parameter matrix, leading to the complexity terms γML and ηML defined in the theorem. 
+
+B.3. Theorems B.4 and B.5 about Single-Head and Multi-Head Rank-Based Bound Theorem B.4 (Single-Head Rank-Based Bound) . Suppose assumption 5.5 and Assumption 5.7 hold. The empirical risk minimizer satisfies: 
+
+ED[E( bfn; ℓ)] 
+
+≤ 4( κB + κB wBcBv Lσ BX )
+
+n (1 + log Nrank ,S)+ 8 κδ + inf  
+
+> f∈F SH
+
+E(f ; ℓ),
+
+where Nrank = 1 + P 
+
+> j∈{ c,QK,v,w }
+
+rj C1 log( rj B2
+
+> x
+
+/ϵ 2 
+
+> j
+
+), and the optimal scales ϵj are determined via Corollary 5.6 with weights βc = BwLσ , βQK = 2 BwLσ BcBv , βv = BwLσ Bc, and βw = Bc.
+
+Theorem B.5 (Multi-Head Rank-Based Bound) . Suppose assumption 5.5 and Assumption 5.7 hold. The empirical risk minimizer satisfies: 
+
+ED[E( bfn; ℓ)] 
+
+≤ 4( κB + κHB wBcBv Lσ BX )
+
+n (1 + log Nrank ,M )+ 8 κδ + inf  
+
+> f∈F MH
+
+E(f ; ℓ),
+
+where Nrank = 1 + P 
+
+> j∈{ c,QK,v,w }
+
+rj C1 log( rj B2
+
+> x
+
+/ϵ 2 
+
+> j
+
+), and the optimal scales ϵj are determined via Corollary 5.6 with weights βc = HB wLσ , βQK = 2 HB wLσ BcBv , βv = HB wLσ Bc, and βw = HB c.
+
+15 Sharper Generalization Bounds for Transformer 
+
+B.4. Proof of Theorem B.4, B.5 and 5.8 
+
+We first introduce Lemma B.6 from (Truong, 2024, Theorem 1), which establishes the covering number bound for low-rank linear operators. 
+
+Lemma B.6 (Rank-Based Covering Number) . Let r ∈ N+ and let V be an r-dimensional subspace of Rk. Define the parameter space W = {W ∈ Rd×k : col( W ) ⊆ V , ∥W ∥2 ≤ BW }, where col( W ) denotes the column space of W .Consider the function class H = {x 7 → W x : W ∈ W} restricted to inputs satisfying ∥x∥2 ≤ Bx. Then, the empirical covering number satisfies: 
+
+log N∞(ϵ, H, n, ∥·∥ 2) ≤ r
+
+2 log 
+
+ 4B2
+
+> x
+
+B2 
+
+> W
+
+rϵ2
+
+
+
+.
+
+Proof. The result follows directly from (Truong, 2024, Lemma 2 and Theorem 1) by noting that ∥W ∥2→2 ≤ ∥ W ∥2,∞ ≤
+
+BW .
+
+Proof of Theorem B.4, B.5 and 5.8. First, combining Lemma B.6 with lagrange multiplier method, we obtain the Corollary 5.6. For Theorem B.4, similar to the norm-based case (Theorem B.1), the error of the Transformer output is decomposed into the sum of errors from its constituent linear operators ( Wc, W QK , W v ) and the readout vector w.Let ϵc, ϵ QK , ϵ v , ϵ w be the covering resolutions for the respective parameter matrices. Applying Lemma B.6, the log-covering number for the total hypothesis space is bounded by the sum of the log-covering numbers of these components. To obtain the tightest bound, we minimize the total complexity subject to the Lipschitz error constraint derived in the norm-based proof. This yields the following optimization problem: 
+
+min   
+
+> ϵc,ϵ QK ,ϵ v,ϵ w
+
+X
+
+> j∈{ c,QK,v,w }
+
+rj Cj log 1
+
+ϵ2
+
+> j
+
+!
+
+,
+
+subject to: 
+
+βcϵc + βQK ϵQK + βv ϵv + βwϵw ≤ ϵ, (19) where the Lipschitz coefficients are defined as: 
+
+βc = BwLσ , βQK = 2 BwLσ BcBv ,βv = BwLσ Bc, βw = Bc,
+
+and Cj are constants derived from Lemma B.6. We solve this using the method of Lagrange multipliers. The Lagrangian is given by: 
+
+L(ϵ, λ ) = − X
+
+> j
+
+2rj Cj log ϵj + λ
+
+X
+
+> j
+
+βj ϵj − ϵ
+
+ .
+
+Taking the partial derivative with respect to ϵj and setting it to zero: 
+
+∂L
+
+∂ϵ j
+
+= − 2rj Cj
+
+ϵj
+
++ λβ j = 0 = ⇒ ϵj = 2rj Cj
+
+λβ j
+
+.
+
+Substituting this back into the constraint P βj ϵj = ϵ, we find λ = 2
+
+> ϵ
+
+P 
+
+> k
+
+rkCk. This yields the optimal allocation: 
+
+ϵj = ϵr j Cj
+
+βj
+
+P 
+
+> k∈{ c,QK,v,w }
+
+rkCk
+
+. (20) Substituting these optimal ϵj values back into the sum of log-covering numbers yields the complexity term Nrank stated in the theorem. Similarly, for Theorem 5.8, replacing constraint formula (19) in the optimization problem with formula (18) yields the final result. 16 Sharper Generalization Bounds for Transformer 
+
+## C. Proofs in Section 6 
+
+C.1. Proof of Theorem 6.4, 6.5 and 6.6 
+
+Proof. We begin by decomposing the excess risk. Let g(X; f ) := ℓ(Y, f (X)) − ℓ(Y, f ⋆(X)) . We introduce the truncated estimators fM and f ⋆M corresponding to the truncated input XM . The conditional excess risk can be decomposed as: 
+
+E[g(X; f ) | X] = E(g(X; f ) − g(X; fM )) + g(X; fM ) + ( g(X; f ∗ 
+
+> M
+
+) − g(X; f ∗)) | X
+
+≤ E[|g(X; f ) − g(X; fM )| | X]
+
+| {z }
+
+> (I)
+
++ E[g(X; fM ) | X]
+
+| {z }
+
+> (II)
+
++ E[|g(X; f ∗ 
+
+> M
+
+) − g(X; f ∗)| | X]
+
+| {z }
+
+> (III)
+
+. (21) Note that for the truncated term (II), the inputs are bounded by M . Consequently, the function output and the excess loss are bounded. Specifically, there exists a constant Mbound := κB M + κB ′ 
+
+> M
+
+such that 0 ≤ g(X; fM ) ≤ Mbound . Applying the Offset Rademacher complexity bound (Theorem 5.3) to the truncated class FM , we have: 
+
+ED[(II) ] ≤ 4Roff 
+
+> n
+
+
+
+GM , 1
+
+Mbound 
+
+
+
++ 3 inf  
+
+> fM∈F M
+
+E(fM ; ℓ). (22) Next, we bound the truncation error terms (I) and (III). Let Etrunc = {∥ X∥F > M } be the event that truncation occurs. On the complement Ec
+
+> trunc
+
+, f (X) = fM (X), so the difference is zero. Using the Lipschitz property of the loss ℓ and the local Lipschitz property of the network (where Lf, ∥X∥ = O(∥X∥)), we have: (I) = E [|g(X; f ) − g(X; fM )| · I(Etrunc ) | X]
+
+≤ κE Lf, ∥X∥∥f (X) − fM (X)∥2 · I(Etrunc ) | X
+
+≤ κE [C∥X∥ · ∥ X − XM ∥F · I(Etrunc ) | X] ,
+
+where we used ∥x[CLS] − xM, [CLS] ∥ ≤ ∥ X − XM ∥F . Substituting XM = M X 
+
+> ∥X∥F
+
+when ∥X∥F > M :(I) ≤ κC E [∥X∥(∥X∥ − M ) · I(∥X∥ > M )] ≤ κC E ∥X∥2 · I(∥X∥ > M ) .
+
+We evaluate this tail expectation using the layer-cake representation and the sub-Gaussian assumption P (∥X∥ ≥ t) ≤
+
+(T + d) exp( −t2/2ν2):
+
+E[∥X∥2 · I(∥X∥ > M )] = M 2P (∥X∥ > M ) + 
+
+Z ∞ 
+
+> M2
+
+P (∥X∥2 > t )dt 
+
+≤ M 2(T + d)e− M 22ν2 +
+
+Z ∞
+
+> M
+
+(T + d)e− u22ν2 2u du 
+
+= ( T + d)
+
+
+
+M 2e− M 22ν2 + 2 ν2e− M 22ν2
+
+
+
+= ( T + d)( M 2 + 2 ν2) exp 
+
+
+
+− M 2
+
+2ν2
+
+
+
+.
+
+(Note: The original text simplified this to terms involving ν(X) and exponentials. We adopt the bound implied by the sub-Gaussian tail). Specifically, following the source approximation: 
+
+ED[(I) ] ≤ O 
+
+
+
+κ(T + d)ν exp 
+
+
+
+− M 2
+
+2ν2
+
+ 
+
+. (23) Term (III) is bounded symmetrically. Combining these results into (21): 
+
+ED[E( bfn; ℓ)] ≤ 4Roff 
+
+> n
+
+
+
+G, 12Mbound 
+
+
+
++ 3 inf  
+
+> fM∈F M
+
+E(fM ; ℓ)+ Ctrunc κ(T + d)ν exp 
+
+
+
+− M 2
+
+2ν2
+
+
+
+, (24) where Ctrunc aggregates the constants from the tail integration. By combining Theorems B.1, B.2, and 5.3, respectively, we obtain Theorems 6.4, 6.5 and 6.6 . 17 Sharper Generalization Bounds for Transformer 
+
+C.2. Proof of Theorem 6.9, 6.10 and 6.11 
+
+Proof. We begin by establishing the Lipschitz continuity of the robust loss function. Let the robust loss be defined as 
+
+ℓψ (y, by) = 1 
+
+> α
+
+ψ(αℓ (y, by)) . We assume the base loss ℓ(y, ·) is κ-Lipschitz and the truncation function ψ has a bounded derivative |ψ′(·)| ≤ Bψ . Applying the Mean Value Theorem, for any f1, f 2:
+
+|ℓψ (y, f 1(x)) − ℓψ (y, f 2(x)) | = 1
+
+α |ψ(αℓ (y, f 1(x))) − ψ(αℓ (y, f 2(x))) |
+
+= 1
+
+α |ψ′(ξ)| · α |ℓ(y, f 1(x)) − ℓ(y, f 2(x)) |≤ Bψ κ|f1(x) − f2(x)|.
+
+Thus, the composite loss ℓψ is (κB ψ )-Lipschitz. We decompose the excess risk similarly to the sub-Gaussian case (Eq. (21) ), splitting it into the truncated complexity term and the tail bias terms. For the truncated class FM , the effective Lipschitz constant is κB ψ , and the output is bounded. The complexity term is therefore bounded by: 
+
+4Roff 
+
+> n
+
+
+
+G, 14Bψ BM κ
+
+
+
++ 3 inf   
+
+> fM∈F
+
+E(fM ; ℓψ ). (25) Next, we evaluate the truncation error (bias) caused by the heavy-tailed inputs. Recall the condition P(|Xij | > t ) ≤ Ct −β .Using the norm inequality ∥X∥2 ≤ √T d max i,j |Xij |, we derive the tail probability for the spectral norm via a union bound: 
+
+P(∥X∥2 > t ) ≤ P
+
+√T d max  
+
+> i,j
+
+|Xij | > t 
+
+
+
+≤ X
+
+> i,j
+
+P
+
+
+
+|Xij | > t
+
+√T d 
+
+
+
+≤ T d · C
+
+ t
+
+√T d 
+
+−β
+
+= C(T d )1+ β/ 2t−β =: C′t−β .
+
+We now estimate the tail expectations required for the truncation error E[Lf, ∥X∥∥X − XM ∥ · I(∥X∥ > M )] . As shown in C.1, this is bounded by terms involving E[∥X∥kI(∥X∥ > M )] for k = 1 , 2.Using the integral identity E[ZI(Z > M )] = M P(Z > M ) + R ∞ 
+
+> M
+
+P(Z > t )dt :
+
+E[∥X∥ · I(∥X∥ > M )] = M P(∥X∥ > M ) + 
+
+Z ∞
+
+> M
+
+P(∥X∥ > t )dt 
+
+≤ M C ′M −β +
+
+Z ∞
+
+> M
+
+C′t−β dt 
+
+= C′M 1−β + C′
+
+ t1−β
+
+1 − β
+
+∞
+
+> M
+
+= C′M 1−β
+
+
+
+1 + 1
+
+β − 1
+
+
+
+= C′ββ − 1 M 1−β .
+
+Similarly for the second moment (assuming β > 2): 
+
+E[∥X∥2 · I(∥X∥ > M )] = M 2P(∥X∥ > M ) + 
+
+Z ∞
+
+> M
+
+P(∥X∥2 > t 2)2 t dt 
+
+≤ C′M 2−β +
+
+Z ∞
+
+> M
+
+C′t−β 2t dt 
+
+= C′M 2−β + 2 C′
+
+Z ∞
+
+> M
+
+t1−β dt 
+
+= C′M 2−β + 2 C′ M 2−β
+
+β − 2 = C′M 2−β
+
+ ββ − 2
+
+
+
+.
+
+18 Sharper Generalization Bounds for Transformer 
+
+(Note: The original text simplified the constants; we retain the asymptotic dependency on M ). Substituting these tail bounds into the Lipschitz error decomposition: Bias ≤ κB ψ
+
+ C′ββ − 2 M 2−β
+
+
+
+.
+
+Combining the complexity bound and the bias term yields the final result: 
+
+ED[E( bf ψn ; ℓψ )] ≤ 4Roff 
+
+> n
+
+
+
+G, 14Bψ BM κ
+
+
+
++ C1M 1−β/ 2 + C2M 2−β
+
++ 3 inf   
+
+> fM∈F
+
+E(fM ; ℓψ ), (26) where C1, C 2 absorb the constants from the tail integration and β. Combining this with the rank-based complexity from Theorems B.4, B.5 and 5.8 completes the proof of Theorems 6.9, 6.10 and 6.11, respectively. 19

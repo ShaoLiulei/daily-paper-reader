@@ -1,0 +1,2212 @@
+Title: DAK-UCB: Diversity-Aware Prompt Routing for LLMs and Generative Models
+
+URL Source: https://arxiv.org/pdf/2603.23140v1
+
+Published Time: Wed, 25 Mar 2026 01:25:40 GMT
+
+Number of Pages: 33
+
+Markdown Content:
+Published as a conference paper at ICLR 2026 
+
+# DAK-UCB: DIVERSITY -A WARE PROMPT ROUTING FOR LLM S AND GENERATIVE MODELS 
+
+Donya Jafari 
+
+Sharif University of Technology 
+
+donya.jafari111@sharif.edu 
+
+Farzan Farnia 
+
+The Chinese University of Hong Kong 
+
+farnia@cse.cuhk.edu.hk 
+
+## ABSTRACT 
+
+The expansion of generative AI and LLM services underscores the growing need for adaptive mechanisms to select an appropriate available model to respond to a user’s prompts. Recent works have proposed offline and online learning formula-tions to identify the optimal generative AI model for an input prompt, based solely on maximizing prompt-based fidelity evaluation scores, e.g., CLIP-Score in text-to-image generation. However, such fidelity-based selection methods overlook the diversity of generated outputs, and hence, they can fail to address potential diversity shortcomings in the generated responses. In this paper, we introduce the Diversity-Aware Kernelized Upper Confidence Bound (DAK-UCB) method as a contextual bandit algorithm for the online selection of generative models with diversity considerations. The proposed DAK-UCB method incorporates both fi-delity and diversity-related metrics into the selection process. We design this framework based on prompt-aware diversity score functions that decompose to a two-sample-based expectation over prompt-output pairs in the previous genera-tion rounds. Specifically, we illustrate the application of our framework using joint kernel distance and kernel entropy measures. Our experimental results demon-strate the effectiveness of DAK-UCB in promoting diversity-aware model selec-tion while maintaining fidelity in the generations for a sequence of prompts. The code is available at https://github.com/Donya-Jafari/DAK-UCB .
+
+## 1 INTRODUCTION 
+
+The past few years have witnessed a rapid surge in generative AI services capable of addressing a wide array of tasks, ranging from large language models (LLMs) answering arbitrary questions to text-to-image and video models generating visual content guided by user prompts. Given the growing number of available generative models, a key challenge is how to effectively select suitable generative models for a sequence of user-provided prompts. A conventional approach is to com-pute an overall evaluation score for each candidate generative AI model and subsequently select the model with the highest aggregate score to address all future prompts. However, this approach implicitly assumes that a single model consistently outperforms the other models across all possible prompts. This assumption has been demonstrated to be untrue in realistic scenarios where different models may excel on different topics or prompt categories (Hu et al., 2025a; Frick et al., 2025). To address this limitation, recent literature has introduced prompt-aware model selection mecha-nisms. These methods include offline learning algorithms (Qin et al., 2024; Chen et al., 2024; Frick et al., 2025), which train a selector model using a batch of pre-collected responses of models to prompts as training data. Also, Hu et al. (2025a) propose the online learning PAK-UCB method, formulating the selection task as a contextual multi-armed bandit problem to utilize the user’s ob-served model performances in the previous rounds. Despite the development of several model selection approaches, the existing methods focus only on the fidelity scores in data generation, while overlooking the diversity of generated samples. For example, in text-to-image generation tasks, existing frameworks evaluate models based on the align-ment of the input prompt and generated image, without considering diversity in the image outputs. Such a diversity-unaware selection can lead to output samples that, although individually aligned well with prompts, collectively lack diversity. In addition, overlooking the diversity of output data 1
+
+> arXiv:2603.23140v1 [cs.LG] 24 Mar 2026
+
+Published as a conference paper at ICLR 2026 Online Selection Strategy 
+
+21.8% 78.2% 51.2% 48.8% An individual jogging in the park. An individual dancing in the rain. An individual riding a bicycle. An individual painting a portrait. An individual jogging in the park. An individual dancing in the rain. An individual riding a bicycle. An individual painting a portrait. 
+
+> Text to Image Generative Model 2
+> Unconditioned generation (Higher Diversity)
+> Text to Image Generative Model 1
+> Conditioned on “Young Male” (Lower Diversity)
+
+Candidate Generative Models 
+
+Diversity-Aware Kernelized UCB (Ours)  
+
+> Generative Model 1 Generative Model 2
+
+(Diversity-Unaware) Kernelized UCB 
+
+> Generative Model 2 Generative Model 1
+> selection ratio selection ratio
+
+Figure 1: Comparison of baseline Kernelized-UCB model selection (CLIP-Score fidelity metric) (Hu et al., 2025a) vs. our proposed diversity-aware DAK-UCB over T = 500 rounds. While the baseline Kernelized-UCB does not favor model G2 with higher diversity over model G1, DAK-UCB selected the more diverse G2 more frequently. can potentially lead to a restricted representation of sensitive attributes, such as gender or ethnicity, in generated datasets. Figure 1 displays an example, where the diversity-unaware baseline kernel-ized UCB selection algorithm in (Hu et al., 2025a) chooses the less and more diverse generative models (conditioned to ”young male” and none) with similar frequencies, ignoring the diversity factor in the selection process. This limitation arises because PAK-UCB, and standard contextual bandit methods more broadly, compute rewards using the mean of sample-level scores. Diversity, however, is a group-level property determined by the relative positioning of multiple samples, which cannot be expressed through a simple average of individual rewards. These limitations highlight the importance of diversity-aware selection methods, which explicitly incorporate considerations of output diversity into the model selection process. In this work, we specifically focus on the online selection task, proposing an algorithm designed to leverage previ-ously generated data to select generative models that achieve an optimal balance between fidelity and diversity. Our proposed method, which we call Diversity-Aware Kernelized Upper Confidence Bound (DAK-UCB) , extends the kernelized UCB framework (Valko et al., 2013; Hu et al., 2025a) by integrating a diversity-oriented term, in the form of the expectation of a two-sample (prompt,output) random variable, into the contextual bandit objective. A key challenge in designing DAK-UCB is to determine which diversity scores are compatible with the contextual bandit selection framework. Specifically, we identify a family of joint kernel scores—including prompt-conditional extensions of kernel distance (Bi´ nkowski et al., 2018), RKE (Jalali et al., 2023), and MMD (Gretton et al., 2012)—that can be expressed as expectations of two-sample quadratic forms over prompts and outputs. This structure is central to DAK-UCB: it enables 2Published as a conference paper at ICLR 2026 fast-converging estimation from streaming data via kernel ridge regression, yielding principled con-fidence bounds in the UCB process. Moreover, by combining joint kernel scores with task-specific fidelity metrics (e.g., CLIPScore in text-to-image generation), DAK-UCB can be extended to pro-vide a unified approach to prompt-adaptive selection that balances the fidelity and diversity factors. Figure 1 shows an application of DAK-UCB for a diversity-ware generative model selection in response to T = 500 prompts of MS-COCO dataset (Lin et al., 2014) on generating human-related scenes. The candidate model G1 represents the Stable Diffusion XL (SD-XL) (Stability-AI, 2023) model conditioned to ”young male individual”, whereas candidate model G2 outputs the SD-XL outputs without any conditioning. While the baseline kernelized UCB fidelity-based selection did not favor the more diverse model G2, generating samples from both models with equal probabilities, the DAK-UCB model selection with the joint RKE diversity score chose model G1 more often over the 500 online selection iterations. Beyond deterministic prompt-to-model assignment at every iteration of DAK-UCB, DAK-UCB can be adapted to assign the model to an input prompt based on a non-degenerate mixture of the models. As noted by Rezaei et al. (2025) in the unconditional setting, the optimal diversity-aware selection strategy can itself be a non-degenerate mixture of models. Extending this insight to the conditional, prompt-aware setting, a mixture-based selector effectively rolls a biased m-sided die to determine which of the m models is queried for a given prompt. We introduce the Mixture-DAK-UCB method to realize this idea: an online algorithm that optimizes prompt-dependent mixture probabilities. Mixture-DAK-UCB generalizes the prompt-free Mixture-UCB framework of Rezaei et al. (2025) to the conditional case, enabling diversity-enhancing mixtures tailored to incoming prompts and yielding further improvements in diversity metrics. We empirically evaluate different variants of the proposed DAK-UCB and Mixture-DAK-UCB al-gorithms on text-to-image and language model generation tasks. Our results demonstrate improve-ments in diversity and overall correctness metrics relative to existing contextual bandit algorithms, such as Kernelized UCB, PAK-UCB, and randomized selection strategies. We also validated the defined Joint-RKE and Joint-KD measures for capturing diversity and distributional matching char-acteristics of prompt-guided generative models. Here we summarize the work’s main contributions: • Studying the role of diversity in prompt-aware selection of generative AI models, • Introducing the Diversity-Aware Kernelized UCB (DAK-UCB) algorithm, a contextual bandit approach explicitly accounting for the diversity factor in model selection, • Extending deterministic DAK-UCB selection to prompt-conditioned mixture selection, • Demonstrating numerical effectiveness of DAK-UCB on several text-to-image generation tasks. 
+
+## 2 RELATED WORKS 
+
+Contextual Bandits. Contextual bandits (CB) extend the multi-armed bandit (MAB) framework by incorporating the context variable to guide the arm selection process (Langford & Zhang, 2007; Foster et al., 2018). A widely-studied CB is the linear CB, which assumes that the expected reward of each arm is a linear function of context (Li et al., 2010; Chu et al., 2011). Kernelized CBs gener-alize to non-linear reward models by using kernel methods to capture more complex dependencies between contexts and rewards (Valko et al., 2013). Due to the computational cost of kernel methods, recent works have explored approximations using relevant assumptions on the kernel (Calandriello et al., 2019; 2020; Zenati et al., 2022). To address exploration in linear CBs more effectively, (Abbasi-Yadkori et al., 2011) propose tighter confidence sets using martingale inequalities, leading to stronger theoretical guarantees and im-proved empirical performance. Moving beyond linearity, Hu et al. (2025b) introduce PromptWise, a multi-iteration-per-round cost-aware contextual bandit for prompt routing in LLMs and generative models. Also, Kveton et al. (2020) propose two randomized exploration algorithms for generalized linear bandits,which leverage Laplace approximations and perturbations of past data to efficiently explore under non-linear models. However, the above CB methodologies do not target diversity awareness in the online learning setting. 
+
+Diversity/Novelty Evaluation Scores and Guidance in Generative Models. Several methods have been proposed for evaluating and improving the diversity of generative and diffusion models. On the 3Published as a conference paper at ICLR 2026 diversity evaluation, the metrics Recall (Sajjadi et al., 2018; Kynk¨ a¨ anniemi et al., 2019), Coverage (Naeem et al., 2020), Vendi (Dan Friedman & Dieng, 2023; Ospanov et al., 2024; Ospanov & Farnia, 2025), and RKE (Jalali et al., 2023) have been proposed for unconditional (prompt-free) sample generation, and Conditional Vendi/RKE (Jalali et al., 2026; 2025a) and Scendi (Ospanov et al., 2025) have been suggested for prompt-aware diversity measurement. We note that (Zhang et al., 2024; 2025) propose entropy-based measures for novelty of generative models and their comparison, and (Jalali et al., 2025b; Gong et al., 2025) study kernel-based comparison of embeddings. For guiding sample generation, (Miao et al., 2024) employed reinforcement learning with a diver-sity reward function in the generation process. (Sehwag et al., 2022) proposed sampling from low-density regions of the data manifold to encourage diverse outputs. (Corso et al., 2024) introduced a particle-based potential function that explicitly maximizes pairwise dissimilarity. Sadat et al. (2024) explored the addition of Gaussian noise to conditioning inputs during inference to promote variabil-ity. Lu et al. (2024) developed ProCreate, a distance-based guidance technique. Askari Hemmat et al. (2024); Jalali et al. (2025a) proposed Vendi/Conditional-RKE Score Guidance, which incor-porates diversity score guidance in diffusion models. Similarly, Sani et al. (2026) propose MMD guidance to align the diffusion model to a target distribution by minimizing the MMD distance. We highlight that these works aim to improve the diversity and alignment over the sample generation process, unlike our work on the diversity-aware online selection of pre-trained models. 
+
+Multi-Armed Bandit for diversity-based selection. In a related work, Rezaei et al. (2025) propose Mixture-UCB, a bandit algorithm for selecting mixtures of generative models to maximize diversity, while their proposed approach is not prompt-aware and therefore not applicable to prompt-guided sample generation. (Chen et al., 2025), (Yang et al., 2024), and (Hou et al., 2024) improve the best arm identification by multi-objective optimization, regret minimization, and sample efficiency. Sani et al. (2012) introduce a framework for risk-averse decision-making in bandit problems by inte-grating variance-sensitive utility functions into exploration strategies. Weinberger & Yemini (2023) study bandits with self-information-based rewards, proposing algorithms that leverage information-theoretic concepts to balance exploration and exploitation. Zhu & Tan (2020) develop Thompson Sampling algorithms for mean-variance bandits, optimizing both expected returns and reward vari-ability. We note that our work focuses on diversity in a contextual bandit setting, where the prompt plays the role of the context, which is not the case in the context-free MAB setting of these works. 
+
+## 3 PRELIMINARIES 
+
+3.1 NOTATIONS AND DEFINITIONS 
+
+Throughout the paper, we define a conditional generative model G as a conditional distribution 
+
+PG (x|t) where x ∈ X is the generated data variable conditioned to the randomly-observed prompt 
+
+t ∈ T . Following this definition, every sample generation of model G is conditioned on a user’s provided prompt T = t and then drawing a sample from the conditioned distribution PG (x|T = t).3.2 KERNEL -BASED SCORES FOR GENERATIVE MODELS 
+
+In a sample space X , we call k : X × X → R a kernel function if there exists a feature map 
+
+ϕ : X → H k such that for every x, x ′ ∈ X we have k(x, x ′) = ⟨ϕ(x), ϕ (x′)⟩ where ⟨· , ·⟩ denotes the inner product in the Hilbert space Hk of kernel function k. Examples of kernel functions include the degree-r polynomial kernel kpoly (r)(x, y ) = (1 + γ⟨x, y ⟩)r with parameter γ > 0 and the RBF (Gaussian) kernel with parameter σ defined as: 
+
+kgaussian (σ)(x, y ) = exp 
+
+
+
+− ∥x − y∥2
+
+2σ2
+
+
+
+Given a kernel function k, we can define the n × n kernel matrix K = [ k(xi, x j )] 1≤i,j ≤n for n
+
+samples x1, . . . , x n ∈ X . Note that every valid kernel function will result in a positive semi-definite (PSD) kernel matrix for every set of samples. In our analysis, we use the following kernel-based scores and their variants in the online selection process: • Maximum Mean Discrepancy (MMD) and Kernel Distance (KD) : For two probability dis-tributions P, Q on sample space X , (Bi´ nkowski et al., 2018) consider the kernel distance (KD) between P and Q as the square of the maximum mean discrepancy (MMD) Gretton et al. (2012), 4Published as a conference paper at ICLR 2026 i.e., 
+
+KD( P, Q ) := Ex,x ′ iid  
+
+> ∼P
+
+[k(x, x ′)] + Ey,y ′ iid 
+
+> ∼Q
+
+[k(y, y ′)] − 2 · Ex,y ind  
+
+> ∼P×Q
+
+[k(x, y )] (1) In the above definition, the samples x, x ′ ∼ PX , y, y ′ ∼ QX are drawn independently according to the specified distributions. • R´ enyi Kernel Entropy (RKE) : For probability model P on space X , the R´ enyi kernel entropy (RKE) (Jalali et al., 2023) is defined as the order-2 R´ enyi entropy of the normalized population kernel matrix, which reduces to 
+
+RKE( PX ) = 1 Ex,x ′ iid  
+
+> ∼P
+
+[k(x, x ′)2] (2) Considering the empirical samples x1, . . . , x n ∼ P , the empirical RKE score reduces to 
+
+RKE( x1, . . . , x n) = ∥ 1 
+
+> n
+
+K∥−2 
+
+> F
+
+.
+
+## 4 DIVERSITY -A WARE KERNELIZED UPPER -C ONFIDENCE BOUND 
+
+To develop a diversity-aware online selection of conditional generative models, we first propose two-sample-based extensions of the KD and RKE scores to the conditional sample generation case. Subsequently, we extend the standard Kernelized-UCB online learning framework by including an upper confidence bound of the joint proposed score functions. 4.1 EXTENSION OF KD AND RKE S CORES TO CONDITIONAL GENERATIVE MODELS 
+
+We propose the following extensions of the KD in equation 1 and RKE in equation 2 to the con-ditional sample generation task. Both the extensions in the following apply the original scores to the joint (prompt t,data x) variable, by using the product kernel function kjoint 
+
+ [t, x ], [t′, x ′]) = 
+
+ktext 
+
+ t, t ′) · kdata 
+
+ x, x ′). As demonstrated by Bamberger et al. (2022); Wu et al. (2025), the product kernel function corresponds to the Hilbert space of the tensor product of the (embedded) prompt and data vectors, effectively capturing the clusters in the dataset of the joint prompt,data vectors. 
+
+Joint Kernel Distance (JKD) distribution matching score. We propose the following extension of the marginal (prompt-unaware) kernel distance in equation 1 to the prompt-aware kernel distance, which we call Joint Kernel Distance (JKD) , for two conditional distributions PX|T and QX|T :
+
+JKD  PX|T , Q X|T
+
+ := KD  PT · PX|T , P T · QX|T
+
+ (3) 
+
+= Et,t ′∼PT ,x,x ′,y,y ′ind      
+
+> ∼PX|T=t·PX|T=t′·QX|T=t·QX|T=t′
+
+h
+
+kT (t, t ′)
+
+×
+
+
+
+kX (x, x ′) + kX (y, y ′) − kX (x, y ′) − kX (x′, y )
+
+i 
+
+where kT : T × T → R and kX : X × X → R denote the kernel functions for the input prompt t
+
+and output x, and PT is a reference distribution on the input variable T (i.e., prompt) over space T .Importantly, the empirical estimation of the expectation in equation 3 can be performed by accessing only one sample generated by PX|T for each input prompt t.
+
+Joint RKE (JRKE) diversity score. Similarly, we propose the following definition for the joint (prompt-data) RKE score, which we call Joint-RKE (JRKE) score. JRKE is defined to be the RKE score of the joint sample (T, X ) ∼ PT · PX|T given a reference prompt distribution PT :
+
+JRKE  PX|T
+
+ := RKE  PT · PX|T
+
+ (4) 
+
+=1 
+
+.
+
+Et,t ′ iid    
+
+> ∼PT,x,x ′ind
+> ∼PX|T=t·PX|T=t′
+
+kT (t, t ′)2kX (x, x ′)2
+
+This score varies monotonically with its inverse, i.e, Inverse-JRKE score denoted by I-JRKE :
+
+I-JRKE( PX|T ) := Et,t ′ iid    
+
+> ∼PT,x,x ′ind.
+> ∼PX|T=t×PX|T=t′
+
+kT (t, t ′)2kX (x, x ′)2 (5) Similar to the JKD score, the expectation in the diversity-based Inverse-JRKE score can be estimated using a single output X ∼ PX|T =t for every prompt T = t.5Published as a conference paper at ICLR 2026 4.2 DIVERSITY -A WARE ONLINE LEARNING VIA DAK-UCB To propose a diversity-aware online selection framework, we leverage our proposed conditional diversity scores in Equations 3 and 5, within the contextual bandit framework. The prompt t serves as the context, and we seek a policy Π : T → [G] that balances fidelity and diversity objectives. A key feature of the introduced diversity scores is that they both decompose into expectations of prompt-level functions, enabling online estimation with a single sample per prompt. The following proposition highlights this property of the JKD and Inverse-JRKE scores. 
+
+Proposition 1. For conditional distributions PX|T , Q X|T and reference distribution PT :(a) The Inverse-JRKE admits the decomposition: 
+
+I-JRKE( PX|T ) = Et∼PT ,x ∼PX|T =t [ϕI-JRKE (t, x )] , (6) 
+
+where ϕI-JRKE (t, x ) = Et′∼PT ,x ′∼PX|T =t′ [kT (t, t ′)2kX (x, x ′)2].(b) The JKD for comparing model g against reference Q admits: 
+
+JKD( Pg , Q ) = Et∼PT ,x ∼Pg (·| t)[ϕ(g)
+
+> JKD
+
+(t, x )] , (7) 
+
+where ϕ(g)
+
+> JKD
+
+(t, x ) = Et′∼PT [kT (t, t ′)( Ex′∼Pg (·| t′)[kX (x, x ′)] − Ey′∼Q(·| t′)[kX (x, y ′)])] .
+
+Proposition 1 highlights a crucial structural property of the proposed diversity scores: both I-JRKE and JKD admit a two-sample expectation form , in which the overall metric decomposes into the expectation of a prompt-level function of a single generated sample. This is important in the online setting, because it ensures that each round of interaction with a model provides an unbiased stochas-tic label for the corresponding diversity function, even though the original metric is defined in terms of expectations over pairs of prompts and outputs. Therefore, the two-sample form makes these scores applicable to the kernelized UCB algorithm, as we can run kernel ridge regression (KRR) on the stochastic labels and obtain confidence bounds that are comparable to those for the fidelity score. Based on this decomposition, we define for each model g and prompt t prompt-level target functions: 
+
+sg (t) := Ex∼Pg (·| t)
+
+ϕfidelity (t, x ), Dg (t) := Ex∼Pg (·| t)
+
+ϕg (t, x ; Ht). (8) Here ϕfidelity (t, x ) denotes a fidelity score of a prompt–output pair, instantiated in our experiments as the CLIP-Score between text prompt t and generated image x. The function ϕg (t, x ; Ht) is a per-sample diversity score, whose expectation recovers the desired diversity metric in Proposition 1. The history Ht is only used to instantiate reference expectations over past outputs. At each round t, DAK-UCB treats the prompt pt as context in the per-arm kernelized contextual bandit process (Hu et al., 2025a), and compares arms via a per-arm UCB on the combined objective 
+
+Jg (t) = sg (t) + λD g (t), where sg (t) (e.g. CLIP-Score in our experiments) is the fidelity score and 
+
+Dg (t) is defined with ϕg instantiated as either the (negative) I-JRKE score or the (negative) JKD score as in Proposition 1. After observing a single sample xi ∼ Pgi (· | ti), we form unbiased labels 
+
+y(s) 
+
+> i
+
+= ϕfid (ti, x i) and y(D) 
+
+> i
+
+= ψgi (ti, x i; Hi), update per-arm KRR models for sg and Dg , and select the next arm using an optimistic estimate 
+
+bJUCB  
+
+> g
+
+(ti) =  bsg (ti) + β(s) bσ(s) 
+
+> g
+
+(ti) + λ  bDg (ti) − β(D) bσ(D) 
+
+> g
+
+(ti),
+
+i.e., an upper bound for sg and a lower bound for Dg (since Dg is a signed diversity reward , equal to the negative of the underlying penalty). Confidence radii β(s), β (D) follow the standard KRR-UCB form as detailed in Algorithm 1. In Appendix B, we establish a regret bound for a phased variant of our algorithm, Sup-DAK-UCB. This result shows that the known regret guarantees of kernelized UCB methods (Chu et al., 2011; Valko et al., 2013; Hu et al., 2025a) can be systematically extended to our diversity-aware objec-tive. A key technical component of this analysis is that the JRKE and JKD metrics admit the two-sample expectation structure, thereby enabling integration with kernelized-UCB confidence bounds. This structural property is specific to JRKE and JKD and allows us to obtain regret guarantees for diversity-aware model selection. The following provides an informal statement of the resulting re-gret bound, and the proof is deferred to Appendix B. 6Published as a conference paper at ICLR 2026 
+
+Algorithm 1: Diversity-Aware Kernelized UCB (DAK-UCB) 
+
+Input: G generative models, horizon T , prompt distribution P, trade-off λ, diversity score 
+
+ψ ∈ {− I-JRKE , −JKD }
+
+Output: T generated outputs  
+
+> 1
+
+Initialize per-arm KRR estimators for fidelity sg and diversity Dg 
+
+> 2
+
+Sample prompt ti ∼ P  
+
+> 3
+
+for g = 1 to G do  
+
+> 4
+
+Predict fidelity and diversity with KRR: (bsg (ti), bσ(s) 
+
+> g
+
+(ti)) , ( bDg (ti), bσ(D) 
+
+> g
+
+(ti)) ; 
+
+> 5
+
+Form UCB score: bJUCB  
+
+> g
+
+(ti) ← (bsg (ti) + β(s) bσ(s) 
+
+> g
+
+(ti)) + λ( bDg (ti) + β(D) bσ(D) 
+
+> g
+
+(ti))  
+
+> 6
+
+Select model gi ← arg max g bJUCB  
+
+> g
+
+(ti) 
+
+> 7
+
+Generate output xi ∼ Pgi (· | ti) 
+
+> 8
+
+Form labels y(s) 
+
+> i
+
+= ϕfid (ti, x i), y(D) 
+
+> i
+
+= ψgi (ti, x i; Hi) 
+
+> 9
+
+Update KRR models of gi with (ti, y (s) 
+
+> i
+
+) and (ti, y (D) 
+
+> i
+
+) 
+
+> 10
+
+Update history Hi+1 ← H i ∪ { (ti, x i, g i)}
+
+Theorem 1 (Informal regret bound for DAK-UCB) . Under Assumptions 1-3 in Appendix B (nor-malized kernels, sub-Gaussian noise, and RKHS regularity for sg and Dg ), the phased variant SUP -DAK-UCB algorithm satisfies the following regret bound where the information-gain Γ(s) 
+
+> T
+
+and effective-dimension Γ(D) 
+
+> T
+
+terms are defined in Appendix B: 
+
+Regret( T ) = eO
+
+q 
+
+G T Γ(s) 
+
+> T
+
++ λ
+
+q
+
+G T Γ(D)
+
+> T
+
+
+
+4.3 PROMPT -A WARE MIXTURE SELECTION VIA QUADRATIC OPTIMIZATION 
+
+While DAK-UCB selects a single model per prompt, maximizing diversity can require prompt-dependent mixtures of the available models, where we denote the model mixture probability values of prompt t with notation α(t) ∈ ∆G. Therefore, for G conditional generation mod-els in {Pg (·| t)}Gg=1 , we consider a prompt-aware mixture α(t) ∈ ∆G, yielding Pα(·| t) =
+
+PGg=1 αg (t)Pg (·| t). We focus here on the I-JRKE diversity penalty; the analogous construction for JKD is deferred to Proposition 2 in Appendix A. Using the product kernel, the I-JRKE admits the quadratic form 
+
+I-JRKE( Pα) = Et∼PT
+
+α(t)⊤M (t)α(t),
+
+where M (t) ∈ [0 , 1] G×G collects cross-kernel expectations across models. To ensure stability across prompts, we restrict mixtures to a kernel-Lipschitz competitor set 
+
+Aϵ =
+
+n
+
+α : T → ∆G : ∀t, t ′, kT (t, t ′) · α(t) − α(t′) 1 ≤ ϵ
+
+o
+
+,
+
+which guarantees that nearby prompts yield similar mixtures and incurs only an O(ϵ) approximation error. In the Appendix A, we discuss that, under the above mixture feasible set, an approximate solution follows solving the following problem where at each prompt t, the decision rule reduces to the concave quadratic maximization 
+
+α∗ 
+
+> t
+
+= argmax 
+
+> α∈∆G
+
+α, bsUCB (t) − λ α⊤ cM UCB (t)α
+
+where bsUCB (t) are fidelity UCB estimates and cM UCB (t) is the projection of the kernelized-UCB estimation of M (t) onto the PSD matrices by zeroing its negative eigenvalues. We call the resulting mixture-model selection method Mixture-DAK-UCB , as detailed in Algorithm 2 at Appendix A. 
+
+## 5 NUMERICAL RESULTS 
+
+We numerically evaluated the proposed DAK-UCB and its mixture variant, Mixture-DAK-UCB, in several experiments. In our numerical experiments on text and image data, we used the CLIP 7Published as a conference paper at ICLR 2026 500 1000 1500     
+
+> Number of Iteration
+> 100
+> 120
+> 140
+> 160
+> 180
+> Joint-RKE Score
+> DAK-UCB
+> Random
+> Mixture-DAK-UCB
+> One Arm Oracle
+> PAK-UCB
+> 500 1000 1500
+> Number of Iteration
+> 3.5
+> 4.0
+> 4.5
+> 5.0
+> 5.5
+> 6.0
+> 6.5
+> KD Score (×10  3)
+> DAK-UCB
+> Random
+> Mixture-DAK-UCB
+> One Arm Oracle
+> PAK-UCB
+> 500 1000 1500
+> Number of Iteration
+> 31.0
+> 31.2
+> 31.4
+> 31.6
+> 31.8
+> 32.0
+> 32.2
+> CLIP Score
+> DAK-UCB
+> Random
+> Mixture-DAK-UCB
+> One Arm Oracle
+> PAK-UCB
+
+Figure 2: Performance comparison on JKD score and Joint-RKE for MS-COCO prompt clusters using Kandinsky, SDXL, and GigaGAN. 
+
+Figure 3: Visualization of simulated generative models with less-diverse Models 1,2 and more-diverse Model 3. DAK-UCB and PAK-UCB selection ratios,scores over 500 rounds are reported. encoder (Radford et al., 2021) as the backbone text embedding and DINOv2 (Oquab et al., 2023) as the image embedding as suggested by Stein et al. (2023). We considered the following online model selection baselines in our evaluation of DAK-UCB and Mixture-DAK-UCB: • One Arm Oracle: The one-arm oracle baseline has knowledge of the evaluation scores of each individual generative model (aggregated over the validation prompt set). This baseline universally selects the individual model with the best aggregate score to handle all the prompts. • Random Selection: This baseline randomly selects an arm for an input prompt, where each arm is selected uniformly with equal probability, and the selection across prompts are run independently. • PAK-UCB: This baseline is a diversity-unaware contextual bandit algorithm (embedded prompt is the context variable), selecting the model only based on the CLIP-score fidelity score in text-to-image generation. 
+
+DAK-UCB applied to diversity-aware text-to-image model selection on MS-COCO prompts. 
+
+We considered the prompts in the MS-COCO (Lin et al., 2014) validation subset. We uniformly sampled a thousand prompts containing the words: cat, dog, car, cake, bowl, bike, tree, airplane, park, and elephant. Three generative models were used as candidate text-to-image generation mod-els in the experiment: Kandinsky (Arkhipkin et al., 2024), SDXL (Stability-AI, 2023), and Giga-GAN (Kang et al., 2023). The experiment ran for 2000 iterations, where at each iteration a random prompt from a random cluster was chosen, and our objective selected the best arm that balanced both diversity and fidelity. The results are averaged over 10 trials to reduce noise from random prompt 8Published as a conference paper at ICLR 2026 
+
+Figure 4: Expert Selection Ratio and Performance Comparison between DAK-UCB and baselines using the JKD score for diversity term in DAK-UCB. selection. Figure 2 shows that Mxiture-DAK-UCB could achieve the highest diversity Joint-RKE score. We also used MS-COCO test samples as the reference dataset and report the KD scores with Mixture-DAK-UCB obtaining the best score. Note that the KD metric evaluates both diversity and quality factors. 
+
+Experiment on simulated text-to-image models with varying diversity in ”animal” image gen-eration. In this experiment, we simulated three animal image generation arms, where the first two arms (less-diverse) are outputting the SD-XL generated data conditioned on ”cat” and ”dog” sam-ples, respectively. On the other hand, the third model (more-diverse) generates the picture of an animal uniformly selected from a list of 10 animals. To run the experiment, we used GPT-4o to generate 200 independent prompts about ”an animal” in different scenes, with sample prompts pro-vided in Figure 3. Figure 3 shows the conditional-Vendi and Joint-RKE scores for each of the three simulated arms, which indicate that the ”cat” and ”dog” simulated arms were less diverse than the third simulated arm. We ran the DAK-UCB algorithm for 500 iterations, where at each step a ran-dom prompt was chosen and the output from the algorithm’s selected arm was observed. The results demonstrate that the DAK-UCB tended to generate images from the more diverse third arm, while the CLIP-Score-based PAK-UCB baseline generated samples from the less-diverse second model more frequently. 
+
+Identification of prompt-relevant diversity via DAK-UCB . In the experiment, we tested DAK-UCB in outputting samples with prompt-relevant diversity. We used these four prompt groups of the experiment of Figure 2 from MS-COCO validation set: ”Cat”, ”Dog”, ”Car”, and ”Cake”. We designed four arms, each acting as an expert on one of these clusters, where the expert arm on each subject generates aligned samples with the prompt of the same type, while it generates images of a randomly-selected incorrect type for the remaining three subjects For example, ARM1(Cat expert) generates an image using SDXL when given a prompt from the Cat cluster; otherwise, it samples a random irrelevant prompt from other types and generates an image for that prompt using SDXL. In in Figure 4, we report the expert arm selection ratio for each prompt category and the average CLIP-Scores over iterations for each baseline. As suggested by the results in Figure 4, both the JKD-based and Clip-Score+I-JRKE-based DAK-UCB (Appendix, Figure 15) methods could avoid generating prompt-irrelevant output and did not attempt to increase diversity by generating unrelated content. 
+
+Diversity Collapse Across LLMs and the Benefit of Mixtures: To illustrate the importance of mixture-based selection in realistic language-generation settings, we evaluated three widely used open-source LLMs on a simple iterative generation task: Llama3.2 (AI, 2024), Qwen2 (Team, 2024), and Gemma3 (DeepMind, 2024). At each round, the model produced a short sentence about a vi-brant city in North America. Each arm exhibited a persistent and distinct geographic bias: Llama repeatedly focused on New Orleans, Gemma overwhelmingly generated Chicago, and Qwen2 con-sistently favored New York City. These model-specific collapse modes are visualized in Figure 5. 9Published as a conference paper at ICLR 2026 Despite their strong capabilities, all three models suffered from diversity collapse, but crucially, their collapse modes were complementary rather than identical. This directly motivates mixture-based selection: although each arm exhibits low diversity on its own, their differing failure modes allow a mixture to achieve significantly higher output diversity. Using the Cond-Vendi metric, we show that the mixture selected by Mixture-DAK-UCB attains substantially higher diversity than any single model. We repeat this experiment for two additional prompts—a vibrant city in Europe” and a renowned celebrity”—and the visualizations in Figure 5 consistently demonstrate the diversity gains unique to model mixtures. 
+
+Additional Numerical Results . In Appendix C, we also report the numerical results of applying DAK-UCB for diversity-aware model selection in the tasks of prompt-aware selection of simulated LLMs with different diversity scores and the image-to-model assignments of image captioning mod-els. We also present the results of the ablation study for testing the effect of the choice of image embedding and the coefficient of DAK-UCB objective’s diversity term. 
+
+Figure 5: Vendi diversity comparison across Llama3.2, Qwen2, Gemma3, and their mixture for prompts: “Generate a short sentence about a vibrant city in Northern America.” ,“Generate a short sentence about a vibrant city in Europe.” and “Generate a short sentence about a renowned celebrity.” 
+
+## 6 CONCLUSION 
+
+In this work, we proposed an online learning framework for a diversity-aware prompt-based se-lection of multiple generative models. Our proposed DAK-UCB can be applied using the defined I-JRKE diversity and JKD correctness scores for improving the diversity factor in sample genera-tion. Notably, the proposed scores reduce to the two-sample expectation over the observed samples, which can be estimated using only one generated sample for an input prompt. In addition, we intro-duced the Mixture-DAK-UCB extension, which enables optimized prompt-dependent mixtures of generative models and further improves diversity-aware selection. 10 Published as a conference paper at ICLR 2026 Beyond text-to-image generation, we also demonstrated applications of DAK-UCB to multi-LLM prompt assignment and image captioning models in Appendix C, illustrating its applicability in broader generative settings. Extending the framework to additional modalities, such as protein, molecular, and graph generative models, is a relevant future direction. The extension of the proposed scores for evaluating and guiding prompt-aware diversity and correctness in data generation will be relevant for future exploration. Also, studying the application of the scores in general bandit settings beyond generative model selection problems is another related future direction. 
+
+## ACKNOWLEDGMENTS 
+
+The work of Farzan Farnia is partially supported by a grant from the Research Grants Council of the Hong Kong Special Administrative Region, China, Project 14210725, and is partially supported by CUHK Direct Research Grants with CUHK Project No. 4055164 and 4937054. The work is also supported by a grant under 1+1+1 CUHK-CUHK(SZ)-GDSTC Joint Collaboration Fund. Finally, the authors thank the anonymous reviewers and metareviewer for their constructive feedback and suggestions. 
+
+## REPRODUCIBILITY STATEMENT 
+
+We have taken several steps for the reproducibility of our work. The proposed DAK-UCB and Mixture-DAK-UCB algorithms are fully specified in Section 4 and Appendix A, with pseudocode provided in Algorithms 1–3. Theoretical results are stated with assumptions and proofs in Appendix B. The datasets used in our experiments include standard publicly available benchmarks including MS-COCO as well as synthetically generated prompt sets by the specified GPT-4o model. The de-tails of data selection, prompt construction, model candidates, and evaluation metrics are described in Section 5 and Appendix C. We provide ablation studies in Appendix C.4 to clarify the sensitivity of our results to hyperparameters and embedding choices. An anonymous implementation of our method will be released as supplementary material. 
+
+## REFERENCES 
+
+Yasin Abbasi-Yadkori, D´ avid P´ al, and Csaba Szepesv´ ari. Improved algorithms for linear stochastic bandits. In Advances in Neural Information Processing Systems , volume 24, pp. 2312–2320, 2011. Meta AI. Llama 3.2 series (1b, 3b, 8b, 70b). https://huggingface.co/meta-llama ,2024. Vladimir Arkhipkin, Viacheslav Vasilev, Andrei Filatov, Igor Pavlov, Julia Agafonova, Nikolai Gerasimenko, Anna Averchenkova, Evelina Mironova, Anton Bukashkin, Konstantin Kulikov, et al. Kandinsky 3: Text-to-image synthesis for multifunctional generative framework. In Pro-ceedings of the 2024 Conference on Empirical Methods in Natural Language Processing: System Demonstrations , pp. 475–485, 2024. Reyhane Askari Hemmat, Melissa Hall, Alicia Sun, Candace Ross, Michal Drozdzal, and Adriana Romero-Soriano. Improving geo-diversity of generated images with contextualized vendi score guidance. In European Conference on Computer Vision , pp. 213–229. Springer, 2024. Stefan Bamberger, Felix Krahmer, and Rachel Ward. Johnson–lindenstrauss embeddings with kro-necker structure. SIAM Journal on Matrix Analysis and Applications , 43(4):1806–1850, 2022. Mikołaj Bi´ nkowski, Danica J Sutherland, Michael Arbel, and Arthur Gretton. Demystifying MMD GANs. In International Conference on Learning Representations , 2018. Daniele Calandriello, Luigi Carratino, Alessandro Lazaric, Michal Valko, and Lorenzo Rosasco. Gaussian process optimization with adaptive sketching: Scalable and no regret. In Alina Beygelz-imer and Daniel Hsu (eds.), Proceedings of the Thirty-Second Conference on Learning Theory ,volume 99 of Proceedings of Machine Learning Research , pp. 533–557. PMLR, 25–28 Jun 2019. 11 Published as a conference paper at ICLR 2026 Daniele Calandriello, Luigi Carratino, Alessandro Lazaric, Michal Valko, and Lorenzo Rosasco. Near-linear time Gaussian process optimization with adaptive batching and resparsification. In Hal Daum´ e III and Aarti Singh (eds.), Proceedings of the 37th International Conference on Ma-chine Learning , volume 119 of Proceedings of Machine Learning Research , pp. 1295–1305. PMLR, 13–18 Jul 2020. Lingjiao Chen, Matei Zaharia, and James Zou. FrugalGPT: How to use large language models while reducing cost and improving performance. Transactions on Machine Learning Research , 2024. ISSN 2835-8856. URL https://openreview.net/forum?id=cSimKw5p6R .Zhirui Chen, P. N. Karthik, Yeow Meng Chee, and Vincent Y. F. Tan. Optimal multi-objective best arm identification with fixed confidence. arXiv preprint arXiv:2501.13607 , 2025. doi: 10.48550/ arXiv.2501.13607. Proceedings of the 23rd International Conference on Artificial Intelligence and Statistics (AISTATS). Wei Chu, Lihong Li, Lev Reyzin, and Robert Schapire. Contextual bandits with linear payoff func-tions. In Geoffrey Gordon, David Dunson, and Miroslav Dud´ ık (eds.), Proceedings of the Four-teenth International Conference on Artificial Intelligence and Statistics , volume 15 of Proceed-ings of Machine Learning Research , pp. 208–214, Fort Lauderdale, FL, USA, 11–13 Apr 2011. PMLR. Gabriele Corso, Yilun Xu, Valentin De Bortoli, Regina Barzilay, and Tommi S. Jaakkola. Parti-cle Guidance: non-I.I.D. diverse sampling with diffusion models. In The Twelfth International Conference on Learning Representations , 2024. Dan Dan Friedman and Adji Bousso Dieng. The vendi score: A diversity evaluation metric for machine learning. Transactions on machine learning research , 2023. Google DeepMind. Gemma 3: Open weights family (1b, 4b, 12b, 27b). https:// huggingface.co/google/gemma-3-1b-it , 2024. DeepSeek-AI. Deepseek-r1-distill-qwen-1.5b. https://huggingface.co/unsloth/ DeepSeek-R1-Distill-Qwen-1.5B-GGUF , 2024. Jianfeng Dong, Xirong Li, Chaoyou Xu, Xun Yang, Gang Yang, Xun Wang, Yuan Meng, Qiang Li, Feng Zheng, Xiaogang Zhang, et al. Instructblip: Towards general-purpose vision-language models with instruction tuning, 2023. Dylan Foster, Alekh Agarwal, Miroslav Dudik, Haipeng Luo, and Robert Schapire. Practical con-textual bandits with regression oracles. In Jennifer Dy and Andreas Krause (eds.), Proceedings of the 35th International Conference on Machine Learning , volume 80 of Proceedings of Machine Learning Research , pp. 1539–1548. PMLR, 10–15 Jul 2018. Evan Frick, Connor Chen, Joseph Tennyson, Tianle Li, Wei-Lin Chiang, Anastasios N Angelopou-los, and Ion Stoica. Prompt-to-leaderboard. arXiv preprint arXiv:2502.14855 , 2025. Shizhan Gong, Yankai Jiang, Qi Dou, and Farzan Farnia. Kernel-based unsupervised embedding alignment for enhanced visual representation in vision-language models. In International Con-ference on Machine Learning , pp. 19912–19931. PMLR, 2025. Arthur Gretton, Karsten M Borgwardt, Malte J Rasch, Bernhard Sch¨ olkopf, and Alexander Smola. A kernel two-sample test. The Journal of Machine Learning Research , 13(1):723–773, 2012. Yunlong Hou, Vincent Y. F. Tan, and Zixin Zhong. Almost minimax optimal best arm identification in piecewise stationary linear bandits. In Advances in Neural Information Processing Systems (NeurIPS) , 2024. Xiaoyan Hu, Ho-fung Leung, and Farzan Farnia. Pak-ucb contextual bandit: An online learning approach to prompt-aware selection of generative models and llms. In Proceedings of the 26th International Conference on Machine Learning (ICML) , 2025a. Xiaoyan Hu, Lauren Pick, Ho-fung Leung, and Farzan Farnia. Promptwise: Online learning for cost-aware prompt assignment in generative models. arXiv preprint arXiv:2505.18901 , 2025b. 12 Published as a conference paper at ICLR 2026 Mohammad Jalali, Cheuk Ting Li, and Farzan Farnia. An information-theoretic evaluation of gen-erative models in learning multi-modal distributions. Advances in Neural Information Processing Systems , 36:9931–9943, 2023. Mohammad Jalali, Haoyu Lei, Amin Gohari, and Farzan Farnia. Sparke: Scalable prompt-aware diversity guidance in diffusion models via rke scores. Advances in Neural Information Processing Systems , 2025a. Mohammad Jalali, Bahar Dibaei Nia, and Farzan Farnia. Towards an explainable comparison and alignment of feature embeddings. In Forty-second International Conference on MachineLearn-ing , 2025b. URL https://openreview.net/forum?id=Doi0G4UNgt .Mohammad Jalali, Azim Ospanov, Amin Gohari, and Farzan Farnia. Conditional Vendi Score: Prompt-aware diversity evaluation for text-guided generative ai models. In Proceedings of The 29th International Conference on Artificial Intelligence and Statistics , Proceedings of Machine Learning Research, 2026. Minguk Kang, Jun-Yan Zhu, Richard Zhang, Jaesik Park, Eli Shechtman, Sylvain Paris, and Taesung Park. Scaling up gans for text-to-image synthesis. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , 2023. Branislav Kveton, Manzil Zaheer, Csaba Szepesv´ ari, Lihong Li, Mohammad Ghavamzadeh, and Craig Boutilier. Randomized exploration in generalized linear bandits. In Proceedings of the 23rd International Conference on Artificial Intelligence and Statistics (AISTATS) , 2020. Tuomas Kynk¨ a¨ anniemi, Tero Karras, Samuli Laine, Jaakko Lehtinen, and Timo Aila. Improved precision and recall metric for assessing generative models. Advances in neural information processing systems , 32, 2019. John Langford and Tong Zhang. The epoch-greedy algorithm for multi-armed bandits with side information. In J. Platt, D. Koller, Y. Singer, and S. Roweis (eds.), Advances in Neural Information Processing Systems , volume 20. Curran Associates, Inc., 2007. Junnan Li, Dongxu Li, Silvio Savarese, and Steven Hoi. Blip-2: Bootstrapping language-image pre-training with frozen image encoders and large language models, 2023. Lihong Li, Wei Chu, John Langford, and Robert E. Schapire. A contextual-bandit approach to per-sonalized news article recommendation. In Proceedings of the 19th International Conference on World Wide Web , WWW ’10, pp. 661–670, New York, NY, USA, 2010. Association for Comput-ing Machinery. ISBN 9781605587998. doi: 10.1145/1772690.1772758. Tsung-Yi Lin, Michael Maire, Serge Belongie, James Hays, Pietro Perona, Deva Ramanan, Piotr Doll´ ar, and C Lawrence Zitnick. Microsoft COCO: Common objects in context. In Computer Vision–ECCV 2014: 13th European Conference, Zurich, Switzerland, September 6-12, 2014, Proceedings, Part V 13 , pp. 740–755. Springer, 2014. Haotian Liu, Chunyuan Li, Qingyang Wu, and Yong Jae Lee. Llava: Large language and vision assistant, 2023. Jack Lu, Ryan Teehan, and Mengye Ren. ProCreate, Don’t Reproduce! propulsive energy diffusion for creative generation. In Computer Vision - ECCV 2024 - 18th European Conference, Milano, Italy, September 29 - October 27, 2024 , 2024. Zichen Miao, Jiang Wang, Ze Wang, Zhengyuan Yang, Lijuan Wang, Qiang Qiu, and Zicheng Liu. Training diffusion models towards diverse image generation with reinforcement learning. In 
+
+Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) ,pp. 10844–10853, June 2024. Muhammad Ferjad Naeem, Seong Joon Oh, Youngjung Uh, Yunjey Choi, and Jaejun Yoo. Reliable fidelity and diversity metrics for generative models. In International conference on machine learning , pp. 7176–7185. PMLR, 2020. 13 Published as a conference paper at ICLR 2026 Maxime Oquab, Timoth´ ee Darcet, Theo Moutakanni, Huy Vo, Marc Szafraniec, Vasil Khalidov, Pierre Fernandez, Daniel Haziza, Francisco Massa, Alaaeldin El-Nouby, et al. Dinov2: Learning robust visual features without supervision. arXiv preprint arXiv:2304.07193 , 2023. Azim Ospanov and Farzan Farnia. Do vendi scores converge with finite samples? truncated vendi score for finite-sample convergence guarantees. In The 41st Conference on Uncertainty in Artifi-cial Intelligence , 2025. Azim Ospanov, Jingwei Zhang, Mohammad Jalali, Xuenan Cao, Andrej Bogdanov, and Farzan Farnia. Towards a scalable reference-free evaluation of generative models. In The Thirty-eighth Annual Conference on Neural Information Processing Systems , 2024. Azim Ospanov, Mohammad Jalali, and Farzan Farnia. Scendi score: Prompt-aware diversity evalu-ation via schur complement of clip embeddings. In Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV) , pp. 16927–16937, October 2025. PixArt-alpha. Pixart-xl-2-512x512. https://huggingface.co/PixArt-alpha/ PixArt-XL-2-512x512 , 2024. Jie Qin, Jie Wu, Weifeng Chen, Yuxi Ren, Huixia Li, Hefeng Wu, Xuefeng Xiao, Rui Wang, and Shilei Wen. Diffusiongpt: Llm-driven text-to-image generation system. arXiv preprint arXiv:2401.10061 , 2024. Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sastry, Amanda Askell, Phil Mishkin, Jack Clark, et al. Learning transferable visual models from natural language supervision. International Conference on Machine Learning , pp. 8748– 8763, 2021. Parham Rezaei, Farzan Farnia, and Cheuk Ting Li. Be more diverse than the most diverse: Optimal mixtures of generative models via mixture-UCB bandit algorithms. In The Thirteenth Interna-tional Conference on Learning Representations , 2025. URL https://openreview.net/ forum?id=2Chkk5Ye2s .Runway-ML. Stable diffusion v1-5 model card. https://huggingface.co/runwayml/ stable-diffusion-v1-5 , 2023. Version 1.5 of the model, released in February 2023. Seyedmorteza Sadat, Jakob Buhmann, Derek Bradley, Otmar Hilliges, and Romann M. Weber. CADS: Unleashing the diversity of diffusion models through condition-annealed sampling. In 
+
+The Twelfth International Conference on Learning Representations , 2024. Mehdi SM Sajjadi, Olivier Bachem, Mario Lucic, Olivier Bousquet, and Sylvain Gelly. Assessing generative models via precision and recall. Advances in neural information processing systems ,31, 2018. Amir Sani, Alessandro Lazaric, and R´ emi Munos. Risk-aversion in multi-armed bandits. In F. Pereira, C.J. Burges, L. Bottou, and K.Q. Weinberger (eds.), Advances in Neural Information Processing Systems , volume 25, 2012. Matina Mahdizadeh Sani, Nima Jamali, Mohammad Jalali, and Farzan Farnia. Training-free distri-bution adaptation for diffusion models via maximum mean discrepancy guidance. arXiv preprint arXiv:2601.08379 , 2026. URL https://arxiv.org/abs/2601.08379 .Vikash Sehwag, Caner Hazirbas, Albert Gordo, Firat Ozgenel, and Cristian Canton Ferrer. Gen-erating high fidelity data from low-density regions using diffusion models. In 2022 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 11482–11491, 2022. doi: 10.1109/CVPR52688.2022.01120. Stability-AI. Stable diffusion xl 1.0. https://huggingface.co/stabilityai/ stable-diffusion-xl-base-1.0 , 2023. George Stein, Jesse Cresswell, Rasa Hosseinzadeh, Yi Sui, Brendan Ross, Valentin Villecroze, Zhaoyan Liu, Anthony L Caterini, Eric Taylor, and Gabriel Loaiza-Ganem. Exposing flaws of generative model evaluation metrics and their unfair treatment of diffusion models. Advances in Neural Information Processing Systems , 36:3732–3784, 2023. 14 Published as a conference paper at ICLR 2026 Qwen Team. Qwen2 technical report. https://qwenlm.github.io , 2024. Accessed: 2024-09-01. Michal Valko, Nathaniel Korda, Remi Munos, Ilias Flaounas, and Nelo Cristianini. Finite-time analysis of kernelised contextual bandits, 2013. Nir Weinberger and Michal Yemini. Multi-armed bandits with self-information rewards. IEEE Transactions on Information Theory , 69(11):7160–7184, 2023. doi: 10.1109/TIT.2023.3299460. Youqi Wu, Jingwei Zhang, and Farzan Farnia. Fusing cross-modal and uni-modal representations: A kronecker product approach. In Advances in Neural Information Processing Systems (NeurIPS) ,2025. Junwen Yang, Vincent Y. F. Tan, and Tianyuan Jin. Best arm identification with minimal regret. 
+
+arXiv preprint arXiv:2409.18909 , 2024. doi: 10.48550/arXiv.2409.18909. Houssam Zenati, Alberto Bietti, Eustache Diemert, Julien Mairal, Matthieu Martin, and Pierre Gail-lard. Efficient kernelized ucb for contextual bandits. In Gustau Camps-Valls, Francisco J. R. Ruiz, and Isabel Valera (eds.), Proceedings of The 25th International Conference on Artificial Intelli-gence and Statistics , volume 151 of Proceedings of Machine Learning Research , pp. 5689–5720. PMLR, 28–30 Mar 2022. Jingwei Zhang, Cheuk Ting Li, and Farzan Farnia. An interpretable evaluation of entropy-based novelty of generative models. In Proceedings of the 41st International Conference on Machine Learning , volume 235 of Proceedings of Machine Learning Research , pp. 59148–59172. PMLR, 21–27 Jul 2024. Jingwei Zhang, Mohammad Jalali, Cheuk Ting Li, and Farzan Farnia. Unveiling differences in generative models: A scalable differential clustering approach. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2025. Qiuyu Zhu and Vincent Tan. Thompson sampling algorithms for mean-variance bandits. In Hal Daum´ e III and Aarti Singh (eds.), Proceedings of the 37th International Conference on Ma-chine Learning , volume 119 of Proceedings of Machine Learning Research , pp. 11599–11608. PMLR, 13–18 Jul 2020. 
+
+## APPENDIX A DERIVATION OF THE MIXTURE -DAK-UCB P ROXY 
+
+## OBJECTIVE FUNCTION 
+
+A.1 UCB F ORMULATION OF MIXTURE -DAK-UCB Building on the mixture objective in the main text, we here prove the approximation guarantee for Mixture-DAK-UCB, and then provide the corresponding UCB formulation. 
+
+Proposition 2. Assume the kernel functions are normalized and satisfy kT (t, t ) = 1 and 
+
+kX (x, x ′) = 1 for all t, t ′, x, x ′. For every mixture weight α ∈ Aϵ = α : T → ∆G :
+
+∀t, t ′, kT (t, t ′) · α(t) − α(t′) 1 ≤ ϵ , the following hold: (a) For the I-JRKE score of the mixture Pα defined as I-JRKE( Pα) = Et∼PT
+
+α(t)⊤M (t)α(t),the proxy I-JRKE score I-JRKE approx (Pα) = Et
+
+h P 
+
+> g,g ′
+
+αg (t)αg′ (t)M RKE  
+
+> gg ′
+
+(t)
+
+i
+
+results in an ϵ-bounded error: 
+
+I-JRKE( Pα) − I-JRKE approx (Pα) ≤ ϵ
+
+(b) For the JKD score of the mixture Pα defined as JKD( Pα, Q ) =
+
+Et,t ′
+
+h
+
+kT (t, t ′) P 
+
+> g,g ′
+
+αg (t)αg′ (t′)KJKD  
+
+> gg ′
+
+(t, t ′)
+
+i
+
+, the proxy JKD score JKD approx (Pα, Q ) =
+
+Et,t ′
+
+h
+
+kT (t, t ′) P 
+
+> g,g ′
+
+αg (t)αg′ (t)KJKD  
+
+> gg ′
+
+(t, t ′)
+
+i
+
+results in an ϵ-bounded error: 
+
+JKD( Pα, Q ) − JKD approx (Pα, Q ) ≤ ϵ. 
+
+15 Published as a conference paper at ICLR 2026 
+
+Proof. Proof for (a). Considering the definitions, we have 
+
+|I-JRKE( Pα) − I-JRKE approx (Pα)|
+
+= Et,t ′
+
+h
+
+k2 
+
+> T
+
+(t, t ′) X
+
+> g,g ′
+
+αg (t)αg′ (t′)KRKE  
+
+> gg ′
+
+(t, t ′)
+
+i
+
+− Et
+
+h X 
+
+> g,g ′
+
+αg (t)αg′ (t)M RKE  
+
+> gg ′
+
+(t)
+
+i
+
+= Et,t ′
+
+h
+
+k2 
+
+> T
+
+(t, t ′) X
+
+> g,g ′
+
+αg (t)[ αg′ (t′) − αg′ (t)] KRKE  
+
+> gg ′
+
+(t, t ′)
+
+i
+
+.
+
+For fixed t, t ′, we bound the inner sum as 
+
+X
+
+> g,g ′
+
+αg (t)[ αg′ (t′) − αg′ (t)] KRKE  
+
+> gg ′
+
+(t, t ′) ≤ X
+
+> g,g ′
+
+αg (t)|αg′ (t′) − αg′ (t)|≤ ∥ α(t′) − α(t)∥1,
+
+where the last line uses P 
+
+> g
+
+αg (t) = 1 . From the Lipschitz condition α ∈ A ϵ:
+
+|kT (t, t ′)| · ∥ α(t′) − α(t)∥1 ≤ ϵ. 
+
+Since k2 
+
+> T
+
+(t, t ′) ≤ kT (t, t )kT (t′, t ′) = 1 , we have k2 
+
+> T
+
+(t, t ′) ≤ | kT (t, t ′)| and then: 
+
+k2 
+
+> T
+
+(t, t ′) · ∥ α(t′) − α(t)∥1 ≤ | kT (t, t ′)| · ∥ α(t′) − α(t)∥1 ≤ ϵ. 
+
+Therefore, we can write 
+
+|I-JRKE( Pα) − I-JRKE approx (Pα)| ≤ Et,t ′ [k2 
+
+> T
+
+(t, t ′) · ∥ α(t′) − α(t)∥1]
+
+≤ Et,t ′ [ϵ]= ϵ. 
+
+Proof for (b). Using the definitions, 
+
+|JKD( Pα, Q ) − JKD approx (Pα, Q )|
+
+= Et,t ′
+
+h
+
+kT (t, t ′) X
+
+> g,g ′
+
+αg (t)αg′ (t′)KJKD  
+
+> gg ′
+
+(t, t ′)
+
+i
+
+− Et
+
+hX 
+
+> g,g ′
+
+αg (t)αg′ (t)M JKD  
+
+> gg ′
+
+(t)
+
+i
+
+= Et,t ′
+
+h
+
+kT (t, t ′) X
+
+> g,g ′
+
+αg (t)[ αg′ (t′) − αg′ (t)] KJKD  
+
+> gg ′
+
+(t, t ′)
+
+i
+
+.
+
+For fixed t, t ′, we can bound the inner sum as follows 
+
+X
+
+> g,g ′
+
+αg (t)[ αg′ (t′) − αg′ (t)] KJKD  
+
+> gg ′
+
+(t, t ′) ≤ X
+
+> g,g ′
+
+αg (t)|αg′ (t′) − αg′ (t)|≤ ∥ α(t′) − α(t)∥1.
+
+From the Lipschitz condition and noting that kT (t, t ′) ≤ | kT (t, t ′)|:
+
+kT (t, t ′) · ∥ α(t′) − α(t)∥1 ≤ | kT (t, t ′)| · ∥ α(t′) − α(t)∥1 ≤ ϵ. 
+
+As a result, the following holds 
+
+|JKD( Pα, Q ) − JKD approx (Pα, Q )| ≤ Et,t ′ [|kT (t, t ′)| · ∥ α(t′) − α(t)∥1]
+
+≤ Et,t ′ [ϵ]= ϵ. 
+
+Therefore, to formulte the UCB formulation of Mixture-DAK-UCB, at each round i for prompt ti,the learner maintains UCB predictors for 
+
+bsUCB (ti) ∈ RG, cM UCB (ti) ∈ RG×G, cM UCB (ti) ⪰ 0,
+
+16 Published as a conference paper at ICLR 2026 
+
+Algorithm 2: Mixture Diversity-Aware Kernelized UCB (M IXTURE -DAK-UCB) 
+
+Input: G models; horizon T ; prompt distribution P; trade-off λ; diversity primitive 
+
+ψ ∈ { I-JRKE, JKD }; (optional) panel rate ρ ∈ [0 , 1] 
+
+Output: T generated outputs  
+
+> 1
+
+Initialize per-model KRR for fidelity {sg }Gg=1 and matrix-valued KRR for diversity {Mgg ′ }g,g ′ ; 
+
+> 2
+
+for i = 1 to T do  
+
+> 3
+
+Sample prompt ti ∼ P ; 
+
+> 4
+
+For all g: (bsg (ti), bσ(s) 
+
+> g
+
+(ti)) ← KRR-P REDICT s(g, t i); 
+
+> 5
+
+For all (g, g ′): ( cMgg ′ (pt), bσ(M ) 
+
+> gg ′
+
+(ti)) ← KRR-P REDICT M (g, g ′, t i); 
+
+> 6
+
+Set bsUCB  
+
+> g
+
+(ti) ← bsg (ti) + β(s) bσ(s) 
+
+> g
+
+(ti) for all g; 
+
+> 7
+
+Set cM LCB  
+
+> gg ′
+
+(ti) ← cMgg ′ (ti) − β(M ) bσ(M ) 
+
+> gg ′
+
+(ti); project to PSD if needed;  
+
+> 8
+
+αi ← arg max 
+
+> α∈∆G
+
+α⊤ bsUCB (ti) − λ α ⊤ cM LCB (ti) α; 
+
+> 9
+
+Sample gi ∼ αi; draw xi ∼ Pgi (· | ti); 
+
+> 10
+
+y(s) 
+
+> i
+
+← ϕfid (ti, x i); 
+
+> 11
+
+if panel step with prob. ρ then  
+
+> 12
+
+for g = 1 to G do  
+
+> 13
+
+draw x(g) 
+
+> i
+
+∼ Pg (· | ti) (reuse x(gi) 
+
+> i
+
+= xi) 
+
+> 14
+
+KRR-U PDATE s(gi; ( ti, y (s) 
+
+> i
+
+)) ; 
+
+> 15
+
+if panel step then  
+
+> 16
+
+Update {Mgg ′ } with cross-kernel labels built from {x(g) 
+
+> i
+
+}Gg=1 ; 
+
+> 17
+
+else  
+
+> 18
+
+Update {Mgg ′ } using the available pairs; where bsUCB (ti) collects fidelity UCB scores for each model and cM UCB (ti) is a PSD estimate of the cross-model diversity matrix M (ti). The per-prompt mixture decision then follows the concave quadratic program 
+
+α∗ 
+
+> i
+
+= arg max 
+
+> α∈∆G
+
+n
+
+⟨α, bsUCB (ti)⟩ − λ α⊤ cM UCB (ti) α
+
+o
+
+. (9) This UCB objective ensures optimism for fidelity while pessimistically accounting for diversity penalties. The chosen α∗ 
+
+> i
+
+specifies a sampling distribution over models, from which the algorithm draws gi ∼ Multinomial( α∗ 
+
+> i
+
+) and obtains xi ∼ Pgi (·| ti). The resulting procedure, which extends the single-model DAK-UCB to mixture assignments, is summarized in Algorithm 2. 
+
+## APPENDIX B REGRET ANALYSIS OF SUP -DAK-UCB (P HASED VARIANT OF 
+
+## DAK-UCB) 
+
+As noted in the literature, the theoretical analysis of the standard kernelized UCB method faces the challenge of potentially statistically correlated model selection at different rounds, which renders standard concentration analysis by means of independent observations inapplicable. To circumvent this challenge, we adopt the standard approach of analyzing a staged variant of the proposed DAK-UCB algorithm, which we call Sup-DAK-UCB. The same technique of analyzing Sup-Kerenlzied-UCB and Sup-PAK-UCB have been applied in the related works (Chu et al., 2011; Valko et al., 2013; Hu et al., 2025a). In the phased variant of S UP -DAK-UCB, within each arm–stage–target triple, the data used by kernel ridge regression (KRR) are independent. This enables the analytical derivations of confi-dence bounds and a proper regret decomposition, similar to the analysis in (Valko et al., 2013; Hu et al., 2025a). In the following, we first state the updated setting and assumptions in our theoretical analysis, then present the phased algorithmic structure, followed by the theorems and their proofs. 17 Published as a conference paper at ICLR 2026 B.1 ASSUMPTIONS IN THEORETICAL ANALYSIS OF DAK-UCB Let G = {1, . . . , G } be G generative models, T a prompt space with i.i.d. prompts ti ∼ PT , and 
+
+X the output space. At round t, the algorithm selects a single model gi. Note that the objective function is the following for a parameter λ ≥ 0: Jg (t) := sg (t) − λD g (t)
+
+Assumption 1 (Normalized Prompt and Data Kernel Functions) . The prompt kernel kT : T × T → 
+
+[−1, 1] and the output kernel kX : X ×X → [−1, 1] are positive definite with kT (t, t ) = kX (x, x ) = 1 for all t ∈ T , x ∈ X . For g, g ′ ∈ G , define 
+
+Kgg ′ (p, p ′) := Ex∼Pg (·| p), x ′∼Pg′ (·| p′)
+
+kX (x, x ′)2 ∈ [0 , 1] .
+
+Assumption 2 (Sub-Gaussian noise in kernel regression) . All scalar observations are conditionally 
+
+σ-sub-Gaussian given the history: E[exp( λε ) | H i] ≤ exp( λ2σ2/2) for all λ ∈ R.
+
+Assumption 3 (RKHS boundedness for single-model case) . Let HT be the RKHS of kT . Assume 
+
+sg ∈ H T with ∥sg ∥HT ≤ Bs and Dg ∈ H T with ∥Dg ∥HT ≤ BD for all g ∈ G .
+
+B.2 INTRODUCING PHASED SUP -DAK-UCB A LGORITHM 
+
+As mentioned earlier, we analyze a staged variant of DAK-UCB, called Sup-DAK-UCB , possessing 
+
+M = ⌈log 2 T ⌉ stages. In Sup-DAK-UCB, for each generative model-stage pair (g, m ) and target type τ ∈ { s, D }, we maintain a frozen index set Ψm, (τ ) 
+
+> g
+
+. To guarantee independence for diversity labels, we additionally maintain a stage snapshot of the archive of past (t, x ) pairs for each arm: at the beginning of stage m, we freeze Dmg and use this snapshot to build diversity labels throughout stage m. We note that new pairs collected during stage m are not used to form diversity labels in the same stage; They will be only available from stage m + 1 onward. To explain the steps of Sup-DAK-UCB in Algorithm 3, note that at iteration i in stage m with candidate set bGm, we perform the following. 1. For each g ∈ bGm, we perform KRR predictors (bsmg,i , bσm, (s) 
+
+> g,i
+
+) and ( bDmg,i , bσm, (D) 
+
+> g,i
+
+) based on Ψm, (s)
+
+> g
+
+and Ψm, (D) 
+
+> g
+
+respectively. 2. We let ησ := σ p2 log(2 GM T /δ ) and set 
+
+β(s) := Bs
+
+√α + ησ , β(D) := BD
+
+√α + ησ .
+
+We define the optimistic score and the width as 
+
+eJmg,i :=  bsmg,i + β(s) bσm, (s)
+
+> g,i
+
+ − λ  bDmg,i − β(D) bσm, (D)
+
+> g,i
+
+, wmg,i := β(s) bσm, (s) 
+
+> g,i
+
++ λβ (D) bσm, (D) 
+
+> g,i
+
+.
+
+3. The stage selection rule in Sup-DAK-UCB is as follows: • If max g wmg,i ≤ T −1/2, we exploit: gi ∈ arg max g∈ bGm eJmg,i .• Else if max g wmg,i ≤ 21−m, we eliminate {g : max g′ eJmg′,i − eJmg,i > 22−m} and set m ←
+
+m + 1 .• Else (explore), we pick every gi with wmg,i > 21−m and append t to Ψm, (s) 
+
+> gi
+
+and Ψm, (D) 
+
+> gi
+
+.4. Feedback: For single-model selection, we draw xi ∼ Pgi (·| ti), observe y(s) 
+
+> i
+
+= sgi (ti) + ε(s) 
+
+> i
+
+,and build a stage-frozen , unbiased, bounded diversity statistic using Dmgi :
+
+bdi = 1max {1, |D mgi |} 
+
+X
+
+> (t′,x ′)∈D mgi
+
+kT (ti, t ′)2 kX (xi, x ′)2, E bdi | ti, Dmgi
+
+ = Dgi (ti).
+
+We define the zero-mean diversity noise ε(D) 
+
+> i
+
+:= bdi − Dgi (ti). Finally, we update the archive 
+
+Dgi ← D gi ∪ { (ti, x i)}, which will only be snapped at the next stage. 18 Published as a conference paper at ICLR 2026 
+
+Algorithm 3: Sup-DAK-UCB 
+
+Input: G models, T rounds, prompt dist. P, trade-off λ, kernels kT , k X , ridge α, confidence δ
+
+Output: T generated outputs  
+
+> 1
+
+Set number of stages M ← ⌈ log 2 T ⌉; 
+
+> 2
+
+Initialize per-stage sets Ψm, (s) 
+
+> g
+
+, Ψm, (D) 
+
+> g
+
+← ∅ and archives Dg ← ∅ ; 
+
+> 3
+
+for i = 1 to T do  
+
+> 4
+
+Sample prompt ti ∼ P ; set m ← 1, bG1 ← [G]; 
+
+> 5
+
+Freeze stage snapshots Dmg ← D g for all g; 
+
+> 6
+
+repeat  
+
+> 7
+
+for g ∈ bGm do  
+
+> 8
+
+Compute fidelity and diversity predictions by KRR: (ˆ smg , σ m, (s) 
+
+> g
+
+), ( ˆDmg , σ m, (D) 
+
+> g
+
+); 
+
+> 9
+
+Form optimistic score eJmg and width wmg ; 
+
+> 10
+
+if max g wmg ≤ T −1/2 then  
+
+> 11
+
+gi ← arg max g eJmg ; 
+
+> 12
+
+break ; 
+
+> 13
+
+else  
+
+> 14
+
+if max g wmg ≤ 21−m then  
+
+> 15
+
+Eliminate: bGm+1 ← { g : eJmg ≥ max h eJmh − 22−m}; 
+
+> 16
+
+m ← m + 1 ; freeze new snapshots;  
+
+> 17
+
+else  
+
+> 18
+
+Explore: choose gi with wmgi > 21−m; 
+
+> 19
+
+Append i to Ψm, (s) 
+
+> gi
+
+, Ψm, (D) 
+
+> gi
+
+; 
+
+> 20
+
+break ; 
+
+> 21
+
+until ; 
+
+> 22
+
+Generate xi ∼ Pgi (·| ti), observe y(s) 
+
+> i
+
+and stage-frozen y(D) 
+
+> i
+
+; 
+
+> 23
+
+Update live archive Dgi ← D gi ∪ { (ti, x i)};B.3 KRR N OTATION AND INFORMATION MEASURES 
+
+For an index set Ψ, let ΦΨ = [ ϕ(ti)⊤]i∈Ψ, KΨ = Φ ΨΦ⊤
+
+> Ψ
+
+, kΨ(t) = [ kT (t, t i)] i∈Ψ, and AΨ := Φ⊤
+
+> Ψ
+
+ΦΨ + αI . The KRR predictor and posterior deviation at t are 
+
+bμ(t; Ψ) = kΨ(t)⊤(KΨ + αI )−1yΨ = ϕ(t)⊤A−1Ψ Φ⊤
+
+> Ψ
+
+yΨ, bσ2(t; Ψ) = ϕ(t)⊤A−1Ψ ϕ(t).
+
+We use the shorthand ησ (δ) := σp2 log(2 /δ ). Also, we use the following complexity measures: 
+
+γ(Ψ) := 12 log det( I + α−1KΨ), ΓT := max  
+
+> Ψ: |Ψ|≤ T
+
+γ(Ψ) .
+
+B.4 SINGLE -MODEL SELECTION SUP -DAK-UCB R EGRET BOUNDS 
+
+Lemma 1. Consider arm g, stage m, and target τ ∈ { s, D }. Consider the sequence of time indices 
+
+{i} that get appended to Ψm, (τ ) 
+
+> g
+
+by the stage rule. Conditional on the prompt sequence {ti} and the 
+
+stage-frozen archive snapshot Dmg (for τ = D), the random variables {y(τ ) 
+
+> i
+
+}i∈Ψm, (τ )
+
+> g
+
+are mutually independent and satisfy E[y(τ ) 
+
+> i
+
+| ti, Dmg ] = f (τ ) 
+
+> g
+
+(ti), where f (s) = s and f (D) = D. Moreover, 
+
+ε(D) 
+
+> i
+
+= bdi − Dg (ti) is conditionally 1/2-sub-Gaussian. Proof. For τ = s, y(s) 
+
+> i
+
+= sg (pi) + ε(s) 
+
+> i
+
+with ε(s) 
+
+> i
+
+conditionally independent across i given (Fi−1, t i)
+
+by Assumption 2. Thus, {y(s) 
+
+> i
+
+}i∈Ψm, (s)
+
+> g
+
+are mutually independent given {ti}.19 Published as a conference paper at ICLR 2026 For τ = D, by construction we use the stage-frozen archive snapshot Dmg . Given ti and Dmg , we draw a fresh xi ∼ Pg (· | ti) independent of (xj )j<i . Each summand inside bdi equals 
+
+Zi, (t′,x ′) := kT (ti, t ′)2 kX (xi, x ′)2 ∈ [0 , 1] ,
+
+and these are i.i.d. across (t′, x ′) ∈ D mg conditional on (ti, x i). Hence, 
+
+E bdi | ti, Dmg
+
+ = 1max {1, |D mg |} 
+
+X
+
+> (t′,x ′)∈D mg
+
+kT (ti, t ′)2 Exi∼Pg (·| ti)
+
+kX (xi, x ′)2 = Dg (ti).
+
+Define ε(D) 
+
+> i
+
+:= bdi − Dg (pi). Since bdi ∈ [0 , 1] and Dg (ti) ∈ [0 , 1] , Hoeffding’s lemma implies ε(D)
+
+> i
+
+is conditionally 1/2-sub-Gaussian. The mutual independence of {y(D) 
+
+> i
+
+} over i ∈ Ψm, (D) 
+
+> g
+
+holds because each y(D) 
+
+> i
+
+is a function of (ti, x i) and the fixed snapshot Dmg , and (xi) are independent across i.
+
+Lemma 2. Fix (g, m, τ ) and a nonempty index set Ψ := Ψ m, (τ ) 
+
+> g
+
+that satisfies Lemma 1. Let f := 
+
+f (τ ) 
+
+> g
+
+∈ H T with ∥f ∥HT ≤ Bτ , and write yΨ = f (Φ Ψ)+ εΨ, where εΨ are zero-mean, conditionally independent and σ-sub-Gaussian (with σ = σ for fidelity and σ = 1 /2 for diversity). Then, for any 
+
+t ∈ T and any δ′ ∈ (0 , 1) , with probability at least 1 − δ′
+
+bμ(t; Ψ) − f (t) ≤ ησ (δ′) bσ(t; Ψ) 
+
+| {z }
+
+> noise term
+
++ √α B τ bσ(t; Ψ) 
+
+| {z }
+
+> shrinkage bias
+
+,
+
+where ησ (δ′) = σp2 log(2 /δ ′). Equivalently, with β(τ ) := Bτ
+
+√α + ησ (δ′),
+
+bs + β(s) bσ(s) ≥ s, bD − β(D) bσ(D) ≤ D. 
+
+Proof. Let A = Φ ⊤
+
+> Ψ
+
+ΦΨ + αI . Using the identity Φ⊤
+
+> Ψ
+
+(KΨ + αI )−1 = (Φ ⊤
+
+> Ψ
+
+ΦΨ + αI )−1Φ⊤ 
+
+> Ψ
+
+=
+
+A−1Φ⊤
+
+> Ψ
+
+, we can write 
+
+bμ(t; Ψ) − f (t) = ϕ(t)⊤A−1Φ⊤
+
+> Ψ
+
+ f (Φ Ψ) + εΨ
+
+ − ϕ(t)⊤wf
+
+where wf ∈ H T is the (unique) RKHS representer of f , i.e. f (·) = ⟨wf , ϕ (·)⟩, with ∥wf ∥HT =
+
+∥f ∥HT ≤ Bτ . Inserting and subtracting ϕ(t)⊤A−1Φ⊤
+
+> Ψ
+
+ΦΨwf gives 
+
+bμ(t; Ψ) − f (t) = ϕ(t)⊤A−1Φ⊤
+
+> Ψ
+
+εΨ
+
+| {z }
+
+> Term (I)
+
++ ϕ(t)⊤
+
+A−1Φ⊤
+
+> Ψ
+
+ΦΨ − I
+
+
+
+wf
+
+| {z }
+
+> Term (II)
+
+.
+
+Bounding Term (I): Let a := Φ ΨA−1ϕ(t) ∈ R|Ψ|. By independence and sub-Gaussianity of εΨ
+
+and the standard bound for linear forms of sub-Gaussian vectors, for any δ′ ∈ (0 , 1) ,
+
+P
+
+
+
+a⊤εΨ ≤ ησ (δ′) ∥a∥2
+
+
+
+≥ 1 − δ′, ησ (δ′) = σp2 log(2 /δ ′).
+
+We bound ∥a∥2 by noting that 
+
+∥a∥22 = ϕ(t)⊤A−1Φ⊤
+
+> Ψ
+
+ΦΨA−1ϕ(t) ≤ ϕ(t)⊤A−1ϕ(t) = bσ2(t; Ψ) ,
+
+since Φ⊤
+
+> Ψ
+
+ΦΨ ⪯ A implies A−1Φ⊤
+
+> Ψ
+
+ΦΨA−1 ⪯ A−1. Hence, with probability at least 1 − δ′,
+
+ϕ(t)⊤A−1Φ⊤
+
+> Ψ
+
+εΨ ≤ ησ (δ′) bσ(t; Ψ) .
+
+Bounding Term (II): Since A = Φ ⊤
+
+> Ψ
+
+ΦΨ + αI , we have A−1Φ⊤
+
+> Ψ
+
+ΦΨ − I = −αA −1. (II) becomes equal to −α ϕ (t)⊤A−1wf . By Cauchy–Schwarz, we can write 
+
+|ϕ(t)⊤A−1wf | ≤ A−1/2ϕ(t) 2 · A−1/2wf 2 ≤
+
+q
+
+ϕ(t)⊤A−1ϕ(t)
+
+| {z } 
+
+> =bσ(t;Ψ)
+
+· ∥ A−1/2∥
+
+| {z } 
+
+> ≤α−1/2
+
+·∥ wf ∥.
+
+Thus ϕ(t)⊤
+
+
+
+A−1Φ⊤
+
+> Ψ
+
+ΦΨ − I
+
+
+
+wf ≤ √α ∥wf ∥ bσ(t; Ψ) ≤ √α B τ bσ(t; Ψ) . Combining (I) and (II) completes the proof. 20 Published as a conference paper at ICLR 2026 
+
+Lemma 3. Fix any round i and stage m. Suppose the confidence radii in Lemma 2 hold for all arms in bGm (with the choice δ′ = δ/ (GM T ) and a union bound across i, g, m ). Then the following hold simultaneously with probability at least 1 − δ:1. |bsmg,i − sg (ti)| ≤ β(s) bσ(s) 
+
+> g,i
+
+and | bDmg,i − Dg (ti)| ≤ β(D) bσ(D) 
+
+> g,i
+
+for each g ∈ bGm.2. The true per-prompt maximizer g∗ 
+
+> i
+
+∈ bGm after any elimination step. 3. For every g ∈ bGm, Jg∗ 
+
+> i
+
+(ti) − Jg (ti) ≤ 23−m.Proof. Item 1 follows directly from the application of Lemma 2 to s and D with a union bound over 
+
+i, g, m .Regarding Items 2 and 3, consider a step in which the algorithm chooses either to exploit or elim-inate. Throughout this step, by definition of wmg,i and the trigger max g∈ bGm wmg,i ≤ 21−m, we have for every g ∈ bGm,
+
+β(s) bσm, (s) 
+
+> g,i
+
+≤ 21−m, λ β (D) bσm, (D) 
+
+> g,i
+
+≤ 21−m. (10) Using Lemma 2, we have the following to hold for every component: 
+
+sg (ti) ≤ bsmg,i + β(s) bσm, (s) 
+
+> g,i
+
+, Dg (ti) ≥ bDmg,i − β(D) bσm, (D) 
+
+> g,i
+
+.
+
+Therefore, 
+
+Jg (ti) = sg (ti) − λD g (ti) ≤ bsmg,i + β(s) bσm, (s)
+
+> g,i
+
+| {z } 
+
+> ≤bsmg,i +2 1−m
+
+−λ   bDmg,i − β(D) bσm, (D)
+
+> g,i
+
+| {z } 
+
+> ≥bDmg,i −21−m
+
+= eJmg,i + 2 2−m.
+
+Similarly, 
+
+Jg (ti) ≥ eJmg,i − 22−m.
+
+In particular, for the optimal arm g∗ 
+
+> i
+
+and any g ∈ bGm,
+
+eJmg∗  
+
+> i,i
+
+− eJmg,i ≥ Jg∗ 
+
+> i
+
+(ti) − Jg (ti) − 22−m − 22−m ≥ − 23−m.
+
+Hence eJmg∗  
+
+> i,i
+
+is at most 23−m below any eJmg,i . During elimination, the algorithm removes only arms whose eJ is more than 22−m below the current maximum. Since 23−m > 22−m is the two-sided 
+
+tolerance and g∗ 
+
+> i
+
+attains the one-sided tolerance bound, g∗ 
+
+> i
+
+cannot be eliminated: this proves (2). Finally, any survivor g satisfies 
+
+Jg∗ 
+
+> i
+
+(ti) − Jg (ti) ≤   eJmg∗  
+
+> i,i
+
++ 2 2−m −   eJmg,i − 22−m ≤ 22−m + 2 2−m = 2 3−m,
+
+which proves (3). 
+
+Lemma 4. Fix (g, m, τ ) and let (tj )j∈Ψ be the prompts indexed by Ψ = Ψ m, (τ ) 
+
+> g
+
+in the sorted order. Define A0 := αI and Aj := Aj−1 + ϕ(tj )ϕ(tj )⊤. Then, the following holds 
+
+X
+
+> j∈Ψ
+
+bσ2(tj ; Ψ <i ) = X
+
+> j∈Ψ
+
+ϕ(tj )⊤A−1
+
+> j−1
+
+ϕ(tj ) ≤ 2 γ(Ψ) ,
+
+Also, the application of the Cauchy-Schwarz inequality implies that 
+
+X
+
+> j∈Ψ
+
+bσ(tj ; Ψ <i ) ≤
+
+s
+
+|Ψ| X
+
+> j∈Ψ
+
+bσ2(tj ; Ψ <i ) ≤ p2 |Ψ| γ(Ψ) .
+
+Proof. For the determinant of matrices, we can write the following: 
+
+det( Aj ) = det( Aj−1) ·  1 + ϕ(tj )⊤A−1
+
+> j−1
+
+ϕ(tj ).
+
+Therefore, 
+
+log det( Aj )det( Aj−1) = log  1 + bσ2(tj ; Ψ <i ).
+
+21 Published as a conference paper at ICLR 2026 Summing the above from j = 1 to j = |Ψ| shows that 
+
+X
+
+> j∈Ψ
+
+log  1 + bσ2(tj ; Ψ <i ) = log det( A|Ψ|)det( A0) = log det 
+
+
+
+I + α−1ΦΨΦ⊤
+
+> Ψ
+
+
+
+= 2 γ(Ψ) .
+
+Since 0 ≤ bσ2(tj ; Ψ <i ) ≤ α−1 (because Ai−1 ⪰ αI ), we have bσ2 ≤ 1 when α ≥ 1. Also, note that for every x ∈ [0 , 1] , x ≤ 2 log(1 + x) holds, which implies that P 
+
+> j
+
+bσ2(tj ; Ψ <i ) ≤ 2 P 
+
+> j
+
+log(1 + 
+
+bσ2(tj ; Ψ <i )) = 2 γ(Ψ) . Finally, the linear-sum bound follows directly from the application of the Cauchy-Schwarz inequality. 
+
+Theorem 2 (DAK-UCB regret) . Define instance-wise regret to be ri = Jg∗ 
+
+> i
+
+(ti)−Jgi (ti). Under As-sumptions 1–3 and with β(s) = Bs
+
+√α+ησ , β(D) = BD
+
+√α+ησ where ησ = σp2 log(2 GM T /δ ),the phased DAK-UCB satisfies, with probability at least 1 − δ,
+
+Regret( T ) ≤ eO
+
+q 
+
+G T Γ(s)
+
+> T
+
+
+
++ λ eO
+
+q 
+
+G T Γ(D)
+
+> T
+
+
+
+,
+
+where Γ(τ ) 
+
+> T
+
+:= max g,m γ Ψm, (τ )
+
+> g
+
+. Equivalently, replacing Γ(·) 
+
+> T
+
+by an effective-dimension proxy 
+
+d(·)eff , the bound is eO (1 + √α)
+
+q
+
+d(s)eff GT  + λ eO (1 + √α)
+
+q
+
+d(D)eff GT .Proof. We partition rounds into T0 (exploitation : max g wmi 
+
+> g,i
+
+≤ T −1/2) and T1 (exploration : a width value greater than 21−m). On T0, by Lemma 3 Part 2 and the exploitation trigger, ri ≤ 2wmi 
+
+> gi,i
+
+≤
+
+2T −1/2, and therefore P 
+
+> i∈T 0
+
+ri ≤ 2√T . Subsequently over T1, we group considering (g, m ) as 
+
+X
+
+> i∈T 1
+
+ri ≤
+
+> G
+
+X
+
+> g=1
+> M
+
+X
+
+> m=1
+
+X
+
+> i∈Ψm, (s)
+> g
+
+23−m = X
+
+> g,m
+
+23−m |Ψm, (s) 
+
+> g
+
+|.
+
+For each such i, the append rule implies wmg,i > 21−m, i.e., β(s) bσ(s) 
+
+> g,i
+
++ λβ (D) bσ(D) 
+
+> g,i
+
+> 21−m. Sum-ming over t ∈ Ψm, (s) 
+
+> g
+
+and applying Lemma 4 and Cauchy–Schwarz to the two targets separately yields 
+
+21−m |Ψm, (s) 
+
+> g
+
+| ≤ β(s) X
+
+> i∈Ψm, (s)
+> g
+
+bσ(s) 
+
+> g,t
+
++ λβ (D) X
+
+> i∈Ψm, (D)
+> g
+
+bσ(D)
+
+> g,i
+
+≤ β(s)
+
+q
+
+2 |Ψm, (s) 
+
+> g
+
+| γm, (s) 
+
+> g
+
++ λβ (D)
+
+q
+
+2 |Ψm, (D) 
+
+> g
+
+| γm, (D) 
+
+> g
+
+.
+
+In the above, γm, (τ ) 
+
+> g
+
+:= γ(Ψ m, (τ ) 
+
+> g
+
+). Taking the summation over (g, m ) pairs and noting M =
+
+⌈log 2 T ⌉ completes the proof of the regret bound. 
+
+## APPENDIX C ADDITIONAL NUMERICAL RESULTS 
+
+C.1 DAK-UCB APPLIED TO LLM SELECTION PROBLEM 
+
+DAK-UCB for Diversity-Aware LLM Selection Using Synthetic Prompts: In this experiment, we asked GPT-4o to provide five words as categories: temple , painting , market , horse , and farm .We then selected three LLMs: DeepSeek (DeepSeek-AI, 2024), Gemma (DeepMind, 2024), and Llama (AI, 2024). At each iteration, a random cluster from these five was selected, and a prompt of the form “Describe a scene containing a [cluster].” was designed as the input to the LLM. In Figure 6, you can see the performance comparison and selection ratios of these models. 22 Published as a conference paper at ICLR 2026 100 200 300 400 
+
+Number of Iteration     
+
+> 4.4
+> 4.6
+> 4.8
+> Joint-RKE Score
+> DAK-UCB
+> Random
+> Mixture-DAK-UCB
+> One Arm Oracle
+> PAK-UCB
+> 0100 200 300 400
+
+Number of Iteration 
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> DAK-UCB Selection Ratios  DeepSeek
+> Gemma
+> Llama
+
+Figure 6: Results are averaged over 10 independent trials. 
+
+Detecting Bias in LLMs Using the I-JRKE Diversity Metric: In this experiment, we used (DeepSeek-AI, 2024) to generate sentences about cities in the US, Canada, China, and England. One arm was biased toward the capitals of countries, while the other arm was unconstrained. As shown in Figure 7, our algorithm DAK-UCB preferred the unbiased arm, as it resulted in greater diversity across the arms. The results are reported after 200 iterations. 
+
+Figure 7: DAK-UCB selection ratio for LLM bias detection experiment. 
+
+Enhancing LLM Diversity via I-JRKE: In our experiment, we implemented a four-arm setup us-ing DeepSeek, where each arm was diversity-collapsed by country-specific biasing through modified prompts of the form: “Describe one of the famous cities in [Country] in no more than 20 words.” (with Japan, France, Brazil, and Egypt as respective biases). Results from 10 runs demonstrated that mixture effectively enhanced diversity. Scores and selection ratios of each arm are presented in Figure 8. The observed decay in DAK-UCB is explainable: With only one cluster, the algorithm sticks to one arm after some point. This naturally converges to a single-arm oracle scenario. 23 Published as a conference paper at ICLR 2026 0 500 1000 1500 
+
+Number of Iteration    
+
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> Joint-RKE Score
+> DAK-UCB
+> Random
+> Mixture-DAK-UCB
+> One Arm Oracle
+> PAK-UCB
+> 0500 1000 1500
+
+Number of Iteration 
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> MK-UCB Selection Ratios  Japan
+> France
+> Brazil
+> Egypt
+
+Figure 8: Selection Ratios of biased arms and performance comparison on Joint-RKE. 
+
+Figure 9: Word Clouds of DeepSeek Responses Across Countries C.2 DAK-UCB APPLIED TO IMAGE -CAPTIONING MODEL SELECTION TASK 
+
+Improving Correctness in Image Captioning via JKD: We evaluated three state-of-the-art image captioning models as our arms: L LAVA (Liu et al., 2023), I NSTRUCT BLIP (Dong et al., 2023), and BLIP-2 (Li et al., 2023). At each iteration, we sampled an image-caption pair from a thousand MS-COCO instances, distributed across 10 previously mentioned clusters. By minimizing the Joint Kernel Distance (JKD) between generated captions and MS-COCO reference captions, we aimed to enhance captioning correctness through dynamic model selection. Figure 10 demonstrates the evolution of KID scores across iterations compared to baseline methods, along with the empirical selection ratios for each captioning model. Figure 11 visualizes the dataset. 24 Published as a conference paper at ICLR 2026 500 1000 1500 
+
+Number of Iteration 
+
+0.020 
+
+0.025 
+
+0.030 
+
+0.035 
+
+0.040 
+
+0.045 
+
+> KID Score
+> DAK-UCB
+> Random
+> Mixtue-DAK-UCB
+> One Arm Oracle
+> PAK-UCB
+
+0 500 1000 1500 
+
+Number of Iteration 
+
+0.0 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 
+
+> MK-UCB Selection Ratios  Blip2
+> InstructBlip
+> Llava
+
+Figure 10: Selection Ratios of image captioning models and performance comparison on KID using JKD metric. Results are averaged over 10 independent trials. 25 Published as a conference paper at ICLR 2026 
+
+Figure 11: Dataset visualization for image captioning experiment. 
+
+Improving Diversity in Image Captioning via I-JRKE: We repeated the exact same experiment on image captioning, replacing the JKD objective with I-JRKE to observe if our algorithm can enhance diversity. As shown in Figure 12, our algorithm demonstrated superior performance compared to the baselines. While LLaVA worked best in terms of correctness, our algorithm tends to prefer InstructBLIP for diversity. 26 Published as a conference paper at ICLR 2026 500 1000 1500 
+
+Number of Iteration 
+
+160 
+
+180 
+
+200 
+
+220 
+
+> Joint-RKE Score
+
+DAK-UCB 
+
+Random 
+
+Mixtue-DAK-UCB 
+
+One Arm Oracle 
+
+PAK-UCB 
+
+0 500 1000 1500 
+
+Number of Iteration 
+
+0.0 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 
+
+> MK-UCB Selection Ratios
+
+Blip2 
+
+InstructBlip 
+
+Llava 
+
+Figure 12: Selection Ratios of image captioning models and performance comparison on Joint-RKE using I-JRKE metric. C.3 ADDITIONAL NUMERICAL RESULTS ON APPLYING DAK-UCB TO THE TEXT -TO -IMAGE GENERATION TASK 
+
+Conditional Expert Selection via I-JRKE Using Classifier-Free Guidance: We used the dataset from (Rezaei et al., 2025). The dataset was generated by selecting four categories: dog, river, airplane, and building. For each category, GPT was asked to generate 10 adjectives, 10 activities, and 10 places. By mixing these with the category, 1000 prompts were obtained. Some samples of the dataset can be seen in Figure 13. We used SDXL to generate images with classifier-free guidance scales of 2 and 30 for each cluster. We designed the arms as follows: ARM1: Generates images of dogs and rivers with a classifier-free guidance scale of 2.0 (less guided, more diverse) and images of airplanes and buildings with a classifier-free guidance scale of 30.0 (more guided, less diverse). Thus, this arm acts as an expert in the dog and river clusters. ARM2: Does the opposite, making it an expert in the building and airplane clusters. In this experiment, our objective was solely to minimize I-JRKE, and CLIP was not involved in the optimization. As shown in Figure 14 (averaged over 10 trials), the expert for each cluster was successfully detected. However, we observed that in some clusters, the selection ratios were very close. This is acceptable, as we know that a mixture can enhance diversity. A happy dog is running in the park. A happy dog is running on the beach. A happy dog is running in the backyard. A happy dog is running in the forest.  
+
+> A wide river is flowing through the valley. A wide river is flowing in the forest. A wide river is flowing by the mountains. A wide river is flowing near the village.
+> A fast airplane is flying in the sky. A fast airplane is flying above the clouds. A fast airplane is flying on the runway. A fast airplane is flying over the ocean.
+> A tall building is standing in the city. A tall building is standing by the river. A tall building is standing in the countryside. A tall building is standing on the hill.
+> Classifier-Free Guidance = 2.0 Classifier-Free Guidance = 30.0 Prompts
+
+Figure 13: Illustrative examples from the GPT-Generated prompt dataset and their SDXL-generated visualizations under varying guidance scales. 27 Published as a conference paper at ICLR 2026 1.00          
+
+> 0.75
+> 0.50
+> 0.25 0.00
+> 0
+> 1.00
+> 0.75
+> 0.50
+> 0.25
+> 0.00
+> 0500 1000
+> Dog prompts
+> 500 1000 1500
+> Iteration
+> Airplane prompts
+> 1500
+> 1.00
+> 0.75
+> 0.50
+> 0.25 0.00
+> 0
+> 1.00
+> 0.75
+> 0.50
+> 0.25
+> 0.00
+> 0500 1000
+> River prompts
+> 500 1000 1500
+> Iteration
+> Building prompts
+> 1500
+> Iteration Iteration
+> Selection Ratio Selection Ratio
+> Selection Ratio Selection Ratio
+> SDXL(CFG=2)
+> SDXL(CFG=30)
+> SDXL(CFG=2)
+> SDXL(CFG=30)
+> SDXL(CFG=2)
+> SDXL(CFG=30)
+> SDXL(CFG=2)
+> SDXL(CFG=30)
+
+Figure 14: Cluster-conditioned expert selection ratios and performance comparison against baseline methods. 
+
+Diversity Identification in Text-to-Image Generative Models: An Offline Study on Varying Diversity in ”animal” Generation: In this experiment, we modified the setup described in Fig-ure 3 and considered an offline setting. To achieve this, we evaluated the reward with respect to all available offline data and removed the UCB radius term, since the entire dataset was accessible and no exploration was required. Figure 1 presents sample prompts along with the arm-selection preferences of DAK-UCB and Mixture-DAK-UCB. Table 1: DAK-UCB and Mixture-DAK-UCB Arm Preferences for Sample Prompts 
+
+Prompt DAK-UCB Selected Arm Mixture-DAK-UCB Preference Vector 
+
+”an animal in the garden” Arm 3 (unconditioned) [0.218, 0.063, 0.719 ]”an animal in the meadow” Arm 3 (unconditioned) [0.218, 0.064, 0.718 ]”an animal near the lake” Arm 3 (unconditioned) [0.225, 0.069, 0.706 ]”an animal in the jungle” Arm 3 (unconditioned) [0.230, 0.082, 0.688 ]”an animal in the desert” Arm 3 (unconditioned) [0.226, 0.092, 0.682 ]
+
+Conditional Expert Selection via I-JRKE Using Synthetic Diversity Control: In this experiment, we utilize four clusters from the MS-COCO dataset: Bike , Car , Bowl , and Airplane , each comprising a hundred prompts. The prompts are partitioned into ten groups via K-means clustering applied to their CLIP-embedded vector representations. We designate four specialized experts corresponding to each cluster. When the selected expert matches the revealed prompt’s cluster, it generates the appropriate SDXL output for that prompt. For mismatched cases, we employ a diversity-limiting strategy by outputting the image generated for a group representative prompt rather than the actual prompt. Specifically, we assign a representative prompt for each of the ten groups, and for any prompt within a group, the system outputs the SDXL-generated image corresponding to the group’s representative. This experiment was conducted over 2000 iterations across 20 independent runs. The resulting expert selection ratios and Joint-RKE scores are presented in Figure 15, The observation that PAK-UCB works competitively well is that expert selection for individual prompts—where each image is generated specifically for its prompt rather than for group representatives—improves CLIP score alongside diversity. 28 Published as a conference paper at ICLR 2026 500 1000 1500         
+
+> Iteration
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Expert Selection Ratio  Bike prompts (Cluster 0)
+> DAK-UCB
+> Mixture-DAK-UCB
+> Random
+> One Arm Oracle
+> PAK-UCB
+> 500 1000 1500
+> Iteration
+> 0.0
+> 0.2
+> 0.4
+> Expert Selection Ratio  Airplane prompts (Cluster 1)
+> DAK-UCB
+> Mixture-DAK-UCB
+> Random
+> One Arm Oracle
+> PAK-UCB
+> 500 1000 1500
+> Iteration
+> 0.0
+> 0.2
+> 0.4
+> Expert Selection Ratio  Car prompts (Cluster 2)
+> DAK-UCB
+> Mixture-DAK-UCB
+> Random
+> One Arm Oracle
+> PAK-UCB
+> 500 1000 1500
+> Iteration
+> 0.0
+> 0.2
+> 0.4
+> Expert Selection Ratio  Bowl prompts (Cluster 3)
+> DAK-UCB
+> Mixture-DAK-UCB
+> Random
+> One Arm Oracle
+> PAK-UCB 500 1000 1500
+> Number of Iteration
+> 45
+> 50
+> 55
+> 60
+> 65
+> 70
+> 75
+> Joint-RKE
+> DAK-UCB
+> Random
+> Mixture-DAK-UCB
+> One Arm Oracle
+> PAK-UCB
+
+Figure 15: Expert Selection Ratio and Performance Comparison on Joint-RKE. 
+
+Performance Comparison by KID via JKD: In this experiment, we used the same ten clusters of prompts and three generative models as in the first experiment. We employed MS-COCO images as reference and optimized solely on the JKD score defined earlier. The performance was evaluated using KID to measure how close each baseline gets to the reference. The results are shown in Figure 16.We observed that Mixtue-DAK-UCB and DAK-UCB achieve close performance in this setup, which suggests the optimal solution per cluster is not a mixture. 500 1000 1500 
+
+Number of Iteration 
+
+0.006 
+
+0.008 
+
+0.010 
+
+0.012 
+
+0.014 
+
+0.016 
+
+> KID
+> DAK-UCB
+> Random
+> Mixture-DAK-UCB
+> One Arm Oracle
+> PAK-UCB
+
+Figure 16: Performance comparison on KID for MS-COCO prompt clusters using Kandinsky, SDXL, and GigaGAN. Results are averaged over 10 trials. C.4 ABLATION STUDIES 
+
+Testing the Robustness of Fidelity and Diversity Scores Under Noise: In this experiment, our ob-jective was to evaluate how reliably our fidelity and diversity metrics behave when the input images undergo controlled degradation. Using 1000 samples from the MS-COCO validation set, we pro-gressively increased the level of blur applied to the images and measured both CLIP-Score fidelity and DINOv2-based diversity. The CLIP-Score decreases monotonically with increased corruption, demonstrating its sensitivity to image quality. Likewise, the diversity metric also decreases, indi-cating that it does not mistakenly interpret noise as meaningful variation. The two plots in Fig. 17 summarize these trends. 29 Published as a conference paper at ICLR 2026 
+
+Figure 17: Left: CLIP-Score vs. noise level showing a monotonic fidelity drop. Right: Diversity in DINOv2 embedding vs. noise level showing reduced diversity under stronger corruption. 
+
+Fidelity-Aware Behavior in Asymmetric Degradation: To verify that our algorithm does not blindly prioritize diversity at the cost of fidelity, we revisited the introductory two-arm experiment shown in Fig. 1. This time, however, we introduced a strong blur (radius = 20) exclusively to the diverse arm while keeping the limited-diversity arm intact. As expected, the selection ratio of the degraded arm dropped sharply, demonstrating that our method correctly down-weights samples whose fidelity deteriorates, even if they originate from a high-diversity source. The final selection ratios are reported in Table 2, showing behavior consistent with our fidelity-sensitive design. Table 2: Final selection ratios when only the diverse arm is blurred (Radius = 20). 
+
+Diverse Arm (Blurred) Limited-Diversity Arm 
+
+Selection Ratio 45.32% 54.68% 
+
+Efficiency of Random Fourier Feature Approximation: To address the quadratic growth of ker-nel computations in DAK-UCB, we adopt Random Fourier Features (RFFs) to approximate the RBF kernel, reducing the per-round computational cost to O(d2t) for an RFF dimension d. Since the proxy embedding produced by RFFs is d-dimensional, this approximation offers a scalable alter-native while preserving the behavior of the original kernelized method. In the experimental setting of Fig. 2, we verified that RFF-based DAK-UCB closely matches the performance of the exact RBF-kernel version across all metrics. As shown in Table 3, increasing the number of random features improves stability while maintaining nearly identical scores. Table 3: Performance of RFF-based DAK-UCB compared to RBF-kernel DAK-UCB under the setup of Fig. 2. 
+
+# RFF Features Final Joint-RKE Final CLIP Final KD (× 10 −3) Elapsed Time (× 10 3)
+
+32 158.4 29.80 7.20 4.947 64 160.5 30.40 6.60 4.994 128 162.3 31.00 5.80 5.006 256 172.65 31.59 4.78 5.013 512 182.79 32.17 3.60 5.019 
+
+Adaptation to the Introduction of a New Arm: We repeated the experiment shown in Figure 3 with a modified setup in order to evaluate the algorithm’s ability to adapt when a new generative model is introduced partway through the process. Specifically, we began with two arms and intro-duced the third (and most diverse) arm at iteration 125. Once the new arm appeared, the DAK-UCB algorithm gradually adjusted its selection behavior. As shown in Figure 18, the algorithm success-fully adapted to the presence of the newly added arm, redistributing selection ratios and eventually converging to the appropriate mixture for this expanded arm set. 30 Published as a conference paper at ICLR 2026 
+
+Figure 18: Adaptation behavior after introducing the third (diverse) arm at iteration 125. The algo-rithm subsequently converges to updated selection ratios that incorporate the new arm. 
+
+Sensitivity to Kernel Function and Embedding Choice: We repeated the initial experiment (re-sults shown in Figure 2) with a slight modification: we used CLIP embeddings for the images and employed cosine similarity as the kernel function. Figure 19 presents a comparison to the baselines in terms of Joint-RKE and CLIP-score, while Table 4 reports the final cond-vendi scores. 500 1000 1500 
+
+Number of Iteration   
+
+> 9.5
+> 10.0
+> 10.5
+> 11.0
+> 11.5
+> 12.0
+> 12.5
+> Joint-RKE Score
+> DAK-UCB
+> Random
+> Mixture-DAK-UCB
+> One Arm Oracle
+> PAK-UCB
+> 500 1000 1500
+
+Number of Iteration 
+
+> 30.75
+> 31.00
+> 31.25
+> 31.50
+> 31.75
+> 32.00
+> 32.25
+> CLIP Score
+> DAK-UCB
+> Random
+> Mixture-DAK-UCB
+> One Arm Oracle
+> PAK-UCB
+
+Figure 19: The average CLIP Score and Joint-RKE Diversity score over 10 trials using cosine similarity as kernel function. Table 4: Comparison of Conditional Vendi scores for algorithms under kernel function sensitivity test. 
+
+Algorithm Conditional Vendi Score 
+
+DAK-UCB 9.92 Mixture-DAK-UCB 12.53 PAK-UCB 8.75 Random 11.82 One-Arm Oracle 7.99 
+
+Sensitivity to the Diversity Term Scalar Hyperparameter: In this experiment, we used the models from (PixArt-alpha, 2024) and (Runway-ML, 2023) to generate images of an athlete. We generated a hundred images from each model. As suggested by the CLIP, RKE, and Vendi scores in Figure 20, PixArt generated images with higher fidelity, while Stable Diffusion produced more diverse images. To determine if our algorithm can detect this trade-off and to monitor the selection ratios and final metrics for diversity and fidelity under different λ values (the diversity term multiplier), we report the results in Tables 5 and 6. 31 Published as a conference paper at ICLR 2026 Table 5: Model selection ratio for different λ hyperparameter values in Mixture-DAK-UCB algo-rithm. 
+
+λ = 0 .0 λ = 0 .1 λ = 1 .0 λ = 10 .0
+
+PixArt 65% 43% 19% 12% Stable Diffusion 35% 57% 81% 88% Table 6: Performance metrics for different λ hyperparameter values in Mixture-DAK-UCB algo-rithm. Metric λ = 0 .0 λ = 0 .1 λ = 1 .0 λ = 10 .0
+
+Vendi Score 15.25 22.41 33.39 35.04 RKE Score 4.03 6.07 9.14 9.39 CLIP Score 26.8 26.25 25.89 25.55 
+
+Figure 20: Clip, Vendi, and RKE scores for 100 ”image of an athlete” generations, comparing PixArt and Stable Diffusion. As we increased λ, the algorithm preferred Stable Diffusion to maximize diversity metrics, which resulted in a corresponding decrease in fidelity metrics. This trade-off is clearly observable in our results. We also observed a gender bias: PixArt tended to generate male athletes, while Stable Diffusion tended to generate female athletes. Our algorithm accounted for gender fairness while enhancing diversity. 32 Published as a conference paper at ICLR 2026 
+
+Visualization of Prompt Correlations:  
+
+> (a) Kernel matrix for Experiment 2 (b) Kernel matrix for Experiment 13
+
+Figure 21: Correlation among prompts in datasets used in Experiments. 
+
+## APPENDIX D STATEMENT ON THE USE OF LARGE LANGUAGE MODELS 
+
+## (LLM S)
+
+LLMs were used solely for proofreading and polishing the language of this manuscript, as well as for generating the prompts of the numerical experiments for the prompt-aware model selection task. All technical content was developed entirely by the authors. 33

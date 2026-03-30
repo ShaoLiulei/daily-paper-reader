@@ -1,0 +1,3538 @@
+Title: Implicit Regularization of Large Neural Networks via Mean-Field Formulation
+
+URL Source: https://arxiv.org/pdf/2603.20892v1
+
+Published Time: Tue, 24 Mar 2026 00:54:14 GMT
+
+Number of Pages: 40
+
+Markdown Content:
+# Implicit Regularization of Large Neural Networks via Mean-Field Formulation 
+
+Beatrice Acciaio ∗ Jakob Heiss † Gudmund Pammer ‡ Qinxin Yan §
+
+March 24, 2026 
+
+Abstract 
+
+We propose a mathematical framework to explain implicit regularization from early stopping during the training of overparametrized neural networks. In the mean-field limit, the parameter distribution evolves according to a gradient flow on the space of probability measures. We show that these dynamics admit an equivalent McKean–Vlasov stochastic control formulation through the corresponding Hamilton–Jacobi–Bellman (HJB) equation. The control viewpoint yields a Dynamic Programming Principle (DPP), which we use to define a new metric on probability measures. This metric can be viewed as a mean-field generalization of the control representation of the Wasserstein-2 distance, and it naturally appears as a regularization term selected by early stopping. We further obtain non-asymptotic bounds describing how the induced regularization depends on the stopping time. 
+
+Key words: McKean–Vlasov Control, Implicit Regularization, Gradient Flow, Machine Learning 
+
+# 1 Introduction 
+
+An important empirical feature of modern deep learning is that highly overparametrized models can fit the training data extremely well, often achieving (near) interpolation, and yet still generalize surprisingly well on unseen data [Zhang et al., 2017, Belkin et al., 2019]. From a traditional statistical viewpoint, this behavior is counterintuitive: increasing the capacity of a hypothesis class is usually expected to worsen generalization unless one imposes explicit regularization. Understanding why and when large neural networks avoid classical overfitting has therefore become a central question in machine learning theory. A broad set of explanations has emerged. Some lines of work emphasize the role of the data distribution and the emergence of useful internal representations [Bengio et al., 2013], others connect generalization to properties of the optimization dynamics, such as algorithmic stability (and its link to training time) [Hardt et al., 2016] or margin/Lipschitz-type complexity measures [Bartlett et al., 2017]. A particularly influential viewpoint is implicit regularization (or implicit bias): even when the training objective contains no explicit regularization like Lasso or Ridge, the optimization algorithm can preferentially select certain “simpler” solutions among the many global minimizers, thereby controlling effective complexity [Neyshabur et al., 2014, Soudry et al., 2017, Gunasekar              
+
+> ∗Department of Mathematics, ETH Zürich, Zürich, Switzerland, email: beatrice.acciaio@math.ethz.ch .
+> †Statistics Department, UC Berkeley, Berkeley, USA, email: jakob.heiss@berkeley.edu .
+> ‡Institute for Statistics, TU Graz, Styria, Austria, email: gudmund.pammer@tugraz.at .
+> §Program in Applied and Computational Mathematics, Princeton University, Princeton, USA, email:
+> qy3953@princeton.edu .
+
+1
+
+> arXiv:2603.20892v1 [math.OC] 21 Mar 2026
+
+Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan et al., 2018]. In this perspective, hyperparameters and training protocols, including noise injection, step sizes, and especially the stopping time, act as regularization mechanisms. Early stopping is a canonical example: terminating the optimization trajectory at a finite time can select solutions with improved stability or generalization properties even in highly nonconvex regimes. In this paper we propose a mathematical framework for implicit regularization and early stopping based on a mean-field description of wide neural networks. In the mean-field (infinite-width) regime, a two-layer network can be viewed as a function on a probability measure space [Mei et al., 2018, Chizat and Bach, 2018, Sirignano and Spiliopoulos, 2020, Rotskoff and Vanden-Eijnden, 2022]. Training by gradient-based methods then induces an evolution of probability measures (μt)t≥0 on the parameter space. This evolution can be interpreted as a gradient flow on the probability measure space endowed with the Wasserstein-2 metric. This links optimization dynamics to the geometry of optimal transport, variational principles, and to partial differential equations. Our main contribution is to connect this gradient-flow viewpoint with a McKean–Vlasov optimal control formulation and its Hamilton–Jacobi–Bellman (HJB) equation on probability measure space. This bridge allows us to interpret training trajectories—and in particular early-stopped trajectories—as solutions selected by a variational principle that trades off loss decrease against a kinetic (control) cost. We develop both a deterministic regime and a diffusive regime, derive endpoint variational representations consistent with dynamic programming, and use these tools to formalize early stopping as an implicit regularizer in the mean-field setting. 
+
+Our contributions. At a high level, we establish a two-way bridge between Wasserstein gradient flows and McKean–Vlasov control for training dynamics on probability measure space, and we use it to quantify and interpret early-stopping bias. Concretely: 
+
+• We formulate deterministic and diffusive mean-field training dynamics as minimizing curves of McKean–Vlasov control problems and characterize their value functions via stationary HJB equations on probability measure space. 
+
+• We derive endpoint (finite-horizon) variational formulations for the training dynamics that are compatible with dynamic programming. These yield a principled description of early stopping as a trajectory-selection mechanism. 
+
+• We develop a geometric structure through continuity equations, minimal velocities, and a Finsler-type action, clarifying how the selected trajectory balances loss dissipation and kinetic energy, and how this balance changes between deterministic and diffusive regimes. 
+
+• We apply the framework to the mean-field model of one-hidden-layer neural networks, establish moment and stability bounds and illustrate the resulting implicit-regularization behavior numerically. 
+
+• We further use our framework to provide an alternative solution for this open question: 
+
+Does implicit regularization vanish under infinite training time horizon? 
+
+Paper organization. Section 2 recalls some preliminaries on gradient flows on metric spaces, and introduces the McKean–Vlasov control formulation. Section 3 develops endpoint representations and the early-stopping variational principles. Section 4 specializes the general results to one-hidden-layer networks and derives the main bounds and interpretations. Numerical experiments are presented in Section 5. 2Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+1.1 Related Literature 
+
+Bishop [1995], Friedman and Popescu [2003], Ali et al. [2019], Heiss et al. [2019], Stark and Steinberger [2025], Wu et al. [2025] study implicit regularization for linear regression (including random feature models), by connecting the (early-stopped) training dynamics to the L2-regularization of the parameters, but their theory does not apply to deep neural networks with trainable hidden layers. Gidel et al. [2019] analyze implicit regularization for deep linear neural networks, where all the activation functions are linear. In contrast, we study the gradient dynamics and the implicit regularization of early-stopping for a two-layer 1 neural network with non-linear activation function in the mean-field limit. The mean-field limit corresponds to the two-layer special case of [Yang and Hu, 2021] which is in the “feature learning” regime in contrast to the “lazy learning” regimes such as NTK [Jacot et al., 2020]. In particular, our analysis allows us to bound the L2-norm of the parameters obtained from early-stopped gradient flow. Such a bound is particularly useful for ReLU neural networks, since multiple works in the literature translate the L2-norm of the parameters into properties of the learned function [Savarese et al., 2019, Ongie et al., 2019, Heiss et al., 2021a,b, Parhi and Nowak, 2022, Jacot et al., 2022, Boursier and Flammarion, 2023], which can provide more fine-grained understanding of the inductive bias towards feature learning [Heiss et al., 2021b, Jacot et al., 2022, Heiss, 2024, Shenouda et al., 2024, Parkinson et al., 2025]. Therefore, we think that there is a potential for future research to better understand inductive bias towards feature learning for early stopping. However, within this work, we do not further discuss the connections to feature learning. While we highlight this potential connection to feature learning for future work, the primary focus of this work remains on the variational characterization of the training dynamics itself. Williams et al. [2019] analyze the gradient dynamics of univariate ReLU networks, demonstrating how optimization adaptively aligns activation thresholds (knots) with the data structure. From a margin-maximization perspective, Poggio et al. [2018] argue that gradient descent implicitly regularizes deep networks by maximizing the normalized margin, akin to support vector machines. Paik et al. [2025] provide more general bounds for the implicit regularization of general optimization problems without exploiting the structure of neural networks. Our analysis relies on the intersection of gradient flows in metric spaces, McKean–Vlasov control, and viscosity solutions for Hamilton-Jacobi-Bellman (HJB) equations on the Wasserstein space. The interpretation of the training dynamics of infinite-width neural networks as a gradient flow on the space of probability measures is popularized by [Chizat and Bach, 2018, Mei et al., 2018, Sirignano and Spiliopoulos, 2020, Rotskoff and Vanden-Eijnden, 2022]. Rigorous foundations for such flows are established in the theory of curves of maximal slope in metric spaces, comprehensively developed by Ambrosio et al. [2008]. To characterize the implicit regularization effect of early stopping, we reformulate the gradient flow via a McKean–Vlasov control problem, where the state dynamics (the distribution of parameters) depend on the distribution itself. A similar idea can be found in Rossi et al. [2019], where they prove the existence of curves of maximal slope on general metric space using control formulations and corresponding Hamilton-Jacobi equations on general metric spaces. On probability measure space, the control problem is referred to as McKean–Vlasov control (equivalently Mean-field control), and the general theory for McKean–Vlasov control problems is detailed in Carmona and Delarue [2018]. A central tool in our analysis is the Dynamic Programming Principle (DPP), which allows us to decompose the infinite-horizon problem into finite-time segments. While classical DPP results are  
+
+> 1In our notation, a two-layer neural network has one hidden layer (with non-linear activation function). For non-polynomial activation functions this architecture can approximate any continuous function on any compact set with sufficiently many neurons [Cybenko, 1989, Hornik, 1991].
+
+3Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan standard, the extension to McKean–Vlasov dynamics, where the conditioning on the law, induces non-trivial technicalities. We rely specifically on the results of Djete et al. [2022a,b], who prove the DPP for open-loop controls and justify the restriction to feedback controls in the weak formulation. The value function of the McKean–Vlasov control problem is characterized as the solution to a Hamilton-Jacobi-Bellman (HJB) equation on the Wasserstein space. Due to the potential lack of smoothness of the value function and the non-compactness of the space, classical smooth solutions rarely exist. We therefore adopt the notion of viscosity solutions on metric spaces. In the noisy training regime, we refer to the work of [Soner and Yan, 2024, Cosso et al., 2022], who establish existence and uniqueness comparison principles for McKean–Vlasov control problems with diffusion. In the deterministic case, the well-posedness and uniqueness of viscosity solutions in this setting are guaranteed by the comparison principles established by [Gangbo and Święch, 2015, Ambrosio and Feng, 2014]. These works ensure that the value function of the McKean–Vlasov control problem is the unique viscosity solution of the corresponding HJB equation, even when the gradient flows are non-unique due to the lack of displacement convexity or sufficient regularity assumptions. 
+
+1.2 Notations 
+
+Let E ⊆ Rd denote the underlying space, and P(E) the set of probability measures on it. Let P2(E)
+
+be the set of probability measures with finite second moment, endowed with the Wasserstein-2 metric W2. Recall that (P2(E), W2) is a complete metric space. For two metric spaces X , Y, let C(X ; Y) denote the set of continuous functions from X to Y with respect to their own topology. We denote the set of continuous functions on P2(E) by C(P2(E); R),and write C(P2(E)) when there is no ambiguity. We will use bold symbols to denote continuous curves in P2(E), e.g. μ ∈ C (R+; P2(E)) . For i ∈ N+, let Ci(E; R) denote the set of functions with 
+
+i-times continuous derivative. We will use the linear derivative on P(E) defined as follows. 
+
+Definition 1.1. A function ϕ ∈ C (P(E); R) is continuously differentiable if there exists a function 
+
+∂μϕ ∈ C (P2(E); C(E)) satisfying 
+
+ϕ(ν) = ϕ(μ) +  
+
+> ∫10
+> ∫
+> E
+
+∂μϕ(μ + τ (ν − μ))( x)( ν − μ)(d x)d τ, ∀μ, ν ∈ P (E),
+
+where ∂μϕ(μ) is called the linear derivative of ϕ in the μ−variable evaluated at μ. For i = 1 , 2,set Ci(P(E)) := {ϕ ∈ C (P(E)) : ∂μϕ ∈ C (P(E); Ci(E; R)) }. If it exists, ∇W ϕ := ∇x∂μϕ : P(E) →C(E; Rd) is called the Lions derivative .
+
+# 2 Problem Setup 
+
+2.1 Preliminaries 
+
+We first recall some definitions and results on gradient flows in Wasserstein space from [Ambrosio et al., 2008]. Consider the complete metric space (P2(E), W2). Let I ⊂ R+ be an interval, which can be either finite or infinite. For p ∈ [1 , ∞], a curve μ := ( μt)t∈I is said to belong to AC p(I; P2(E)) if there exists m = ( mt)t∈I ∈ Lp(I; R) such that 
+
+W2(μs, μ t) ≤ 
+
+> ∫ts
+
+mu du, for all s, t ∈ I, s ≤ t, (2.1) and AC ploc (I; P2(E)) denotes the set of curves that belong to AC p(I0; P2(E)) for every compact interval I0 ⊆ I. When there is no ambiguity on the target space, we also write AC p(I). For p = 1 ,4Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+AC 1(I; P2(E)) is the space of absolutely continuous curves, and we denote the corresponding space simply by AC (I; P2(E)) .The following results can be found in [Ambrosio et al., 2008]. 
+
+Proposition 2.1 (Metric derivative) . For all μ ∈ AC 2(I), the limit 
+
+|μ′|(t) := lim 
+
+> s→t
+
+W2(μs, μ t)
+
+|s − t|
+
+exists for a.e. t ∈ I. Moreover, the map t 7 → | μ′|(t) belongs to L2(I).
+
+The map t 7 → | μ′|(t) is called the metric derivative of μ. The following result from [Ambrosio et al., 2008] shows that it is minimal within the class of functions m ∈ L2([0 , T ]; R) satisfying (2.1) .
+
+Proposition 2.2. Let μ be a weakly continuous curve. Then μ belongs to AC 2(I) if and only if there exists a Borel map v : ( y, t ) → vt(y) ∈ Rd such that t → ∥ vt∥μt ∈ L2(I) and the continuity equation 
+
+∂tμt + ∇ · (μtvt) = 0 in Rd × I
+
+holds in the sense of distributions. The map v is referred to as a velocity of the curve μ. There exists a unique velocity v∗ with minimal L2-norm, and it satisfies ∥vt∥μt = |μ′|(t) for a.e. t ∈ I.
+
+On the metric space (P2(E), W2), the gradient flow can be understood in the sense of curves of maximal slope. We first recall the definition of upper gradient. 
+
+Definition 2.3. For a given function ϕ : P2(E) → R, a function g : P2(E) → [0 , ∞] is a strong upper gradient of ϕ if, for every curve μ ∈ AC (I), the function g ◦ μ is Borel, and there holds 
+
+|ϕ ◦ μ(t) − ϕ ◦ μ(s)| ≤  
+
+> ∫ts
+
+g ◦ μ(r)|μ′|(r) dr, ∀s, t ∈ I, s ≤ t. 
+
+To define curves of maximal slope, we take I := [0 , ∞) from now on. 
+
+Definition 2.4. Let g be a strong upper gradient of ϕ. A curve μ ∈ AC 2
+
+> loc
+
+([0 , ∞); P2(E)) is a curve of maximal slope with respect to g if 
+
+−(ϕ ◦ μ)′(t) = |μ′|2(t) = g2(μt), a.e. t ∈ (0 , ∞). (2.2) Notice that if a curve μ ∈ AC 2
+
+> loc
+
+(0 , ∞) satisfies 
+
+12 
+
+> ∫t
+> 0
+
+|μ′|2(s)d s + 12 
+
+> ∫t
+> 0
+
+g2(μs)d s + ϕ(μt) ≤ ϕ(μ0), a.e. t ∈ (0 , ∞),
+
+then μ is a curve of maximal slope with respect to g and satisfies (2.2). 
+
+Remark 2.5 . For a given function ϕ : P2(E) → R, the corresponding curves of maximal slope may not be unique. 
+
+Definition 2.6 (Metric slope on (P2(E), W2)). Let ϕ : P2(E) → (−∞ , +∞] be proper. For 
+
+μ ∈ P 2(E) with ϕ(μ) < ∞, the (descending) metric slope of ϕ at μ is defined by 
+
+|∂ϕ |(μ) := lim sup 
+
+> W2(ν,μ )→0
+> (
+
+ϕ(μ) − ϕ(ν))+
+
+W2(μ, ν ) , (2.3) where (a)+ := max {a, 0}. We set |∂ϕ |(μ) = + ∞ if ϕ(μ) = + ∞.5Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+Definition 2.7 (Strong Wasserstein subdifferential on P2(E)). Let ϕ : P2(E) → (−∞ , +∞] be proper and l.s.c. Fix μ ∈ P 2(E) with ϕ(μ) < ∞. We say that ξ ∈ L2(μ; Rd) belongs to the (strong) Wasserstein subdifferential of ϕ at μ, and write ξ ∈ ∂ϕ (μ), if there exists a function oμ : [0 , ∞) → R
+
+with oμ(r)/r → 0 as r ↓ 0 such that, for every ν ∈ P 2(E) and every optimal coupling γ ∈ Γo(μ, ν ),
+
+ϕ(ν) − ϕ(μ) ≥
+
+> ∫
+> E×E
+
+⟨ξ(x), y − x⟩ γ(d x, dy) − oμ
+
+> (
+
+W2(μ, ν )). (2.4) We set ∂ϕ (μ) = ∅ if ϕ(μ) = + ∞.
+
+Definition 2.8 (Slope-realizing subgradients) . Define 
+
+∂◦ϕ(μ) := 
+
+> {
+
+η ∈ ∂ϕ (μ) : ∥η∥L2(μ) = |∂ϕ |(μ)
+
+> }
+
+⊂ ∂ϕ (μ). (2.5) 
+
+Remark 2.9 (Slope and subdifferential) . For ξ ∈ ∂ϕ (μ), one typically has 
+
+|∂ϕ |(μ) ≤ ∥ξ∥L2(μ).
+
+In particular, any ξ ∈ ∂◦ϕ(μ) in the sense of (2.5) realizes the metric slope through its L2(μ)-norm. 
+
+2.2 McKean–Vlasov control problem 
+
+For a given function ϕ ∈ C (P2(E)) , to deal with the possible non-uniqueness of the gradient flows, we propose a control formulation for the potential functions. We first define general McKean–Vlasov control problems and state the relevant results. We distinguish between the diffusive regime ( ϵ > 0)and the deterministic transport regime ( ϵ = 0 ). 
+
+2.2.1 Diffusive Regime ( ϵ > 0)
+
+We fix a reference filtered probability space (Ω , F, (Ft)t≥0, P) satisfying the usual conditions and supporting a d-dimensional Brownian motion W .Let Uad be the set of F-adapted processes α : [0 , ∞) × Ω → Rd such that for every T > 0, α
+
+satisfies the square-integrability condition: 
+
+EP0 
+
+> [∫T
+> 0
+
+∥αt∥2dt
+
+> ]
+
+< ∞, (2.6) and the stochastic exponential 
+
+Et(α/ϵ ) := exp  
+
+> (∫ t
+> 0
+
+1
+
+ϵ αs · dW s − 12 
+
+> ∫t
+> 0
+
+1
+
+ϵ2 ∥αs∥2ds
+
+> )
+
+(2.7) is a uniformly integrable P0-martingale on [0 , T ]. For any control α ∈ U ad , we define the probability measure Pα on FT via the Radon-Nikodym derivative: 
+
+dPα
+
+dP0
+
+> ∣∣∣∣Ft
+
+:= Et(α/ϵ ). (2.8) By Girsanov’s theorem, under Pα, the process W αt := Wt − 1  
+
+> ϵ
+> ∫t
+> 0
+
+αsds is a Brownian motion. Consequently, the state process (Xt)t∈[0 ,T ] (which acts as a scaled Brownian motion under P0)satisfies the controlled dynamics: 
+
+dXt = αtdt + ϵ dW αt , X0 ∼ μ ∈ P 2(E). (2.9) 6Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Denote by μαt := Law Pα (Xt) the marginal distribution of the state at time t. Then it satisfies the Fokker-Planck equation in the sense of distributions 
+
+∂tμαt = −∇ · (αtμαt ) + ϵ2
+
+2 ∆μαt . (2.10) Given a running cost ℓ : P2(E) → R which is continuous and bounded from below, the objective is to minimize over α ∈ U ad the following cost function 
+
+Jϵ(μ, α ) := EPα 
+
+> [∫ ∞
+> 0
+
+e−t 
+
+> (
+
+12 ∥αt∥2 + ℓ(μαt )
+
+> )
+
+dt
+
+> ]
+
+, (2.11) where (X, α ) satisfies Equation (2.9) . While the problem is defined over path-dependent adapted controls, standard results in mean-field control allow us to restrict the search to Markovian feedback policies without loss of optimality. 
+
+Definition 2.10 (Feedback controls) . Define the set of admissible feedback controls as 
+
+A := 
+
+> {
+
+α : [0 , ∞) × Rd → Rd ∣∣∣ α is Borel measurable, locally bounded, and of linear growth 
+
+> }
+
+.
+
+Proposition 2.11 (Restriction to Feedback Controls) . Fix μ ∈ P 2(E). For every α ∈ A , the associated SDE (2.9) admits a weak solution. Moreover, 
+
+vϵ(μ) := inf 
+
+> α∈U ad
+
+Jϵ(μ, α ) = inf  
+
+> α∈A
+
+Jϵ(μ, α ), (2.12) 
+
+where the function vϵ is referred to as the value function. Proof. See [Djete et al., 2022b, Theorem 3.1] for the proof that the value function over open-loop controls coincides with the value function over feedback controls in the McKean–Vlasov setting. 
+
+2.2.2 Deterministic Regime ( ϵ = 0 )
+
+In the limit ϵ → 0, the probabilistic Girsanov formulation is replaced by the continuity equation formulation. The state is described directly by the curve of measures. 
+
+Definition 2.12 (Admissible Pairs) . We say that a pair (μ, α ) is admissible, denoted (μ, α ) ∈ A 0(μ),if: 1. μ : [0 , ∞) → P 2(E) is a continuous curve with μ|t=0 = μ, i.e., μ0 = μ.2. α : [0 , ∞) × E → Rd is a Borel velocity field satisfying ∫ ∞ 
+
+> 0
+
+e−t∥αt∥2
+
+> L2(μt)
+
+dt < ∞.3. The pair (μ, α ) satisfies the Continuity Equation in the sense of distributions: 
+
+∂tμt + ∇ · (αtμt) = 0 . (2.13) 
+
+Remark 2.13 . For a curve μ ∈ AC 2([0 , T ]; P2(E)) with (μ, α ) ∈ A 0(μ), we always identify the related (feedback) control α as the unique velocity of the curve with minimal L2-norm via Proposition 2.2. Analogously, given the running cost function ℓ, the cost function is defined as 
+
+J0(μ, α ) :=  
+
+> ∫∞
+> 0
+
+e−t 
+
+> (
+
+12
+
+> ∫
+> E
+
+∥αt(x)∥2μt(d x) + ℓ(μt)
+
+> )
+
+dt, (2.14) and, similar to above, the value function is defined as 
+
+v0(μ) = inf  
+
+> (μ,α )∈A 0(μ)
+
+J0(μ, α ). (2.15) 
+
+Remark 2.14 . Since we do not assume uniqueness of the solution to Equation (2.13) with given control 
+
+α and initial distribution μ, the infimum in (2.15) is taken over all admissible pairs (μ, α ) ∈ A 0(μ),compared to (2.12). 7Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+2.2.3 Dynamic Programming Principle 
+
+It is well-known that the value function satisfies the dynamic programming principle. The proof of the following result can be found in [Djete et al., 2022a, Theorem 3.1, Theorem 3.2, Corollary 3.6]. 
+
+Proposition 2.15 (Dynamic programming) . For every T > 0 and μ ∈ P 2(E),
+
+• Case ϵ > 0:
+
+vϵ(μ) = inf  
+
+> α∈A
+> { ∫T
+> 0
+
+e−t( 12 E∥αt∥2 + ℓϵ(μαt )
+
+> )
+
+dt + e−T vϵ(μαT )
+
+> }
+
+. (2.16) 
+
+• Case ϵ = 0 :
+
+v0(μ) = inf  
+
+> (μ,α )∈A 0(μ)
+> { ∫T
+> 0
+
+e−t( 12 E∥αt∥2 + ℓ0(μαt )
+
+> )
+
+dt + e−T v0(μαT )
+
+> }
+
+. (2.17) 
+
+To unify the notation, we combine the previous two cases by introducing 
+
+Aϵ(μ) := {(μ, α ) : μ0 = μ, and (μ, α ) satisfies (2.10) if ϵ > 0 resp. (2.13) if ϵ = 0 }.
+
+Hence, for ϵ ≥ 0,
+
+vϵ(μ) = inf  
+
+> (μ,α )∈A ϵ(μ)
+> { ∫T
+> 0
+
+e−t( 12 E∥αt∥2 + ℓϵ(μαt )
+
+> )
+
+dt + e−T vϵ(μαT )
+
+> }
+
+.
+
+From the dynamic programming principle, we can formally write down the stationary Hamilton-Jacobi-Bellman equation of the McKean–Vlasov control problem for ϵ ≥ 0:
+
+wϵ(μ) = − 12
+
+> ∫
+> E
+
+|∇ ∂μwϵ(μ)( x)|2μ(d x) + ϵ2
+
+2
+
+> ∫
+> E
+
+∆∂μwϵ(μ)( x)μ(d x) + ℓϵ(μ). (2.18) As the HJB equation may not have classical solutions, weak solutions known as viscosity solutions are used to study the relation between the value function and the HJB equation. The definition of viscosity solution can be found in Appendix A. We also recall some results on viscosity solutions from [Gangbo and Święch, 2015, Ambrosio and Feng, 2014, Cosso et al., 2022, Soner and Yan, 2024]. 
+
+Proposition 2.16. The value function defined in (2.12) (resp. (2.15) ) is a viscosity solution of the HJB equation (2.18) for ϵ > 0 (resp. ϵ = 0 ). 
+
+Now we specify the class of functions we consider. Denote G2(μ) := 1 + ∫ 
+
+> E
+
+∥x∥2μ(d x). Define the set of functions with at most "quadratic" growth by 
+
+Cquad := 
+
+> {
+
+v : P2 → R 
+
+> ∣∣∣
+
+v is continuous, bounded from below, and ∃ C > 0 : |v(μ)| ≤ C G2(μ), ∀μ
+
+> }
+
+.
+
+(2.19) 
+
+Theorem 2.17. For every ϵ ≥ 0, (2.18) admits at most one viscosity solution in Cquad .Proof. When ϵ > 0, the proof idea of [Soner and Yan, 2024, Theorem 4.1] in finite-time setting can be easily adapted to the discounted infinite-horizon setting here. When ϵ = 0 , the theorem is stated in [Gangbo and Święch, 2015, Section 5, Theorem 5.1 and Theorem 5.2]. Combining the previous two results, we can characterize the optimal value function (2.12) (resp. (2.15)) as the unique viscosity solution of the HJB equation (2.18) for ϵ > 0 (resp. ϵ = 0 ). 8Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+2.3 From McKean–Vlasov control to gradient flow 
+
+Now we show that, for every given functional V ∈ C 2(P2) and every ϵ ≥ 0, we can choose a suitable running cost function ℓϵ such that the optimal value function in (2.12) (resp. (2.15) ) coincides with 
+
+V as function on P2(E). This can be regarded as an inverse problem. The connection between McKean–Vlasov control and Langevin dynamic is also mentioned in Höfer and Soner [2025]. 
+
+Theorem 2.18 (Identification of ℓ). Fix ϵ > 0 (resp. ϵ = 0 ). For any given function V ∈C2(P2) ∩ C quad (resp. V ∈ C 1(P2) ∩ C quad ), define the running cost function ℓϵ : P2(E) → R by 
+
+ℓϵ(μ) := V (μ) + 12
+
+> ∫
+> E
+
+∥∇ x∂μV (μ)∥2 dμ − ε2
+
+> 2
+> ∫
+> E
+
+∆x∂μV (μ) d μ (2.20) 
+
+(resp. ℓ0(μ) := V (μ) + 12
+
+> ∫
+> E
+
+∥∇ x∂μV (μ)∥2 dμ ).
+
+Let vϵ be the value function defined in (2.12) (resp. (2.15) ) with running cost ℓϵ. Then vϵ ≡ V .Proof. From Proposition 2.16 with running cost ℓϵ, the value function vϵ defined in (2.12) (resp. (2.15) ) with running cost ℓϵ is a viscosity solution of the HJB equation (2.18) and belongs to Cquad .Moreover, from the definition of ℓϵ in (2.20) , the given function V also satisfies the same HJB equation, and V ∈ C quad . By Theorem 2.17, there is a unique viscosity solution of the HJB equation in Cquad , so vϵ ≡ V .
+
+Remark 2.19 . When ϵ = 0 , we only need V ∈ C 1(P2) to deduce the same statement as in the previous theorem. We first discuss the properties of the optimal flows from the McKean–Vlasov control problem when ϵ = 0 , showing that every minimizing flow is a curve of maximal slope. 
+
+Proposition 2.20 (Every minimizer is a curve of maximal slope for v). Let ϵ = 0 , and denote the value function v0 by v. Assume that the value function vϵ : P2 → R in (2.12) (resp. (2.15) )is proper, lower semicontinuous, and W2–locally Lipschitz on its sublevel sets. Then its metric slope |∂v | is a strong upper gradient on {v < +∞} . Let (μ∗, α ∗) be a minimizer of J0 among all admissible pairs with initial condition μ. Then the following statements hold: 1. μ∗ is absolutely continuous in (P2, W2) with metric speed |(μ∗)′| ∈ L2loc ([0 , ∞)) , and 
+
+> ∫
+> E
+
+|α∗ 
+
+> t
+
+|2 dμ∗ 
+
+> t
+
+= |(μ∗)′| 2 
+
+> t
+
+for a.e. t > 0. (2.21) 
+
+2. μ∗ satisfies the energy–dissipation equality 
+
+− ddt v(μ∗ 
+
+> t
+
+) = 12 |∂v |(μ∗ 
+
+> t
+
+)2 + 12 |(μ∗)′| 2 
+
+> t
+
+for a.e. t > 0. (2.22) 
+
+In particular, μ∗ is a curve of maximal slope for v w.r.t. the strong upper gradient |∂v |.3. There exists a measurable selection ζt ∈ ∂◦v(μ∗ 
+
+> t
+
+) (the metric subdifferential with minimal 
+
+L2(μ∗ 
+
+> t
+
+)–norm) such that 
+
+∥ζt∥L2(μ∗  
+
+> t)
+
+= |∂v |(μ∗ 
+
+> t
+
+), α∗ 
+
+> t
+
+= −ζt for a.e. t > 0. (2.23) 
+
+Hence every minimizer (μ∗, α ∗) evolves according to a (metric) gradient–flow dynamics for v.
+
+9Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+Proof. Let (μ, α ) ∈ A 0(μ) be any admissible pair. By the definition of metric derivative, 
+
+|μ′|(t) ≤
+
+> ( ∫
+> E
+
+|αt|2 dμt
+
+> )1/2
+
+for a.e. t > 0. (2.24) Since |∂v | is a strong upper gradient, we have, along μ,
+
+− ddt v(μt) ≤ | ∂v |(μt) |μ′|(t) ≤ 12 |∂v |(μt)2 + 12 |μ′|(t)2 ≤ 12 |∂v |(μt)2 + 12
+
+> ∫
+> E
+
+|αt|2 dμt,
+
+for a.e. t > 0. Using (2.18) with ϵ = 0 , we have ℓ(μt) = v(μt) + 12 |∂v |(μt)2, hence for a.e. t > 0,
+
+> ∫
+> E
+
+12 |αt|2 dμt + ℓ(μt) ≥ v(μt) − ddt v(μt). (2.25) Multiplying (2.25) by e−t and integrating over [0 , T ] yields  
+
+> ∫T
+> 0
+
+e−t(∫
+
+> E
+
+12 |αt|2 dμt + ℓ(μt)
+
+> )
+
+dt ≥ 
+
+> ∫T
+> 0
+
+e−t(
+
+v(μt) − ddt v(μt)
+
+> )
+
+dt. 
+
+Integration by parts on the right-hand side gives  
+
+> ∫T
+> 0
+
+e−t(∫
+
+> E
+
+12 |αt|2 dμt + ℓ(μt)
+
+> )
+
+dt ≥ − e−T v(μT ) + v(μ).
+
+Letting T → ∞ , from DPP (2.17) we have e−T v(μT ) → 0, and thus 
+
+J(μ, α ) ≥ v(μ).
+
+If (μ∗, α ∗) is optimal, equality holds everywhere above. Equality in (2.24) yields (2.21) , while equality in Young’s inequality forces the existence of ζt realizing the slope with ∥ζt∥L2(μ∗  
+
+> t)
+
+= |∂v |(μ∗ 
+
+> t
+
+)
+
+and α∗ 
+
+> t
+
+= −ζt, giving (2.23) . Plugging this into (2.25) yields (2.22) . By definition, (2.22) is the energy–dissipation equality, so μ∗ is a curve of maximal slope for v with respect to |∂v |.
+
+2.4 From gradient flow to McKean–Vlasov control 
+
+In Section 2.3, we showed that every minimizer of the McKean–Vlasov control problem is a curve of maximal slope of the value function. In this section, we show that, with sufficient assumptions on the given potential functions, every curve of maximal slope (2.2) is a minimizing flow of (2.12). 
+
+Remark 2.21 . Notice that this inverse direction is not always true. We provide a counterexample in Appendix A. We start with the definition of Calibration Property. This is not a new mathematical concept, but collects in a single definition the well-known conditions that: (i) a curve of maximal slope satisfies the energy–dissipation equality, (ii) its metric derivative is represented by a velocity field in the continuity equation, and (iii) the slope is realized by a minimal-norm element of the metric subdifferential. These concepts exist separately in Ambrosio et al. [2008], Benamou and Brenier [2000], and Carmona and Delarue [2018]. We use the term Calibration Property purely for convenience. 
+
+Definition 2.22 (Calibration Property (Cal)) . Let v : P2(E) → (−∞ , +∞] be proper, l.s.c., and 
+
+W2–locally Lipschitz on its sublevel sets. We say that v satisfies the Calibration Property (Cal) if for every curve (μt)t≥0 of maximal slope for v with respect to |∂v |, there exist Borel measurable maps 
+
+α : [0 , ∞) × E → Rd, ζ ∈ L2(μt ⊗ dt ; Rd),
+
+10 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan with ζt := ζ(t, ·) ∈ ∂◦v(μt) for a.e. t ≥ 0, such that for a.e. t ≥ 0:
+
+(CE) (μ, α ) solves the continuity equation (2.13) in the weak sense, 
+
+|μ′|2(t) = 
+
+> ∫
+> E
+
+|αt(x)|2 μt(d x); 
+
+(CR) ddt v(μt) = 
+
+> ∫
+> E
+
+ζt(x) · αt(x) μt(d x), ∥ζt∥L2(μt) = |∂v |(μt).
+
+Remark 2.23 . Intuitively, property (Cal) asserts that along any maximal slope curve there exists a minimal velocity α (realizing the metric derivative) and a slope-realizing subgradient ζ with 
+
+∥ζt∥L2(μt) = |∂v |(μt), such that the chain rule holds with equality. 
+
+Remark 2.24 (Sufficient conditions for (Cal)) . Each of the following guarantees the Calibration Property (Cal). a. Smooth v (Lions C1 + chain rule). Assume v ∈ C 1 on P2(E) and its Lions derivative 
+
+∇W v(μ) := ∇x∂μv(μ) ∈ L2(μ; Rd)
+
+is well-defined. If for every absolutely continuous curve μ with velocity α solving the continuity equation, the chain rule holds: 
+
+ddt v(μt) = 
+
+> ∫
+> Rd
+
+∇W v(μt)( x) · αt(x) μt(d x),
+
+then along a maximal slope curve one may take ζt = ∇W v(μt) to obtain (CR); and by Proposition 2.2, one can choose a velocity α = −ζ so that it is the minimal velocity such that (CE) holds. b. Convex subdifferential with measurable minimal-norm selector. Assume that for every μ with v(μ) < ∞, the set ∂v (μ) ⊂ L2(μ; Rd) is a nonempty closed convex set and admits a measurable selection ζmin (μ) ∈ ∂v (μ) satisfying 
+
+∥ζmin (μ)∥L2(μ) = |∂v |(μ).
+
+Then along any maximal slope curve, the energy–dissipation equality implies equality in Young’s inequality, yielding (CR) with ζt = ζmin (μt); (CE) again follows by choosing a minimal velocity via Proposition 2.2. 
+
+Proposition 2.25 (Energy identity under (Cal)) . Let ϕ : P2(E) → (−∞ , +∞] satisfy (Cal) in the sense of Definition 2.22. Let μ := ( μt)t≥0 be a curve of maximal slope for ϕ with respect to |∂ϕ |.Let (α, ζ ) be the measurable selections provided by (Cal) . Then, for a.e. t ≥ 0,
+
+αt = −ζt μt-a.e. ,
+
+and 
+
+− ddt ϕ(μt) = 
+
+> ∫
+> Rd
+
+|αt(x)|2 μt(d x) = 
+
+> ∫
+> Rd
+
+|ζt(x)|2 μt(d x).
+
+Consequently, for every T > 0,
+
+ϕ(μ0) − ϕ(μT ) =  
+
+> ∫T
+> 0
+> ∫
+> Rd
+
+|αt(x)|2 μt(d x) d t. 
+
+11 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+Proof. Since μ is a curve of maximal slope for ϕ with respect to |∂ϕ |, the energy–dissipation equality holds: 
+
+ϕ(μ0) − ϕ(μT ) = 12
+
+∫ T
+
+> 0
+
+|μ′|(t)2 dt + 12
+
+∫ T
+
+> 0
+
+|∂ϕ |(μt)2 dt. 
+
+In particular, t 7 → ϕ(μt) is absolutely continuous and, for a.e. t ∈ (0 , T ),
+
+− ddt ϕ(μt) = |μ′|(t)2 = |∂ϕ |(μt)2.
+
+On the other hand, by (CR) and Cauchy–Schwarz, 
+
+− ddt ϕ(μt) = 
+
+∫
+
+> E
+
+ζt(x) · αt(x) μt(d x) ≤ ∥ ζt∥L2(μt) ∥αt∥L2(μt).
+
+Using (CR) and (CE) we have ∥ζt∥L2(μt) = |∂ϕ |(μt) and ∥αt∥L2(μt) = |μ′|(t), hence 
+
+− ddt ϕ(μt) ≤ | ∂ϕ |(μt) |μ′|(t).
+
+Combining with the pointwise identity − ddt ϕ(μt) = |μ′|(t)2 = |∂ϕ |(μt)2 yields equality in the above inequality. Therefore equality holds in Cauchy–Schwarz, which implies αt = −ζt μt-a.e. (on the set where the common norm is nonzero; the claim is trivial otherwise). Plugging αt = −ζt back into (CR) gives 
+
+− ddt ϕ(μt) = 
+
+∫
+
+> E
+
+|αt(x)|2 μt(d x) = 
+
+∫
+
+> E
+
+|ζt(x)|2 μt(d x).
+
+Integrating from 0 to T yields 
+
+ϕ(μ0) − ϕ(μT ) = 
+
+∫ T
+
+> 0
+
+∫
+
+> E
+
+|αt(x)|2 μt(d x) d t. 
+
+Theorem 2.26 (Every gradient flow is optimal solution) . Suppose v satisfies Property (Cal) in Definition 2.22 with its metric slope |∂v | being a strong upper gradient on set {μ ∈ P 2(E) : v(μ) < ∞} .Assume v satisfies the HJB equation (2.18) . Then, for any curve of maximal slope (μt)t≥0 with initial distribution μ , the pair (μ, α ⋆) with α⋆t := −ζt (given by (Cal) ) is an optimal solution of 
+
+inf  
+
+> (˜μ,˜α)∈A 0(μ)
+
+∫ ∞
+
+> 0
+
+e−t( ∫ 
+
+> E
+> 12
+
+|˜αt(x)|2 ˜μt(d x) + ℓ(˜ μt)
+
+)
+
+dt, ∂t ˜μt + ∇· (˜ μt ˜αt) = 0 , ˜μ0 = μ, 
+
+and all such optimal pairs achieve the same value J = v(μ0).Proof. Let μ = ( μt)t≥0 be a curve of maximal slope and for every t ≥ 0, choose (ζt, α t) from (Cal). By Young’s inequality and (CR), 
+
+− ddt v(μt) = 
+
+∫
+
+> E
+
+ζt ·αt dμt ≤ 12 ∥ζt∥2 
+
+> L2(μt)
+
++ 12
+
+∫
+
+> E
+
+|αt|2 dμt = 12 |∂v |(μt)2 + 12 |μ′|(t)2,
+
+with equality since μ is a curve of maximal slope. Hence αt = −ζt a.e. and 12
+
+∫ 
+
+> E
+
+|αt|2 dμt = 12 |∂v |(μt)2.Using HJB equation (2.18) with ϵ = 0 ,
+
+∫
+
+> E
+
+|αt|2 dμt + ℓ(μt) = v(μt) − ∂tv(μt).
+
+Multiplying by e−t and integrating on [0 , ∞), the discounted boundary term vanishes and the cost equals v(μ). Thus (μ, α ⋆) is optimal and the value is unique. 12 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+# 3 Early Stopping Formulation 
+
+3.1 An endpoint formulation from DPP 
+
+For every ϵ ≥ 0, T > 0 and μ ∈ P 2(E), we denote the reachable sets by 
+
+TT,ϵ (μ) := 
+
+{{ν ∈ P 2(E) : exists (α, μα) satisfying (2.9) , s.t. μαT = ν}, ϵ > 0,
+
+{ν ∈ P 2(E) : exists (α, μα) satisfying (2.13) , s.t. μαT = ν}, ϵ = 0 . (3.1) When ϵ = 0 , we may omit the dependence on ϵ, and write TT (μ) for TT, 0(μ).
+
+Remark 3.1 . Characterizations of the reachable sets are known in the literature, from either the Schrödinger bridge theory or the optimal transport theory. We recall some results here. 
+
+• When ϵ > 0, for every μ, ν such that H(μ| Leb ) < ∞ and H(ν| Leb ) < ∞, there exists α ∈ A 
+
+such that ν ∈ T T,ϵ (μ) for every T > 0, ϵ > 0. See [Léonard, 2014, Theorem 2.12]. 
+
+• When ϵ = 0 , for every given μ ∈ P 2(E) and every ν ∈ P 2(E), there exists α ∈ A such that ν ∈ T T, 0(μ). Moreover, there exists α∗ ∈ A such that 12
+
+∫ T
+
+> 0
+
+∫ 
+
+> E
+
+|αt|2dμαt dt = 12T W22 (μ, ν ).See [Santambrogio, 2015, Theorem 5.27]. For every μ, ν ∈ P 2(E), we denote the pair of the curve and the corresponding controls that transport μ to ν by 
+
+AT,ϵ (μ, ν ) := 
+
+{{(μ, α ) ∈ A ϵ(μ) : ∃ μ ∈ AC 2([0 , T ]) s.t. (μ, α ) satisfies (2.9) , μ 0 = μ, μ T = ν}, ϵ > 0,
+
+{(μ, α ) ∈ A ϵ(μ) : ∃ μ ∈ AC 2([0 , T ]) s.t. (μ, α ) satisfies (2.13) , μ 0 = μ, μ T = ν}, ϵ = 0 .
+
+If ν / ∈ T T,ϵ (μ), then AT,ϵ (μ, ν ) = ∅. For ν ∈ T T,ϵ (μ), we define the discounted energy as 
+
+d2
+
+> T,ϵ
+
+(μ, ν ) := inf 
+
+{ ∫ T
+
+> 0
+
+e−t( 12 E∥αt∥2 + ℓϵ(μt)
+
+)
+
+dt : ∂tμt = −∇ x · (μtαt) + ε2 
+
+> 2
+
+∆xμt, μ 0 = μ, μ T = ν
+
+}
+
+.
+
+We recall from Proposition 2.15 that the optimal value function v of (2.12) satisfies the dynamic programming principle 2.15. Next we show an equivalent endpoint formulation from the dynamic programming principle. 
+
+Proposition 3.2 (Endpoint formulation from DPP) . For every T > 0, μ ∈ P 2(E) and ϵ ≥ 0,
+
+vϵ(μ) = inf 
+
+> ν∈T T,ϵ (μ)
+
+{
+
+d2
+
+> T,ϵ
+
+(μ, ν ) + e−T vϵ(ν)
+
+}
+
+. (3.2) 
+
+Proof. Fix T > 0 and μ ∈ P 2(E). By Proposition 2.15, 
+
+vϵ(μ) = inf 
+
+> (μ,α )∈A T,ϵ (μ)
+
+{ ∫ T
+
+> 0
+
+e−t( 12 E∥αt∥2 + ℓ(μt)
+
+)
+
+dt + e−T vϵ(μT )
+
+}
+
+.
+
+For any admissible pair (μ, α ) ∈ A ϵ(μ), set ν := μT ∈ T T,ϵ (μ0). Then, by definition, 
+
+∫ T
+
+> 0
+
+e−t( 12 E∥αt∥2 + ℓ(μt)
+
+)
+
+dt ≥ d2
+
+> T,ϵ
+
+(μ, ν ).
+
+Adding e−T vϵ(ν) on both sides, and taking the infimum over Aϵ(μ), yields 
+
+vϵ(μ) ≥ inf 
+
+> ν∈T T,ϵ (μ)
+
+{
+
+d2
+
+> T,ϵ
+
+(μ0, ν ) + e−T vϵ(ν)
+
+}
+
+.
+
+13 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Conversely, let ν ∈ T T,ϵ (μ) be arbitrary. By definition of the reachable set, there exists an admissible pair (μ, α ) ∈ A ϵ(μ) on [0 , T ] with initial distribution μ and with μT = ν. Plugging this pair into the dynamic programming identity gives 
+
+vϵ(μ) ≤ 
+
+> ∫T
+> 0
+
+e−t( 12 E∥αt∥2 + ℓ(μt)
+
+> )
+
+dt + e−T vϵ(ν).
+
+Taking the infimum over all admissible (μ, α ) with the same endpoints (μ, ν ) ∈ A ϵ(μ) yields 
+
+vϵ(μ) ≤ d2
+
+> T,ϵ
+
+(μ, ν ) + e−T vϵ(ν).
+
+Since ν ∈ T T,ϵ (μ) is arbitrary, we obtain 
+
+vϵ(μ0) = inf 
+
+> ν∈T T,ϵ (μ)
+> {
+
+d2
+
+> T,ϵ
+
+(μ, ν ) + e−T vϵ(ν)
+
+> }
+
+.
+
+This is the desired endpoint formulation. 
+
+Theorem 3.3 (Γ-convergence with endpoint formulations) . Fix V ∈ C quad and μ ∈ P 2(E). For every T > 0, as ε → 0, the functional ν 7 → d2
+
+> T,ε
+
+(μ, ν ) + e−T V (ν) Γ -converges (in W2) to ν 7 →
+
+d2
+
+> T, 0
+
+(μ, ν ) + e−T V (ν). In particular, minimizers νε,T converge (along subsequences) to minimizers of the limit functional. 
+
+The proof is postponed to Appendix B. 
+
+3.2 An endpoint formulation from curves of maximal slope 
+
+In this section, we focus on the deterministic case and set ϵ = 0 , and omit the dependence on ϵ.Recall from Definition 2.3 and Definition 2.4 the concepts of upper gradient and curve of maximal slope. Recall that in Proposition 2.20, we show that 
+
+G(μ) := 
+
+> √
+
+2 ( ℓ(μ) − v0(μ)) ≥ 0 (3.3) is an upper gradient of v. For every μ ∈ P 2(E) and ν ∈ T T (μ), we define the Finsler metric 
+
+dG(μ, ν ) := inf  
+
+> μ∈A 1,0(μ,ν )
+> {∫ 10
+
+|μ′|(t)G(μt) d t
+
+> }
+
+, (3.4) and the energy 
+
+ETG (μ, ν ) := inf    
+
+> {∫T
+> 0
+> (12
+
+|η′|2(t) + 12 G(ηt)2)
+
+dt : η ∈ AC 2([0 , T ]; P2(E)) , η 0 = μ, η T = ν
+
+> }
+
+. (3.5) 
+
+Remark 3.4 . This action energy is different from the previous discounted energy with different running cost function. There is no discount factor. Moreover, dG does not depend on the choice of integrated time horizon. We first restate some standard results of the time and length reparameterization of curves. The following lemma can be found in Rossi et al. [2019]. 14 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+Lemma 3.5 (Length and time reparameterization) . Fix 0 ≤ s < t . Let ω : P2(E) → [0 , ∞) be a Borel function, and let μ ∈ AC ([ s, t ]; P2(E)) . If L := ∫ ts  
+
+> |μ′|(r)
+> ω(μr)
+
+dr < ∞, then the reparametrized curve μω : [0 , L ] → P 2(E) with 
+
+μω(r) := μ(κω(r)) , κω(r) := inf 
+
+{
+
+p ∈ [s, t ] : 
+
+∫ ps
+
+|μ′|(τ )
+
+ω(μ(τ )) dτ = r
+
+}
+
+, r ∈ [0 , L ],
+
+satisfies 
+
+μω ∈ AC ([0 , L ]; P2(E)) , μω(0) = μs, μω(L) = μt, ω(μω(r)) = |μ′
+
+> ω
+
+|(r) a.e. r ∈ [0 , L ].
+
+If additionally ∫ ts |μ′|(r)ω(μr) d r < ∞, we have μω ∈ AC 2([0 , L ]; P2(E)) and 
+
+∫ L
+
+> 0
+
+|μ′
+
+> ω
+
+|2(r) d r =
+
+∫ L
+
+> 0
+
+ω(μω(r)) 2 dr =
+
+∫ ts
+
+|μ′|(r)ω(μr) d r < ∞.
+
+Proposition 3.6 (Basic properties of dG). For every μ, ν ∈ P 2(E), we have the following: (i) dG(μ, ν ) ≥ 0 and dG(μ, ν ) = dG(ν, μ ).(ii) dG(μ0, μ 1) + dG(μ1, μ 2) ≥ dG(μ0, μ 2) ∀ μ0, μ 1, μ 2 ∈ P 2(E).(iii) dG(μ, ν ) = inf T > 0 ETG (μ, ν ).In general, dG is a pseudo-distance on P2(E).
+
+The proof is postponed to Appendix C. Similar to Proposition 3.2, curves of maximal slope provide another form of endpoint formulation. Recall that G is a strong upper gradient of v0.
+
+Proposition 3.7 (Endpoint formulation from curves of maximal slope) . Fix μ ∈ P 2(E). Assume there exists a curve of maximal slope η ∈ AC 2loc ([0 , ∞); P2(E)) for v0 with respect to G such that 
+
+η0 = μ, then for every T > 0,
+
+v0(μ) = inf  
+
+> ν∈T T(μ)
+
+{
+
+ETG (μ, ν ) + v0(ν)
+
+}
+
+. (3.6) 
+
+Moreover, the infimum is attained at ν = ηT .Proof. Fix ν ∈ P 2(E) and any curve ρ ∈ AC 2([0 , T ]) with ρ0 = μ and ρT = ν. Since G is a strong upper gradient, we have 
+
+v0(μ) − v0(ν) ≤
+
+∫ T
+
+> 0
+
+G(ρt) |ρ′|(t) d t ≤
+
+∫ T
+
+> 0
+
+( 12 |ρ′|2(t) + 12 G(ρt)2)
+
+dt. 
+
+Taking the infimum over all such η yields 
+
+v0(μ) ≤ v0(ν) + ETG (μ, ν ), ∀ ν ∈ P 2(E). (3.7) In particular, 
+
+v0(μ) ≤ inf 
+
+> ν
+
+{
+
+v0(ν) + ETG (μ, ν )
+
+}
+
+. (3.8) Now let η be a curve of maximal slope for v0 with respect to G such that η0 = μ. Since 
+
+η ∈ AC 2loc ([0 , ∞); P2(E)) , its endpoint ηT belongs to TT (μ). Moreover, by the defining identity of a curve of maximal slope, 
+
+− ddt v0(ηt) = |η′|2(t) = G(ηt)2 for a.e. t ∈ (0 , T ).
+
+15 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Integrating from 0 to T , we obtain 
+
+v0(μ) − v0(ηT ) =  
+
+> ∫T
+> 0
+
+G(ηt)2 dt =  
+
+> ∫T
+> 0
+> (
+
+12 |η′|2(t) + 12 G(ηt)2)
+
+dt. 
+
+Therefore, 
+
+ETG (μ, η T ) ≤  
+
+> ∫T
+> 0
+> (
+
+12 |η′|2(t) + 12 G(ηt)2)
+
+dt = v0(μ) − v0(ηT ).
+
+Hence, 
+
+inf 
+
+> ν
+> {
+
+v0(ν) + ETG (μ, ν )
+
+> }
+
+≤ v0(ηT ) + ETG (μ, η T ) ≤ v0(μ). (3.9) Combining (3.8) and (3.9) gives 
+
+inf 
+
+> ν
+> {
+
+v0(ν) + ETG (μ, ν )
+
+> }
+
+= v0(μ).
+
+Moreover, (3.9) shows that the infimum is achieved at ν = ηT , which is exactly (3.6). 
+
+# 4 Early Stopping and Implicit Regularization 
+
+It is widely observed and analyzed that overparametrized neural networks can overcome overfitting and generalize well [Zhang et al., 2017, Belkin et al., 2019, Neyshabur et al., 2017]. One explanation is through implicit regularization of gradient-descent-based training algorithms, see Neyshabur et al. [2014], Heiss et al. [2019]. It is shown that in the training process of large neural networks, by stopping early (compared to training for infinite time), the trained parameters belong to a set of “regularized” local minima. In this section, we apply the previous McKean–Vlasov control formulation for gradient flows in overparametrized neural networks, and provide a theoretical analysis of this interesting phenomenon. 
+
+4.1 Mean field formulation of neural network 
+
+From now on, let E := Θ := R × Rd × R denote the space of parameters, with coordinates 
+
+θ := ( w, a, b ). In a one-hidden layer fully-connected neural network with N hidden neurons, with nonlinear activation function σ : R → R, the output of the neural network can be represented by 
+
+fN (x) := 1
+
+N
+
+> N∑
+> i=1
+
+wiσ(ai · x + bi), x ∈ Rd,
+
+where {θi := ( wi, a i, b i)}Ni=1 denote the trainable parameters. When the neural network is wide enough, its output can be well-approximated by its mean field formulation. With the same activation function σ, the mean field formulation of infinite neural network is defined as 
+
+fμ(x) := 
+
+> ∫
+> Θ
+
+w σ (a · x + b) μ(d w, da, db), x ∈ Rd,
+
+where μ ∈ P 2(Θ) is the trainable parameter. For a given loss function ˜L : R → R≥0 and training data set {(xi, y i)}Mi=1 , the empirical loss functional for the mean field neural network is 
+
+L(μ) := 1
+
+M
+
+> M∑
+> k=1
+
+˜L(fμ(xk) − yk).
+
+16 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Hence, L is a function on P2(Θ) . Without loss of generality, we assume that min μ∈P 2(Θ) L(μ) = 0 .A common choice of the loss function is the quadratic loss function. In the setting of finite neural networks, the parameters are trained via gradient descent-based algorithms. In the mean field formulation, the analogous formulation is via gradient flow of the loss functional L.
+
+Assumption 4.1. (i) σ, σ ′ are bounded and σ is Lipschitz, i.e. there exists a constant S0 ≥ 0
+
+such that 
+
+|σ(z) − σ(z′)| ≤ S0|z − z′|, |σ(z)| ≤ S0, |σ′(z)| ≤ S0, ∀ z, z ′ ∈ R.
+
+(ii) R := max 1≤k≤M ∥xk∥ < ∞.(iii) ˜L : R → R≥0 ∈ C 1(R) and is convex. There exists a constant β > 0 such that 
+
+| ˜L′(r) − ˜L′(s)| ≤ β|r − s|. ∀ r, s ∈ R.
+
+(iv) min r∈R ˜L(r) = 0 .
+
+Remark 4.2 . With the above assumptions, for every r ∈ R, ( ˜L′(r)) 2 ≤ 2β ˜L(r).
+
+Remark 4.3 . The boundedness assumption on the activation function σ can be relaxed to linear growth condition, as long as we assume that μ has finite fourth moment, i.e. μ ∈ P 4(Θ) .
+
+Lemma 4.4. Under Assumption 4.1, there exists a constant CG > 0, depending on all the coefficients in Assumption 4.1, such that 
+
+G2(μ) ≤ CG L(μ) (1 + m2(μ)) , ∀ μ ∈ P 2(Θ) .
+
+Moreover, the functional G2 : P2(Θ) → [0 , ∞] is lower semicontinuous with respect to W2, i.e. for any μn → μ in W2,
+
+G(μ)2 ≤ lim inf  
+
+> n→∞
+
+G(μn)2.
+
+Corollary 4.5. For every μ ∈ P 2(Θ) , the map ν 7 → E TG (μ, ν ) is lower semicontinuous in W2.
+
+The proofs are postponed to Appendix C. 
+
+Remark 4.6 (Bounded approximation of ReLU) . For simplicity we assume bounded activations, and extensions to ReLU require moment conditions. To retain the quadratic-growth framework on 
+
+P2(Θ) , we can work with a bounded approximation of ReLU. A convenient choice is the clipped ReLU 
+
+σM (z) := min {M, max {0, z }} , M > 0,
+
+which is bounded by M and 1–Lipschitz. All results stated under bounded activation apply to σM
+
+for each fixed M . Moreover, σM (z) ↑ max {0, z } pointwise as M → ∞ .
+
+Definition 4.7. For every given initialization μ ∈ P 2(Θ) , every training dynamic of L starting from μ is a curve of maximal slope of L in Definition 2.4. We also call it the gradient flow of L.From Theorem 2.18, for every ϵ ≥ 0, the loss functional L admits a McKean–Vlasov control formulation (2.12), with running cost identified in (2.20). 17 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+4.2 Implicit regularization under infinite training time 
+
+In this section, we aim to provide a mathematical formulation and solution of the open question: 
+
+Will implicit regularization vanish under infinite training time horizon? In other words, if the gradient descent algorithm converges, does it converge to the global minimizer with minimal “complexity”? 
+
+Theorem 4.8 (Nonvanishing selection) . If a gradient flow of L converges to μ∞ in W2 as T → ∞ ,with initial distribution μ, and μ∞ ∈ arg min ν∈P 2(Θ) L(ν), then 
+
+μ∞ ∈ arg min 
+
+> {
+
+dG(μ, ν ) : ν ∈ arg min L
+
+> }
+
+. (4.1) 
+
+Remark 4.9 . Theorem 4.8 indicates that, even without early stopping, under the mean field formulation of neural networks, if the gradient flow converges, it converges to a global minimizer of the loss function L which minimizes the weighted distance with respect to the initial distribution. The weight only depends on the choice of the loss function L.
+
+Remark 4.10 . From the result in Chizat and Bach [2018], we have that, if 
+
+Φ( θ, x ) := wσ (a · x + b)
+
+is 2-homogeneous (i.e. Φ( λθ ) = λ2Φ( θ) for any λ > 0), the initial distribution μ has full support on 
+
+Θ, and the gradient flow converges to a limit measure, then the limit must be a global minimizer. To prove Theorem 4.8, we first state the following lemma, which can be regarded as the limiting behavior of ETG in (3.5) as T → ∞ .
+
+Lemma 4.11. For every ν ∈ P 2(Θ) such that G(ν) = 0 , we have 
+
+ETG (μ, ν ) ↓ dG(μ, ν ) as T → ∞ , ∀ μ ∈ P 2(Θ) . (4.2) 
+
+Proof. For every curve η ∈ A T, 0(μ, ν ), we have  
+
+> ∫T
+> 0
+
+G(ηt) |η′|(t) d t ≤   
+
+> ∫T
+> 0
+> (12
+
+|η′|2(t) + 12 G(ηt)2)
+
+dt. 
+
+Taking the infimum over AT, 0(μ, ν ) yields 
+
+inf  
+
+> η∈A T, 0(μ,ν )
+> ∫T
+> 0
+
+G(ηt) |η′|(t) d t ≤ ETG (μ, ν ).
+
+Using Lemma 3.5, we reparametrize η ∈ A T, 0(μ, ν ) to ˜η ∈ A 1,0(μ, ν ) via ˜ηs := ηT s for s ∈ [0 , 1] .Then ∫ T
+
+> 0
+
+G(ηt)|η′|(t) d t = 
+
+> ∫10
+
+G(˜ ηs) |˜η′|(s) d s. 
+
+Taking the infimum on the left hand side, we have 
+
+dG(μ, ν ) ≤ E TG (μ, ν ), ∀ T > 0. (4.3) Fix ε > 0. From Proposition 3.6(iii), there exist S > 0 and a curve γ ∈ A S, 0(μ, ν ) such that    
+
+> ∫S
+> 0
+> (12
+
+|γ′|2(t) + 12 G(γt)2)
+
+dt ≤ dG(μ, ν ) + ε. 
+
+18 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan For any T ≥ S, define the concatenation 
+
+ηTt =
+
+{γt, 0 ≤ t ≤ S, ν, S < t ≤ T. 
+
+Since ηT is constant on (S, T ], we have |(ηT )′|(t) = 0 there. Moreover G(ν) = 0 implies G(ηTt ) = 0 
+
+on (S, T ]. Then, for all T ≥ S,
+
+ETG (μ, ν ) ≤
+
+∫ T
+
+> 0
+
+( 12 |(ηT )′|2(t) + 12 G(ηTt )2)
+
+dt =
+
+∫ S
+
+> 0
+
+( 12 |γ′|2(t) + 12 G(γt)2)
+
+dt ≤ dG(μ, ν ) + ε. 
+
+Hence lim sup T →∞ ETG (μ, ν ) ≤ dG(μ, ν ). This construction also indicates that, for every 0 < T 1 < T 2,we have ET2 
+
+> G
+
+(μ, ν ) ≤ ET1 
+
+> G
+
+(μ, ν ). Combined with the fact that dG(μ, ν ) ≤ E TG (μ, ν ) for all T > 0, we conclude. 
+
+Proof of Theorem 4.8. We first show that G(μ∞) = 0 and μ∞ ∈ arg min L. In Proposition 3.7, taking v0 = L, we have, for every T > 0,
+
+L(μ) − L(μT ) = 
+
+∫ T
+
+> 0
+
+G(μt)2 dt, 
+
+where we used ∥αt∥L2(μt) = |∂L |(μt) = G(μt), and G is an upper gradient of L. Since L is nonnegative and continuous, taking T → ∞ yields 
+
+∫ ∞
+
+> 0
+
+G(μt)2 dt = L(μ) − lim   
+
+> T→∞
+
+L(μT ) < ∞. (4.4) Hence there exists a sequence Tn → ∞ such that G(μTn ) → 0. Since W2(μTn , μ ∞) → 0 as n → ∞ ,together with the lower semicontinuity of G from Lemma 4.4, we obtain 
+
+G(μ∞) ≤ lim inf  
+
+> n→∞
+
+G(μTn ) = 0 ,
+
+which implies that G(μ∞) = 0 .Now fix T > 0. From Proposition 3.7, along every curve of maximal slope μ ∈ A T, 0(μ),
+
+μT ∈ arg min 
+
+> ν
+
+{
+
+L(ν) + ETG (μ, ν )
+
+}
+
+. (4.5) Fix any ¯μ ∈ arg min L. From (4.5) we have, for every T > 0,
+
+L(μT ) + ETG (μ, μ T ) ≤ L(¯ μ) + ETG (μ, ¯μ). (4.6) Since L(μT ) ≥ L(¯ μ), dropping the L term leads to 
+
+ETG (μ, μ T ) ≤ E TG (μ, ¯μ), ∀ T > 0. (4.7) Sending T to infinity, from Lemma 4.11 we have 
+
+ETG (μ, μ ∞) ↓ dG(μ, μ ∞), ETG (μ, ¯μ) ↓ dG(μ, ¯μ).
+
+Moreover, for each fixed T > 0, from Corollary 4.5, the map ν 7 → E TG (μ, ν ) is lower semicontinuous in W2, hence using μT → μ∞ we have 
+
+ETG (μ,μ∞) ≤ lim inf  
+
+> n→∞
+
+ETG (μ, μ Tn ) for any Tn → ∞ .
+
+19 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Choosing Tn = n and combining with (4.7) yields, for each fixed T ,
+
+ETG (μ, μ ∞) ≤ lim inf  
+
+> n→∞
+
+ETG (μ, μ n) ≤ lim inf  
+
+> n→∞
+
+ETG (μ, ¯μ) = dG(μ, ¯μ),
+
+where the last equality uses Lemma 4.11 and G(¯ μ) = 0 .Finally, letting T → ∞ on the left hand side, we get 
+
+dG(μ, μ ∞) ≤ dG(μ, ¯μ).
+
+Since ¯μ ∈ arg min L is arbitrary, this proves (4.1). 
+
+4.3 Implicit regularization under short-time horizon 
+
+In this section, we show how to apply our framework to recover the classical results on the equivalence between early stopping and ridge penalty. We need a further assumption on L.
+
+Assumption 4.12 (Growth condition) . There exist constants A0 and A1 such that, for all μ ∈ P 2(Θ) ,
+
+L(μ) ≤ A0 + A1 m2(μ),
+
+where m2(μ) := ∫ 
+
+> Θ
+
+|θ|2 μ(d θ).
+
+Remark 4.13 . If ˜L is quadratic loss, then L satisfies Assumption 4.12. Indeed, one may take 
+
+A0 := 2
+
+M
+
+> M
+
+∑
+
+> k=1
+
+|yk|2, A1 := 2 S20 ,
+
+where S0 is the constant in Assumption 4.1. This follows from the fact that for every k ∈ { 1, . . . , M },by the boundedness of σ,
+
+|fμ(xk)| =
+
+∣∣∣∫
+
+> Θ
+
+w σ (⟨a, x k⟩ + b) μ(d θ)
+
+∣∣∣ ≤
+
+∫
+
+> Θ
+
+|w| | σ(⟨a, x k⟩ + b)| μ(d θ) ≤ S0
+
+∫
+
+> Θ
+
+|w| μ(d θ).
+
+From Cauchy–Schwarz, 
+
+∫
+
+> Θ
+
+|w| μ(d θ) ≤
+
+( ∫
+
+> Θ
+
+|w|2 μ(d θ)
+
+)1/2
+
+≤
+
+( ∫
+
+> Θ
+
+|θ|2 μ(d θ)
+
+)1/2
+
+=
+
+√
+
+m2(μ).
+
+Combining the previous displays yields 
+
+|fμ(xk)|2 ≤ S20 m2(μ).
+
+Finally, 
+
+|fμ(xk) − yk|2 ≤ 2|fμ(xk)|2 + 2 |yk|2 ≤ 2S20 m2(μ) + 2 |yk|2.
+
+Averaging over k = 1 , . . . , M gives 
+
+L(μ) = 1
+
+M
+
+> M
+
+∑
+
+> k=1
+
+|fμ(xk) − yk|2 ≤ 2S20 m2(μ) + 2
+
+M
+
+> M
+
+∑
+
+> k=1
+
+|yk|2,
+
+which is the desired bound with the stated constants. We start with an observation on ETG .20 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+Lemma 4.14. For every μ, ν ∈ P 2(Θ) ,
+
+ETG (μ, ν ) = inf 
+
+> η∈A 1,0(μ,ν )
+
+∫ 10
+
+12T |η′|2(t) + T
+
+2 G2(ηt) d t. 
+
+Hence 
+
+ETG (μ, ν ) ≥ 12T W22 (μ, ν ).
+
+The proof follows directly via a change of variables in time. Now denote 
+
+ΦT (ν) := L(ν) + 12T W2(μ, ν )2, (4.8) where μ is the initial distribution. We will show that, when T ≪ 1, along any gradient flow μ of L
+
+starting at μ, μT is an ϵ(T )-minimizer of ΦT .
+
+Lemma 4.15. Let νT ∈ arg min ν∈P 2(Θ) ΦT (ν), then 
+
+m2(νT ) ≤ 2m2(μ) + 4 T L (μ).
+
+The proof can be found in Appendix C. 
+
+Theorem 4.16. There exists a constant C > 0 such that, along every gradient flow of L with initial distribution μ ∈ P 2(Θ) , for every T > 0,
+
+inf  
+
+> ν
+
+ΦT (ν) ≤ ΦT (μT ) ≤ inf  
+
+> ν
+
+ΦT (ν) + CT r (T, μ ), (4.9) 
+
+where r(T, μ ) := [1 + m2(μ) + T L (μ)]2.Proof. Since G2 ≥ 0, for every η ∈ A 1,0(μ, ν ),
+
+∫ 10
+
+12T |η′|2(t) + T
+
+2 G2(ηt) d t ≥
+
+∫ 10
+
+12T |η′|2(t)d t ≥ 12T W22 (μ, ν ).
+
+Taking the infimum over A1,0(μ, ν ) on the left-hand-side and adding L(ν) on both sides yields 
+
+L(ν) + ETG (μ, ν ) ≥ L(ν) + 12T W22 (μ, ν ) ≥ ΦT (ν), ∀ ν ∈ P 2(Θ) .
+
+Hence, we obtain 
+
+inf  
+
+> ν
+
+ΦT (ν) ≤ inf  
+
+> ν
+
+{L(ν) + ETG (μ, ν )}.
+
+For every ν, let μ ∈ A 1,0(μ, ν ) denote the constant-speed W2-geodesic between μ and ν. Then 
+
+∫ 10
+
+12T |μ′|2(t)d t = 12T W22 (μ, ν ), ETG (μ, ν ) ≤ 12T W22 (μ, ν ) + T
+
+2
+
+∫ 10
+
+G2(μt)d t. 
+
+Take ν = νT ∈ arg min ΦT and let ρ ∈ A 1,0(μ, ν T ) be the corresponding constant speed geodesic. Then we have 
+
+inf  
+
+> ν
+
+ΦT (ν) ≤ inf  
+
+> ν
+
+{L(ν) + ETG (μ, ν )} ≤ inf  
+
+> ν
+
+ΦT (ν) + T
+
+2
+
+∫ 10
+
+G2(ρt)d t. 
+
+From Lemma 4.4 and Assumption 4.12, 
+
+∫ 10
+
+G(ρt)2 dt ≤ CG
+
+∫ 10
+
+L(ρt)(1 + m2(ρt)) dt ≤ CG
+
+∫ 10
+
+(A0 + A1m2(ρt))(1 + m2(ρt))d t. (4.10) 21 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Notice that the second moment t 7 → m2(ρt) is convex along geodesics. Then, for every t ∈ [0 , 1] ,
+
+m2(ρt) ≤ (1 − t)m2(μ) + t m 2(νT ) ≤ m2(μ) + m2(νT ).
+
+Plugging this into (4.10) and letting C := CG max {A0, A 1}, we obtain 
+
+T
+
+2
+
+∫ 10
+
+G(ρt)2 dt ≤ CT 
+
+2 (1 + m2(μ) + m2(νT )) 2 .
+
+By Lemma 4.15, we then have 
+
+T
+
+2
+
+∫ 10
+
+G(ρt)2 dt ≤ CT [1 + m2(μ) + T L (μ)]2.
+
+4.4 Stability interpretation of the kinetic energy 
+
+In the mean–field control formulation, the dynamic evolves according to 
+
+∂tμt + ∇θ · (μtαt) = 0 , αt = −∇ θ∂μL(μt),
+
+and the kinetic energy 
+
+K(T ) := 12
+
+∫ T
+
+> 0
+
+∥αt∥2 
+
+> L2(μt)
+
+dt
+
+appears naturally in both the Benamou–Brenier formulation of the Wasserstein metric and in the Energy–Dissipation Equality (EDE) L(μ0) − L(μT ) = ∫ T 
+
+> 0
+
+∥αt∥2 
+
+> L2(μt)
+
+dt. Beyond its geometric role, 
+
+K(T ) admits a direct stability interpretation that connects optimization dynamics with generalization. 
+
+Algorithmic stability. For a training dataset S = {zi}Mi=1 and its variant S(i) obtained by replacing zi with an independent copy, let μS and μS(i)
+
+denote the parameter–law trajectories produced by the algorithm on S and S(i), respectively. Define the uniform stability at time T by 
+
+stab( T ) := sup 
+
+> i≤M, z
+
+∣∣ℓ(fμST
+
+(x), y ) − ℓ(fμS(i)
+
+> T
+
+(x), y )∣ ∣.
+
+We also define the expected generalization gap at time T by 
+
+gen( T ) := ES
+
+[
+
+R(μST ) − R S (μST )
+
+]
+
+.
+
+By the classical stability theorem of Bousquet and Elisseeff [2002], Hardt et al. [2016], one has 
+
+|gen( T )| ≤ stab( T ).
+
+Remark 4.17 . At a heuristic level, and under smoothness and Lipschitz assumptions, one expects an estimate of the form 
+
+stab( T ) ≤ Cgen W2
+
+(μSt , μ S(i)
+
+> t
+
+) ≤ Cgen Cstab 
+
+M
+
+∫ t
+
+> 0
+
+∥αSs ∥L2(μSs ) ds, 
+
+where Cgen and Cstab are two constants. Therefore the stability, and hence the generalization gap, are controlled by the path length of the trajectory. The Cauchy–Schwarz inequality yields 
+
+∫ T
+
+> 0
+
+∥αt∥L2(μt) dt ≤ √T
+
+( ∫ T
+
+> 0
+
+∥αt∥2 
+
+> L2(μt)
+
+dt
+
+)1/2
+
+=
+
+√
+
+2T K(T ).
+
+22 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Consequently, under suitable regularity assumptions, 
+
+|gen( T )| ≤ Cgen Cstab 
+
+M
+
+> √
+
+2T K(T ).
+
+Hence the kinetic energy ∫ T 
+
+> 0
+
+∥αt∥2 
+
+> L2(μt)
+
+dt quantifies the cumulative sensitivity of the training trajectory to data perturbations: shorter and slower trajectories (that is, trajectories with smaller action) correspond to more stable algorithms and smaller generalization gaps. 
+
+Interpretation. In this view, the kinetic term plays two simultaneous roles: 
+
+• Optimization: it measures the metric speed of the mean–field flow and appears in the energy– dissipation identity. 
+
+• Generalization: through stability bounds, it quantifies how much the solution depends on individual data points. Minimizing K(T ) therefore not only enforces smoother dynamics (implicit regularization), but also enhances the algorithm’s robustness to data perturbations. This provides a rigorous link between the geometry of gradient flows in Wasserstein space and the statistical notion of stability, and corresponds to the statement in Hardt et al. [2016]:" If one can achieve low training error quickly on a nonconvex problem with stochastic gradient, our results guarantee that the resulting model generalizes well. "
+
+4.5 Bounds on moments 
+
+Proposition 4.18 (Second–moment growth) . Recall that m2(μ) := ∫ 
+
+> Θ
+
+∥θ∥2 μ(d θ). Let μ be the closed-loop flow generated by the feedback control α(θ, μ ) with initial distribution μ ∈ P 2(E)
+
+from (2.13) . Then, for almost every T > 0,
+
+m2(μT ) ≤ eT m2(μ) +  
+
+> ∫T
+> 0
+
+eT −t∥αt∥2 
+
+> L2(μt)
+
+dt. (4.11) 
+
+If μ is a gradient flow of L, then 
+
+m2(μT ) ≤ eT m2(μ) +  
+
+> ∫T
+> 0
+
+eT −tG(μt)2 dt ≤ eT (
+
+m2(μ) + L(μ) − L(μT )
+
+> )
+
+.
+
+Proof. Taking the test function φ(θ) = |θ|2 in the weak formulation of the continuity equation yields 
+
+ddt m2(μt) = 2 
+
+> ∫
+> Θ
+
+θ · αt(θ) μt(d θ) ≤ m2(μt) + 
+
+> ∫
+> Θ
+
+|αt|2 μt(d θ), for a.e. t. 
+
+By Grönwall inequality, we obtain 
+
+m2(μT ) ≤ eT m2(μ) +  
+
+> ∫T
+> 0
+
+eT −t( ∫
+
+> Θ
+
+|αt|2 μt(d θ)
+
+> )
+
+dt. 
+
+Along the curves of maximal slope, with minimum control, we have for a.e. t,
+
+> ∫
+> Θ
+
+|αt|2 dμt = |μ′|2(t) = G(μt)2.
+
+Hence, 
+
+m2(μT ) ≤ eT m2(μ) +  
+
+> ∫T
+> 0
+
+eT −tG(μt)2 dt ≤ eT (
+
+m2(μ) + L(μ) − L(μT )
+
+> )
+
+.
+
+23 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+4.6 Interpretations of implicit regularizations 
+
+The solution reached by gradient flow minimizes the original loss subject to a dynamical or action cost, measuring the total movement of the particle distribution in parameter space. Moment bounds show that this action cost controls the parameter complexity of the network. In one sentence: implicit regularization is the preference induced by the training dynamics, not an explicit penalty that selects among many interpolating solutions those with small algorithm– dependent complexity, such as minimum–norm in linear/NTK limits, maximum–margin in separable classification, and small–movement/low–action solutions in the mean–field feature–learning regime. 
+
+# 5 Numerical Results 
+
+In this section, we test several deterministic diagnostics suggested by the theory in Section 4. First, we examine whether the finite-width training dynamics exhibit the energy–dissipation and complexity-growth patterns predicted by the mean-field formulation. Second, we test a finite-width proxy of Theorem 4.16, which states that for small T > 0, with initial distribution μ, the gradient-flow endpoint μT is an approximate minimizer of 
+
+ΦT (ν) = L(ν) + 12T W22 (μ, ν ).
+
+Finite-width model and data. We work with the finite-width approximation of large neural network, where 
+
+fN (x) = 1
+
+N
+
+> N∑
+> i=1
+
+wi σ(ai · x + bi), θi = ( wi, a i, b i) ∈ Θ = R × Rd+1 ,
+
+so that the empirical parameter distribution is 
+
+μNt = 1
+
+N
+
+> N∑
+> i=1
+
+δθti .
+
+Since the analysis in Section 4 assumes bounded activations, in the numerics we use the clipped ReLU 
+
+σM (z) := min {M, max {0, z }} ,
+
+with M = 5 , consistent with Remark 4.6. The data are generated from a network of the same form with additive Gaussian noise. Training is performed by deterministic full-batch gradient descent. 
+
+Recorded observables. Along the trajectory t 7 → μNt , we record the empirical loss L(μNt ), the second moment 
+
+m2(μNt ) := 1
+
+N
+
+> N∑
+> i=1
+
+|θti |2,
+
+and the Barron-type surrogates 
+
+B1(μNt ) := 1
+
+N
+
+> N∑
+> i=1
+
+|wti |, B1,1(μNt ) := 1
+
+N
+
+> N∑
+> i=1
+
+|wti | ∥ ati∥.
+
+24 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan To compare with the energy–dissipation identity, we use the mean-field-scaled discrete kinetic action 
+
+> ∑
+> k
+
+1∆t
+
+> N∑
+> i=1
+
+|θk+1  
+
+> i
+
+− θki |2,
+
+which is the finite-width approximation of ∫ T 
+
+> 0
+
+∥αt∥2 
+
+> L2(μt)
+
+dt. We also use the identity-coupling displacement proxy 
+
+> ˜
+
+W22,id (μN 
+
+> 0
+
+, μ Nt ) := 1
+
+N
+
+> N∑
+> i=1
+
+|θti − θ0 
+
+> i
+
+|2,
+
+and the associated short-time proxy 
+
+> ˜
+
+ΦN, id  
+
+> t
+
+:= L(μNt ) + 12t ˜W22,id (μN 
+
+> 0
+
+, μ Nt ), t > 0.
+
+Deterministic scaling diagnostics. Figure 1 displays three deterministic diagnostics along a single full-batch run. The left panel compares the loss drop L(μN 
+
+> 0
+
+) − L(μNt ) with the cumulative mean-field-scaled kinetic action. The observed parity is close to the diagonal, in agreement with the energy–dissipation interpretation of the gradient-flow dynamics. The middle panel plots the second-moment increment m2(μNt ) − m2(μN 
+
+> 0
+
+) against the scale √t
+
+> √
+
+L(μN 
+
+> 0
+
+) − L(μNt ), and the right panel shows the analogous increments for B1 and B1,1. In this run, both moment growth and Barron-surrogate growth remain controlled and increase smoothly with the dissipated energy. We interpret this as numerical evidence that, in the deterministic mean-field regime, the loss decrease is accompanied by only moderate growth of parameter complexity, consistent with the implicit-regularization mechanism suggested by Proposition 4.18 and the discussion in Section 4.6. 
+
+Finite-width proxy for Theorem 4.16. We also perform a direct finite-width proxy test of the short-time endpoint principle in Theorem 4.16. For each small stopping time T , starting from the same initialization μN 
+
+> 0
+
+, we compare two endpoints: 1. the endpoint μN, GF  
+
+> T
+
+produced by mean-field-scaled full-batch gradient descent on LN ;2. an approximate minimizer of the empirical identity-coupling proxy 
+
+> ˜
+
+ΦN, id  
+
+> T
+
+(ν) := LN (ν) + 12T ˜W22,id (μN 
+
+> 0
+
+, ν ).
+
+Figure 2 compares the corresponding displacement proxies from initialization. For small T , the displacement of the gradient-flow endpoint and that of the proxy minimizer are of the same order and remain close. This is the finite-width analogue of the statement that the gradient-flow endpoint is approximately optimal for the regularized short-time variational problem. Since the experiment replaces the exact Wasserstein term by the identity-coupling proxy and computes the minimizer only approximately, we view it as supportive rather than definitive evidence for Theorem 4.16. Nevertheless, it is consistent with the qualitative prediction that, for short stopping times, the endpoint selected by gradient descent is close to the optimizer of a loss-plus-movement functional. 
+
+Interpretation. Taken together, the numerical experiments support the following picture. In the deterministic mean-field regime, the gradient-flow trajectory satisfies an energy–dissipation balance and exhibits controlled growth of moments and Barron-type surrogates. In addition, for short stopping times, the endpoint generated by gradient descent is well approximated by the minimizer 25 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+Figure 1: Deterministic diagnostics for the mean-field finite-width training dynamics. Left: 
+
+energy–dissipation parity, comparing the loss drop L(μN 
+
+> 0
+
+) − L(μNt ) with the cumulative mean-field-scaled kinetic action. Middle: second-moment increment m2(μNt ) − m2(μN 
+
+> 0
+
+) plotted against 
+
+√t
+
+> √
+
+L(μN 
+
+> 0
+
+) − L(μNt ). Right: analogous increments for the Barron-type surrogates B1 and B1,1.The three panels indicate that loss dissipation is accompanied by controlled growth of moments and variation-type quantities. of a finite-width proxy of the regularized loss functional in Theorem 4.16. These experiments do not constitute a direct computation of ETG , nor a full numerical verification of the continuum theorem, but they do support the variational interpretation of early stopping developed in Sections 3 and 4. 
+
+# 6 Conclusion, Limitations and Future Work 
+
+We proposed a mathematical framework connecting gradient flows and McKean–Vlasov optimal control to study implicit regularization in overparametrized two-layer neural networks. By reformu-lating the mean-field training dynamics as a control problem, we obtained a variational principle that characterizes early stopping as a trajectory-selection mechanism: the stopped iterate approximately minimizes the loss penalized by a dynamical cost measuring the total movement of the parameter distribution. We further showed that, even under infinite training time, the gradient flow selects a minimizer closest to the initialization in a data- and loss-dependent pseudo-metric dG, if the gradient flow converges. Our analysis has several limitations. It is restricted to two-layer networks in the mean-field limit, and extending the framework to deeper architectures remains a substantial open challenge. The implicit regularizer that emerges depends on the loss function and training data through the upper gradient G, making it harder to interpret than classical explicit penalties such as weight decay. Moreover, while we provide non-asymptotic bounds relating the regularization to Wasserstein distances and moment growth, the tightness of these bounds in practical settings is unclear and warrants further investigation. More broadly, this work is primarily theoretical and does not claim to offer immediate practical guidance; we view it as providing a geometric and variational perspective that may prove valuable as the theoretical understanding of neural network training matures. We see several natural directions for future work. It would be interesting to tighten the connection between dG and function-space complexity measures such as Barron or variation norms, potentially yielding more interpretable characterizations of the inductive bias. As discussed in Section 1.1, a particularly promising direction is to leverage such connections to obtain a more fine-grained understanding of implicit regularization in terms of feature learning, building on recent work relating 26 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+Figure 2: Finite-width identity-coupling proxy for Theorem 4.16. For each small stopping time 
+
+T , we compare the displacement proxy from initialization of the gradient-flow endpoint μN, GF  
+
+> T
+
+and of an approximate minimizer of the proxy functional ˜ΦN, id  
+
+> T
+
+(ν) = LN (ν) + 12T ˜W22,id (μN 
+
+> 0
+
+, ν ). The two curves remain of the same order for small T , consistent with the short-time endpoint principle. parameter norms to properties of the learned function. 
+
+# References 
+
+Alnur Ali, J. Zico Kolter, and Ryan J. Tibshirani. A continuous-time view of early stopping for least squares regression. In Kamalika Chaudhuri and Masashi Sugiyama, editors, Proceedings of Machine Learning Research , volume 89 of Proceedings of Machine Learning Research , pages 1370–1378. PMLR, 16–18 Apr 2019. URL http://proceedings.mlr.press/v89/ali19a.html .Luigi Ambrosio and Jin Feng. On a class of first order hamilton-jacobi equations in metric spaces. 
+
+J. Differential Equations , 256(7):2194–2245, 2014. doi: 10.1016/j.jde.2013.12.018. Luigi Ambrosio, Nicola Gigli, and Giuseppe Savaré. Gradient Flows in Metric Spaces and in the Space of Probability Measures . Lectures in Mathematics ETH Zürich. Birkhäuser, 2. ed edition, 2008. ISBN 978-3-7643-8722-8 978-3-7643-8721-1. OCLC: 254181287. Peter L Bartlett, Dylan J Foster, and Matus J Telgarsky. Spectrally-normalized margin bounds for neural networks. In I. Guyon, U. Von Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems , volume 30. Curran Associates, Inc., 2017. URL https://proceedings.neurips.cc/paper_files/paper/2017/ file/b22b257ad0519d4500539da3c8bcf4dd-Paper.pdf .Mikhail Belkin, Daniel Hsu, Siyuan Ma, and Soumik Mandal. Reconciling modern machine-learning practice and the classical bias–variance trade-off. Proceedings of the National Academy of Sciences ,116(32):15849–15854, 2019. doi: 10.1073/pnas.1903070116. Jean-David Benamou and Yann Brenier. A computational fluid mechanics solution to the monge– kantorovich mass transfer problem. Numerische Mathematik , 84(3):375–393, 2000. doi: 10.1007/ s002110050002. 27 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Yoshua Bengio, Aaron Courville, and Pascal Vincent. Representation learning: A review and new perspectives. IEEE Transactions on Pattern Analysis and Machine Intelligence , 35(8):1798–1828, 2013. doi: 10.1109/TPAMI.2013.50. Chris M. Bishop. Regularization and complexity control in feed-forward networks. In Proceedings International Conference on Artificial Neural Networks ICANN’95 , volume 1, pages 141–148. EC2 et Cie, January 1995. URL https://www.microsoft.com/en-us/research/publication/ regularization-and-complexity-control-in-feed-forward-networks/ .Etienne Boursier and Nicolas Flammarion. Penalising the biases in norm regularisation enforces sparsity. (arXiv:2303.01353), November 2023. doi: 10.48550/arXiv.2303.01353. URL http: //arxiv.org/abs/2303.01353 . arXiv:2303.01353 [cs, stat]. Olivier Bousquet and André Elisseeff. Stability and generalization. J. Mach. Learn. Res. , 2:499–526, March 2002. ISSN 1532-4435. doi: 10.1162/153244302760200704. URL https://doi.org/10. 1162/153244302760200704 .René Carmona and François Delarue. Probabilistic Theory of Mean Field Games with Applications I, volume I. Springer, 2018. URL https://books.google.com/books/about/Probabilistic_ Theory_of_Mean_Field_Games.html?id=fZFODwAAQBAJ . Springer International Publishing. Lénaïc Chizat and Francis Bach. On the global convergence of gradient descent for over-parameterized models using optimal transport. In Proceedings of the 32nd International Conference on Neural Information Processing Systems , NIPS’18, page 3040–3050, Red Hook, NY, USA, 2018. Curran Associates Inc. Andrea Cosso, Fausto Gozzi, Idris Kharroubi, Huyên Pham, and Mauro Rosestolato. Master bellman equation in the wasserstein space: Uniqueness of viscosity solutions. Transactions of the American Mathematical Society , 375(9):6473–6511, 2022. doi: 10.1090/tran/8622. URL www.ams.org .G. Cybenko. Approximation by superpositions of a sigmoidal function. Mathematics of Control, Signals and Systems , 2(4):303–314, December 1989. ISSN 1435-568X. doi: 10.1007/BF02551274. URL https://doi.org/10.1007/BF02551274 .Mao Fabrice Djete, Dylan Possamaï, and Xiaolu Tan. McKean–Vlasov optimal control: The dynamic programming principle. The Annals of Probability , 50(2):791 – 833, 2022a. doi: 10.1214/ 21-AOP1548. URL https://doi.org/10.1214/21-AOP1548 .Mao Fabrice Djete, Dylan Possamaï, and Xiaolu Tan. Mckean–vlasov optimal control: Limit theory and equivalence between different formulations. Math. Oper. Res. , 47(4):2891–2930, November 2022b. ISSN 0364-765X. doi: 10.1287/moor.2021.1232. URL https://doi.org/10.1287/moor. 2021.1232 .Jerome Friedman and Bogdan E Popescu. Gradient directed regularization for linear regression and classification. Technical report, Technical Report, Statistics Depart-ment, Stanford University, 2003. URL https://www.researchgate.net/profile/ Jerome_Friedman/publication/244258820_Gradient_Directed_Regularization_ for_Linear_Regression_and_Classification/links/5afe22ce458515e9a57639de/ Gradient-Directed-Regularization-for-Linear-Regression-and-Classification.pdf .Wilfrid Gangbo and Andrzej Święch. Metric viscosity solutions of hamilton–jacobi equations depending on local slopes. Calculus of Variations and Partial Differential Equations , 54, 01 2015. doi: 10.1007/s00526-015-0822-5. 28 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Gauthier Gidel, Francis Bach, and Simon Lacoste-Julien. Implicit Regularization of Discrete Gradient Dynamics in Deep Linear Neural Networks. arXiv e-prints , art. arXiv:1904.13262, April 2019. URL https://arxiv.org/abs/1904.13262v1 .Suriya Gunasekar, Jason Lee, Daniel Soudry, and Nathan Srebro. Characterizing implicit bias in terms of optimization geometry. In Jennifer Dy and Andreas Krause, editors, Proceedings of the 35th International Conference on Machine Learning , volume 80 of Proceedings of Machine Learning Research , pages 1832–1841. PMLR, 10–15 Jul 2018. URL https://proceedings.mlr. press/v80/gunasekar18a.html .Moritz Hardt, Benjamin Recht, and Yoram Singer. Train faster, generalize better: stability of stochastic gradient descent. In Proceedings of the 33rd International Conference on International Conference on Machine Learning - Volume 48 , ICML’16, page 1225–1234. JMLR.org, 2016. Jakob Heiss. Inductive Bias of Neural Networks and Selected Applications . Doctoral thesis, ETH Zurich, Zurich, 2024. URL https://www.research-collection.ethz.ch/handle/20.500. 11850/699241 .Jakob Heiss, Josef Teichmann, and Hanna Wutte. How implicit regularization of neural networks affects the learned function–part i. arXiv preprint arXiv:1911.02903 , 2019. Jakob Heiss, Alexis Stockinger, and Josef Teichmann. Reducing the number of neurons of deep relu networks based on the current theory of regularization. 2021a. Jakob Heiss, Josef Teichmann, and Hanna Wutte. How infinitely wide neural networks can benefit from multi-task learning - an exact macroscopic characterization. arXiv preprint arXiv:2112.15577 ,2021b. doi: 10.3929/ETHZ-B-000550890. URL https://arxiv.org/abs/2112.15577 .Kurt Hornik. Approximation capabilities of multilayer feedforward networks. Neural Networks ,4(2):251 – 257, 1991. ISSN 0893-6080. doi: 10.1016/0893-6080(91)90009-T. URL https: //doi.org/10.1016/0893-6080(91)90009-T .Felix Höfer and H. Mete Soner. Optimal control and potential games in the mean field, 2025. URL 
+
+https://arxiv.org/abs/2408.00733 .Arthur Jacot, Franck Gabriel, and Clément Hongler. Neural tangent kernel: Convergence and generalization in neural networks, 2020. URL https://arxiv.org/abs/1806.07572 .Arthur Jacot, Eugene Golikov, Clément Hongler, and Franck Gabriel. Feature learning in l_2-regularized dnns: Attraction/repulsion and sparsity. Advances in Neural Information Processing Systems , 35:6763–6774, 2022. Christian Léonard. A survey of the schrödinger problem and some of its connections with optimal transport. Discrete and Continuous Dynamical Systems , 34(4):1533–1574, 2014. doi: 10.3934/ dcds.2014.34.1533. Song Mei, Andrea Montanari, and Phan-Minh Nguyen. A mean field view of the landscape of two-layer neural networks. Proceedings of the National Academy of Sciences , 115(33):E7665–E7671, 2018. doi: 10.1073/pnas.1806579115. URL https://www.pnas.org/doi/abs/10.1073/pnas.1806579115 .Behnam Neyshabur, Ryota Tomioka, and Nathan Srebro. In search of the real inductive bias: On the role of implicit regularization in deep learning. CoRR , abs/1412.6614, 2014. URL 
+
+https://api.semanticscholar.org/CorpusID:6021932 .29 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Behnam Neyshabur, Srinadh Bhojanapalli, David McAllester, and Nati Srebro. Exploring general-ization in deep learning. Advances in neural information processing systems , 30, 2017. Greg Ongie, Rebecca Willett, Daniel Soudry, and Nathan Srebro. A function space view of bounded norm infinite width relu nets: The multivariate case. arXiv preprint arXiv:1910.01635 , 2019. URL https://arxiv.org/pdf/1910.01635.pdf .Seunghoon Paik, Kangjie Zhou, Matus Telgarsky, and Ryan J. Tibshirani. Basic inequalities for first-order optimization with applications to statistical risk analysis, 2025. URL https: //arxiv.org/abs/2512.24999 .Rahul Parhi and Robert D Nowak. What kinds of functions do deep neural networks learn? insights from variational spline theory. SIAM Journal on Mathematics of Data Science , 4(2):464–489, 2022. Suzanna Parkinson, Greg Ongie, and Rebecca Willett. Relu neural networks with linear layers are biased towards single- and multi-index models. (arXiv:2305.15598), March 2025. doi: 10.48550/ arXiv.2305.15598. URL http://arxiv.org/abs/2305.15598 . arXiv:2305.15598 [cs]. Tomaso Poggio, Qianli Liao, Brando Miranda, Andrzej Banburski, Xavier Boix, and Jack Hidary. Theory IIIb: Generalization in Deep Networks. arXiv e-prints , art. arXiv:1806.11379, June 2018. URL https://arxiv.org/abs/1806.11379v1 .Riccarda Rossi, Giuseppe Savaré, Antonio Segatti, and Ulisse Stefanelli. Weighted energy-dissipation principle for gradient flows in metric spaces. Journal de Mathématiques Pures et Appliquées , 127: 1–66, 2019. Grant Rotskoff and Eric Vanden-Eijnden. Trainability and accuracy of artificial neural networks: An interacting particle system approach. Communications on Pure and Applied Mathematics ,75(9):1889–1935, 2022. doi: https://doi.org/10.1002/cpa.22074. URL https://onlinelibrary. wiley.com/doi/abs/10.1002/cpa.22074 .Filippo Santambrogio. Optimal Transport for Applied Mathematicians , volume 87 of Progress in Nonlinear Differential Equations and Their Applications . Birkhäuser Cham, Cham, 2015. ISBN 978-3-319-20827-5. doi: 10.1007/978-3-319-20828-2. Pedro Savarese, Itay Evron, Daniel Soudry, and Nathan Srebro. How do infinite width bounded norm networks look in function space? arXiv preprint arXiv:1902.05040 , 2019. URL https: //arxiv.org/abs/1902.05040 .Joseph Shenouda, Rahul Parhi, Kangwook Lee, and Robert D. Nowak. Variation spaces for multi-output neural networks: Insights on multi-task learning and network compression. Journal of Machine Learning Research , 25(231):1–40, 2024. URL http://jmlr.org/papers/v25/23-0677. html .Justin Sirignano and Konstantinos Spiliopoulos. Mean field analysis of neural networks: A law of large numbers. SIAM Journal on Applied Mathematics , 80(2):725–752, 2020. doi: 10.1137/18M1192184. URL https://doi.org/10.1137/18M1192184 .H. Mete Soner and Qinxin Yan. Viscosity solutions for mckean–vlasov control on a torus. SIAM Journal on Control and Optimization , 62(2):903–923, 2024. doi: 10.1137/22M1543732. 30 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Daniel Soudry, Elad Hoffer, Mor Shpigel Nacson, Suriya Gunasekar, and Nathan Srebro. The Implicit Bias of Gradient Descent on Separable Data. arXiv e-prints , art. arXiv:1710.10345, October 2017. URL https://arxiv.org/abs/1710.10345v4 .Thomas Stark and Lukas Steinberger. Implicit vs. explicit regularization for high-dimensional gradient descent. (arXiv:2502.10578), February 2025. doi: 10.48550/arXiv.2502.10578. URL 
+
+http://arxiv.org/abs/2502.10578 . arXiv:2502.10578 [math]. Francis Williams, Matthew Trager, Daniele Panozzo, Claudio Silva, Denis Zorin, and Joan Bruna. Gradient dynamics of shallow univariate relu networks. In Advances in Neural Information Processing Systems , pages 8378–8387, 2019. Jingfeng Wu, Peter L. Bartlett, Jason D. Lee, Sham M. Kakade, and Bin Yu. Risk comparisons in lin-ear regression: Implicit regularization dominates explicit regularization. (arXiv:2509.17251), 2025. doi: 10.48550/arXiv.2509.17251. URL http://arxiv.org/abs/2509.17251 . arXiv:2509.17251 [stat]. Greg Yang and Edward J. Hu. Tensor programs iv: Feature learning in infinite-width neural networks. In Marina Meila and Tong Zhang, editors, Proceedings of the 38th International Conference on Machine Learning , volume 139 of Proceedings of Machine Learning Research , pages 11727–11737. PMLR, 18–24 Jul 2021. URL https://proceedings.mlr.press/v139/yang21c.html .Chiyuan Zhang, Samy Bengio, Moritz Hardt, Benjamin Recht, and Oriol Vinyals. Understand-ing deep learning requires rethinking generalization. In International Conference on Learning Representations (ICLR) , 2017. URL https://openreview.net/forum?id=Sy8gdB9xx .
+
+# A A Counter Example 
+
+Let E := R2, and consider (P2(R2), W2). Let η ∈ C∞ 
+
+> c
+
+(R) be a smooth cutoff with η ≡ 1 on [−1, 1] ,
+
+η ≡ 0 on R \ [−2, 2] , and 0 ≤ η ≤ 1. Define 
+
+f (x, y ) := y η (y) ∈ C∞ 
+
+> c
+
+(R2), S(μ) := 
+
+> ∫
+> R2
+
+f dμ, κ(μ) := 
+
+> ( ∫
+> R2
+
+|∇ f |2 dμ
+
+> )1/2
+
+.
+
+Set a piecewise-linear (kinked) scalar nonlinearity 
+
+h(z) := az + |z|, a > 1,
+
+and the value functional 
+
+v(μ) := h(S(μ)) = a S (μ) + |S(μ)|.
+
+Note that v is proper, l.s.c., Lipschitz on W2-balls (since S is Lipschitz via Benamou–Brenier and 
+
+f ∈ C∞ 
+
+> c
+
+), but not C1 at S = 0 .
+
+Relaxed slope and viscosity HJB. The metric subdifferential in the S-direction at μ is the interval 
+
+∂h (S(μ)) = 
+
+> 
+
+{a + 1 }, S(μ) > 0,
+
+[a − 1, a + 1] , S(μ) = 0 ,
+
+{a − 1}, S(μ) < 0,
+
+31 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan so the relaxed slope of v at μ is 
+
+|∂−v|(μ) = min  
+
+> s∈∂h (S(μ))
+
+|s| κ(μ) = 
+
+
+
+(a + 1) κ(μ), S(μ) > 0,
+
+(a − 1) κ(μ), S(μ) = 0 ,
+
+(a − 1) κ(μ), S(μ) < 0.
+
+Define the running cost by the viscosity HJB identity with the relaxed slope, 
+
+ℓ(μ) := v(μ) + 12 |∂−v|(μ)2.
+
+Then v is a viscosity solution of 
+
+v(μ) + 12 |∂−v|(μ)2 = ℓ(μ)
+
+on P2 (test functionals touch S(·) in the direction of minimal subgradient). 
+
+Initial condition at the kink. Pick μ0 ∈ P 2 such that S(μ0) = 0 and κ(μ0) > 0 (e.g., any compactly supported law with zero f -moment but nontrivial mass in {|∇ f | > 0}). At S = 0 the subgradient set is the whole interval [a − 1, a + 1] with minimal element smin = a − 1 > 0 and other 
+
+larger elements s ∈ (smin , a + 1] .
+
+Two distinct gradient flows (curves of maximal slope). From Ambrosio et al. [2008], with the relaxed slope, one may construct (locally in time) curves of maximal slope μ(s) 
+
+> t
+
+calibrated by a 
+
+constant subgradient choice s ∈ [a − 1, a + 1] at t = 0 , i.e. 
+
+− ddt v(μ(s) 
+
+> t
+
+) = 12 |∂−v|(μ(s) 
+
+> t
+
+)2 + 12 |μ(s)′|(t)2, |∂−v|(μ(s) 
+
+> t
+
+) = s κ (μ(s) 
+
+> t
+
+),
+
+and (by equality in Cauchy–Schwarz/Young for the relaxed slope) 
+
+|μ(s)′|(t) = s κ (μ(s) 
+
+> t
+
+).
+
+In particular, for the two choices 
+
+smin = a − 1 and smax = a + 1 ,
+
+we obtain two gradient flows μ(min) and μ(max) starting from the same μ0 and satisfying the curves of maximal slope definition with the relaxed slope. 
+
+Control costs and non-optimality of the larger-s flow. Let α(s) 
+
+> t
+
+be any velocity field realizing the metric speed: |μ(s)′|(t)2 = ∫ |α(s) 
+
+> t
+
+|2 dμ(s) 
+
+> t
+
+. Along μ(s) the discounted control cost reads 
+
+J(μ(s), α (s)) = 
+
+∫ ∞
+
+> 0
+
+e−t( ∫
+
+|α(s) 
+
+> t
+
+|2 dμ(s) 
+
+> t
+
++ ℓ(μ(s) 
+
+> t
+
+)
+
+)
+
+dt. 
+
+Using the viscosity HJB (with |∂−v|) and the EDE (again with |∂−v|), 
+
+∫
+
+|α(s) 
+
+> t
+
+|2 dμ(s) 
+
+> t
+
+= ∣∣μ(s)′|(t)2 = (|∂−v|(μ(s) 
+
+> t
+
+))2 = s2 κ(μ(s) 
+
+> t
+
+)2,ℓ(μ(s) 
+
+> t
+
+) = v(μ(s) 
+
+> t
+
+) + 12 |∂−v|(μ(s) 
+
+> t
+
+)2 = v(μ(s) 
+
+> t
+
+) + 12 s2 κ(μ(s) 
+
+> t
+
+)2,
+
+and hence ∫
+
+|α(s) 
+
+> t
+
+|2 dμ(s) 
+
+> t
+
++ ℓ(μ(s) 
+
+> t
+
+) = v(μ(s) 
+
+> t
+
+) + 32 s2 κ(μ(s) 
+
+> t
+
+)2.
+
+32 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Therefore, for smax > s min we have strictly larger instantaneous kinetic and running cost: 
+
+∫
+
+|α(max)  
+
+> t
+
+|2 dμ(max)  
+
+> t
+
++ ℓ(μ(max)  
+
+> t
+
+) −
+
+( ∫
+
+|α(min)  
+
+> t
+
+|2 dμ(min)  
+
+> t
+
++ ℓ(μ(min)  
+
+> t
+
+)
+
+)
+
+= 32 (s2max − s2min ) κ(μt)2 > 0,
+
+at least for small t while κ(μt) stays the same. After multiplying with the discount factor e−t in time, and integrating over t from 0 to infinity, we conclude that 
+
+J(μ(max) , α (max) ) > J (μ(min) , α (min) ).
+
+Conclusion. Both μ(min) and μ(max) are gradient flows (curves of maximal slope) for v with respect to the relaxed slope |∂−v|, because v is only used in viscosity form and the kink allows multiple 
+
+s ∈ ∂h (0) . However, only the flow with the minimal selector smin = a − 1 minimizes the control cost. The larger-selector flow smax = a + 1 is a gradient flow but not a minimizer of the control formulation. This shows that, at viscosity regularity (with relaxed slopes and without a calibrating chain rule), a gradient flow of v need not be optimal for the control problem. 
+
+# B Proof of Theorem 3.3 
+
+Lemma B.1. There exist constants C0, C 1 such that, for all ε ≥ 0 and μ ∈ P 2(E),
+
+ℓε(μ) ≥ − ε2
+
+2
+
+(C0 + C1 m2(μ)). (B.1) 
+
+Proof. By the definition of ℓϵ (2.20), 
+
+ℓϵ(μ) := V (μ) + 12
+
+∫
+
+> E
+
+∥∇ x∂μV (μ)∥2 dμ − ε2
+
+> 2
+
+∫
+
+> E
+
+∆x∂μV (μ) d μ
+
+≥ − ϵ2
+
+2
+
+∫
+
+> E
+
+∆x∂μV (μ)d μ ≥ − ϵ2
+
+2 C(1 + m2(μ)) .
+
+Lemma B.2. The functional ℓ0 is W2–lower semicontinuous on {μ : m2(μ) ≤ R} for every R > 0.
+
+This follows directly from the definition of ℓ0 and the regularity assumption on L.
+
+Lemma B.3 (Equi-coercivity) . Fix T > 0 and μ ∈ P 2(E). For ε ≥ 0 define 
+
+Fε(ν) := d2
+
+> T,ε
+
+(μ, ν ) + e−T V (ν).
+
+Then for every C ∈ R there exist ε∗(T ) ∈ (0 , 1] and ¯C such that, for all ε ∈ (0 , ε ∗(T )] ,
+
+Fε(ν) ≤ C =⇒ m2(ν) ≤ ¯C. 
+
+Consequently, the family (Fε)ε↓0 is equi-coercive on (P2(E), W2).Proof. Fix C ∈ R, ε ∈ (0 , 1] , and ν ∈ P 2(E) with Fε(ν) ≤ C. Pick (μ, α ) ∈ AT,ε (μ, ν ) such that 
+
+∫ T
+
+> 0
+
+e−t( 12
+
+∫
+
+> E
+
+|αt|2 dμt + ℓε(μt)
+
+)
+
+dt ≤ d2
+
+> T,ε
+
+(μ, ν ) + 1 ≤ C + 1 .
+
+33 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Set M (t) := m2(μt). By Ito’s formula, 
+
+ddt M (t) = 2 
+
+∫
+
+> E
+
+x · αt(x) μt(d x) + ε2d ≤ 2∥x∥L2(μt)∥αt∥L2(μt) + ε2d. 
+
+Hence, by Cauchy-Schwarz inequality, 
+
+ddt M (t) ≤ M (t) + 
+
+∫
+
+> E
+
+|αt|2 dμt + ε2d. 
+
+From Grönwall’s inequality, 
+
+sup  
+
+> t∈[0 ,T ]
+
+M (t) ≤ eT M (0) + eT
+
+∫ T
+
+> 0
+
+∫
+
+> E
+
+|αt|2 dμt dt + ε2de T . (B.2) From the near-optimality inequality and the lower bound (B.1), 
+
+12
+
+∫ T
+
+> 0
+
+e−t
+
+∫
+
+> E
+
+|αt|2 dμt dt ≤ C + 1 −
+
+∫ T
+
+> 0
+
+e−tℓε(μt) d t
+
+≤ C + 1 + ε2
+
+2
+
+(
+
+C0
+
+∫ T
+
+> 0
+
+e−tdt + C1
+
+∫ T
+
+> 0
+
+e−tM (t) d t
+
+)
+
+≤ C + 1 + ε2
+
+2
+
+(
+
+C0 + C1 sup  
+
+> t∈[0 ,T ]
+
+M (t)
+
+)
+
+.
+
+Using e−t ≥ e−T on [0 , T ], we have 
+
+∫ T
+
+> 0
+
+∫
+
+> E
+
+|αt|2 dμt dt ≤ eT
+
+∫ T
+
+> 0
+
+e−t
+
+∫
+
+> E
+
+|αt|2 dμt dt ≤ 2eT (C + 1) + ε2eT (
+
+C0 + C1 sup  
+
+> t∈[0 ,T ]
+
+M (t)
+
+)
+
+. (B.3) Inserting (B.3) into (B.2), 
+
+sup  
+
+> t∈[0 ,T ]
+
+M (t) ≤ eT M (0) + 2 e2T (C + 1) + ε2e2T C0 + ε2e2T C1 sup  
+
+> t∈[0 ,T ]
+
+M (t) + ε2de T .
+
+Now choose ε∗(T ) ∈ (0 , 1] such that ε2
+
+> ∗
+
+e2T C1 ≤ 12 . Then, for all ε ∈ (0 , ε ∗(T )] ,
+
+sup  
+
+> t∈[0 ,T ]
+
+M (t) ≤ 2
+
+(
+
+eT m2(μ) + 2 e2T (C + 1) + e2T C0 + de T )
+
+=: ¯C. 
+
+In particular m2(ν) = M (T ) ≤ ¯C, which is the desired uniform moment bound. Finally, uniform second-moment bounds imply W2-precompactness of sublevel sets, hence equi-coercivity. Now we present the proof of Theorem 3.3. 
+
+Proof of Theorem 3.3. By Lemma B.3, the family (Fε)ε↓0 is equi-coercive in (P2(E), W2). It remains to prove the Γ–lim inf and Γ–lim sup inequalities. 
+
+Step 1 ( Γ–lim inf inequality). Let νε → ν in W2. If lim inf ε→0 Fε(νε) = + ∞ there is nothing to prove, so assume it is finite. Extract a sequence εn ↓ 0 such that 
+
+lim  
+
+> n→∞
+
+Fεn (νεn ) = lim inf  
+
+> ε→0
+
+Fε(νε) < ∞.
+
+34 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan For each n, choose (μn, α n) ∈ AT,ε n (μ, ν εn ) such that 
+
+∫ T
+
+> 0
+
+e−t( 12
+
+∫
+
+> E
+
+|αnt |2 dμnt + ℓεn (μnt )
+
+)
+
+dt ≤ d2 
+
+> T,ε n
+
+(μ, ν εn ) + 1
+
+n . (B.4) By the uniform bound on Fεn (νεn ) and Lemma B.3, the curves (μn)n≥1 have uniformly bounded second moments and are equi-continuous in W2. Hence, up to a subsequence, 
+
+μn → μ in C([0 , T ]; ( P2(E), W2)) , μ0 = μ, μ T = ν. (B.5) Define the space–time flux measures mn := μnt αnt dt on (0 , T ) × E. The kinetic part in (B.4) yields a uniform bound on αn in L2((0 , T ) × E; μnt dt), hence {mn}n≥1 is bounded in the dual of 
+
+Cc((0 , T ) × E; Rm). Thus, up to a subsequence, mn ⇀ m weakly as vector measures. Passing to the limit in the weak formulation of the Fokker–Planck equations 
+
+∂tμnt + ∇· (μnt αnt ) = ε2
+
+> n
+
+2 ∆μnt ,
+
+we obtain, since ε2 
+
+> n
+
+→ 0,
+
+∂tμt + ∇· mt = 0 in D′((0 , T ) × E). (B.6) Moreover, m ≪ μtdt, so there exists α ∈ L2(μtdt) such that mt = μtαt; hence (μ, α ) ∈ AT, 0(μ, ν ).By convexity and standard lower semicontinuity, 
+
+∫ T
+
+> 0
+
+∫
+
+> E
+
+|αt|2 dμt dt ≤ lim inf 
+
+> n→∞
+
+∫ T
+
+> 0
+
+∫
+
+> E
+
+|αnt |2 dμnt dt. (B.7) For the Γ–lim inf we only need 
+
+lim inf 
+
+> n→∞
+
+∫ T
+
+> 0
+
+e−tℓεn (μnt ) d t ≥
+
+∫ T
+
+> 0
+
+e−tℓ0(μt) d t, (B.8) which follows from (B.5) , the fact that ℓε → ℓ0 pointwise, ℓ0 is lower-semicontinuous from Lemma B.2, and (ℓε)ε≥0 are uniformly bounded from below on moment balls by Lemma B.1, allowing an application of Fatou’s lemma after extracting a further subsequence if needed. Combining (B.4)–(B.8) gives 
+
+d2
+
+> T, 0
+
+(μ, ν ) ≤
+
+∫ T
+
+> 0
+
+e−t( 12
+
+∫
+
+> E
+
+|αt|2 dμt + ℓ0(μt)
+
+)
+
+dt
+
+≤ lim inf 
+
+> n→∞
+
+∫ T
+
+> 0
+
+e−t( 12
+
+∫
+
+> E
+
+|αnt |2 dμnt + ℓεn (μnt )
+
+)
+
+dt ≤ lim inf  
+
+> n→∞
+
+d2 
+
+> T,ε n
+
+(μ, ν εn ).
+
+Finally, since V is W2–l.s.c. and νεn → ν,
+
+e−T V (ν) ≤ lim inf  
+
+> n→∞
+
+e−T V (νεn ).
+
+Therefore, 
+
+F0(ν) ≤ lim inf  
+
+> n→∞
+
+Fεn (νεn ) = lim inf  
+
+> ε→0
+
+Fε(νε),
+
+which proves the Γ–lim inf inequality. 
+
+Step 2 ( Γ–lim sup inequality). Fix ν ∈ P 2(E) and η > 0. Choose (μ, α ) ∈ AT, 0(μ, ν ) such that 
+
+∫ T
+
+> 0
+
+e−t( 12
+
+∫
+
+> E
+
+|αt|2 dμt + ℓ0(μt)
+
+)
+
+dt ≤ d2
+
+> T, 0
+
+(μ, ν ) + η. (B.9) 35 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan We construct admissible pairs for ε > 0 with terminal marginals νε → ν.Let Ps denote the heat semigroup on E. For ε > 0, define 
+
+μεt := Pε2tμt, mεt := Pε2t(μtαt), νε := μεT = Pε2T ν. 
+
+Then νε → ν in W2 as ε → 0. A standard commutation identity yields 
+
+∂tμεt + ∇· mεt = ε2
+
+2 ∆μεt in D′((0 , T ) × E), με 
+
+> 0
+
+= μ, μ εT = νε,
+
+so (με, α ε) ∈ AT,ε (μ, ν ε), where mεt = μεt αεt .By Jensen’s inequality, for a.e. t,
+
+∫
+
+> E
+
+|αεt |2 dμεt ≤
+
+∫
+
+> E
+
+|αt|2 dμt. (B.10) Hence, using (B.10) and the pointwise convergence ℓε → ℓ0 on moment balls, together with μεt → μt
+
+in W2 uniformly in t ∈ [0 , T ], we obtain 
+
+d2
+
+> T,ε
+
+(μ, ν ε) ≤
+
+∫ T
+
+> 0
+
+e−t( 12
+
+∫
+
+> E
+
+|αεt |2 dμεt + ℓε(μεt )
+
+)
+
+dt ≤
+
+∫ T
+
+> 0
+
+e−t( 12
+
+∫
+
+> E
+
+|αt|2 dμt + ℓε(μεt )
+
+)
+
+dt
+
+−−−→
+
+> ε→0
+
+∫ T
+
+> 0
+
+e−t( 12
+
+∫
+
+> E
+
+|αt|2 dμt + ℓ0(μt)
+
+)
+
+dt ≤ d2
+
+> T, 0
+
+(μ, ν ) + η, 
+
+where the last inequality is (B.9). Moreover, V (νε) → V (ν). Therefore, 
+
+lim sup 
+
+> ε→0
+
+Fε(νε) ≤ d2
+
+> T, 0
+
+(μ, ν ) + η + e−T V (ν).
+
+Letting η ↓ 0 proves the Γ–lim sup inequality. 
+
+Step 3 (Convergence of minimizers). By Lemma B.3, (Fε)ε≥0 is equi-coercive, and by Steps 1–2 we have that Fε Γ–converges to F0 in (P2(E), W2). The fundamental theorem of Γ–convergence then yields: (i) min Fε → min F0, and (ii) any sequence of minimizers νε,T ∈ arg min Fε is precompact in W2, and every W2–limit point is a minimizer of F0. This proves the claim on convergence of minimizers (along subsequences). 
+
+# C Postponed proofs 
+
+Proof of Proposition 3.6. For any admissible curve μ ∈ A 1,0(μ, ν ), the integrand |μ′|(t)G(μt) is nonnegative a.e., hence the integral is nonegative and thus dG(μ, ν ) ≥ 0.If ν = μ, the constant curve μt ≡ μ belongs to A1,0(μ, μ ) and satisfies |μ′|(t) = 0 a.e., so the integral equals 0. Hence dG(μ, μ ) = 0 .Fix μ, ν and let μ = ( μt)t∈[0 ,1] ∈ A 1,0(μ, ν ). Define the time-reversed curve ¯μt := μ1−t. Then 
+
+¯μ ∈ A 1,0(ν, μ ). Moreover, the metric derivative is invariant under time reversal: |¯μ′|(t) = |μ′|(1 − t)
+
+for a.e. t ∈ [0 , 1] . Therefore, by the change of variables s = 1 − t,
+
+∫ 10
+
+|¯μ′|(t) G(¯ μt) dt =
+
+∫ 10
+
+|μ′|(1 − t) G(μ1−t) dt =
+
+∫ 10
+
+|μ′|(s) G(μs) ds. 
+
+Taking the infimum over all μ ∈ A 1,0(μ, ν ) yields dG(ν, μ ) ≤ dG(μ, ν ). By symmetry of the roles of 
+
+μ and ν, we also get dG(μ, ν ) ≤ dG(ν, μ ), hence equality. 36 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan For the triangle inequality, fix μ0, μ 1, μ 2 and let δ > 0. Choose curves μ01 ∈ A 1,0(μ0, μ 1) and 
+
+μ12 ∈ A 1,0(μ1, μ 2) such that 
+
+∫ 10
+
+|μ01 ′|(t) G(μ01  
+
+> t
+
+) dt ≤ dG(μ0, μ 1) + δ, (C.1) 
+
+∫ 10
+
+|μ12 ′|(t) G(μ12  
+
+> t
+
+) dt ≤ dG(μ1, μ 2) + δ. (C.2) Define the concatenated curve μ02 = ( μ02  
+
+> t
+
+)t∈[0 ,1] by 
+
+μ02  
+
+> t
+
+:= 
+
+{μ01 2t , t ∈ [0 , 12 ],μ12 2t−1, t ∈ [ 12 , 1] .
+
+Then μ02 ∈ A 1,0(μ0, μ 2). By Lemma 3.5, for a.e. t ∈ (0 , 12 ), |μ02 ′|(t) = 2 |μ01 ′|, and similarly for a.e. t ∈ ( 12 , 1) , |μ02 ′|(t) = 2 |μ12 ′|(2 t − 1) . Hence, using the change of variables s = 2 t on [0 , 12 ] and 
+
+s = 2 t − 1 on [ 12 , 1] ,
+
+∫ 10
+
+|μ02 ′|(t) G(μ02  
+
+> t
+
+) dt =
+
+∫ 1/20
+
+2|μ01 ′|(2 t) G(μ01 2t ) dt +
+
+∫ 11/2
+
+2|μ12 ′|(2 t − 1) G(μ12 2t−1) dt 
+
+=
+
+∫ 10
+
+|μ01 ′|(s) G(μ01  
+
+> s
+
+) ds +
+
+∫ 10
+
+|μ12 ′|(s) G(μ12  
+
+> s
+
+) ds. 
+
+Therefore, 
+
+dG(μ0, μ 2) ≤
+
+∫ 10
+
+|μ02 ′|(t) G(μ02  
+
+> t
+
+) dt ≤ dG(μ0, μ 1) + dG(μ1, μ 2) + 2 δ. 
+
+Since δ > 0 is arbitrary, the triangle inequality follows. For the third point, set EG(μ, ν ) := inf T > 0 ETG (μ, ν ). For every η ∈ A T, 0(μ, ν ), we have 
+
+G(ηt) |η′|(t) ≤ 12 |η′|2(t) + 12 G(ηt)2, ∀ t ∈ [0 , T ]. (C.3) Now reparametrize η to the unit interval by γs := ηT s , s ∈ [0 , 1] . Then γ ∈ A 1,0(μ, ν ), and 
+
+|γ′|(s) = T |η′|(T s ) a.e.. Hence, combined with (C.3) gives 
+
+∫ 10
+
+G(γs) |γ′|(s) d s =
+
+∫ T
+
+> 0
+
+G(ηt) |η′|(t) d t ≤
+
+∫ T
+
+> 0
+
+( 12 |η′|2 + 12 G(η)2)
+
+dt. 
+
+Taking the infimum over all such η and then over all T > 0 yields dG(μ, ν ) ≤ EG(μ, ν ).For the other direction, fix ε > 0 and take γ ∈ A 1,0(μ, ν ) such that 
+
+∫ 10
+
+G(γs) |γ′|(s) d s ≤ dG(μ, ν ) + ε. (C.4) Define the absolutely continuous, nondecreasing map 
+
+θ(s) := 
+
+∫ s
+
+> 0
+
+|γ′|(r)
+
+G(γr) dr, 
+
+with the convention |γ′| 
+
+> G
+
+= 0 on {| γ′| = 0 } and |γ′| 
+
+> G
+
+= + ∞ on {| γ′| > 0, G = 0 }. Let S := θ(1) ∈
+
+[0 , ∞].If S = ∞, for every n ∈ N, define 
+
+θn(s) := 
+
+∫ s
+
+> 0
+
+|γ′|(r)max {G(γr), 1/n } dr, s ∈ [0 , 1] .
+
+37 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan Then θn is absolutely continuous, nondecreasing, and Sn := θn(1) < ∞. Let sn : [0 , S n] → [0 , 1] 
+
+be an a.e. inverse of θn and define the reparametrized curve η(n) 
+
+> t
+
+:= γsn(t), t ∈ [0 , S n], then 
+
+η(n) ∈ A Sn,0(μ, ν ). Moreover, 
+
+|η(n)|′(t) = |γ′|(sn(t)) s′
+
+> n
+
+(t) = max {G(η(n) 
+
+> t
+
+), 1/n } a.e. Therefore, together with Lemma 3.5, 
+
+∫ Sn
+
+> 0
+
+( 12 |η(n)|′(t)2 + 12 G(η(n) 
+
+> t
+
+)2)
+
+dt ≤
+
+∫ Sn
+
+> 0
+
+|η(n)|′(t) G(η(n) 
+
+> t
+
+) d t + Sn
+
+2n2 =
+
+∫ 10
+
+G(γs) |γ′|(s) d s + Sn
+
+2n2 .
+
+Since Sn ≤ n ∫ 10 |γ′|(s) d s, we have Sn/n 2 → 0, and thus 
+
+lim sup 
+
+> n→∞
+
+∫ Sn
+
+> 0
+
+( 12 |η(n)|′(t)2 + 12 G(η(n) 
+
+> t
+
+)2)
+
+dt ≤
+
+∫ 10
+
+G(γs) |γ′|(s) d s. 
+
+This yields EG(μ, ν ) ≤ dG(μ, ν ).
+
+Proof of Lemma 4.4. Set 
+
+rk = yk − fμ(xk), vk(θ) = 
+
+
+
+σ(zk)
+
+wσ ′(zk)xk
+
+wσ ′(zk)
+
+ , zk = a · xk + b. 
+
+Step 1: Growth Condition. Applying Cauchy-Schwarz to G2 yields 
+
+G2(μ) ≤
+
+( 1
+
+M
+
+> M
+
+∑
+
+> k=1
+
+( ˜L′(rk(μ))) 2)
+
+·
+
+∫
+
+> Θ
+
+1
+
+M
+
+> M
+
+∑
+
+> k=1
+
+∥vk(θ)∥2 μ(d θ).
+
+Now, by Assumption 4.1, 
+
+∥vk(θ)∥2 ≤ S20 + w2S20 (∥xk∥2 + 1) ≤ S20 (R2 + 1)(1 + w2).
+
+Integration over θ against μ yields 
+
+G2(μ) ≤ 2β L (μ) ( R2 + 1) S20
+
+(
+
+1 + 
+
+∫
+
+> Θ
+
+w2 μ(dθ )
+
+)
+
+≤ CGL(μ)(1 + m2(μ)) ,
+
+where CG := 2 β(R2 + 1) S20 .
+
+Step 2: Lower semicontinuity. Let μn → μ in W2. Denoting g(μ, θ ) := ∇θ∂μL(μ)( θ), then 
+
+G2(μ) = ∫ 
+
+> Θ
+
+∥g(μ, θ )∥2 μ(d θ). It is easy to check that, for every R > 0,
+
+lim  
+
+> n→∞
+
+sup 
+
+> |θ|≤ R
+
+∥g(μn, θ ) − g(μ, θ )∥ = 0 .
+
+For every n ∈ N, take an optimal coupling πn ∈ Π( μn, μ ), and let (Θ n, Θ) ∼ πn. Then Θn → Θ in 
+
+L2, and hence, along a subsequence, 
+
+g(μn, Θn) → g(μ, Θ) a.s. .
+
+38 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan By Fatou’s lemma, we have 
+
+E∥g(μ, Θ) ∥2 ≤ lim inf  
+
+> n→∞
+
+E∥g(μn, Θn)∥2.
+
+Since Θ ∼ μ, Θn ∼ μn, we conclude that 
+
+G(μ)2 ≤ lim inf  
+
+> n→∞
+
+G(μn)2.
+
+Proof of Corollary 4.5. Let νn → ν in W2. If lim inf n ETG (μ, ν n) = + ∞, there is nothing to prove. Otherwise, pass to a subsequence (not relabeled) such that 
+
+sup 
+
+> n
+
+ETG (μ, ν n) < ∞.
+
+For each n, pick ηn ∈ A T, 0(μ, ν n) such that 
+
+∫ T
+
+> 0
+
+( 12 |ηn′|2(t) + 12 G2(ηnt )
+
+)
+
+dt ≤ E TG (μ, ν n) + 1
+
+n ≤ sup 
+
+> n
+
+ETG (μ, ν n) + 1 .
+
+In particular, the curves (ηn)n≥1 are equicontinuous since 
+
+W2(ηnt , η ns ) ≤
+
+∫ ts
+
+|ηn′|(r) d r ≤ | t − s|1/2( ∫ T
+
+> 0
+
+|ηn′|2(r)d r
+
+)1/2
+
+, ∀ n ≥ 1.
+
+Moreover, since ηn 
+
+> 0
+
+= μ, we have 
+
+W2(μ, η nt ) ≤
+
+∫ t
+
+> 0
+
+|ηn′|(r) d r ≤ √T
+
+( ∫ T
+
+> 0
+
+|ηn′|2(r) d r
+
+)1/2
+
+≤ √T (sup 
+
+> n
+
+ETG (μ, ν n) + 1) .
+
+Hence {ηnt : n ∈ N, t ∈ [0 , T ]} is tight with uniformly bounded second moments, thus it is relatively compact in (P2(Θ) , W2). By Arzelà–Ascoli, there exist a subsequence (not relabeled) and a limit curve η ∈ A T, 0(μ, ν ), such that 
+
+sup  
+
+> t∈[0 ,T ]
+
+W2(ηnt , η t) → 0.
+
+From Lemma 4.4, 
+
+G2(ηt) ≤ lim inf  
+
+> n→∞
+
+G2(ηnt ) for all t ∈ [0 , T ],
+
+and by Fatou’s lemma, ∫ T
+
+> 0
+
+G2(ηt) d t ≤ lim inf 
+
+> n→∞
+
+∫ T
+
+> 0
+
+G2(ηnt )d t. 
+
+Combined with the fact that 
+
+∫ T
+
+> 0
+
+|η′|2(t) d t ≤ lim inf 
+
+> n→∞
+
+∫ T
+
+> 0
+
+|ηn′|2(t) d t, 
+
+this gives 
+
+ETG (μ, ν ) ≤
+
+∫ T
+
+> 0
+
+( 12 |η′|2(t) + 12 G2(ηt)
+
+)
+
+dt ≤ lim inf  
+
+> n→∞
+
+ETG (μ, ν n).
+
+39 Implicit Regularization via Mean-Field NN Acciaio, Heiss, Pammer & Yan 
+
+Proof of Lemma 4.15. Let νT be the minimizer of ΦT . Taking the constant curve η ≡ μ, we obtain 
+
+ΦT (νT ) = L(νT ) + 12T W2(μ, ν T )2 ≤ L(μ) + 12T W2(μ, μ )2 ≤ L(μ),
+
+hence 
+
+W2(μ, ν T )2 ≤ 2T L (μ),
+
+and 
+
+m2(νT ) ≤ 2m2(μ) + 2 W2(μ, ν T )2 ≤ 2m2(μ) + 4 T L (μ).
+
+40

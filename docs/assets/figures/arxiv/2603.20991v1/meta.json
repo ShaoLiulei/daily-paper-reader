@@ -1,0 +1,142 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-001.webp",
+      "caption": "Figure 4: Cumulative compression: forward (L0→L11) vs. backward (L11→L0). The 25,716× gap at one layer compressed demonstrates that layer 0 dominates the sensitivity landscape.",
+      "page": 11,
+      "index": 1,
+      "width": 674,
+      "height": 452
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-002.webp",
+      "caption": "Table 2: Catastrophe threshold τ across five architectures (layer-0 Wanda, regret < 100).",
+      "page": 15,
+      "index": 2,
+      "width": 618,
+      "height": 199
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-003.webp",
+      "caption": "Table 5: GPT-2 Small sensitivity hierarchy (NumPy reimplementation, sparsity=5%, rank=16). WikiText-103 at 51,200 tokens; C4 at 10,000 tokens. All experiments: zero bound violations.",
+      "page": 21,
+      "index": 3,
+      "width": 568,
+      "height": 490
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-004.webp",
+      "caption": "Table B.11: Contraction decomposition for GPT-2 Small. α2 = (∥hpost∥/∥hpre∥)2, ρ ·α2 = β2.",
+      "page": 30,
+      "index": 4,
+      "width": 714,
+      "height": 200
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-005.webp",
+      "caption": "Table B.8: Single-layer ablation: compressing all 39 matrices in one layer (sparsity=5%, rank=16).",
+      "page": 29,
+      "index": 5,
+      "width": 482,
+      "height": 283
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-006.webp",
+      "caption": "Figure 3: The early-layer MLP catastrophe. (a) Layer 0 component decomposition across five compression levels: mlp_fc dominates at every level, reaching 460K regret at aggressive compression. V projections remain nearly free even at extreme settings. (b) mlp_fc regret by layer reveals a sharp phase transition between layers 2 and 3—a 260× cliff separating catastrophic from negligible sensitivity.",
+      "page": 10,
+      "index": 6,
+      "width": 801,
+      "height": 301
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-007.webp",
+      "caption": "Figure 1: Overview. (a) Three composable approximation stages, each with machinechecked error bounds. (b) Lyapunov V (t) trajectories across five architectures (all measured via unified pipeline): GPT-2 Small contracts monotonically (ρmax = 0.96), while GPT-2 Medium’s final layer amplifies dramatically (ρ23 = 2.05). LFM2-2.6B (hybrid) and Mistral-7B show moderate amplification; Qwen3-8B oscillates most. (c) Catastrophe threshold τ increases with model dimension but is modulated by architecture (Table 2).",
+      "page": 3,
+      "index": 7,
+      "width": 804,
+      "height": 211
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-008.webp",
+      "caption": "Table A.7: Lean 4 theorem inventory. All proofs type-check with no sorry.",
+      "page": 28,
+      "index": 8,
+      "width": 1033,
+      "height": 340
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-009.webp",
+      "caption": "Table 1: Cross-model validation summary. All 50% Wanda results use a unified evaluation pipeline (weight×column-norm scoring, 4,096 tokens, WikiText-103 test) for consistent cross-model comparison. Lyapunov measurements use ϵ = 0.01 perturbation on 512 tokens. GPT-2 sensitivity data uses a separate NumPy reimplementation with per-matrix error tracking.",
+      "page": 8,
+      "index": 9,
+      "width": 918,
+      "height": 365
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-010.webp",
+      "caption": "Figure 7: Greedy sequential compression waterfall. Each bar adds one compression group (sparsity=5%, rank=32), color-coded by component type. V projections and attention outputs (green, purple) are compressed first at near-zero cost. MLP projections (orange) trigger the exit from the safe zone around round 19. The ordering reveals that the greedy strategy naturally discovers the sensitivity hierarchy.",
+      "page": 19,
+      "index": 10,
+      "width": 796,
+      "height": 425
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-011.webp",
+      "caption": "Table 3: Per-component regret at 50% sparsity: activation-aware vs. simplified Wanda on two architectures.",
+      "page": 17,
+      "index": 11,
+      "width": 618,
+      "height": 438
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-012.webp",
+      "caption": "Figure B.8: Catastrophe threshold curve for Mistral-7B layer 0. τ = 0.95 (regret < 100) contrasts with GPT-2 Small’s τ = 0.50 (Table 2).",
+      "page": 32,
+      "index": 12,
+      "width": 671,
+      "height": 468
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-013.webp",
+      "caption": "Figure B.9: Cross-model sparsity tolerance (activation-aware Wanda, separate evaluation from Table 1). Relative ordering is consistent with unified results.",
+      "page": 32,
+      "index": 13,
+      "width": 674,
+      "height": 454
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-014.webp",
+      "caption": "Figure 5: Contraction decomposition. (a) GPT-2 Small: blue bars show hidden state growth (α2), red bars show error growth (ρ·α2), green diamonds show contraction factor ρ. Layer 0’s massive expansion (α2 = 123) produces the strongest contraction (ρ = 0.25). All layers contract. (b) Mistral-7B across 31 layers. Red-shaded regions highlight amplifying layers (ρ > 1).",
+      "page": 12,
+      "index": 14,
+      "width": 801,
+      "height": 301
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-015.webp",
+      "caption": "Figure 2: Structural sensitivity analysis. (a) Per-group compression regret on log scale (12 × 6 heatmap). Each cell shows the perplexity increase when that group alone is compressed (sparsity=5%, rank=32). Layer 0 mlp_fc dominates at 459,904. (b) Componenttype sensitivity hierarchy: MLP components (red) are consistently more sensitive than attention (blue), spanning a 46× range.",
+      "page": 9,
+      "index": 15,
+      "width": 800,
+      "height": 301
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-016.webp",
+      "caption": "Table 4: Degradation stability across token counts and datasets (50% Wanda).",
+      "page": 20,
+      "index": 16,
+      "width": 602,
+      "height": 240
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20991v1/fig-017.webp",
+      "caption": "Figure 6: Per-layer contraction factor ρt across five architectures on a normalized depth axis. GPT-2 Small (blue) contracts everywhere (ρ < 1). LFM2 (green), Mistral (orange), and Qwen3 (red) all cross the stability boundary, with GPT-2 Medium (purple) spiking to ρ = 2.05 at the final layer.",
+      "page": 16,
+      "index": 17,
+      "width": 675,
+      "height": 364
+    }
+  ]
+}

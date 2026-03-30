@@ -1,0 +1,54 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.24023v1/fig-001.webp",
+      "caption": "Figure 1: Conceptual overview of the conversational AI feature. A user asks a question in natural language, and the system returns a data-driven answer by generating and executing a SQL query.",
+      "page": 1,
+      "index": 1,
+      "width": 492,
+      "height": 897
+    },
+    {
+      "url": "assets/figures/arxiv/2603.24023v1/fig-002.webp",
+      "caption": "Figure 5: Performance comparison of the final deployed model against the prompt-engineered Gemini baseline. The left chart shows our model achieved higher execution success (98.4% vs 95.6%) and semantic accuracy (92.5% vs 89.4%). The right chart illustrates the dramatic (> 99%) reduction in prompt token length.",
+      "page": 6,
+      "index": 2,
+      "width": 500,
+      "height": 288
+    },
+    {
+      "url": "assets/figures/arxiv/2603.24023v1/fig-003.webp",
+      "caption": "Figure 6: Execution and semantic accuracy for different Qwen 3 model sizes fine-tuned with our two-phase methodology. The 8B parameter model shows the highest accuracy, justifying its selection.",
+      "page": 6,
+      "index": 3,
+      "width": 500,
+      "height": 292
+    },
+    {
+      "url": "assets/figures/arxiv/2603.24023v1/fig-004.webp",
+      "caption": "Figure 2: A visual comparison of the two paradigms : Left side : “The External API Paradigm”, where a large prompt is sent to a third-party, pay-per-token service. Right side : “The Internalized Paradigm”, showing a small prompt with just the question going to a fine-tuned, selfhosted model with the schema “baked in”.",
+      "page": 2,
+      "index": 4,
+      "width": 412,
+      "height": 477
+    },
+    {
+      "url": "assets/figures/arxiv/2603.24023v1/fig-005.webp",
+      "caption": "Figure 3: The iterative process for generating the groundtruth dataset. User queries are processed by a self-hosted reasoning LLM to generate SQL. The query is executed, and if successful, the question-SQL pair is stored. If it fails, the prompt is updated with the error, and the process is retried up to a maximum number of attempts.",
+      "page": 4,
+      "index": 5,
+      "width": 500,
+      "height": 773
+    },
+    {
+      "url": "assets/figures/arxiv/2603.24023v1/fig-006.webp",
+      "caption": "Figure 4: An overview of the two-phase fine-tuning methodology. Phase 1 combines full-context examples with explicit schema memorization tasks to create a schema-aware LoRA adapter. Phase 2 continues training using this adapter but with a minimal prompt, forcing the model to rely on its internalized knowledge of the schema.",
+      "page": 5,
+      "index": 6,
+      "width": 1052,
+      "height": 264
+    }
+  ]
+}
