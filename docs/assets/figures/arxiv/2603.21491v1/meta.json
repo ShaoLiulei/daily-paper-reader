@@ -1,0 +1,54 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.21491v1/fig-001.webp",
+      "caption": "Figure 2: Stable but incorrect convergence under persistent bias. Despite monotonic reduction of the optimization signal and apparent convergence, the parameter converges to a biased solution θ† ̸= θ∗. This minimal construction shows that satisfying standard convergence criteria does not guarantee correctness of the learned solution under persistent bias.",
+      "page": 6,
+      "index": 1,
+      "width": 713,
+      "height": 433
+    },
+    {
+      "url": "assets/figures/arxiv/2603.21491v1/fig-002.webp",
+      "caption": "Figure 3: Stable but incorrect learning behavior under latent reliability. During the corruption phase, the standard learner (PPO) exhibits stable training dynamics and continued updates, yet its performance deteriorates substantially. After reliable feedback is restored, it fails to recover to near-clean performance and remains trapped in a degraded regime. In contrast, trust-modulated learning maintains recoverability and returns to near-clean performance after corruption. So stability of the training process does not by itself imply that the learned solution is correct under latent reliability.",
+      "page": 6,
+      "index": 2,
+      "width": 739,
+      "height": 357
+    },
+    {
+      "url": "assets/figures/arxiv/2603.21491v1/fig-003.webp",
+      "caption": "Figure 6: Slow-timescale trust dynamics. The trust variable τ evolves on a slower timescale than parameter updates: it remains high under reliable feedback, progressively decreases under persistent corruption, and recovers when reliable conditions are restored. This pattern illustrates temporal aggregation of trajectory-level signals into a reliability estimate that modulates learning updates.",
+      "page": 10,
+      "index": 3,
+      "width": 647,
+      "height": 312
+    },
+    {
+      "url": "assets/figures/arxiv/2603.21491v1/fig-004.webp",
+      "caption": "Figure 4: Trajectory-level identifiability under latent reliability. (Left) Trajectory instability St exhibits systematic regime-dependent behavior: under persistent corruption, instability increases and remains elevated relative to clean conditions. (Right) The distribution of St becomes statistically separable between clean and corrupted regimes, despite instantaneous signals remaining locally indistinguishable. The plots align with the view that reliability leaves a signature in aggregated dynamics, not in isolated gradient steps.",
+      "page": 8,
+      "index": 4,
+      "width": 933,
+      "height": 254
+    },
+    {
+      "url": "assets/figures/arxiv/2603.21491v1/fig-005.webp",
+      "caption": "Figure 1: Scale-dependent detectability under latent reliability. (A) Under latent drift, estimation error initially decreases but eventually increases with more data, despite apparently stable learning dynamics. (B) Local (finite-window) statistics fail to distinguish between reliable and biased regimes (AUC ≈ 0.5), whereas trajectory-level features enable reliable detection (AUC ≈ 0.85). (C) Trajectory-level detectability increases continuously with drift strength, indicating that identifiability emerges progressively as evidence accumulates over time.",
+      "page": 4,
+      "index": 5,
+      "width": 760,
+      "height": 559
+    },
+    {
+      "url": "assets/figures/arxiv/2603.21491v1/fig-006.webp",
+      "caption": "Figure 5: The Monitor–Trust–Regulator (MTR) framework for metacognitive regulation. A secondary regulatory loop (top) operates alongside the primary learning loop (bottom). The Monitor M extracts trajectory-level stability signals from learning dynamics, which are aggregated by the Trust Estimator T over a slower timescale to form a trust estimate τt. The Regulator R uses this estimate to modulate the effective learning gain of the base learner B. This architecture implements trajectory-level reliability inference as a structural component of learning under latent reliability, without requiring explicit reliability labels.",
+      "page": 9,
+      "index": 6,
+      "width": 804,
+      "height": 600
+    }
+  ]
+}

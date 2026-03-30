@@ -1,0 +1,62 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.20997v1/fig-001.webp",
+      "caption": "Figure 3: The routing signal lives in a latent subspace. (a) Cosine similarity between query and answer representations is negative in the successful condition (1L Transformer) — matching tokens are not geometrically close. (b) Replacing learned routing projections with random matrices drops routing from 98.4% to 2.6%, confirming the signal requires specific learned access. (c) SVD of the combined routing matrix WqW ⊤ k shows 90% of energy in just 34 of 128 dimensions.",
+      "page": 6,
+      "index": 1,
+      "width": 979,
+      "height": 484
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20997v1/fig-002.webp",
+      "caption": "Figure 1: The routing paradox. (a) Hybrid architectures want cheap recurrence for most tokens and expensive attention for a few. A router decides which tokens get attention. (b) The paradox: the router needs attention-quality representations to identify which tokens deserve attention — but generating those representations IS the expensive computation. (c) Our experiments reveal two working regimes (non-learned indices and softmax attention) with a large gap between them.",
+      "page": 2,
+      "index": 2,
+      "width": 976,
+      "height": 229
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20997v1/fig-003.webp",
+      "caption": "Figure 4: The routing landscape. Twenty approaches tested across non-learned indices, learned segment routing, contextual bandits, and contrastive pretraining. Two regimes work; everything else clusters at 1– 29%.",
+      "page": 7,
+      "index": 3,
+      "width": 976,
+      "height": 488
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20997v1/fig-004.webp",
+      "caption": "Figure 5: Why contrastive pretraining fails. (a) Attention has three steps; contrastive loss replicates only step 1. (b) Step 3 (value aggregation) is irreplaceable: it writes match results into representations. (c) Contrastive pretraining achieves only 1.6–2.2%, no improvement over the 1.2% baseline.",
+      "page": 8,
+      "index": 4,
+      "width": 979,
+      "height": 292
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20997v1/fig-005.webp",
+      "caption": "Figure 6: Generalization beyond the synthetic task. (a) Our findings replicate on the Zoology MQAR benchmark: Transformer 1L achieves 100% routing and 55.6% accuracy; Flow and raw embeddings cluster at ∼25%. (b) BM25 achieves 82.7% retrieval on HotpotQA with zero learned parameters.",
+      "page": 8,
+      "index": 5,
+      "width": 882,
+      "height": 381
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20997v1/fig-006.webp",
+      "caption": "Table 1: Generalization results. The routing hierarchy replicates across tasks. MQAR routing precision = Investigator selects the correct key position. HotpotQA precision = at least one supporting sentence appears in retrieved segments.",
+      "page": 9,
+      "index": 6,
+      "width": 740,
+      "height": 211
+    },
+    {
+      "url": "assets/figures/arxiv/2603.20997v1/fig-007.webp",
+      "caption": "Figure 2: Phase transition at one Transformer layer. (a) Routing precision jumps 82× from 1.2% to 98.4% between 0 and 1 layers; additional layers provide no gain. (b) Over training, the transition occurs in a single epoch (epoch 10), a discrete regime change rather than gradual improvement.",
+      "page": 5,
+      "index": 7,
+      "width": 882,
+      "height": 384
+    }
+  ]
+}

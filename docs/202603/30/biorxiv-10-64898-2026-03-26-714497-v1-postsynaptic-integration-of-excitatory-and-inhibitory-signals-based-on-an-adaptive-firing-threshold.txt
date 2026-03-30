@@ -1,0 +1,386 @@
+Title: Postsynaptic integration of excitatory and inhibitory signals based on an adaptive firing threshold
+
+URL Source: https://www.biorxiv.org/content/10.64898/2026.03.26.714497v1.full.pdf
+
+Number of Pages: 8
+
+Markdown Content:
+# Postsynaptic integration of excitatory and inhibitory signals based on an adaptive firing threshold 
+
+Oliver Gambrell 1, Pavol Bokes 2 and Abhyudai Singh 3
+
+Abstract — A key component of intraneuronal communica-tion is the modulation of postsynaptic firing frequencies by stochastic transmitter release from presynaptic neurons. The time interval between successive postsynaptic firings is called the inter-spike interval (ISI), and understanding its statistics is integral to neural information processing. We start with a model of an excitatory chemical synapse with postsynaptic neuron firing governed as per a classical integrate-and-fire model. Using a first-passage time framework, we derive exact analytical results for the ISI statistical moments, revealing parameter regimes driving precision in postsynaptic action potential timing. Next, we extended this analysis to include both an excitatory and an inhibitory presynaptic connection onto the same postsynaptic neuron. We consider both a fixed postsynaptic-firing threshold and a threshold that adapts based on the postsynaptic membrane potential history. Our analysis shows that the latter adaptive threshold can result in scenarios where increasing the inhibitory input frequency increases the postsynaptic firing frequency. Moreover, we characterize pa-rameter regimes where ISI noise is hypo-exponential or hyper-exponential based on its coefficient of variation being less than or higher than one, respectively. 
+
+I. I NTRODUCTION 
+
+The brain is a densely interconnected network of neurons that communicate through electrical signals known as action potentials (APs). The arrival of an AP at the active zone of a presynaptic axon terminal initiates the fusion of docked synaptic vesicles (SVs), which release neurotransmitters into the synaptic cleft. These neurotransmitters subsequently bind to receptors on the postsynaptic neuron and induce changes in the membrane potential level [1]. When the membrane potential is driven to a threshold potential, the postsynaptic neuron fires an AP. Following this, the membrane potential returns to a resting potential. The time interval between successive APs, called the inter-spike interval (ISI), is of particular interest in neuroscience, as it encodes information about the rate, regularity of a neu-ron’s spike timing, and functionality within larger neuronal circuits. This functionality is predominantly controlled by the number of SVs that fuse upon an AP arrival, referred to as the quantal content (QC). QC and its effect on ISI have been extensively studied in prior works [2]–[7]. Specifically, the statistics of the number of docked SVs and QC have                    
+
+> 1O. Gambrell is with the Department of Electrical and Com-puter Engineering, University of Delaware, Newark, DE USA 19716.
+> olg@udel.edu
+> 2P. Bokes is with the Department of Applied Math and Statistics, Come-nius University, Bratislava, Slovakia. Pavol.Bokes@fmph.uniba.sk
+> 3A. Singh is with the Department of Electrical and Computer Engineer-ing, Biomedical Engineering, Mathematical Sciences, Center for Bioinfor-matics and Computational Biology, University of Delaware, Newark, DE USA 19716. absingh@udel.edu
+
+been modeled in terms of both fixed [4], [5], [8] and time-varying [9] presynaptic parameters. Models have also studied the effects of presynaptic regulation on SV dynamics, QC, and ISI [10]–[18]. As SV dynamics are inherently stochas-tic, stochastic models of QC and SV dynamics have been explored [19]–[25]. In our previous works, the distribution and moments of QC were studied in both the steady state [26] and transient [27] parameter regimes. In particular, analysis of experimental recordings in [27] shows that correlations between successive QCs are small in MNTB-LSO synapses, suggesting that simpler models could capture ISI statistics. Motivated by these observations, we model QC as inde-pendent and identically distributed (i.i.d.) random variables and analytically derive the mean and noise of the ISI of a classical integrate-and-fire model utilizing a first-passage-time (FPT) [28]–[30] framework. Our analysis shows that ISI noise is minimized in two situations: at intermediate threshold levels and at intermediate QC levels. Interestingly, the minimum ISI decreases as the time constant increases. After this, the model is extended to include both excitatory and inhibitory presynaptic neurons, which we call an EI network. Simulations of this model show that ISI noise is maximized at intermediate excitatory input frequencies for a fixed inhibitory input frequency when the threshold potential is fixed. Following this, we explore the effects of an adaptive threshold on the mean and noise in the ISI and find that the addition of presynaptic inhibition can increase the mean postsynaptic firing frequency. In particular, simulations show that the mean postsynaptic firing frequency increases at intermediate inhibitory input frequencies. In addition to the mean postsynaptic firing frequency, we also study the noise in the ISI, defined by its coefficient of variation. Our results on ISI noise demonstrate the existence of a critical inhibitory input frequency that partitions the inhibitory input frequency space into two regions: one where noise is hypo-exponential and the other where noise is hyper-exponential. We now begin discussing the synaptic model and then formulate its dynamics. II. M ODEL FORMULATION OF SYNAPTIC TRANSMISSION 
+
+In this section, we model the dynamics of an excitatory presynaptic neuron terminating onto a postsynaptic neuron. A schematic of the system is presented in Fig. 1-A. The model will now be mathematically formulated. We assume that presynaptic excitatory action potentials (APs) arrive via a Poisson process with rate fe. Upon the arrival of a presynaptic AP, synaptic vesicles (SVs) docked to docking sites on the presynaptic axon terminal fuse with                      
+
+> .CC-BY-ND 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 26, 2026. ;https://doi.org/10.64898/2026.03.26.714497 doi: bioRxiv preprint Fig. 1. A schematic of synaptic transmission and a sample trajectory of the membrane potential from the associated synaptic model. A: Synaptic vesicles docked at docking sites at the active zone of the presynaptic axon terminal fuse with the membrane and release their neurotransmitter content into the synaptic cleft. These neurotransmitters then bind to receptors on the postsynaptic neuron, which facilitates the movement of positive ions between the inside and the outside of the postsynaptic neuron, changing its membrane potential. B: A simulated trajectory of the postsynaptic neuron’s membrane potential as modeled in equations (1) and (2). The membrane potential (blue line) depolarizes upon the arrival of presynaptic action potentials (red lines), which arrive via a Poisson process with rate fe. The number of synaptic vesicles (SVs) that fuse upon the arrival of an action potential (AP) follows a Poisson distribution with mean ⟨be⟩. Between presynaptic APs, the membrane potential exponentially decays, with time constant τv, to a resting potential, here 0. Once the membrane potential exceeds a threshold potential vth , the postsynaptic neuron fires an action potential (red circles). The ISI is the time between postsynaptic APs. Parameters: fe= 10 Hz, ⟨be⟩= 15 ,τv= 100 ms ,vth = 20 mV .
+
+the membrane wall. The fusion of SVs leads to the release of neurotransmitters into the synaptic cleft, which bind to ion channels on the postsynaptic neuron and induce a depolar-ization proportional to the number of synaptic vesicles that fuse. We model the process of SV fusion and subsequent postsynaptic depolarization with the following reset 
+
+v(t) fe
+
+−→ v(t) + be, (1) where v(t) represents the postsynaptic membrane potential, and be represents the number of SVs which fuse upon the arrival of a presynaptic AP. We refer to be as the quantal content (QC). For a given frequency of presynaptic stimulation, both the transient and steady-state QC have been shown to follow a binomial distribution in certain limits [26], [31]–[35]. Past analysis of mechanised stochastic models of SV docking/undocking and evoked release [27] has reported correlations between successive QC to be slightly anti-correlated. For modeling simplicity, we assume be to be an i.i.d random variable. On the postsynaptic side, between excitatory presynaptic APs, the membrane potential returns to a baseline resting potential vr via a classical leaky integrate-and-fire model as in dv (t)
+
+dt = − v(t) − vr
+
+τv
+
+, (2) where τv is the positively valued membrane time constant that controls the rate at which the membrane potential returns to vr . We assume that vr = 0 .If v(t) crosses a threshold potential vth , the postsynaptic neuron fires an AP and enters a refractory period where the membrane potential temporarily does not change in response to presynaptic APs. For simplicity, we assume that v instantly resets to vr when v > v th . Our goal is now to quantify statistics of postsynaptic firing times. The time interval between postsynaptic APs is called the inter-spike interval (ISI), which we define mathematically as 
+
+T := inf {t ≥ 0 : v(t) ≥ vth and v(0) = vr }. (3) We study the mean ISI, ⟨T ⟩, and the noise in ISI, defined as 
+
+CV 2 
+
+> T
+
+:= ⟨T 2⟩ − ⟨ T ⟩2
+
+⟨T ⟩2 , (4) where ⟨ ⟩ denotes the expected value operator. Solving for the statistics of T is known as an FPT problem. FPT problems have been analyzed in great detail in cellular systems [28]–[30], lysis timing [36]–[39], gene expression [40]–[47], cellular event timing [48], [49], and previous works on neuronal modeling [22], [23], [50]. The FPT and its noise, when analyzed together, reveal information about neural coding and regularity. A schematic of the model and trajectories of v(t) are shown in Fig. 1-A and Fig. 1-B, respectively. Having formulated the synaptic model, we now formulate an expression for the moments of the ISI using an FPT framework. III. E XACT ANALYTICAL FPT DERIVATION 
+
+In the previous section, we derived an i.i.d. model of a synapse and defined the FPT. Previous works have solved for the moments of the FPT using a small-noise approximation [20]–[22]. An exact analytical expression for the mean and noise of the FPT is now derived. The following analysis holds for any integer-valued distribution of be.
+
+> .CC-BY-ND 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 26, 2026. ;https://doi.org/10.64898/2026.03.26.714497 doi: bioRxiv preprint
+
+# A B C
+
+potential fExcitatory 
+
+fExcitatory potential Fig. 2. Characterizing the statistics of postsynaptic firing times as a function of both presynaptic and postsynaptic parameters. The synaptic model used for these figures is from equations (1) and (2), and the results of this figure are the solutions to equation (14). A: ISI mean (top) and ISI noise (bottom) as a function of the input frequency. Parameter values: vth = 20 mV , ⟨be⟩ = 5 , v0 = 0 mV . B: ISI mean (top) and noise (bottom) as a function of the mean QC. Parameter values: fe = 50 Hz , vth = 20 mV , v0 = 0 mV . C: ISI mean (top) and noise (bottom) as a function of the threshold potential. Parameter values: fe = 50 Hz , ⟨be⟩ = 5 , v0 = 0 mV .
+
+A. Survival function and moments 
+
+In order to derive the moments of the FPT, we define the survival function, which quantifies the probability of v(t) not crossing vth as 
+
+S(v0, t ) := Prob[ T > t |v(0) = v0]. (5) The survival function (5) depends the survival time t and the initial condition v0 = v(0) < v th of the process. Although in this paper we are interested specifically in v0 = 0 , the values at v0 > 0 are required to calculate the values of v0 = 0 using the backward equation approach adopted here. The trivial equalities 
+
+S(v0, 0) = 1 , v0 < v th , (6) 
+
+S(v0, t ) = 0 , v0 ≥ vth , t ≥ 0 (7) provide the initial and boundary conditions for (5). We will be specifically interested in the FPT moments. The probability density function of the FPT is given by 
+
+−∂S (v0, t )/∂t , so that the moments are defined by 
+
+Mn(v0) := ⟨T n⟩ = −
+
+Z ∞
+
+> 0
+
+tn ∂S (v0, t )
+
+∂t dt, (8) in which we make explicit the dependence of the FPT moments on the initial condition v0 = v(0) of the process. Substituting (7) into (8) yields 
+
+Mn(v0) = 0 , v0 ≥ vth , n = 1 , 2, . . . (9) providing boundary conditions for the FPT moments. 
+
+B. FPT threshold discontinuity 
+
+Since it takes at least one presynaptic AP to cross the threshold, the FPT is greater than or equal to the waiting time Tnb till the next presynaptic AP, which is exponentially distributed with mean 1/f e:
+
+T ≥ Tnb ∼ Exponential( fe). (10) The inequality (10) implies that the FPT survival function must be bounded from below by the survival function of the exponential distribution: 
+
+S(v0, t ) ≥ e−fet, v0 < v th , t ≥ 0. (11) The FPT moments must also be greater than or equal to those of the exponential distribution: 
+
+Mn(v0) ≥ n!
+
+f ne
+
+, v0 < v th . (12) Combining (12) with the boundary condition (9), we obtain 
+
+lim 
+
+> v0→v−
+> th
+
+Mn(v0) ≥ n!
+
+f ne
+
+> 0 = Mn(vth ), (13) where the minus sign indicates that v0 approaches vth from below. Thus, Mn(v0) is discontinuous at v0 = vth .We note that if the excitatory presynaptic AP frequency fe
+
+is large, the lower bound (12) and the discontinuity height are small, which is consistent with a continuous FPT for diffusion processes [51]. 
+
+> .CC-BY-ND 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 26, 2026. ;https://doi.org/10.64898/2026.03.26.714497 doi: bioRxiv preprint
+
+C. Delayed differential equation 
+
+Given the initial condition v0 ∈ (0 , v th ), the n-th FPT moment f (v0) = Mn(v0) is obtained by solving the inhomo-geneous linear delayed differential equation (see Appendix A for details) 
+
+g(v0) = − v0
+
+τv
+
+f ′(v0) − fe × (1 − Prob [ be = 0]) f (v0)
+
+(14) 
+
++fe × X
+
+> j≥1
+
+Prob [ be = j] f (v0 + j), 0 < v 0 < v th ,
+
+where g(v0) = −nM n−1(v0) and f (v0) = 0 for v0 ≥ vth .Equations (14) are solved iteratively for increasing moment order n ≥ 1, starting with M0(v0) = 1 for the 0-th moment. While there are infinitely many solutions to (14) depending on the value f (vth ), exactly one of them is convergent as 
+
+v0 → 0 (see Appendix B). After finding the convergent solution, lim v0→0 f (v0) gives the desired FPT for the initial condition v(0) = 0 .Dependence of the exact FPT moments on model pa-rameters is shown in Fig. 2-A,B,C. In Fig. 2-A, ISI mean and noise monotonically decrease as the input frequency increases. Fig. 2-B shows that the mean ISI monotonically decreases while the ISI noise depends non-monotonically on the mean QC. For Fig. 2-C, the ISI mean monotonically increases while the ISI noise depends non-monotonically on the threshold. Discontinuities in the ISI noise occur at integer values of the threshold, resulting in oscillations. In Fig. 2-B,C, ISI noise is exponential ( CV 2 
+
+> T
+
+= 1 ) when ⟨be⟩ and vth 
+
+are very small or very large. When these parameters are at intermediate values, noise is hypo-exponential ( CV 2 
+
+> T
+
+< 1). Having formulated an expression for the moments of the ISI, in the following section, we expand the model by adding an inhibitory presynaptic neuron. IV. M ODEL FORMULATION FOR AN EXCITATORY -INHIBITORY (EI) NEURONAL NETWORK 
+
+In the previous section, we formulated a model for synap-tic transmission of a single excitatory presynaptic input based on the classical integrate-and-fire model and derived its exact postsynaptic FPT moments. As many neuronal circuits receive inhibition, which is important in inter-spike interval (ISI) regulation [52]–[59], we extend the model by adding an inhibitory presynaptic input that terminates onto the postsynaptic neuron. In this extended model, we analyze the inverse of the mean ISI, called the mean postsynaptic firing frequency, due to its ease of interpretation. We refer to this model as the excitatory-inhibitory (EI) model. The EI model schematic is presented in Fig. 3-A and is described as an excitatory and inhibitory presynaptic neuron independently firing APs onto the same postsynaptic neuron. The arrival times of both excitatory and inhibitory presynaptic APs follow independent Poisson processes with rates fe and fi, respectively. The dynamics of the EI model are the same as in (1) and (2) with the addition of an inhibitory reset: 
+
+dv dt = − vτv
+
+, v(t) fe
+
+−→ v(t) − be, v(t) fi
+
+−→ v(t) − bi, (15) where bi is the i.i.d. QC resulting from inhibitory presynaptic APs, be is the QC resulting form excitatory presynatpci APs, and v → vr when v > v th .In Fig. 3-B, and Fig. 3-C, we plot the mean postsynaptic firing frequency and ISI noise of the EI model as a function of both the excitatory and inhibitory input frequency. From Fig. 3-B, we see that the mean postsynaptic firing frequency becomes increasingly sensitive to changes in the inhibitory input frequency with increasing excitatory input frequency. Recall that a hypo-exponential, exponential, hyper-exponential random variable has its coefficient of variation 
+
+< 1, 1, and > 1, respectively. Fig. 3-C, the excitatory-inhibitory input frequency space is partitioned into regions where ISI noise is hypo-exponential, exponential, and hyper-exponential. Interestingly, for an inhibitory input frequency over 4 Hz , noise is maximized at intermediate excitatory fre-quencies. Additionally, this maximum noise level increases with increasing inhibitory input frequency. In this section, we analyzed the EI model for a fixed threshold potential. In the following section, the threshold potential will adapt based on the previous AP firing history. V. E XCITATORY -INHIBITORY NEURONAL NETWORK WITH AN ADAPTIVE THRESHOLD 
+
+In previous sections, we analyzed ISI statistics for an EI network and simulated the ISI and its noise for a fixed threshold. This assumption, however, fails to capture the probabilistic nature of ion channel conductances such as sodium and potassium [60]. Previous works attempted to model these effects by incorporating an adaptive threshold [61]–[66], which improved neuronal models [67], [68]. With this understanding, we now modify our EI model by allowing the threshold potential to change in response to postsynaptic activity. In particular, the effects of post-inhibitory facilita-tion are modeled as observed in [69], which is characterized by the facilitation of postsynaptic spiking following brief presynaptic inhibitory APs. In order to incorporate the facilitation of postsynaptic spiking into our model, the threshold potential is now a function of v(t) that evolves via 
+
+dv th 
+
+dt = vth, ∞(v) − vth 
+
+τth 
+
+, (16) where τth is the threshold time constant that controls the rate at which the threshold potential approaches a steady-state level vth, ∞(v), defined as 
+
+vth, ∞(v) := 
+
+
+
+vlow , v < v 1,vlow − v − v1
+
+v1
+
+(vb − vlow ), v1 ≤ v < v r ,vb, v ≥ vr .
+
+(17) In the case of depolarization ( v > v r ), the threshold is at a fixed value (as before). But for the hyperpolarized case ( v < 
+
+> .CC-BY-ND 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 26, 2026. ;https://doi.org/10.64898/2026.03.26.714497 doi: bioRxiv preprint
+
+# A B
+
+## Exponential Hypo-exponential 
+
+Threshold potential Membrane potential 
+
+> Action Potential
+
+Time (sec) Volts (a.u.) Inhibition Excitation ECFD Adaptive threshold model Hyper-exponential 
+
+Excitatory input frequency (Hz) Excitatory input frequency (Hz) Inhibitory input frequency (Hz) Inhibitory input frequency (Hz) Mean postsynaptic firing frequency Fixed threshold Adaptive threshold Maximum postsynaptic firing frequency 
+
+Postsynaptic neuron Excitatory neuron Inhibitory neuron 
+
+Increasing mean postsynaptic firing frequency 
+
+Hypo-Exponential Exponential Hyper-Exponential Fixed threshold Noise in ISI Noise in ISI Adaptive threshold Mean postsynaptic firing frequency Fig. 3. Inhibitory presynaptic APs can increase the mean postsynaptic firing frequency when the threshold potential adapts with recent firing history. The simulations in B and C come from the model in equation (15) and the simulations in E and F come from the adaptive threshold model in (16) and (17). In B, C, E, and F, excitatory and inhibitory QC follow gamma distributions with means ⟨be⟩, ⟨bi⟩ and noise CV 2 
+
+> be
+
+, CV 2 
+
+> bi
+
+, respectively. 
+
+A: Excitatory-Inhibitory (EI) model schematic. The axon terminals of an excitatory and an inhibitory presynaptic neuron both terminate on the dendrites of a postsynaptic neuron. B: The mean postsynaptic firing frequency as a function of excitatory and inhibitory input frequency for the fixed threshold model. C: Noise in ISI for the fixed threshold model. D: Sample membrane potential and threshold potential trajectories for the adaptive threshold model. Presynaptic excitatory and inhibitory APs arrive via Poisson processes with rates fe and fi and either depolarize or polarize the membrane potential (blue line). When the membrane potential is driven below its resting potential by an inhibitory presynaptic AP (purple dotted line), the threshold potential (black line) evolves via equation (16) and (17). This facilitates postsynaptic AP firing (red circle) upon the arrival of excitatory presynaptic APs (red dotted line). 
+
+E: Mean postsynaptic firing frequency for the adaptive threshold model. The white dashed line is the mean postsynaptic firing frequency at 53 Hz for a varying inhibitory input frequency. The white circle shows that the maximum postsynaptic firing frequency occurs at an inhibitory input frequency of 
+
+55 Hz . F: Noise in ISI for the adaptive threshold model. Parameters: vth = 20 mV , ⟨be⟩ = 20 mV , CV 2 
+
+> be
+
+= 0 .01 , ⟨bi⟩ = 20 mV , CV 2 
+
+> bi
+
+= 0 .01 ,
+
+τv = 10 ms , vb = 20 mV , vlow = 10 mV , v1 = −1 mV .
+
+vr ), the threshold potential decreases with decreasing v to a basal level vlow which occurs when v = v1. Here we assume this decrease to follow a piecewise linear form as shown in equation (17). A sample trajectory of the adaptive threshold model is plotted in Fig. 3-D, which shows a postsynaptic AP occurring when vth < v b.In Fig. 3-E and Fig. 3-F, we simulate the inverse of the mean ISI, called the mean postsynaptic firing frequency, and the noise ( CV 2 
+
+> T
+
+) in the ISI as a function of both the excitatory and inhibitory input frequency, respectively. From Fig. 3-E, we see that the mean postsynaptic firing frequency is maximized at intermediate inhibitory input frequencies for a fixed excitatory input frequency. Additionally, this maximum value increases with the excitatory input frequency. The ISI noise plot in Fig. 3-F shows that the excitatory-inhibitory input frequency space is partitioned into hypo-exponential (CV 2 
+
+> T
+
+¡1), exponential ( CV 2 
+
+> T
+
+= 1 ), and hyper-exponential (CV 2 
+
+> T
+
+> 1) regions similar to the fixed threshold model of Fig. 3-C. In contrast to Fig. 3-C, there exists a critical inhibitory input frequency which partitions the inhibitory input frequency space into two regions: one where noise is always hypo-exponential and one where noise can become hyper-exponential with increasing excitatory input frequency. Furthermore, simulations reveal the existence of a critical inhibitory frequency. For frequencies below this level, noise is always hypo-exponential, and for frequencies above this level, noise is capable of transitioning from hypo to hyper-exponential with increasing excitatory input frequency. Ad-ditionally, as the inhibitory input frequency increases above this critical level, noise transitions from hypo to hyper-exponential at lower excitatory input frequencies. VI. C ONCLUSION 
+
+This work explored the postsynaptic inter-spike interval (ISI) statistics of a leaky integrate-and-fire model (Fig. 1). For this model, quantal content (QC) was assumed to be independent and identically distributed (i.i.d.) based on previ-ous works showing low correlations between successive QC [27]. The key contribution of this paper was the derivation 
+
+.CC-BY-ND 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 26, 2026. ;https://doi.org/10.64898/2026.03.26.714497 doi: bioRxiv preprint of an analytical expression for the moments of the ISI using a first-passage time (FPT) framework. Our analysis revealed that noise is always hypo-exponential (coefficient of variation is less than one) in this model (Fig. 2), implying that the postsynaptic firing frequency exhibits regularity. Following this, we extended our model by adding an inhibitory presynaptic connection onto the same postsynaptic neuron and simulated the mean postsynaptic firing frequency and ISI noise (Fig. 3-A). The analysis was done for both a fixed threshold and a threshold that adapts based on the postsynaptic membrane potential history. Our results for the case of a fixed and adaptive threshold showed the existence of a parameter space where noise is hyper-exponential. In the adaptive threshold model (Fig. 3-D), the parameter space where noise is hypo-exponential is enlarged when compared to the fixed threshold model due to the regulatory effect of adaptive thresholds on postsynaptic firing frequencies [70]. Similar to our findings in Fig. 2, recent studies on intra-cellular event timing using the bacteriophage lysis system have shown experimentally that timing noise varies non-monotonically with lysis threshold and noise is minimized at an optimal threshold [71]. In future work, we will derive analytical expressions for the ISI of the EI model for different types of adaptive thresholds. Specifically, the threshold potential will model regulatory mechanisms as in [70], and increase following postsynaptic APs. Additionally, models receiving solely in-hibition and no excitation will be studied, as experimental evidence has shown that inhibition by itself can generate postsynaptic APs [72]. APPENDIX A: B ACKWARD EQUATIONS 
+
+The ISI survival function S(v0, t ) and moments Mn(v0)
+
+are determined for all initial conditions 0 ≤ v0 < v th by solving specific backward equations. The equations are based on the backward operator L, which takes a function f (v0)
+
+of a positive real variable v0 and returns a new function 
+
+(Lf )( v0) = − v0
+
+τv
+
+∂f (v0)
+
+∂v 0
+
+− fe × (1 − Prob[ be = 0]) f (v0)+ fe × X
+
+> j≥1
+
+Prob[ be = j]f (v0 + j).
+
+(18) The backward operator is the sum of a differential operator (due to deterministic decay) and a difference operator (due to random bursts drawn from a discrete distribution). We note that for continuous burst distributions, the difference operator needs to be replaced by an integral operator, a situation we do not discuss here. The ISI survival probability S(v0, t ) satisfies the backward equation [51] 
+
+∂S ∂t = LS, 0 < v 0 < v th , t > 0, (19) which is subject to the initial and boundary conditions (6)– (7). Multiplying (19) by powers of t, integrating, and using (8), we obtain backward equations for the ISI moments: 
+
+LMn = −nM n−1, 0 < v 0 < v th , n = 1 , 2, . . . (20) which are subject to the boundary condition (9). Setting (18) into (20) yields (14). APPENDIX B : E XISTENCE AND UNIQUENESS RESULT 
+
+Below, we define solution spaces and formulate the uniqueness and existence result for (14). The function space 
+
+Ω0 is the one in which the ISI moment is sought. However, it is also useful to consider a broader space of functions Ω
+
+that allow solutions that are divergent as v0 → 0.
+
+Definition 1 (Solution spaces for (14)) . For a function f :(0 , ∞) → R, we write f ∈ Ω if assumptions (A1)–(A3) are satisfied; we write f ∈ Ω0 if assumption (A4) is additionally satisfied: (A1) f (v0) = 0 for v0 ≥ vth (the boundary condition) (A2) f (v0) is continuous for v0 ∈ (0 , v th ) with a finite one-sided limit lim v0→vth − f (v0)
+
+(A3) f ′(v0) exists and is continuous for v0 ∈ (0 , v th ) \{vth − j : j ∈ N}. For v0 ∈ {vth − j : j ∈
+
+N, v th − j > 0}, finite one-sided limits lim s→v0− f ′(s)
+
+and lim s→v0+ f ′(s) exist (A4) A finite one-sided limit lim v0→0+ f (v0) exists 
+
+In the next section, we prove the following theorem. The proof is constructive, leading to a method for enumerating ISI moments. 
+
+Theorem 1 (Existence and uniqueness result) . For g ∈ Ω0,there exists a unique solution f ∈ Ω0 to the delayed differential equation (14) .Proof: Since L is linear and first-order, a solution 
+
+f (v0) to (14) can be decomposed into the homogeneous and particular parts 
+
+f (v0) = Cf h(v0) + fp(v0), (21) where fh(v0) and fp(v0) satisfy 
+
+Lfh(v0) = 0 , 0 < v 0 < v th , lim 
+
+> v0→v−
+> th
+
+fh(v0) = 1 ,
+
+(22) 
+
+Lfp(v0) = g(v0), 0 < v 0 < v th , lim 
+
+> v0→v−
+> th
+
+fp(v0) = 0 .
+
+(23) Indeed, adding up C times (22) to (23) implies that (21) satisfies (14); we also have lim v0→v−
+
+> th
+
+f (v0) = C.Solutions (22) and (23) are initialised with the left-limit value at the threshold v0 = vth and integrated numerically in the direction of decreasing v0. It is clear, by construction, that the solutions satisfy (A1)–(A3), i.e. fh, f p ∈ Ω. Therefore, their linear combination (21) also satisfies f ∈ Ω.What remains is to ascertain whether f ∈ Ω0, i.e., whether (A4) is satisfied. The key to this is the asymptotic behaviour as v0 → 0+ of solutions to (14). Seeking dominant balance, we equate the first two terms − v0 
+
+> τv
+
+f ′(v0)−fe ×(1 −
+
+b0)f (v0) to zero and solve in f , obtaining the power law asymptotics 
+
+fh(v0) ∼ Av −α 
+
+> 0
+
+, fp(v0) ∼ Bv −α 
+
+> 0
+
+, v0 → 0+, (24) 
+
+> .CC-BY-ND 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 26, 2026. ;https://doi.org/10.64898/2026.03.26.714497 doi: bioRxiv preprint
+
+where A, B ̸ = 0 and 
+
+α = feτv (1 − Prob [ be = 0]) (25) gives a normalised rate of non-zero bursts. Note that fh, f p̸ ∈
+
+Ω0, as they fail to meet assumption (A4). By (21) and (24), 
+
+lim 
+
+> v0→0+
+
+vα 
+
+> 0
+
+f (v0) = CA + B. (26) In order to meet (A4), we have to set 
+
+C = − BA , (27) thus ensuring that f ∈ Ω0. Clearly, condition (27) determines the solution uniquely, hence Theorem 1 is proved. REFERENCES [1] E. R. Kandel, J. H. Schwartz, T. M. Jessell, S. A. Siegelbaum, and A. J. Hudspeth, Principles of Neural Science , 5th ed. New York: McGraw-Hill, 2021. [2] S. Brachtendorf, G. Bornschein, and H. Schmidt, “Estimates of quantal synaptic parameters in light of more complex vesicle pool models,” 
+
+Frontiers in Cellular Neuroscience , vol. 19, p. 1556360, 2025. [3] K. Aghi, R. Schultz, R. S. Stowers, W. Y. Liu, P. R. Mendonc ¸a, R. Li, D. Bakshinska, Z. L. Newman, and E. Y. Isacoff, “Balanced synapse-to-synapse short-term plasticity ensures constant transmitter release,” 
+
+Current Biology , vol. 35, no. 12, pp. 2881–2892.e6, 2025. [4] M. H. Hennig, “Theoretical models of synaptic short term plasticity,” 
+
+Frontiers in Computational Neuroscience , vol. 7, 2013. [5] H. Taschenberger, V. Scheuss, and E. Neher, “Release kinetics, quantal parameters and their modulation during short-term depression at a developing synapse in the rat CNS,” The Journal of Physiology , vol. 568, no. Pt 2, pp. 513–537, Oct 15 2005. [6] N. I. M¨ uller, I. Paulußen, L. N. Hofmann, J. O. Fisch, A. Singh, and E. Friauf, “Development of synaptic fidelity and action potential ro-bustness at an inhibitory sound localization circuit: effects of otoferlin-related deafness,” The Journal of Physiology , vol. 600, no. 10, pp. 2461–2497, 2022. [7] E. Pizzi, L. N. Hofmann, A. Singh, and E. Friauf, “Robust inhibitory glycinergic transmission and the effect of bafilomycin, folimycin and eipa: lessons from the auditory brainstem,” Frontiers in Cellular Neuroscience , vol. Volume 19 - 2025, 2025. [8] P. Dayan and L. F. Abbott, Theoretical Neuroscience: Computational and Mathematical Modeling of Neural Systems . Cambridge, MA: MIT Press, 2001. [9] T. Nieus, E. Sola, J. Mapelli, E. Saftenku, P. Rossi, and E. D’Angelo, “LTP regulates burst initiation and frequency at mossy fiber-granule cell synapses of rat cerebellum: Experimental observations and theo-retical predictions,” Journal of Neurophysiology , vol. 95, pp. 686–699, 2006. [10] I. Delvendahl and M. M¨ uller, “Homeostatic plasticity-a presynaptic perspective,” Current Opinion in Neurobiology , vol. 54, pp. 155–162, 2019. [11] R. Formisano, K. D. Rosikon, A. Singh, and H. S. Dhillon, “The dopamine membrane transporter plays an active modulatory role in synaptic dopamine homeostasis,” Journal of Neuroscience Research ,vol. 100, no. 8, pp. 1551–1559, 2022. [12] S. Hiramatsu, K. Saito, S. Kondo, H. Katow, N. Yamagata, C. F. Wu, and H. Tanimoto, “Synaptic enrichment and dynamic regulation of the two opposing dopamine receptors within the same neurons,” eLife ,vol. 13, p. RP98358, 2025. [13] R. Formisano, M. D. Mersha, J. Caplan, A. Singh, C. H. Rankin, N. Tavernarakis, and H. S. Dhillon, “Synaptic vesicle fusion is modulated through feedback inhibition by dopamine auto-receptors,” 
+
+Synapse , vol. 74, no. 1, p. e22131, 2020. [14] E. Quentin, A. Belmer, and L. Maroteaux, “Somato-dendritic regu-lation of raphe serotonin neurons; a key to antidepressant action,” 
+
+Frontiers in Neuroscience , vol. 12, p. 982, 2018. [15] L. E. Dobrunz, “Release probability is regulated by the size of the readily releasable vesicle pool at excitatory synapses in hippocampus,” 
+
+International Journal of Developmental Neuroscience: The Official Journal of the International Society for Developmental Neuroscience ,vol. 20, no. 3-5, pp. 225–236, 2002. [16] C. F. Stevens and J. F. Wesseling, “Activity-dependent modulation of the rate at which synaptic vesicles become available to undergo exocytosis,” Neuron , vol. 21, pp. 415–424, 1998. [17] C. K¨ orber, H. Horstmann, V. Venkataramani, F. Herrmannsd¨ orfer, T. Kremer, M. Kaiser, B. S. Darius, S. Ahmed, C. Dean, T. Dresbach, and T. Kuner, “Modulation of presynaptic release probability by the vertebrate-specific protein mover,” Neuron , vol. 87, 2015. [18] C. Keine, M. Al-Yaari, T. Radulovic, C. I. Thomas, P. V. Ramos, D. Guerrero-Given, M. Ranjan, H. Taschenberger, N. Kamasawa, and S. M. J. Young, “Presynaptic Rac1 controls synaptic strength through the regulation of synaptic vesicle priming,” eLife , vol. 11, p. e81505, 2022. [19] Z. Vahdat, K. Nienałtowski, Z. Farooq, M. Komorowski, and A. Singh, “Information processing in unregulated and autoregulated gene expres-sion,” in 2020 European Control Conference (ECC) . IEEE, 2020, pp. 258–263. [20] Z. Vahdat, O. Gambrell, and A. Singh, “Negative feedback regulation via an autapse enhances neuronal firing precision,” in Proceedings of the 2024 American Control Conference (ACC) . IEEE, July 2024, pp. 3941–3946. [21] Z. Vahdat and A. Singh, “Frequency-dependent modulation of stochas-ticity in postsynaptic neuron firing times,” in 2022 IEEE 61st Confer-ence on Decision and Control (CDC) , 2022, pp. 635–640. [22] O. Gambrell, Z. Vahdat, and A. Singh, “Feedforward regulation of interneuronal communication,” in Proceedings of the 2024 IEEE 63rd Conference on Decision and Control (CDC) . IEEE, December 2024, pp. 607–612. [23] O. Gambrell and A. Singh, “Consequences of decoy site repair on stochastic fluctuations in neurotransmission,” in 2025 American Control Conference (ACC) . IEEE, 2025, pp. 1406–1411. [24] C. Pulido, F. F. Trigo, I. Llano, and A. Marty, “Vesicular release statis-tics and unitary postsynaptic current at single gabaergic synapses,” 
+
+Neuron , vol. 85, pp. 159–172, 2015. [25] G. Malagon, T. Miki, I. Llano, E. Neher, and A. Marty, “Counting vesicular release events reveals binomial release statistics at single glutamatergic synapses,” Journal of Neuroscience , vol. 36, no. 14, pp. 4010–4025, Apr 6 2016. [26] K. Rijal, N. I. M¨ uller, E. Friauf, A. Singh, A. Prasad, and D. Das, “Exact distribution of the quantal content in synaptic transmission,” 
+
+Physical Review Letters , vol. 132, no. 22, p. 228401, 2024. [27] Z. Vahdat, O. Gambrell, J. Fisch, E. Friauf, and A. Singh, “Inferring synaptic transmission from the stochastic dynamics of the quantal con-tent: An analytical approach,” PLOS Computational Biology , vol. 21, no. 5, p. e1013067, 2025. [28] K. R. Ghusinga, J. J. Dennehy, and A. Singh, “First-passage time approach to controlling noise in the timing of intracellular events,” 
+
+Proceedings of the National Academy of Sciences , vol. 114, pp. 693– 698, 2017. [29] A. Marantan and A. Amir, “Stochastic modeling of cell growth with symmetric or asymmetric division,” Physical Review E , vol. 94, p. 012405, 2016. [30] K. R. Ghusinga, C. A. Vargas-Garcia, and A. Singh, “A mechanistic stochastic framework for regulating bacterial cell division,” Scientific Reports , p. 30229, 2016. [31] O. Bykowska, C. Gontier, A.-L. Sax, D. W. Jia, M. L. Montero, A. D. Bird, and et al., “Model-based inference of synaptic transmission,” 
+
+Frontiers in Synaptic Neuroscience , vol. 11, p. 21, 2019. [32] M. V. Tsodyks and H. Markram, “The neural code between neocortical pyramidal neurons depends on neurotransmitter release probability,” 
+
+Proceedings of the National Academy of Sciences of the USA , vol. 94, no. 2, pp. 719–723, 1997. [33] A. Barri, Y. Wang, D. Hansel, and G. Mongillo, “Quantifying repetitive transmission at chemical synapses: a generative-model approach,” 
+
+eNeuro , vol. 3, no. 2, pp. ENEURO.0113–15.2016, 2016. [34] G. Fuhrmann, I. Segev, H. Markram, and M. Tsodyks, “Coding of temporal information by activity-dependent synapses,” Journal of Neurophysiology , vol. 87, no. 1, pp. 140–148, 2002. [35] J. de la Rocha and N. Parga, “Short-term synaptic depression causes a non-monotonic response to correlated stimuli,” Journal of Neuro-science , vol. 25, no. 37, pp. 8416–8431, 2005. 
+
+.CC-BY-ND 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 26, 2026. ;https://doi.org/10.64898/2026.03.26.714497 doi: bioRxiv preprint [36] S. Kannoly, K. Singh, N. Juman, Z. M. Islam, I. C. Quiroga, A. Singh, and J. J. Dennehy, “Translation efficiency impacts phage lysis timing and its precision in single cells,” bioRxiv , 2025. [37] S. Kannoly, A. Singh, and J. J. Dennehy, “An optimal lysis time maximizes bacteriophage fitness in quasi-continuous culture,” mBio ,vol. 13, no. 3, pp. e03 593–21, 2022. [38] A. Singh and J. J. Dennehy, “Stochastic holin expression can account for lysis time variation in the bacteriophage lambda,” Journal of The Royal Society Interface , vol. 11, no. 95, p. 20140140, 2014. [39] A. Mondal, H. Teimouri, and A. B. Kolomeisky, “Molecular mecha-nisms of precise timing in cell lysis,” Biophysical Journal , vol. 123, no. 18, pp. 3090–3099, 2024. [40] A. D. Co, M. C. Lagomarsino, M. Caselle, and M. Osella, “Stochastic timing in gene expression for simple regulatory strategies,” Nucleic Acids Research , vol. 45, no. 3, pp. 1069–1078, 2017. [41] K. Biswas and A. Ghosh, “First passage time in post-transcriptional regulation by multiple small rnas,” European Physical Journal E ,vol. 44, no. 2, p. 16, 2021. [42] L. Ham, M. A. Coomer, K. ¨Ocal, R. Grima, and M. P. H. Stumpf, “A stochastic vs deterministic perspective on the timing of cellular events,” Nature Communications , vol. 15, p. 5286, 2024. [43] M. Z. Ali and R. C. Brewster, “Controlling gene expression timing through gene regulatory architecture,” PLOS Computational Biology ,vol. 18, no. 1, p. e1009745, 2022. [44] S. Gupta, J. Varennes, H. C. Korswagen, and A. Mugler, “Temporal precision of regulated gene expression,” PLOS Computational Biology ,vol. 14, no. 6, 2018. [45] K. Biswas, S. Dey, and A. Singh, “Sequestration of gene products by decoys enhances precision in the timing of intracellular events,” 
+
+Scientific Reports , vol. 14, no. 1, p. 27199, 2024. [46] S. Dey, S. Kannoly, P. Bokes, J. J. Dennehy, and A. Singh, “Feedfor-ward genetic circuits regulate the precision of event timing,” in 2021 European Control Conference (ECC) , 2021, pp. 2127–2132. [47] Z. Vahdat, K. R. Ghusinga, and A. Singh, “Comparing feedback strategies for minimizing noise in gene expression event timing,” in 2021 29th Mediterranean Conference on Control and Automation (MED) , 2021, pp. 450–455. [48] K. R. Ghusinga, C. A. Vargas-Garcia, and A. Singh, “A mechanistic stochastic framework for regulating bacterial cell division,” Scientific Reports , vol. 6, 2016. [49] K. R. Ghusinga and A. Singh, “Effect of gene-expression bursts on stochastic timing of cellular events,” in 2017 American Control Conference (ACC) , 2017, pp. 2118–2123. [50] O. Gambrell and A. Singh, “Analysis of neuronal firing in stochastic models with adaptive thresholds,” in 2025 European Control Confer-ence (ECC) , 2025, pp. 582–587. [51] Z. Schuss, Theory and Applications of Stochastic Processes: An Analytical Approach . Berlin/Heidelberg: Springer Science & Business Media, 2009. [52] J. S. Isaacson and M. Scanziani, “How inhibition shapes cortical activity,” Neuron , vol. 72, no. 2, pp. 231–243, 2011. [53] T. M¨ aki-Marttunen, J. F. Kismul, K. Pajo, J. M. Schulz, T. Manninen, G. T. Einevoll, M.-L. Linne, O. A. Andreassen, and J. H. Kotaleski, “Pre- and post-synaptic mechanisms of neuronal inhibition assessed through biochemically detailed modeling of gabab receptor signaling,” 
+
+Journal of Neuroscience , vol. 45, no. 36, p. e0544252025, 2025. [54] U. Breitinger and H. G. Breitinger, “Excitatory and inhibitory neuronal signaling in inflammatory and neuropathic pain,” Frontiers in Synaptic Neuroscience , vol. 15, 2023. [55] M. Capogna et al. , “The ins and outs of inhibitory synaptic plasticity: neuron types and mechanisms,” Frontiers in Cellular Neuroscience ,vol. 15, 2021. [56] A. E. Tipton, “Regulation of inhibitory signaling at the receptor and post-synaptic levels,” Frontiers in Synaptic Neuroscience , vol. 14, 2022. [57] C. E. Flores and P. M´ endez, “Shaping inhibition: activity dependent structural plasticity of gabaergic synapses,” Frontiers in Cellular Neuroscience , vol. Volume 8 - 2014, 2014. [58] J. Lourenc ¸o, F. Koukouli, and A. Bacci, “Synaptic inhibition in the neocortex: Orchestration and computation through canonical circuits and variations on the theme,” Cortex , vol. 132, pp. 258–280, 2020. [59] R. Bergoin, A. Torcini, G. Deco, M. Quoy, and G. Zamora-L´ opez, “Inhibitory neurons control the consolidation of neural assemblies via adaptation to selective stimuli,” Scientific Reports , vol. 13, no. 1, p. 6949, 2023. [60] R. Kobayashi and K. Kitano, “Impact of slow k+ currents on spike generation can be described by an adaptive threshold model,” Journal of Computational Neuroscience , vol. 40, p. 347–362, 2016. [61] S. T. Lubejko, B. Fontaine, S. E. Soueidan, and K. M. MacLeod, “Spike threshold adaptation diversifies neuronal operating modes in the auditory brain stem,” Journal of Neurophysiology , vol. 122, no. 6, pp. 2576–2590, Dec. 2019. [62] A. T. Trinh, M. Girardi-Schappo, J.-C. B´ eique, A. Longtin, and L. Maler, “Adaptive spike threshold dynamics associated with sparse spiking of hilar mossy cells are captured by a simple model,” The Journal of Physiology , vol. 601, no. 19, pp. 4397–4422, 2023. [63] B. Fontaine, J. L. Pe˜ na, and R. Brette, “Spike-threshold adaptation predicted by membrane potential dynamics in vivo,” PLOS Computa-tional Biology , vol. 10, no. 4, pp. 1–11, 04 2014. [64] H.-L. Chan, M.-A. Lin, T. Wu, S.-T. Lee, Y.-T. Tsai, and P.-K. Chao, “Detection of neuronal spikes using an adaptive threshold based on the max-min spread sorting method,” Journal of Neuroscience Methods ,vol. 172, no. 1, pp. 112–121, 2008. [65] J. F. Mejias and J. J. Torres, “Emergence of resonances in neural systems: the interplay between adaptive threshold and short-term synaptic plasticity,” PLOS One , vol. 6, no. 3, p. e17255, 2011. [66] S. Levy and C. I. Bargmann, “An adaptive-threshold mechanism for odor sensation and animal navigation,” Neuron , vol. 105, no. 3, pp. 534–548.e13, 2020. [67] C. Huang, A. Resnik, T. Celikel, and B. Englitz, “Adaptive spike threshold enables robust and temporally precise neuronal encoding,” 
+
+PLOS Computational Biology , vol. 12, no. 6, 2016. [68] A. Marasco, E. Spera, V. De Falco et al. , “An adaptive generalized leaky integrate-and-fire model for hippocampal ca1 pyramidal neurons and interneurons,” Bulletin of Mathematical Biology , vol. 85, no. 109, 2023. [69] R. Dodla, G. Svirskis, and J. Rinzel, “Well-timed, brief inhibition can promote spiking: postinhibitory facilitation,” Journal of Neurophysiol-ogy , vol. 95, no. 4, pp. 2664–2677, 2006. [70] O. Gambrell and A. Singh, “Systems level analysis of action potential firing in neuronal networks,” May 2025, preprint. [71] S. Kannoly, T. Gao, S. Dey, N. Wang, A. Singh, and J. J. Dennehy, “Optimum threshold minimizes noise in timing of intracellular events,” 
+
+Iscience , vol. 23, no. 6, p. 101186, 2020. [72] A. A. Mahrous, M. K. Chardon, M. D. Johnson, J. F. Miller, and C. Heckman, “Post-inhibitory rebound excitation drives extensor ac-tivity following spinal cord stimulation,” Brain Stimulation , vol. 18, no. 6, pp. 1906–1917, 2025. 
+
+.CC-BY-ND 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 26, 2026. ;https://doi.org/10.64898/2026.03.26.714497 doi: bioRxiv preprint
