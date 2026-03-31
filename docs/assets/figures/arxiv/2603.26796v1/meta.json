@@ -1,0 +1,134 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-001.webp",
+      "caption": "Figure 3: Average test set performance as a function of log total cost under per-query optimization for the two datasets. Each curve corresponds to a different performance estimator and shows the trade-off across varying 𝜆 parameter. The robust estimators are calculated based on 10% quantile (𝑄 = 10). We also include individual LLMs in the plots; these points correspond to benchmark-reported performance and cost values used as baselines in the simulation. For plot readability, we restrict these to models whose average test performance exceeds 70% on Dataset 1 and 60% on Dataset 2.",
+      "page": 6,
+      "index": 1,
+      "width": 493,
+      "height": 688
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-002.webp",
+      "caption": "Table 3: Dataset 2: Average cost per query for each model, with the individual costs for each query-LLM pair taken directly from Hu et al. [12].",
+      "page": 11,
+      "index": 2,
+      "width": 472,
+      "height": 279
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-003.webp",
+      "caption": "Table 2: Dataset 1: Pricing of LLMs in USD per million tokens taken directly from Song et al. [26].",
+      "page": 11,
+      "index": 3,
+      "width": 831,
+      "height": 545
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-004.webp",
+      "caption": "Figure 10: Average test performance vs. maximum batch-level average per-query cost across batches, comparing per-query optimization with batch-level optimization. Results are reported for Dataset 2 using robust XGBoost 𝑄 = 10 as the performance estimator, under randomly constructed batches (left) and adversarial batches (right).",
+      "page": 15,
+      "index": 4,
+      "width": 1040,
+      "height": 1071
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-005.webp",
+      "caption": "Figure 1: Batch-level LLM routing framework assigns an LLM to each query within a batch by solving a constrained optimization problem that maximizes average per-query performance. The formulation enforces both a global monetary cost budget on total inference cost and individual capacity constraints for each LLM. Each query is assigned to exactly one LLM, so among 𝑥𝑖,1, . . . , 𝑥𝑖,𝑀 only one equals 1 and the rest are 0. Since the true performance of an LLM on a new query is unknown at decision time, it must be estimated via 𝑎𝑖, 𝑗 . To account for estimation uncertainty in 𝑎𝑖, 𝑗 , the robust variant replaces the point performance estimates in the objective with the lower bounds 𝑎 𝑖, 𝑗 of their corresponding prediction intervals, thereby optimizing for worst-case performance within",
+      "page": 2,
+      "index": 5,
+      "width": 948,
+      "height": 511
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-006.webp",
+      "caption": "Figure 4: Average test performance versus maximal batch-level average per-query cost across batches, comparing per-query optimization and batch-level optimization for both datasets. Results are shown for randomly constructed batches (left) and adversarial batches (right).",
+      "page": 7,
+      "index": 6,
+      "width": 496,
+      "height": 381
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-007.webp",
+      "caption": "Figure 9: Average test performance vs. maximum batch-level average per-query cost across batches, comparing per-query optimization with batch-level optimization. Results are reported for Dataset 1 using robust XGBoost Q10 as the performance estimator, under randomly constructed batches (left) and adversarial batches (right).",
+      "page": 14,
+      "index": 7,
+      "width": 1040,
+      "height": 1062
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-008.webp",
+      "caption": "Figure 12: Performance as a function of the GPU budget for optimized and fixed model instances, shown for varying batch sizes and cost budgets.",
+      "page": 18,
+      "index": 8,
+      "width": 1044,
+      "height": 704
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-009.webp",
+      "caption": "Figure 8: Performance versus cost of robust versions of kNN-5, kNN-40 and XGBoost under per-query optimization across different quantile levels 𝑄 ∈ {5, 10, 20, 30}.",
+      "page": 13,
+      "index": 9,
+      "width": 820,
+      "height": 1094
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-010.webp",
+      "caption": "Figure 5: Average test performance versus GPU budget, comparing data-dependent (optimized) allocation with fixed (prespecified) numbers of open-source model instances. Colors indicate different bounds on the average cost per query 𝐶.",
+      "page": 8,
+      "index": 10,
+      "width": 494,
+      "height": 687
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-011.webp",
+      "caption": "Figure 13: Full optimization results for Dataset 1 under varying batch sizes and cost budgets.",
+      "page": 19,
+      "index": 11,
+      "width": 1037,
+      "height": 326
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-012.webp",
+      "caption": "Figure 11: Performance as a function of the GPU budget for optimized and fixed model instances, shown for varying batch sizes and cost budgets.",
+      "page": 17,
+      "index": 12,
+      "width": 1044,
+      "height": 704
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-013.webp",
+      "caption": "Figure 6: Average test performance as a function of the GPU budget for different LLM performance estimation methods after full optimization under cost and resource constraints on Dataset 1. We report results for both low-cost (top) and high-cost (bottom) scenarios. We also include individual LLMs with test performance above 70%; these points correspond to benchmarkreported performance and cost values used as baselines in the simulation. Open-source models require non-zero GPU resources, while closed-source models incur no GPU requirements as per our simulation setup.",
+      "page": 9,
+      "index": 13,
+      "width": 487,
+      "height": 693
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-014.webp",
+      "caption": "Figure 7: Full optimization results on Dataset 2; see the caption of Figure 6 for a detailed description.",
+      "page": 9,
+      "index": 14,
+      "width": 489,
+      "height": 676
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-015.webp",
+      "caption": "Figure 14: Full optimization results for Dataset 2 under varying batch sizes and cost budgets.",
+      "page": 20,
+      "index": 15,
+      "width": 1037,
+      "height": 1064
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26796v1/fig-016.webp",
+      "caption": "Table 5: Pricing and GPU requirements of LLMs across both datasets for the experimental deployment setup.",
+      "page": 16,
+      "index": 16,
+      "width": 548,
+      "height": 907
+    }
+  ]
+}

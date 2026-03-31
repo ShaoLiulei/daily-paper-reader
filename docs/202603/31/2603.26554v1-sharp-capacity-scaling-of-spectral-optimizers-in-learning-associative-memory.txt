@@ -1,0 +1,10996 @@
+Title: Sharp Capacity Scaling of Spectral Optimizers in Learning Associative Memory
+
+URL Source: https://arxiv.org/pdf/2603.26554v1
+
+Published Time: Mon, 30 Mar 2026 01:21:49 GMT
+
+Number of Pages: 77
+
+Markdown Content:
+# Sharp Capacity Scaling of Spectral Optimizers in Learning Associative Memory 
+
+Juno Kim 1,* Eshaan Nichani 2,* 
+
+Denny Wu 3,4 Alberto Bietti 4 Jason D. Lee 1
+
+> 1
+
+UC Berkeley 2Princeton University 3New York University 4Flatiron Institute 
+
+March 30, 2026 
+
+Abstract 
+
+Spectral optimizers such as Muon have recently shown strong empirical performance in large-scale language model training, but the source and extent of their advantage remain poorly understood. We study this question through the linear associative memory problem, a tractable model for factual recall in transformer-based models. In particular, we go beyond orthogonal embeddings and consider Gaussian inputs and outputs, which allows the number of stored associations to greatly exceed the embedding dimension. Our main result sharply characterizes the recovery rates of one step of Muon and SGD on the logistic regression loss under a power law frequency distribution. We show that the storage capacity of Muon significantly exceeds that of SGD, and moreover Muon saturates at a larger critical batch size. We further analyze the multi-step dynamics under a thresholded gradient approximation and show that Muon achieves a substantially faster initial recovery rate than SGD, while both methods eventually converge to the information-theoretic limit at comparable speeds. Experiments on synthetic tasks validate the predicted scaling laws. Our analysis provides a quantitative understanding of the signal amplification of Muon and lays the groundwork for establishing scaling laws across more practical language modeling tasks and optimizers. 
+
+# 1 Introduction 
+
+Large language models (LLMs) with billions of parameters are typically trained using adaptive first-order optimization algorithms. The workhorse of modern neural network optimization has long been the Adam optimizer and its variants [24, 33]. However, there has been growing interest in matrix-based or spectral optimizers [35, 16, 53, 21], which explicitly utilize the matrix structure of neural network parameters. Among these methods, Muon [21] has shown strong empirical performance in large-scale pretraining studies [32], even outperforming Adam at sufficiently large batch sizes [58, 47]. Muon updates each weight matrix in the approximate direction of the polar 
+
+> *
+
+Equal contribution. 
+
+1
+
+> arXiv:2603.26554v1 [cs.LG] 27 Mar 2026
+
+factor, or spectral orthogonalization, of the negative gradient. Ignoring accumulation, this can also be interpreted as steepest descent with respect to the spectral norm [3]. However, it remains unclear which aspects of modern language model training make this update particularly effective. To investigate this question, we analyze the dynamics of Muon versus stochastic gradient descent (SGD) on the task of learning linear associative memory . The associative memory task, introduced in Cabannes et al. [6], Nichani et al. [38], provides a simple model of factual recall in language models [43, 1], and captures the ability of transformer-based models to store factual knowledge within the self-attention matrices. The goal is to store a collection of atomic associations (i.e., facts), expressed as N pairs of input and output embeddings {(vi, u i)}i∈[N ] ⊂ Rd, using a weight matrix W ∈ Rd×d so that ui ≈ Wvi. We train W by casting this task as a multiclass logistic regression problem with logits given by u⊤ 
+
+> j
+
+Wvi and optimizing the cross-entropy loss. A formal description of the problem is given in Section 3. Recent work has studied the benefit of spectral optimizers on related associative memory tasks [56, 30], but these results rely on an orthogonality assumption on the embeddings ui and vi. While this assumption simplifies the optimization analysis, it also requires the embedding dimension d to be larger than the number of stored items N . In contrast, we study the regime in which ui and vi are drawn i.i.d. from an isotropic Gaussian distribution, so that the number of stored items can greatly exceed the embedding dimension ( N ≫ d). This captures the ability of language models to store items, or features, in superposition [10], where the total number of features is far greater than the ambient dimension. Indeed, under this random-embedding model, it is information-theoretically possible for W to store up to eΘ( d2) items [38]. At the same time, removing orthogonality makes the learning dynamics substantially more intricate [52] and they remain poorly understood. Motivated by Zipf’s law for language modeling, we assume that the ith item appears with power-law frequency pi ∼ i−α, parallel to previous theoretical analyses on scaling laws [37, 5, 31, 40, 42, 27]. We also consider the minibatch versions of SGD and Muon, where at each timestep a new batch of size B is sampled with replacement. Under this setting, our main result sharply characterizes the one-step recovery of Muon, showing that Muon outperforms SGD and stores significantly more items than in the orthogonal case. 
+
+Theorem 1 (Informal version of Theorems 3, 5) . Let d be the embedding dimension and B be the batch size, and suppose the ith item has power law frequency pi ∝ i−α for α > 1. One step of Muon on the associative memory task recovers the top eΘ(min {d1+ 12α , B 1 
+
+> α
+
+}) most frequent items, while one step of SGD recovers the top eΘ(min {d 12α , B 1 
+
+> α
+
+}) most frequent items. 
+
+This further implies that the critical batch size , beyond which increasing batch size does not yield performance gains, is much larger for Muon compared to SGD. The capacity exponents and batch size saturation predicted by our theory are empirically verified by our experiments (Figure 1). We also study the multi-step trajectories of Muon and SGD under a simplifying thresholded gra-dient update, and show the following scaling laws for the recovery rate (for brevity, we only state the population version below). 
+
+Theorem 2 (Informal version of Theorems 9, 10) . Under the thresholded update, t steps of Muon recover the top eΘ( d2−(1 − 12a )t
+
+) items. In contrast, t steps of SGD recover the top dt items where dt
+
+is given by the recursion dt+1 = eΘ( d 12α dt) if dt ≲ d, and dt+1 = eΘ( d 1 
+
+> α
+
+d1− 12α 
+
+> t
+
+) if dt ≳ d.
+
+2256 512 1024 2048 4096      
+
+> Embedding dimension d
+> 10 1
+> 10 2
+> 10 3
+> 10 4
+> Storage Capacity  = 1.25
+> = 1.50
+> = 1.75
+> = 2.25
+> = 3.50
+> GD d1/(2 )
+> Muon d1 + 1/(2 )
+
+(a) Capacity scaling with embedding dimension d.10 1 10 2 10 3 10 4 10 5 10 6         
+
+> Batch size B
+> 10 1
+> 10 2
+> 10 3
+> 10 4
+> Capacity
+> dimension d
+> d= 128
+> d= 256
+> d= 512
+> d= 1024
+> d= 2048
+> GD
+> Muon
+> d1 + 1/(2 )
+> B1/
+
+(b) Capacity scaling with minibatch size B.
+
+Figure 1: (a) Capacity achieved by one Muon and GD step on the population objective; Muon improves the storage capacity when frequency is power-law distributed with exponent α > 1. (b) Critical batch size for the first Muon and SGD step ( α = 1 .5); the Muon capacity saturates at a much larger batch size than SGD. 
+
+The main takeaways from our analysis are as follows. (1) Muon improves storage efficiency. In the population regime B → ∞ , one step of Muon is already able to recover the top d1+ 12α items, while one step of SGD only recovers the top d 12α
+
+(see Figure 1a). Surprisingly, a single step of Muon is able to store more than d items, which is the maximum when embeddings are constrained to be orthogonal. In other words, Muon is able to effectively store more features than dimensions via superposition. (2) The benefit of Muon comes at larger batch sizes. When the batch size B is small, Muon and SGD both recover the top B 1 
+
+> α
+
+items. However, the performance of SGD saturates at a batch size of B ≍ √d, while Muon saturates at the much larger batch size of B ≍ dα+ 12
+
+(see Figure 1b). This provides evidence that Muon has the ability to handle much larger batch sizes, and aligns with empirical observations that Muon significantly outperforms non-spectral optimizers only at large batch sizes [58]. (3) Muon accelerates early in training. The SGD exponent initially exhibits a slow linear scaling and requires ⌈2α⌉ steps to reach dt ≳ d, while Muon exceeds this in a single step. However, once SGD enters this regime, both updates obey the same recursion dt+1 ∼ d 1 
+
+> α
+
+d1− 12α 
+
+> t
+
+with the same convergence rate to the optimal eΘ( d2) capacity. Thus, the main benefits of Muon (with appropriate batch size) appear earlier in training when gradients are strongly anisotropic, explaining the short-term gains observed in [47]. The rest of the paper is organized as follows. In Section 3, we formally define the associative memory task and the family of spectral optimizers considered in our analysis. Section 4 contains our main results on the scaling of a single step of Muon and SGD, as well as an argument that Muon is the asymptotically optimal one-step update. In Section 5, we extend our scaling analysis to multiple steps along the Muon and SGD trajectories. We conclude in Section 6 with simu-lations verifying our predicted scaling laws and batch size analysis, as well as experiments with transformers on a more sophisticated in-context recall task. 32 Related Work 
+
+Associative memory and factual recall. Associative memory has a long history in neural com-putation [59, 26, 18]. Recent work has shown that transformer weights can be viewed as associative memories storing input-output mappings between pairs of concepts [13, 4, 6, 20]. This perspec-tive is especially useful for modeling factual recall [1], where such mechanisms encode factual knowledge directly in the weights of a transformer [36, 14, 38]. Our most relevant points of comparison are Wang et al. [56], Li et al. [30], which analyze Muon on similar associative memory tasks. Their analysis assumes that the embeddings {ui}i∈[N ] and 
+
+{vi}i∈[N ] are pairwise orthogonal, greatly simplifying the study of the polar map. However, this assumption also limits the model capacity to at most N ≤ d stored associations. By contrast, because W has d2 parameters, the information-theoretically optimal capacity is eΘ( d2) [38], which requires storing embeddings in superposition. In this regime, we show that a single Muon step already recovers eΘ
+
+
+
+d1+ 12α
+
+
+
+items, far beyond what is possible under orthogonality. We further derive scaling laws for the multi-step Muon and SGD dynamics, and show that both updates indeed approach the optimal capacity. 
+
+Theoretical analyses of Muon. A number of recent works have sought to rigorously character-ize the benefits of Muon and other matrix-based optimizers over SGD. One line of work derives convergence guarantees using tools from convex optimization and online learning. Shen et al. [48], Chen et al. [8], Kim and Oh [22] prove convergence guarantees for Muon that depend on smoothness in the spectral norm or the spectral norm of the weight matrix itself. Jiang et al. [19] derive regret bounds and corresponding non-convex optimization rates. Beyond Muon, Xie et al. [60] develop a framework for analyzing convergence rates of a broad class of matrix precondi-tioners on smooth convex problems, while Lau et al. [29] adopt a structure-aware preconditioning perspective to introduce a new family of matrix-based optimizers. A second line of work studies the loss reduction after a single descent step. Davis and Drusvyatskiy [9] show that Muon achieves a larger one-step loss reduction than SGD when the gradient rank exceeds the activation rank. Su [49] introduces an “isotropic curvature model” based on a single optimization step and show that Muon is optimal in certain regimes. However, Gonon et al. [15] demonstrate that such single-step arguments can fail to predict full end-to-end convergence rates. Finally, other works compare Muon and SGD on specific problem classes. Fan et al. [11] show that, for separable classification, Muon converges to the solution maximizing the spectral-norm margin. For matrix-valued linear regression, Wang et al. [55] characterize the risk of Muon on isotropic data, while Vasudeva et al. [50] show faster convergence than SGD under imbalanced covariates. Ma et al. [34] further show that, in matrix factorization, Muon attains a convergence rate faster than SGD and independent of the condition number. 
+
+Adaptivity to heavy-tailed data. Our results show that Muon is particularly effective when the fact distribution is power-law distributed with heavy tail. Similar advantages have also been ob-served for other adaptive optimizers. Kunstner et al. [28], Yadav et al. [61] show that Adam and its limiting variant SignSGD outperform SGD when the class distribution follows a power law. Kun-stner and Bach [27] further prove that SignSGD outperforms SGD for learning a bigram model, while Kim et al. [23] derive scaling laws for SignSGD in the power-law random features model. 43 Setting: Associative Memory 
+
+Linear associative memory. The goal of the associative memory task is to store a collection of atomic associations, or facts . Let [N ] be the input and output vocabulary. A set of facts is defined by a bijection f ∗ : [ N ] → [N ], where the input token i is mapped to the output token f ∗(i). Each token is assigned an embedding vector vi ∈ Rd and an unembedding vector ui ∈ Rd, sampled i.i.d. from the distribution N (0 , 1 
+
+> d
+
+Id). Without loss of generality, we will assume that f ∗(i) = i for all 
+
+i ∈ [N ]. As an illustrative example, consider the set of countries S = {USA, France, Japan, . . . }
+
+and the set of capitals A = {Washington D.C., Paris, Tokyo . . . }, with the goal being to store the mapping between each country and its capital. The embeddings of the countries USA, France, Japan, . . . are v1, v 2, v 3, . . . respectively, and the embeddings of the capitals Washington D.C., Paris, Tokyo, . . . are u1, u 2, u 3, . . . respectively. We consider training a linear associative memory model, given by a weight matrix W ∈ Rd×d, to store the fact dataset as the following multi-class classification problem. The score prediction for the unembedding token uj associated to vi is defined as 
+
+ˆpW(j | i) := exp  u⊤ 
+
+> j
+
+Wvi
+
+P  
+
+> k∈[N]
+
+exp  u⊤ 
+
+> k
+
+Wvi
+
+, ∀j ∈ [N ].
+
+Let p ∈ ∆N denote the vector of probabilities of each item in the dataset. The population cross-entropy loss is then defined as 
+
+L(W) := Ei∼p[− log pW(i | i)] = − X 
+
+> i∈[N]
+
+pi u⊤ 
+
+> i
+
+Wvi − log X 
+
+> j∈[N]
+
+exp  u⊤ 
+
+> j
+
+Wvi
+
+!! 
+
+. (1) We assume that p follows a power law, pi ∼ i−α with exponent α > 1. This condition is mo-tivated by Zipf’s law in statistical linguistics, which states that the frequency of a word decays approximately as a power of its rank, indicating that such heavy-tailed structure arises naturally in language [41]. Such a power law source condition is common in prior analyses of scaling laws [7, 37, 5, 31, 40, 42, 27, 30]. We will consider optimizing W via the minibatch variant of Muon and SGD. Let B be the batch size. A minibatch B is defined as a collection of tokens B := {i1, . . . , i B }, where each token is sampled i.i.d from p. The loss on a minibatch B is defined by 
+
+L(W; B) := 1
+
+B
+
+X
+
+> i∈B
+
+− log ˆ pW(i | i) = − X 
+
+> i∈[N]
+
+qi u⊤ 
+
+> i
+
+Wvi − log X 
+
+> j∈[N]
+
+exp  u⊤ 
+
+> j
+
+Wvi
+
+!! 
+
+,
+
+where qi := 1
+
+> B
+
+P 
+
+> j∈B
+
+1{i=j} are the empirical frequencies of each token in the batch B. The negative gradient at some W is thus 
+
+−∇ WL(W; B) = X 
+
+> i∈[N]
+
+qi ui − X 
+
+> j∈[N]
+
+uj ˆpW(j | i)
+
+!
+
+v⊤ 
+
+> i
+
+. (2) 5Muon. The Muon optimizer [21] directly operates on weight matrices. Let G = −∇ WL(W; B)
+
+be the negative gradient of the loss (we will omit momentum in our treatment). Denote by G =
+
+USV ⊤ the singular value decomposition (SVD) of G. The polar map is defined as polar( G) := 
+
+UV ⊤; if G is full rank, then polar( G) = G(G⊤G)−1/2. The Muon update is 
+
+W ← W + η · polar( G).
+
+In practice, rather than computing the exact SVD, one instead approximates polar( G) via a con-stant number of Newton–Schulz iterations. Let φ(z) be a quadratic or higher-order polynomial. A single Newton–Schulz iteration computes the mapping 
+
+G 7 → Gφ(G⊤G) = US φ(S2)V⊤.
+
+The output of multiple steps of Newton–Schulz is thus of the form Uh(S)V⊤, where h(z) is the function obtained by composing z 7 → zφ (z2) with itself multiple times. φ is typically chosen so that h(z) ≈ 1. This motivates a broad class of spectral optimizers : given a function h : R≥0 → R≥0
+
+satisfying h(0) = 0 , one can define the spectral map h(G) = Uh(S)V⊤ and update the weight matrix as W ← W + ηh (G). Within this scheme, gradient descent corresponds to h(z) = z,while exact Muon corresponds to h(z) = sign( z).1
+
+> exact polar
+> stabilization
+
+In this work, we will focus on a stabilized approximation to Muon: 
+
+hλ(z) = z√z2+λ2 for a hyperparameter λ (see right), which as we will see determines the ‘resolution’ of the singular spectrum. The limit λ → 0+
+
+recovers the exact polar map. Given schedules {ηt}t≥0, {λt}t≥0, the Muon updates {Wt}t≥0 are defined by 
+
+Wt+1 = Wt + ηtGt(G⊤ 
+
+> t
+
+Gt + λ2 
+
+> t
+
+Id)−1/2, Gt := −∇ WL(Wt; Bt) (3) initialized at W0 = 0 d×d. We also denote the estimated scores by ˆpt = ˆ pWt .
+
+Remark. We consider the stabilized approximation hλ primarily for technical convenience. In Section 4.3, we give a heuristic argument that this update is asymptotically optimal for sufficiently small λ, and moreover the exact polar map should attain the same rates. A similar smoothed approximation is considered in Jiang et al. [19], and, unlike Muon, is shown to converge on non-smooth, non-convex problems. Relatedly, Gonon et al. [15] demonstrate problems where using a constant number of Newton-Schulz iterations outperforms the exact polar map. 
+
+# 4 One Step of Muon 
+
+4.1 One-step recovery of Muon and SGD 
+
+We say that the weight matrix W ∈ Rd×d recovers or stores item i if arg max j∈[N ] ˆp(j | i) = i,i.e., the diagonal or signal logit ( j = i) dominates all off-diagonal or interaction logits ( j̸ = i): 
+
+u⊤ 
+
+> i
+
+Wvi > max   
+
+> j̸=i
+
+u⊤ 
+
+> j
+
+Wvi. (4) Our main result sharply characterizes the set of recovered items after one Muon update. 6Theorem 3 (one-step recovery of Muon) . Let ui, v i for i ∈ [N ] be i.i.d. N (0 , 1 
+
+> d
+
+Id) vectors. Let 
+
+G0 = −∇ WL(W0; B) be the negative gradient at initialization of the empirical loss on a mini-batch B of size B, or the population loss (equivalently B = ∞). Suppose N = poly( d), N ≳ d2α+1 
+
+and set 
+
+λ ≍ max 
+
+(log d)2α+2 
+
+dα , (log d)2
+
+B
+
+
+
+.
+
+Then with high probability, the one-step Muon update W1 ∝ hλ(G0) recovers all items up to 
+
+i ≲ min 
+
+n
+
+i⋆, B 1 
+
+> α
+
+(log d)− 1
+
+> α
+
+o
+
+, i⋆ ≍ d1+ 12α (log d)−2− 5 
+
+> α
+
+.
+
+This bound is tight (up to polylog factors) in the sense that for items i ≫ i⋆, the signal and interaction terms in Eq. (4) will be of the same order, so recovery cannot be guaranteed; moreover, items i ≫ B1/α have vanishing probability to even be observed in the minibatch B, and hence will only be learned sporadically. From this, we see that the critical batch size , beyond which increasing B no longer yields gains in recovery, is 
+
+B⋆ 
+
+> Muon
+
+= eΘ(( i⋆)α) = eΘ( dα+ 12 ),
+
+and this allows us to recover eΘ( d1+ 12α ) items. We also note that the condition N ≳ d2α+1 can be removed by considering correlation loss. As a corollary, we obtain the following guarantee for the loss decrease after one step. 
+
+Corollary 4. Taking the learning rate η ≍ (log d)−4√d in the setting of Theorem 3, the one-step update W1 = ηh λ(G0) achieves loss 
+
+L(W1) ≤ eO
+
+
+
+max 
+
+n
+
+d 12α + 12 −α, B 1 
+
+> α−1
+
+o 
+
+and moreover no item is significantly misclassified, that is, ˆp1(i | i) ≥ (1 − o(1)) sup j̸ =i ˆp1(j | i)
+
+for all i ∈ [N ].
+
+The proof of Theorem 3 is developed throughout Appendices A, B. A sketch of the main ideas is provided in Section 4.2. We start by observing from Eq. (2) that the gradient of the cross-entropy loss L(W) at initialization is roughly G0 ≈ P 
+
+> i
+
+piuiv⊤ 
+
+> i
+
+. If the embeddings ui, v i were orthogonal, Muon would then output W1 ∝ hλ(G0) ≈ P 
+
+> i
+
+uiv⊤ 
+
+> i
+
+which already classifies all items correctly; however this constrains the number of items N ≤ d, far less than the information-theoretic optimum eΘ( d2). In our non-orthogonal setting, N can be much larger, but we must now account for the correlations between embeddings. Let us now focus on each signal term u⊤ 
+
+> i
+
+W1vi. The main contribution comes from the aligned rank-one spike piuiv⊤ 
+
+> i
+
+in the gradient G0. At the same time, a large fraction of the singular values of G0 lie below d−α. The map hλ amplifies these by a factor of λ−1 ∼ dα, which also boosts the spike magnitude pi by the same factor, allowing us to recover items with lower frequencies. Thus, λ effectively acts as a scale of resolution for the singular spectrum; the implications of this is discussed in Section 4.3. In contrast, we show the following bound on the number of recovered items for vanilla gradient descent on the same objective. 7Theorem 5 (one-step recovery of SGD) . In the setting of Theorem 3 and N ≳ d, the number of items recovered by the one-step SGD update WSGD 1 = ηG0 is 
+
+eΘ
+
+
+
+min 
+
+n
+
+d 12α , B 1
+
+> α
+
+o 
+
+with high probability. In addition, for any choice of learning rate η, the loss is lower bounded as 
+
+L(WSGD 1 ) ≥ eΩ
+
+
+
+max 
+
+n
+
+d 12α − 12 , B 1 
+
+> α−1
+
+o 
+
+.
+
+The intuitive reason for this threshold is that an item beyond this has signal pi ≪ 1/√d, which is drowned out by the noise of order pj /√d from the j ≲ log d most frequent items, and so is unlikely to have the highest score. Thus, the number of items recovered by Muon greatly improves upon that of SGD by a factor of d. Furthermore, the critical batch size for SGD is B⋆ 
+
+> SGD
+
+= eΘ( √d),which is much smaller compared to B⋆ 
+
+> Muon
+
+= eΘ( dα+ 12 ).
+
+4.2 Proof sketch of Theorem 3 
+
+We start by approximating the gradient as a sum of independent rank-one terms: 
+
+−∇ WL(W0; B) = X 
+
+> i∈[N]
+
+qi(ui − ¯u)v⊤ 
+
+> i
+
+≈ X 
+
+> i∈[N]
+
+qiuiv⊤ 
+
+> i
+
+=: G
+
+and defining the logits γij := u⊤ 
+
+> j
+
+hλ(G)vi (omitting η). We analyze the signal and interaction terms separately. 
+
+Lower bounding signal logits (Appendix A). Denote the leave-one-out gradient G−i := G −
+
+qiuiv⊤ 
+
+> i
+
+, so that u⊤ 
+
+> i
+
+hλ(G−i)vi is random with size eO(1 /√d). We study how the ith logit behaves as we gradually add the uiv⊤ 
+
+> i
+
+term back in via the auxiliary function 
+
+ϕ(q) = u⊤ 
+
+> i
+
+hλ(G−i + qu iv⊤ 
+
+> i
+
+)vi, q ≥ 0. (5) By definition, γij = ϕ(qi), which we analyze via Taylor expansion. The slope ϕ′(0) can be com-puted explicitly via the Daleckii–Krein formula (Proposition 11), which computes the Fr´ echet derivative of a matrix function along a specified perturbation direction. Let G−i = ASB ⊤ be the SVD with singular values S = diag( s1, · · · , s d) in decreasing order and a = A⊤ui, b = B⊤vi.Then ϕ′(0) is given as the sum of nonnegative terms 
+
+14
+
+X 
+
+> k̸=ℓ
+
+hλ(sk) + hλ(sℓ)
+
+sk + sℓ
+
+(akbℓ − aℓbk)2 + hλ(sk) − hλ(sℓ)
+
+sk − sℓ
+
+(akbℓ + aℓbk)2 + X
+
+> k
+
+h′
+
+> λ
+
+(sk)a2
+
+> k
+
+b2
+
+> k
+
+.
+
+We focus on the first term. As a, b are i.i.d. Gaussian conditioned on G−i, (akbℓ − aℓbk)2 ≈ 1/d 2.Since z 7 → hλ(z)/z is decreasing, the sum is dominated by small singular values. We then show that the ‘bulk’ singular value sd/ 2 = eO(d−α) with high probability (Lemmas 14, 17). Hence choosing λ at the same scale, 
+
+ϕ′(0) ≳ hλ(sd/ 2)
+
+sd/ 2
+
+= 1
+
+√s2 
+
+> d/ 2
+
++ λ2 ≳ λ−1. (6) 8Moreover, we show that ϕ is nondecreasing and |ϕ′′ (0) | ≲ λ−2. Taylor expanding ϕ around zero and optimizing the radius yields the lower bound 
+
+γii = ϕ(qi) ≳ min 
+
+nqi
+
+λ , 1
+
+o
+
+−
+
+rlog dd .
+
+Upper bounding interaction logits (Appendix B). The interaction logits turn out to be much more challenging to control. A naive approach is to use that hλ is λ−1-Lipschitz with respect to operator norm (Proposition 26), so (uj , v j ) 7 → γij = u⊤ 
+
+> j
+
+hλ(G−j +qj uj v⊤ 
+
+> j
+
+)vi is a Lipschitz mapping of Gaussians and so exhibits good concentration. This argument works when either qi or qj ≪ λ,but fails to bound ‘large’ interactions where both i, j ≤ r for a threshold r ≈ d. For these terms, we first invoke a block resolvent integral representation amenable to series expansion, then develop a nonasymptotic perturbative analysis reminiscent of moment methods in random matrix theory. A technical overview is provided in Appendix B.1 for the interested reader. In the end, we show: 
+
+|γij | ≲ (log d)3
+
+√d ∀j̸ = i. 
+
+We have thus proved that γii > max j̸ =i γij if qi/λ ≳ 1/√d (ignoring log factors). In the population regime, from pi ≍ i−α we conclude that all items i ≲ d1+ 12α are recovered w.h.p. In the minibatch setting, we incur an additional information-theoretic threshold: items i ≫ B1/α , that is pi ≪ 1/B ,are unlikely to be observed in the minibatch at all, and thus will not be learned. 
+
+4.3 Optimality of Muon 
+
+A natural follow-up question to Theorem 3 is: is the d1+ 12α one-step recovery rate optimal for the linear associative memory task, or can it be improved by choosing a different estimator h(G0)
+
+of W? For example, our analysis used λ ∼ d−α while the limit λ → 0 recovers the exact polar map. Can choosing such a sharper resolution improve our results? In this section, we give a negative answer to this question by providing a heuristic argument for the one-step optimality of our stabilized variant of Muon. We first show that the Bayes optimal estimator must be spectrally equivariant, that is for the SVD of the gradient G0 = USV ⊤, it holds that h(G0) = Uh(S)V⊤ and h(S) is diagonal. 
+
+Proposition 6. Let Spec( d) denote the set of bi-orthogonally equivariant measurable maps h :
+
+Rd×d → Rd×d such that sup ∥h∥F < ∞, that is, h(UXV ⊤) = Uh(X)V⊤ for all X ∈ Rd×d and 
+
+U, V ∈ O(d). The Bayes optimal update rule w.r.t. L is in Spec( d), that is, for the Bayes risk 
+
+R(h) := E(ui,v i)i∈[N ],B[L(h(G0))] it holds that 
+
+inf  
+
+> h:sup ∥h∥F<∞
+
+R(h) = inf  
+
+> h∈Spec( d)
+
+R(h).
+
+This is essentially a corollary of the Hunt–Stein theorem on minimax tests of invariant statistical problems. Any bi-orthogonal conjugate hU,V(X) := U⊤h(UXV ⊤)V of h will have the same Bayes risk due to rotation invariance. Then the estimator ¯h ∈ Spec( d) constructed by averag-ing hU,V over Haar measure U, V ∼ O(d) × O(d) satisfies R(¯h) ≤ R (h) due to convexity of L.9We remark that h ∈ Spec( d) does not preclude nonseparable maps where each diagonal entry 
+
+h(S)ii can depend on the entire spectrum S. Nonetheless, such maps are in general difficult to implement as they require computing the full SVD, which Muon (with Newton–Schulz iterations) is designed to avoid. Thus, we restrict our attention to separable maps h(S) = diag( h(si)) for a scalar-valued function h. Since the inputs to h are bounded by ∥G0∥op = O(1) w.h.p., we can always rescale h to have bounded outputs. We also assume a mild monotonicity property: 
+
+Assumption 7. h : R≥0 → [0 , 1] is C1 and h(z)/z is nonincreasing. 1
+
+> iteration
+> 1
+> 2
+> 3
+> 4
+> 5
+
+Intuitively, this means that smaller singular values are blown up by a larger multiplicative factor. Note that we do not require h itself to be monotonic. For example, the classical cubic Newton–Schulz iteration 
+
+h(z) = 32 z − 12 z3 [2] satisfies this assumption, as well as its higher-order iterates on the interval of convergence (see right figure) — see Appendix C.4 for details. We now show that any h satisfying Assumption 7 cannot improve the signal γii . As in Eq. (5), we compute the strength of the signal via a first-order approximation of the auxiliary map ϕ, and the slope is given via the singular values of the leave-one-out gradient G−i = P  
+
+> j̸=i
+
+qiuiv⊤ 
+
+> i
+
+as 
+
+ϕ′(0) ≍ 1
+
+d2
+
+X
+
+> k,ℓ
+
+h(sk) + h(sℓ)
+
+sk + sℓ
+
++ h(sk) − h(sℓ)
+
+sk − sℓ
+
++ 1
+
+d2
+
+X
+
+> k
+
+h′(sk) ≲ 1
+
+d
+
+X
+
+> k
+
+h(sk)
+
+sk
+
+,
+
+where the inequality follows from h(sk )+ h(sℓ)  
+
+> sk+sℓ
+
+≤ h(sk ) 
+
+> sk
+
++ h(sℓ) 
+
+> sℓ
+
+, h(sk )−h(sℓ)  
+
+> sk−sℓ
+
+≤ min {h(sk ) 
+
+> sk
+
+, h(sℓ) 
+
+> sℓ
+
+} and 
+
+h′(sk) ≤ h(sk ) 
+
+> sk
+
+under Assumption 7. That is, the signal strength is roughly determined by how much the average singular value is blown up by h. If h is Lipschitz, this is uniformly bounded by ∥h∥Lip 
+
+(thus Eq. (6) is tight for hλ). However, even without Lipschitz control, this is fundamentally limited by the average scale of the singular spectrum as we prove below. 
+
+Lemma 8. Let s1 ≥ · · · ≥ sd be the singular values of the leave-one-out gradient G−i. It holds w.h.p. that sd ≳ d−α−1(log d)−1 and Pdk=1 s−1 
+
+> k
+
+≲ dα+1 (log d)2.
+
+As such, we must have ϕ′(0) ≲ dα regardless of the choice of h, therefore the signal γii = ϕ(qi)
+
+is upper bounded (ignoring higher-order terms) as ϕ(0) + ϕ′(0) qi ≲ 1√d + qidα. In contrast, the noise and interaction terms ϕ(0) and γij are generally of size eΘ(1 /√d). As a consequence, we indeed require qi ≫ d−α− 12 , equivalently i ≪ d1+ 12α in the population regime to ensure recovery, matching the rate obtained in Theorem 3. For example, Lemma 8 implies that taking the resolution as λ ≪ d−α−1 instead of λ ∼ d−α in Theorem 3 essentially gives the exact polar map h(z) ≈ sign( z), as this scale will never be ‘seen’ by the singular values. Nonetheless, even in this regime the average blowup of the singular values is of order dα, and so we will not see any improvement from using the polar map. In fact, from this argument we expect roughly the same recovery rate, which is indeed what we observe in our experiments in Section 6. 10 5 Multiple Steps of Muon 
+
+We now turn our attention to the entire update trajectory of Muon. To study the macroscopic scaling behavior of this process, we will adopt a simplifying heuristic. At step t, suppose all items 
+
+i = 1 , · · · , d t have been recovered with ˆpt(i | i) ≈ 1. We presume all items i > d t have not been recovered at all, i.e. ˆpt(i | i) ≪ 1, and approximate the current gradient as 
+
+Gt ≈ X 
+
+> i∈[N]
+
+q(t) 
+
+> i
+
+(1 − ˆpt(i | i)) uiv⊤ 
+
+> i
+
+≈ X
+
+> i>d t
+
+q(t) 
+
+> i
+
+uiv⊤ 
+
+> i
+
+=: ¯Gt (7) where q(t) is the frequency vector of the tth minibatch. This can be viewed as a deflation process: starting from all items G0 ≈ P  
+
+> i∈[N]
+
+qiuiv⊤ 
+
+> i
+
+, the already-recovered items are continually removed from the gradient after each update. Under this simplification, we recursively derive the recovery threshold {dt}t≥1 after each Muon update, which yields the following sharp scaling law. 
+
+Theorem 9 (multi-step recovery of Muon) . Let d0 = 0 , T ∈ N and 
+
+dt = eΘ
+
+
+
+min {d2−(1 − 12α )t
+
+, B 1 
+
+> α
+
+}
+
+
+
+, λt = eΘ
+
+
+
+d−αt+1 
+
+√d
+
+
+
+, η ≍ (log d)−4√d. 
+
+Then for sufficiently large d, the iterates {Wt}t≥0 defined as W0 = 0 , Wt+1 = Wt + ηh λt ( ¯Gt)
+
+recover all items i = 1 , · · · , d t at all steps t ≤ T , and moreover L(Wt) ≤ eO(d1−αt ).
+
+Thus for sufficiently large B, the recovery exponent 2 − (1 − 12α )t converges exponentially to the information-theoretic maximum with a fixed learning rate. In comparison, for multiple steps of SGD, we show a strictly suboptimal scaling law for any learning rate schedule. 
+
+Theorem 10 (multi-step recovery of SGD) . Let T ∈ N and {ηt}t≥0 be any learning rate schedule. Suppose the SGD iterates {Wt}t≥0 defined as W0 = 0 , Wt+1 = Wt + ηt ¯Gt recover all items 
+
+i = 1 , · · · , d t with constant probability at all steps t ≤ T . Then it must hold that 
+
+dt+1 ≲
+
+(min {d 12α dt, B 1 
+
+> α
+
+} dt ≲ d, 
+
+min {d 1 
+
+> α
+
+d1− 12α 
+
+> t
+
+, B 1 
+
+> α
+
+} dt ≳ d. 
+
+Moreover, this rate is achieved (up to polylog factors) by taking ηt = eΘ( dαt+1 ).
+
+In words, for the first ⌈2α⌉ steps, the recovery exponent of SGD increases linearly until dt ≳ d;note that Muon already achieves this with a single update. After this point, however, the improve-ment recursion dt+1 ∼ d 1 
+
+> α
+
+d1− 12α 
+
+> t
+
+matches that of Muon. Hence Muon accelerates recovery earlier in training, but the convergence behavior for large t is comparable to that of SGD. This aligns with the empirical observations in [47], where preconditioned optimizers such as Muon and SOAP [53] are found to outperform AdamW on shorter runs, but the gap narrows over longer horizons. We give a brief intuition for this phenomenon. In the non-orthogonal setting, each item i > d t to be recovered must compete with noise from the top individual unclassified items j ∼ dt with large frequencies, as well as the aggregate fluctuation from the bulk of the unclassified items, which leads to the two thresholds in Theorem 10. Hence, Muon can be interpreted as effectively removing the first threshold by amplifying the bulk (but not top) singular directions. Once dt > d , the gradient becomes relatively more isotropic and so the effect of orthogonalization is less pronounced; the second threshold becomes the limiting factor for both optimizers. 11 Remark. The rates in Theorem 9 and Theorem 10 are given for a constant (or at most logarith-mically diverging) horizon T , and hence can achieve Ω( d2−ϵ) recovery rate for any ϵ > 0. As in Section 4.3, this scaling is likely near-optimal in this regime. However when T grows further, we expect that the batch size dependency should more accurately scale as (T B )1/α , as this is the information-theoretic upper bound on the set of all observed items. We also emphasize that the approximation in Eq. (7) is only a heuristic. In actuality, after t steps of Muon, while items i ≥ ¯dt := dt polylog( d) do have near-uniform logits, for items dt ≤ i ≤ ¯dt
+
+the predicted scores ˆpt(i | i) can range anywhere between 1 
+
+> N
+
+and 1. Moreover, these scores depend in a complicated manner on all embeddings {uj , v j }j∈[N ], so that the arguments used to prove Theorem 3 cannot be directly applied. Theoretically, this issue can be bypassed by assuming the existence of gaps in the power-law spectrum as in Li et al. [30], however we do not pursue this approach. Instead, we leave the precise end-to-end guarantee as a conjecture stated below, and empirically validate the predictions of Theorem 9 in Figure 4 (on the exact Muon iterates). 
+
+Conjecture. The recovery and convergence rates of Theorem 9 also hold for the exact Muon iterates Wt+1 = Wt + ηh λt (Gt).
+
+# 6 Experiments 
+
+6.1 Linear Associative Memory 
+
+We quantify the benefits of Muon over SGD in synthetic experimental settings. First, we consider the linear associative memory model introduced in Section 3. For convenience, in the Muon update we keep the regularization hyperparameter fixed to λt ≡ 0 and compute the exact polar update. 
+
+First gradient step. Figure 2 shows the storage capacity scaling of the memory matrix W after a single population Muon or GD step. We fix the vocabulary size at N = 100 ,000 and vary both the power law exponent α and the embedding dimension d. Muon (Figure 2b) indeed achieves a 256 512 1024 2048 4096   
+
+> Dimension d
+> 10 1
+> 10 2
+> Capacity
+> = 1.25
+> = 1.50
+> = 1.75
+> = 2.00
+> = 2.25
+> = 2.50
+> = 2.75
+> = 3.00
+> = 3.25
+> = 3.50
+> Fitted capacity d0.08 + 0.53/
+
+(a) Gradient descent (population). 256 512 1024 2048 4096    
+
+> Dimension d
+> 10 3
+> 10 4
+> Capacity
+> = 1.25
+> = 1.50
+> = 1.75
+> = 2.00
+> = 2.25
+> = 2.50
+> = 2.75
+> = 3.00
+> = 3.25
+> = 3.50
+> Fitted capacity d1.02 + 0.49/
+
+(b) Muon (population). 
+
+Figure 2: Capacity scaling after one population Muon and GD step. We set N = 100 , 000 and vary d, α .Each experiment is repeated 16 times. For each α, we fit the dimension exponents of the mean capacity dCα
+
+(dashed lines), and then find the best fit of exponents Cα in the form of Cα = c1 + c2 
+
+> α
+
+(solid lines). Observe that Muon achieves much higher storage than GD, and the exponents are consistent with Theorems 3 and 5. 
+
+12 10 1 10 2 10 3
+
+> Batch size B
+> 10 1
+> 10 2
+> Capacity
+> B1/
+> d=128
+> d=181
+> d=256
+> d=362
+> d=512
+> d=724
+> d=1024
+> d=1448
+> d=2048
+> d=2896
+> d=4096
+
+(a) Gradient descent (minibatch). 10 1 10 2 10 3 10 4 10 5 10 6 10 7 
+
+> Batch size B
+> 10 1
+> 10 2
+> 10 3
+> 10 4
+> Capacity
+> B1/
+> d=128
+> d=181
+> d=256
+> d=362
+> d=512
+> d=724
+> d=1024
+> d=1448
+> d=2048
+> d=2896
+> d=4096
+
+(b) Muon (minibatch). 
+
+Figure 3: Capacity scaling after one Muon and SGD step on empirical loss. We set N = 100 ,000 , α = 1 .5,and vary the minibatch size B. Each experiment is repeated 16 times. The dashed red line indicates the information-theoretic rate, and the horizontal dashed lines in Figure 3b correspond to the d1+ 12α ceiling; the predicted critical batch sizes are given by their intersections. Observe that Muon offers capacity gain over SGD only at sufficiently large B, and the empirical critical batch sizes match well with our predictions. 
+
+dramatically larger storage capacity than GD (Figure 2a). Moreover, the fitted scaling exponents (bottom right) agree with our theoretical predictions in the population limit: Muon stores d1+ 12α
+
+items (Theorem 3), whereas GD stores only d 12α items (Theorem 5). In Figure 3, we study the empirical loss or minibatch setting to probe the critical batch size. We fix N = 100 ,000 and α = 1 .5, and vary the batch size B. At small batch sizes (up to roughly 
+
+B ≈ 100 ), both Muon and GD are bottlenecked by the information-theoretic rate B 1 
+
+> α
+
+. As the batch size increases, however, the capacity of SGD quickly plateaus, whereas Muon continues to benefit from larger batches. This is consistent with the empirical observation that Muon’s computational gains are accompanied by a much larger critical batch size [58]. 
+
+Multiple gradient steps. In Figure 4, we examine the multi-step capacity scaling of population Muon to test the predictions of Theorem 9 (which assumes the deflation heuristic). We fix N =250 ,000 , vary d and α, and run Muon with λt = 0 on the population cross-entropy objective for 
+
+T steps using a fixed learning rate η ≍ √d. After each step, we measure the storage capacity and fit a power law to extract its scaling exponent in d. As shown in Figures 4a, 4b, 4c, the capacity increases with the number of training steps. Moreover, Figure 4d shows that, after sufficiently many steps, the weight matrix approaches the optimal eΘ( d2) capacity [38]. Figure 4e compares the fitted capacity exponents for all (T, α ) pairs against the predictions of Theorem 9. We find good overall agreement, with larger deviations at smaller α and larger T where non-asymptotic effects are expected to be more pronounced. Overall, these results suggest that the heuristic approximation we introduced in Eq. (7) captures the scaling behavior of the training dynamics reasonably well. In Figure 5, we further compare the multi-step capacity scaling of GD and Muon with N = 100 ,000 
+
+and α = 1 .5. Figure 5a compares their performance in minimizing the population cross-entropy loss. Muon attains much higher capacity than GD in the first few steps. On the other hand, with the increasing learning rate schedule from Theorem 10, GD catches up later in training, and both 13 548 724 955 1260 1663 2194 2896 
+
+Dimension d         
+
+> 10 3
+> 10 4
+> Capacity
+> =1.75: Cap d1.47
+> =2.0: Cap d1.42
+> =2.25: Cap d1.38
+> =2.5: Cap d1.35
+> =2.75: Cap d1.33
+> =3.0: Cap d1.30
+> =3.25: Cap d1.29
+> =3.5: Cap d1.27
+
+(a) Capacity at T = 2 .548 724 955 1260 1663 2194 2896 
+
+Dimension d          
+
+> 10 4
+> Capacity
+> =1.75: Cap d1.63
+> =2.0: Cap d1.56
+> =2.25: Cap d1.51
+> =2.5: Cap d1.47
+> =2.75: Cap d1.44
+> =3.0: Cap d1.41
+> =3.25: Cap d1.39
+> =3.5: Cap d1.37
+
+(b) Capacity at T = 3 .548 724 955 1260 1663 2194 2896 
+
+Dimension d          
+
+> 10 4
+> 10 5
+> Capacity
+> =1.75: Cap d1.81
+> =2.0: Cap d1.72
+> =2.25: Cap d1.65
+> =2.5: Cap d1.60
+> =2.75: Cap d1.56
+> =3.0: Cap d1.52
+> =3.25: Cap d1.49
+> =3.5: Cap d1.47
+
+(c) Capacity at T = 4 .315 415 548 724 955 1260 1663 
+
+Dimension d         
+
+> 10 3
+> 10 4
+> 10 5
+> Final capacity
+> =1.75: Cap d2.12
+> =2.0: Cap d2.09
+> =2.25: Cap d2.06
+> =2.5: Cap d2.03
+> =2.75: Cap d2.03
+> =3.0: Cap d2.01
+> =3.25: Cap d1.99
+> =3.5: Cap d1.99
+
+(d) Capacity near convergence. 1.75 2.00 2.25 2.50 2.75 3.00 3.25 3.50 
+
+(Zipf exponent)   
+
+> 1.2
+> 1.4
+> 1.6
+> 1.8
+> 2.0
+> Capacity exponent  T=1 (empirical)
+> T=2 (empirical)
+> T=3 (empirical)
+> T=4 (empirical)
+> T(empirical)
+> Theory (deflation)
+
+(e) Capacity scaling exponent across T .
+
+Figure 4: Capacity after T Muon steps on the population cross-entropy loss. We set N = 250 ,000 ,
+
+η = 2 √d. Figures 4a, 4b, 4c report the capacity at T = 2 , 3, 4, respectively (see Figure 2b for T = 1 ); Figure 4d presents the capacity at large T : we run Muon for up to 500 steps and early stop when the capacity improvement over 10 steps drops below 0.5% . Figure 4e compares the fitted dimension exponents against predictions of Theorem 9; observe that the exponents agree except at small α and large T .0 5 10 15 20 25 30 
+
+Optimization Steps T
+
+10 1
+
+10 2
+
+10 3
+
+10 4
+
+> Capacity
+
+GD 
+
+Muon 
+
+d = 256 
+
+d = 362 
+
+d = 512 
+
+d = 724 
+
+d = 1024 
+
+(a) Multi-step GD vs. Muon (population). 10 4 10 5 10 6
+
+Total samples B × T
+
+10 3
+
+10 4
+
+> Capacity
+
+d = 256 
+
+d = 512 
+
+d = 1024 
+
+B = 2048 
+
+B = 4096 
+
+B = 8192 
+
+B = 16384 
+
+B = 32768 
+
+B = 65536 
+
+(BT )1/ (b) Capacity of multi-step Muon (minibatch). 
+
+Figure 5: Capacity scaling of multi-step Muon and GD. We set N = 100 , 000 , α = 1 .5. (a) Population update: for GD we implement an increasing learning rate schedule (see Theorem 10) with η1 = 0 .01 √d; for Muon we use a fixed step size η = √d. Observe that the benefit of Muon is most visible in the “early phase” of training (the initial plateau of GD in the first 3 steps is due to small η1 chosen for numerical stability). (b) 
+
+Capacity of minibatch Muon vs. total sample size B × T ; for each batch size B, we run minibatch Muon for T = 20 steps with η = √d. Dashed red line indicates the information-theoretic rate (BT )1/α .
+
+14 methods eventually reach the optimal d2 capacity (we however note that this increasing ηt schedule for GD is numerically unstable, especially when α is large). These results suggest that Muon’s acceleration is most significant early in training, matching the predictions in Theorems 9 and 10. Finally, Figure 5b shows minibatch Muon up to T = 20 steps with batch sizes B ∈ { 211 , . . . , 216 }.For batch sizes below the critical threshold, the capacity stays close to the information-theoretic limit (BT )1/α , i.e., the number of items that can be observed after T steps with batch size B. For larger batch sizes (darker curves), the capacity saturates and sample efficiency worsens. 
+
+6.2 In-context Recall with Transformers 
+
+We next consider a simple associative recall task that can be solved by a two-layer transformer via the induction head mechanism [39]. An induction head is a circuit composed of two attention heads that enables the model to copy a bigram from context, for example by predicting b after observing 
+
+[. . . , a, b, . . . , a]. As shown by Bietti et al. [4], this mechanism can be implemented using a small number of associative memory matrices, making it a natural testbed for understanding how our perspective may extend to richer architectures such as multilayer transformers. 
+
+Data distribution. To study how optimizers interact with heavy-tailed data, we consider a variant of the synthetic model from Bietti et al. [4] in which selected tokens follow power-law distributions. Specifically, we introduce two disjoint vocabularies Q and V, each of size N , together with three power-law distributions: the trigger distribution p(t), supported on Q; the output distribution p(o),supported on V; and the noise distribution p(n), also supported on V but potentially with a different frequency ordering from p(o). Each sequence is generated by first sampling K triggers q1, . . . , q K ∈Q from p(t) without replacement, and K outputs o1, . . . , o K ∈ V from p(o) with replacement. The resulting bigrams (qk, o k) are then inserted into M random positions in a sequence of length T .All remaining positions are filled with noise tokens nj ∈ V sampled from p(n). For instance, when 
+
+K = 1 , M = 2 , and T = 8 , a sequence takes the form 
+
+[n1, q 1, o 1, n 2, n 3, q 1, o 1, n 4].
+
+In this example, the second occurrence of o1 is perfectly predictable from the preceding context, and we train the two-layer transformer using cross-entropy loss only on such predictable output tokens. In all experiments, we set T = 24 and K = M = 2 . For simplicity, we take p(n) to be uniform over V, while p(t) and p(o) follow power laws with exponents αt and αo.
+
+Architecture and optimizers. We use a two-layer transformer with single-head attention, Pre-LayerNorm, and basic RMS normalization, optionally augmented with feed-forward layers using a ReLU MLP. We compare Muon, SGD, and AdamW [33], all trained with a constant step size and weight decay 0.01 . For SGD and Muon, we use momentum 0.9, while for AdamW we set 
+
+(β1, β 2) = (0 .9, 0.99) . In the Muon implementation, we apply AdamW to the embedding and unembedding layers, and use 5 Newton-Schulz iterations for the remaining layers. 
+
+Metrics. To assess the capacity and robustness of these optimizers to different power laws, we evaluate using out-of-distribution (OOD) accuracy on the next-token predictions for the second output tokens, on a batch of out-of-distribution data generated with uniform p(t), p (o). This relates to capacity in the sense that it measures what fraction of the N × N pairs (q, o ) the model is able to recall in-context, even though the triggers and outputs seen during training are power-law 15 25 27 29      
+
+> Model dimension
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Accuracy
+> ID accuracy (step 128)
+> SGD
+> AdamW
+> Muon
+> 252729
+> Model dimension
+> ID accuracy (step 1024)
+> 252729
+> Model dimension
+> OOD accuracy (step 128)
+> 252729
+> Model dimension
+> OOD accuracy (step 1024)
+
+Figure 6: ID (left two) and OOD (right two) accuracy on the in-context recall task as a function of model dimension, for Muon, AdamW, and SGD, with batch size 256 at iterations 128 and 1024 . For each 
+
+(dim , optimizer) pair, the learning rate and batch size are chosen to maximize accuracy. 
+
+distributed. We also evaluate the memory recall accuracy for the value matrix at the second layer, denoted W(2) 
+
+V , which is expected to map input token embeddings ev to output token embeddings uv
+
+for all v ∈ V , as described in Bietti et al. [4]. Concretely, we compute 
+
+R(W(2) 
+
+V ) = 1
+
+|V| 
+
+P
+
+v∈V 1{arg max v′∈V u⊤
+
+v′ W(2) 
+
+V ev = v}.
+
+Results. Figure 6 reports the in-distribution (ID) and OOD accuracy of the three optimizers as the model dimension varies. Muon consistently outperforms SGD and AdamW across dimen-sions, training iterations, and both evaluation metrics. In Figures 7a and 7b, we vary the batch 24 25 26 27 28 29          
+
+> Batch size B
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Test accuracy (OOD)
+> Muon
+> d=16
+> d=32
+> d=64
+> d=128
+> d=256
+> d=512
+> d=1024
+> 242526272829
+> Batch size B
+> AdamW
+> 242526272829
+> Batch size B
+> SGD
+
+(a) OOD accuracy against B (αo = 1 .5). 24 25 26 27 28 29          
+
+> Batch size B
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> R(W2
+> v )
+> Muon
+> 242526272829
+> Batch size B
+> AdamW
+> d=16
+> d=32
+> d=64
+> d=128
+> d=256
+> d=512
+> d=1024
+> 242526272829
+> Batch size B
+> SGD
+
+(b) Memory recall accuracy R(W2
+
+V ) against B.
+
+Figure 7: OOD and memory recall accuracy as a function of batch size B, for Muon, AdamW, and SGD (columns left to right), with different curves per model dimension, at iteration 1024 . For Figure 7b, we use a two-layer transformer with no feed-forward layers to avoid redundancies between the value matrix and the subsequent MLP layer. For each (B, dim ) pair, the learning rate is chosen to maximize accuracy. 
+
+16 24 25 26 27 28 29 210             
+
+> Model dimension
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Test accuracy (OOD)
+> Muon
+> o=0.00
+> o=0.25
+> o=0.50
+> o=0.75
+> o=1.00
+> o=1.25
+> o=1.50
+> o=1.75
+> o=2.00
+> 242526272829210
+> Model dimension
+> AdamW
+> 242526272829210
+> Model dimension
+> SGD
+
+(a) Varying output token distribution αo, with αt = 0 .24 25 26 27 28 29 210             
+
+> Model dimension
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Test accuracy (OOD)
+> Muon
+> t=0.00
+> t=0.25
+> t=0.50
+> t=0.75
+> t=1.00
+> t=1.25
+> t=1.50
+> t=1.75
+> t=2.00
+> 242526272829210
+> Model dimension
+> AdamW
+> 242526272829210
+> Model dimension
+> SGD
+
+(b) Varying trigger distribution exponent αt, with αo = 0 .
+
+Figure 8: OOD accuracy as a function of model dimension for Muon, AdamW, and SGD (columns left to right), with batch size 256 at iteration 512 . Each curve corresponds to a different power-law exponent for (a) the output distribution α0; (b) the trigger distribution αt, with α = 0 being the uniform distribution and larger α concentrating probability mass on fewer tokens (where we expect adaptive optimizers to be beneficial). For each (dim , α ) pair, the learning rate is chosen to maximize OOD accuracy. 
+
+size while fixing the number of training steps, and measure the resulting OOD accuracy and the recall accuracy of the value matrix, respectively. We again observe that Muon has the best perfor-mance; however, Muon attains near-perfect accuracy at a smaller batch size compared to SGD and AdamW, thus saturating more quickly. This discrepancy with our theoretical analysis of the critical batch size is likely due to the different task and optimizer setups, so that the information-theoretic rate is not the main bottleneck. We leave a quantitative investigation of this gap to future work. Finally, Figure 8 demonstrates how model performance changes with the power-law exponents of the output and trigger distributions, αo and αt, while all other distributions are kept uniform. Larger values of α correspond to faster decay in item frequencies and should therefore make learning more difficult. However, our discussion of signal amplification in Section 5 suggests that Muon should be more robust to this effect. Consistent with this intuition, we observe that Muon and AdamW perform similarly when α = 0 , but as α increases, Muon remains remarkably robust whereas AdamW degrades much more sharply. This behavior also qualitatively aligns with the dependence of our one-step analysis: as α grows larger, Muon still retains Ω( d) capacity, but the SGD recovery rate will collapse to zero. 17 7 Conclusion 
+
+In this work, we study the storage capacities of Muon and SGD in a linear associative memory model with random embeddings and power-law item frequencies. We sharply characterize the one-step recovery rate of both optimizers and show that Muon recovers substantially more items than SGD. This gap also implies a much larger critical batch size for Muon, helping explain why its advantage is most visible in large-batch training. We further show that Muon’s gains are concen-trated early in training, whereas over longer horizons its recovery dynamics become comparable to those of SGD. Overall, our analysis opens the door towards establishing scaling laws for spectral optimizers in realistic language modeling settings. Promising directions for future work include studying anisotropic embeddings, momentum [12], and more complex language-modeling tasks such as compositional and multi-hop reasoning [46, 57]. 
+
+# Acknowledgements 
+
+The authors thank Elliot Paquette and Yue M. Lu for discussion and feedback. JK, EN, and JDL acknowledge support of a Google Research Award, NSF IIS 2107304, NSF CCF 2539753, NSF CAREER Award 2540142, and NSF CCF 2019844. 
+
+# References 
+
+[1] Zeyuan Allen-Zhu and Yuanzhi Li. Physics of language models: Part 3.3, knowledge capacity scaling laws. arXiv preprint arXiv:2404.05405 , 2024. [2] Jeremy Bernstein. Newton-Schulz, 2024. URL https://docs.modula.systems/algorithms/ newton-schulz/. Modula documentation. [3] Jeremy Bernstein and Laker Newhouse. Old optimizer, new norm: An anthology. arXiv preprint arXiv:2409.20325 , 2024. [4] Alberto Bietti, Vivien Cabannes, Diane Bouchacourt, Herve Jegou, and Leon Bottou. Birth of a transformer: A memory viewpoint. Advances in Neural Information Processing Systems ,2023. [5] Blake Bordelon, Alexander Atanasov, and Cengiz Pehlevan. A dynamical model of neural scaling laws. arXiv preprint arXiv:2402.01092 , 2024. [6] Vivien Cabannes, Elvis Dohmatob, and Alberto Bietti. Scaling laws for associative memories. In The Twelfth International Conference on Learning Representations , 2024. [7] Andrea Caponnetto and Ernesto De Vito. Optimal rates for the regularized least-squares algorithm. Foundations of Computational mathematics , 7(3):331–368, 2007. [8] Lizhang Chen, Jonathan Li, and Qiang Liu. Muon optimizes under spectral norm constraints. 
+
+arXiv preprint arXiv:2506.15054 , 2025. 18 [9] Damek Davis and Dmitriy Drusvyatskiy. When do spectral gradient updates help in deep learning? arXiv preprint arXiv:2512.04299 , 2025. [10] Nelson Elhage, Tristan Hume, Catherine Olsson, Nicholas Schiefer, Tom Henighan, Shauna Kravec, Zac Hatfield-Dodds, Robert Lasenby, Dawn Drain, Carol Chen, Roger Grosse, Sam McCandlish, Jared Kaplan, Dario Amodei, Martin Wattenberg, and Christopher Olah. Toy models of superposition. Transformer Circuits Thread , 2022. https://transformer-circuits.pub/2022/toy model/index.html. [11] Chen Fan, Mark Schmidt, and Christos Thrampoulidis. Implicit bias of spectral descent and Muon on multiclass separable data. arXiv preprint arXiv:2502.04664 , 2025. [12] Damien Ferbach, Katie Everett, Gauthier Gidel, Elliot Paquette, and Courtney Paquette. Dimension-adapted momentum outscales sgd. arXiv preprint arXiv:2505.16098 , 2025. [13] Mor Geva, Roei Schuster, Jonathan Berant, and Omer Levy. Transformer feed-forward layers are key-value memories. In Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing , pages 5484–5495, 2021. [14] Mor Geva, Jasmijn Bastings, Katja Filippova, and Amir Globerson. Dissecting recall of fac-tual associations in auto-regressive language models. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing , pages 12216–12235, 2023. [15] Antoine Gonon, Andreea-Alexandra Mus ¸at, and Nicolas Boumal. Insights on Muon from simple quadratics. arXiv preprint arXiv:2602.11948 , 2026. [16] Vineet Gupta, Tomer Koren, and Yoram Singer. Shampoo: Preconditioned stochastic tensor optimization. In International Conference on Machine Learning , pages 1842–1850. PMLR, 2018. [17] Nicholas J Higham. Functions of matrices: Theory and computation . SIAM, 2008. [18] John J Hopfield. Neural networks and physical systems with emergent collective computa-tional abilities. Proceedings of the national academy of sciences , 79(8):2554–2558, 1982. [19] Ruichen Jiang, Zakaria Mhammedi, Mehryar Mohri, and Aryan Mokhtari. Adaptive matrix online learning through smoothing with guarantees for nonsmooth nonconvex optimization. 
+
+arXiv preprint arXiv:2602.08232 , 2026. [20] Yibo Jiang, Goutham Rajendran, Pradeep Ravikumar, and Bryon Aragam. Do LLMs dream of elephants (when told not to)? Latent concept association and associative memory in trans-formers. Advances in Neural Information Processing Systems , 37:67712–67757, 2024. [21] Keller Jordan, Yuchen Jin, Vlado Boza, Jiacheng You, Franz Cesista, Laker Newhouse, and Jeremy Bernstein. Muon: An optimizer for hidden layers in neural networks, 2024. URL https://kellerjordan.github.io/posts/muon/. [22] Gyu Yeol Kim and Min-hwan Oh. Convergence of Muon with Newton-Schulz. arXiv preprint arXiv:2601.19156 , 2026. 19 [23] Jihwan Kim, Dogyoon Song, and Chulhee Yun. Scaling laws of SignSGD in linear regression: When does it outperform SGD? In The Fourteenth International Conference on Learning Representations , 2026. [24] Diederik P Kingma and Jimmy Ba. Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980 , 2014. [25] Fuad Kittaneh. On Lipschitz functions of normal operators. Proceedings of the American Mathematical Society , 94(3):416–418, 1985. ISSN 00029939, 10886826. [26] Teuvo Kohonen. Correlation matrix memories. IEEE Transactions on Computers , C-21: 353–359, 1972. URL https://api.semanticscholar.org/CorpusID:21483100. [27] Frederik Kunstner and Francis Bach. Scaling laws for gradient descent and sign descent for linear bigram models under Zipf’s law. arXiv preprint arXiv:2505.19227 , 2025. [28] Frederik Kunstner, Alan Milligan, Robin Yadav, Mark Schmidt, and Alberto Bietti. Heavy-tailed class imbalance and why adam outperforms gradient descent on language models. Ad-vances in Neural Information Processing Systems , 37:30106–30148, 2024. [29] Tim Tsz-Kit Lau, Qi Long, and Weijie Su. Polargrad: A class of matrix-gradient optimizers from a unifying preconditioning perspective. arXiv preprint arXiv:2505.21799 , 2025. [30] Binghui Li, Kaifei Wang, Han Zhong, Pinyan Lu, and Liwei Wang. Muon in associative memory learning: Training dynamics and scaling laws. arXiv preprint arXiv:2602.05725 ,2026. [31] Licong Lin, Jingfeng Wu, Sham M Kakade, Peter L Bartlett, and Jason D Lee. Scaling laws in linear regression: Compute, parameters, and data. arXiv preprint arXiv:2406.08466 , 2024. [32] Jingyuan Liu, Jianlin Su, Xingcheng Yao, Zhejun Jiang, Guokun Lai, Yulun Du, Yidao Qin, Weixin Xu, Enzhe Lu, Junjie Yan, et al. Muon is scalable for LLM training. arXiv preprint arXiv:2502.16982 , 2025. [33] Ilya Loshchilov and Frank Hutter. Decoupled weight decay regularization, 2019. URL https: //arxiv.org/abs/1711.05101. [34] Jianhao Ma, Yu Huang, Yuejie Chi, and Yuxin Chen. Preconditioning benefits of spectral orthogonalization in Muon. arXiv preprint arXiv:2601.13474 , 2026. [35] James Martens and Roger Grosse. Optimizing neural networks with kronecker-factored ap-proximate curvature. In International conference on machine learning , pages 2408–2417. PMLR, 2015. [36] Kevin Meng, David Bau, Alex Andonian, and Yonatan Belinkov. Locating and editing factual associations in GPT. Advances in neural information processing systems , 35:17359–17372, 2022. [37] Eric Michaud, Ziming Liu, Uzay Girit, and Max Tegmark. The quantization model of neural scaling. Advances in Neural Information Processing Systems , 36, 2023. 20 [38] Eshaan Nichani, Jason D Lee, and Alberto Bietti. Understanding factual recall in transformers via associative memories. arXiv preprint arXiv:2412.06538 , 2024. [39] Catherine Olsson, Nelson Elhage, Neel Nanda, Nicholas Joseph, Nova DasSarma, Tom Henighan, Ben Mann, Amanda Askell, Yuntao Bai, Anna Chen, Tom Conerly, Dawn Drain, Deep Ganguli, Zac Hatfield-Dodds, Danny Hernandez, Scott Johnston, Andy Jones, Jackson Kernion, Liane Lovitt, Kamal Ndousse, Dario Amodei, Tom Brown, Jack Clark, Jared Ka-plan, Sam McCandlish, and Chris Olah. In-context learning and induction heads, 2022. URL https://arxiv.org/abs/2209.11895. [40] Elliot Paquette, Courtney Paquette, Lechao Xiao, and Jeffrey Pennington. 4+3 phases of compute-optimal neural scaling laws. Advances in Neural Information Processing Systems ,2024. [41] Steven T. Piantadosi. Zipf’s word frequency law in natural language: A critical review and future directions. Psychonomic Bulletin & Review , 21:1112–1130, 2014. [42] Yunwei Ren, Eshaan Nichani, Denny Wu, and Jason D Lee. Emergence and scaling laws in SGD learning of shallow neural networks. arXiv preprint arXiv:2504.19983 , 2025. [43] Adam Roberts, Colin Raffel, and Noam Shazeer. How much knowledge can you pack into the parameters of a language model? In Proceedings of the 2020 conference on empirical methods in natural language processing (EMNLP) , pages 5418–5426, 2020. [44] Mark Rudelson and Roman Vershynin. The smallest singular value of a random rectangular matrix. arXiv preprint arXiv:0802.3956 , 2009. [45] Mark Rudelson and Roman Vershynin. Non-asymptotic theory of random matrices: extreme singular values. In Proceedings of the International Congress of Mathematicians 2010 (ICM 2010) , pages 1576–1602, 2010. [46] Clayton Sanford, Daniel Hsu, and Matus Telgarsky. Transformers, parallel computation, and logarithmic depth. arXiv preprint arXiv:2402.09268 , 2024. [47] Andrei Semenov, Matteo Pagliardini, and Martin Jaggi. Benchmarking optimizers for large language model pretraining. arXiv preprint arXiv:2509.01440 , 2025. [48] Wei Shen, Ruichuan Huang, Minhui Huang, Cong Shen, and Jiawei Zhang. On the conver-gence analysis of Muon. arXiv preprint arXiv:2505.23737 , 2025. [49] Weijie Su. Isotropic curvature model for understanding deep learning optimization: Is gradi-ent orthogonalization optimal? arXiv preprint arXiv:2511.00674 , 2025. [50] Bhavya Vasudeva, Puneesh Deora, Yize Zhao, Vatsal Sharan, and Christos Thrampoulidis. How Muon’s spectral design benefits generalization: A study on imbalanced data. arXiv preprint arXiv:2510.22980 , 2025. [51] R. Vershynin. High-dimensional probability: An introduction with applications in data sci-ence . Cambridge Series in Statistical and Probabilistic Mathematics. Cambridge University Press, 2nd edition, 2018. 21 [52] Nuri Mert Vural, Alberto Bietti, Mahdi Soltanolkotabi, and Denny Wu. Learning to recall with transformers beyond orthogonal embeddings. In International Conference on Learning Representations , 2026. [53] Nikhil Vyas, Depen Morwani, Rosie Zhao, Mujin Kwun, Itai Shapira, David Brandfonbrener, Lucas Janson, and Sham Kakade. SOAP: Improving and stabilizing Shampoo using Adam. 
+
+arXiv preprint arXiv:2409.11321 , 2024. [54] Martin J. Wainwright. High-dimensional statistics: A non-asymptotic viewpoint . Cambridge Series in Statistical and Probabilistic Mathematics. Cambridge University Press, 2019. [55] Guangyuan Wang, Elliot Paquette, and Atish Agarwala. High-dimensional isotropic scaling dynamics of Muon and SGD. In OPT 2025: Optimization for Machine Learning , 2025. [56] Shuche Wang, Fengzhuo Zhang, Jiaxiang Li, Cunxiao Du, Chao Du, Tianyu Pang, Zhuoran Yang, Mingyi Hong, and Vincent YF Tan. Muon outperforms Adam in tail-end associative memory learning. arXiv preprint arXiv:2509.26030 , 2025. [57] Zixuan Wang, Eshaan Nichani, Alberto Bietti, Alex Damian, Daniel Hsu, Jason D Lee, and Denny Wu. Learning compositional functions with transformers from easy-to-hard data. 
+
+arXiv preprint arXiv:2505.23683 , 2025. [58] Kaiyue Wen, David Hall, Tengyu Ma, and Percy Liang. Fantastic pretraining optimizers and where to find them. arXiv preprint arXiv:2509.02046 , 2025. [59] David J Willshaw, O Peter Buneman, and Hugh Christopher Longuet-Higgins. Non-holographic associative memory. Nature , 222(5197):960–962, 1969. [60] Shuo Xie, Tianhao Wang, Sashank Reddi, Sanjiv Kumar, and Zhiyuan Li. Structured pre-conditioners in adaptive optimization: A unified analysis. arXiv preprint arXiv:2503.10537 ,2025. [61] Robin Yadav, Shuo Xie, Tianhao Wang, and Zhiyuan Li. Provable benefit of sign descent: A minimal model under heavy-tailed class imbalance. arXiv preprint arXiv:2512.00763 , 2025. 22 Contents 
+
+1 Introduction 12 Related Work 43 Setting: Associative Memory 54 One Step of Muon 6
+
+4.1 One-step recovery of Muon and SGD . . . . . . . . . . . . . . . . . . . . . . . . 64.2 Proof sketch of Theorem 3 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 84.3 Optimality of Muon . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+
+5 Multiple Steps of Muon 11 6 Experiments 12 
+
+6.1 Linear Associative Memory . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12 6.2 In-context Recall with Transformers . . . . . . . . . . . . . . . . . . . . . . . . . 15 
+
+7 Conclusion 18 A Proof of Theorem 3 25 
+
+A.1 Fr´ echet derivative computations . . . . . . . . . . . . . . . . . . . . . . . . . . . 25 A.2 Minibatch concentration . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32 A.3 Lower bounding the signal . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 35 A.4 Putting things together . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37 A.5 Proof of Corollary 4 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38 
+
+B Analysis of Interaction Terms 39 
+
+B.1 Overview . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 39 B.2 Setup and norm estimates . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 40 B.3 Block resolvent integral representation . . . . . . . . . . . . . . . . . . . . . . . . 42 B.4 Truncation error bounds . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 45 B.5 Complete perturbative expansion . . . . . . . . . . . . . . . . . . . . . . . . . . . 48 B.6 Positive path correlation and graded recombination . . . . . . . . . . . . . . . . . 52 B.7 Graded tail bounds and hypercontractivity . . . . . . . . . . . . . . . . . . . . . . 55 B.8 Lipschitz concentration for tail logits . . . . . . . . . . . . . . . . . . . . . . . . . 57 23 C Proofs for SGD and Optimality 61 
+
+C.1 Proof of Theorem 5 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 61 C.2 Proof of Proposition 6 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 63 C.3 Proof of Lemma 8 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 64 C.4 Properties of the Cubic Newton–Schulz Iteration . . . . . . . . . . . . . . . . . . 66 
+
+D Proofs for Multiple Steps 67 
+
+D.1 Auxiliary Results . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 67 D.2 Proof of Theorem 9 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 69 D.3 Proof of Theorem 10 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 72 24 A Proof of Theorem 3 
+
+The negative gradient at initialization is 
+
+G0 = −∇ WL(W0; B) = X 
+
+> i∈[N]
+
+qi(ui − ¯u)v⊤
+
+> i
+
+where ¯u = 1
+
+> N
+
+P  
+
+> i∈[N]
+
+ui is a centering term. It will suffice to study the uncentered gradient G and logits γij , given as 
+
+γij := u⊤ 
+
+> j
+
+hλ(G)vi, G := X 
+
+> i∈[N]
+
+qiuiv⊤ 
+
+> i
+
+.
+
+In Sections A.1-A.3, we lower bound the signal terms γii . In Section B, we upper bound the magnitude of the interaction terms γij for i̸ = j. Finally in Section A.4, we conclude the proof of Theorem 3. 
+
+A.1 Fr´ echet derivative computations 
+
+In this subsection, we work with general smooth nondecreasing functions h : R≥0 → R≥0. Let the leave-one-out gradient be G−i := G − qiuiv⊤ 
+
+> i
+
+and define the function 
+
+ϕ(q) = u⊤ 
+
+> i
+
+h(G−i + qu iv⊤ 
+
+> i
+
+)vi, q ≥ 0.
+
+We aim to control the signal γii = ϕ(qi) via Taylor expansion. We will utilize the Daleckii–Krein formula for the Fr´ echet derivative of matrix functions. 
+
+Proposition 11 (Daleckii–Krein formula) . Let M, E be real symmetric matrices and f be a 
+
+(2 d − 1) -times continuously differentiable function. Denote by Df (M)[ E] the Fr´ echet deriva-tive of f w.r.t. M in the E direction. Let M = PΛP ⊤ be the eigendecomposition of M with 
+
+Λ = diag( λ1, · · · , λ d). Let f (1) be the first divided difference of f ,
+
+f (1) (x, y ) = 
+
+(f (x)−f (y) 
+
+> x−y
+
+x̸ = y, f ′(x) x = y, 
+
+and set Tij := f (1) (λi, λ j ) for 1 ≤ i, j ≤ d. Then 
+
+P⊤Df (M)[ E]P = ( P⊤EP ) ◦ T.
+
+Furthermore, let D2f (M)[ E, E] be the second Fr´ echet derivative of f w.r.t. M in the E, E direc-tions. Let f (2) be the second divided difference of f ,
+
+f (2) (x, y, z ) = 
+
+(f (1) (x,z )−f (1) (y,z ) 
+
+> x−y
+
+x̸ = y, ∂xf (1) (x, z ) x = y. 
+
+Then 
+
+(P⊤D2f (M)[ E, E]P)ij =
+
+> d
+
+X
+
+> k=1
+
+f (2) (λi, λ j , λ k)( P⊤EP )ik (P⊤EP )jk .
+
+25 Proof. We only prove the formula when f is a polynomial for illustrative purposes; the full proof is given in Theorem 3.11 and Corollary 3.12 of Higham [17]. By linearity, it suffices to consider the case where f (z) = zn, n ∈ N is a monomial. The Fr´ echet derivative of f in the E direction is 
+
+Df (M)( E) = 
+
+> n
+
+X
+
+> k=1
+
+Mk−1EM n−k (8) and the first divided difference is 
+
+Tij = f (1) (λi, λ j ) = 
+
+> n
+
+X
+
+> k=1
+
+λk−1 
+
+> i
+
+λn−kj .
+
+Therefore we directly check that 
+
+(P⊤Df (M)( E)P)ij =
+
+> n
+
+X
+
+> k=1
+
+e⊤ 
+
+> i
+
+Λk−1P⊤EPΛ n−kej
+
+=
+
+> n
+
+X
+
+> k=1
+
+λk−1 
+
+> i
+
+(P⊤EP )ij λn−kj = ( P⊤EP ◦ T)ij .
+
+For the second derivative, differentiating Eq. (8) again gives 
+
+D2f (M)[ E, E] = 2 X
+
+> 1≤ℓ<k ≤n
+
+Mℓ−1EM k−ℓ−1EM n−k
+
+and 
+
+f (2) (x, y, z ) = f (1) (x, z ) − f (1) (y, z )
+
+x − y = X
+
+> 1≤ℓ<k ≤n
+
+xℓ−1yk−ℓ−1zn−k.
+
+Hence 
+
+(P⊤D2f (M)[ E, E]P)ij = 2 X
+
+> 1≤ℓ<k ≤n
+
+e⊤ 
+
+> i
+
+Λℓ−1P⊤EPΛ k−ℓ−1P⊤EPΛ n−kej
+
+= 2 
+
+> d
+
+X
+
+> m=1
+
+X
+
+> 1≤ℓ<k ≤n
+
+λℓ−1 
+
+> i
+
+λk−ℓ−1 
+
+> m
+
+λn−kj (P⊤EP )im (P⊤EP )mj 
+
+= 2 
+
+> d
+
+X
+
+> m=1
+
+f (2) (λi, λ m, λ j )( P⊤EP )im (P⊤EP )mj 
+
+= 2 
+
+> d
+
+X
+
+> m=1
+
+f (2) (λi, λ j , λ m)( P⊤EP )im (P⊤EP )jm ,
+
+where in the last step we used the symmetry of f (2) and E.The following two lemmas use the Daleckii–Krein formula to compute the first and second deriva-tives of ϕ.26 Lemma 12. Let the SVD of the leave-one-out matrix be G−i = ASB ⊤ with singular values 
+
+S = diag( s1, . . . , s d) in decreasing order and denote a = A⊤ui, b = B⊤vi. Then it holds that 
+
+ϕ′(q) ≥ 0 for all q and 
+
+ϕ′(0) = 14
+
+X 
+
+> k̸=ℓ
+
+h(sk) + h(sℓ)
+
+sk + sℓ
+
+(akbℓ − aℓbk)2 + h(sk) − h(sℓ)
+
+sk − sℓ
+
+(akbℓ + aℓbk)2
+
+
+
++ X
+
+> k
+
+h′(sk)a2
+
+> k
+
+b2
+
+> k
+
+.
+
+Note that if sk = sℓ, the ratio h(sk )−h(sℓ)  
+
+> sk−sℓ
+
+is to be interpreted as the first divided difference h(1) (sk, s k) = 
+
+h′(sk); if sk = sℓ = 0 , h(sk )+ h(sℓ)  
+
+> sk+sℓ
+
+is to be interpreted as the continuous limit h′(0) .
+
+Proof. For notational convenience, we define u = ui, v = vi and 
+
+G0 = G−i, Gq = G0 + quv ⊤,
+
+so that ϕ(q) = u⊤h(Gq)v. Let the auxiliary function ξ(z) = h(√z)/√z for z > 0; for our stabi-lized version of Muon, ξ(z) = 1 /√z + λ2. We also define the SVD of Gq and related quantities 
+
+Gq = AqSqB⊤ 
+
+> q
+
+,
+
+Yq = h(Gq) = Aqh(Sq)B⊤ 
+
+> q
+
+,
+
+Tq = G⊤ 
+
+> q
+
+Gq,
+
+Rq = ξ(Tq) = Bqh(Sq)S−1 
+
+> q
+
+B⊤ 
+
+> q
+
+.
+
+Finally, we redefine a = A⊤ 
+
+> q
+
+u, b = B⊤ 
+
+> q
+
+v, here dependent on q.First, observe that Yq = GqRq. Using dot notation, differentiating w.r.t. the variable q yields 
+
+˙Gq = uv ⊤ and 
+
+˙Yq = ˙GqRq + Gq ˙Rq = uv ⊤Rq + Gq ˙Rq.
+
+Therefore 
+
+ϕ′(q) = u⊤ ˙Yqv
+
+= ∥u∥22 · v⊤Rqv + u⊤Gq ˙Rqv
+
+= ∥a∥22 · b⊤ξ(S2 
+
+> q
+
+)b + a⊤SqB⊤ 
+
+> q
+
+˙RqBqb. (9) Next, we have ˙Rq = Dξ (Tq)[ ˙Tq] where 
+
+˙Tq = ˙G⊤ 
+
+> q
+
+Gq + G⊤ 
+
+> q
+
+˙Gq = vu ⊤Gq + G⊤ 
+
+> q
+
+uv ⊤
+
+and so 
+
+B⊤ 
+
+> q
+
+˙TqBq = Sqab ⊤ + ba ⊤Sq.
+
+27 Since Tq is diagonalized as Tq = BqS2 
+
+> q
+
+B⊤ 
+
+> q
+
+, we compute via the Daleckii–Krein formula (Propo-sition 11), 
+
+(B⊤ 
+
+> q
+
+˙RqBq)kℓ = ( B⊤ 
+
+> q
+
+˙TqBq)kℓ · ξ(1) (s2
+
+> k
+
+, s 2 
+
+> ℓ
+
+) = ( skakbℓ + sℓaℓbk)ξ(1) (s2
+
+> k
+
+, s 2 
+
+> ℓ
+
+)
+
+where Sq = diag( s1, · · · , s d). We may assume all sk are distinct; the general case follows from continuity. Plugging into (9), we obtain: 
+
+ϕ′(q)= ∥a∥22
+
+X
+
+> ℓ
+
+b2 
+
+> ℓ
+
+ξ(s2 
+
+> ℓ
+
+) + X
+
+> k,ℓ
+
+aksk(B⊤ 
+
+> q
+
+˙RqBq)kℓ bℓ
+
+= ∥a∥22
+
+X
+
+> ℓ
+
+b2 
+
+> ℓ
+
+ξ(s2 
+
+> ℓ
+
+) + X
+
+> k,ℓ
+
+akskbℓ(skakbℓ + sℓaℓbk)ξ(1) (s2
+
+> k
+
+, s 2 
+
+> ℓ
+
+)= ∥a∥22
+
+X
+
+> ℓ
+
+b2 
+
+> ℓ
+
+ξ(s2 
+
+> ℓ
+
+) + 2 X
+
+> k
+
+a2
+
+> k
+
+b2
+
+> k
+
+s2
+
+> k
+
+ξ′(s2
+
+> k
+
+) + X 
+
+> k̸=ℓ
+
+akskbℓ(skakbℓ + sℓaℓbk)ξ(s2
+
+> k
+
+) − ξ(s2 
+
+> ℓ
+
+)
+
+s2 
+
+> k
+
+− s2
+
+> ℓ
+
+= X
+
+> k,ℓ
+
+a2
+
+> k
+
+b2
+
+> ℓ
+
+h(sℓ)
+
+sℓ
+
++ X 
+
+> k̸=ℓ
+
+akskbℓ(skakbℓ + sℓaℓbk)h(sk)sℓ − h(sℓ)sk
+
+sksℓ(s2 
+
+> k
+
+− s2 
+
+> ℓ
+
+)+ X
+
+> k
+
+a2
+
+> k
+
+b2
+
+> k
+
+s2
+
+> k
+
+h′(sk)
+
+s2
+
+> k
+
+− h(sk)
+
+s3
+
+> k
+
+
+
+= X 
+
+> k̸=ℓ
+
+a2
+
+> k
+
+b2
+
+> ℓ
+
+h(sℓ)
+
+sℓ
+
++ h(sk)sksℓ − h(sℓ)s2
+
+> k
+
+sℓ(s2 
+
+> k
+
+− s2 
+
+> ℓ
+
+)
+
+
+
++ akaℓbkbℓ
+
+h(sk)sℓ − h(sℓ)sk
+
+s2 
+
+> k
+
+− s2
+
+> ℓ
+
+
+
++ X
+
+> k
+
+a2
+
+> k
+
+b2
+
+> k
+
+h′(sk)= X 
+
+> k̸=ℓ
+
+a2
+
+> k
+
+b2
+
+> ℓ
+
+h(sk)sk − h(sℓ)sℓ
+
+s2 
+
+> k
+
+− s2
+
+> ℓ
+
+
+
++ aℓbkbℓ
+
+h(sk)sℓ − h(sℓ)sk
+
+s2 
+
+> k
+
+− s2
+
+> ℓ
+
+
+
++ X
+
+> k
+
+a2
+
+> k
+
+b2
+
+> k
+
+h′(sk)= 12
+
+X 
+
+> k̸=ℓ
+
+(a2
+
+> k
+
+b2 
+
+> ℓ
+
++ a2 
+
+> ℓ
+
+b2
+
+> k
+
+)
+
+h(sk) − h(sℓ)
+
+sk − sℓ
+
++ h(sk) + h(sℓ)
+
+sk + sℓ
+
+
+
++ 12
+
+X 
+
+> k̸=ℓ
+
+(akaℓbkbℓ + aℓakbℓbk)
+
+h(sk) − h(sℓ)
+
+sk − sℓ
+
+− h(sk) + h(sℓ)
+
+sk + sℓ
+
+
+
++ X
+
+> k
+
+a2
+
+> k
+
+b2
+
+> k
+
+h′(sk)= 14
+
+X 
+
+> k̸=ℓ
+
+(akbℓ − aℓbk)2 h(sk) + h(sℓ)
+
+sk + sℓ
+
++ ( akbℓ + aℓbk)2 h(sk) − h(sℓ)
+
+sk − sℓ
+
++ X
+
+> k
+
+a2
+
+> k
+
+b2
+
+> k
+
+h′(sk).
+
+We conclude that since h is increasing, ϕ′(q) ≥ 0, and moreover taking q = 0 gives the desired formula for ϕ′(0) .28 Lemma 13. For h(z) = hλ(z) = z√z2+λ2 , it holds that sup q∈[0 ,1] |ϕ′′ (q)| ≲ λ−2 with probability 
+
+1 − e−Ω( d).Proof of Lemma 13. Recall the definitions of Gq, Aq, Sq, Bq, Yq, Tq, Rq, a, b, ξ from the proof of Lemma 12. Differentiating Yq twice with respect to q, we obtain 
+
+¨Yq = 2 ˙Gq ˙Rq + Gq ¨Rq
+
+= 2 ub ⊤B⊤ 
+
+> q
+
+˙Rq + AqSqB⊤ 
+
+> q
+
+¨Rq (10) since ˙Gq = uv ⊤ and ¨Gq = 0 . The derivatives of Rq are given as 
+
+˙Rq = Dξ (Tq)[ ˙Tq], (11) 
+
+¨Rq = Dξ (Tq)[ ¨Tq] + D2ξ(Tq)[ ˙Tq, ˙Tq]. (12) For Eq. (11), we showed in the proof of Lemma 12 that 
+
+(B⊤ 
+
+> q
+
+˙TqBq)ij = siaibj + sj aj bi,
+
+(B⊤ 
+
+> q
+
+˙RqBq)ij = ( siaibj + sj aj bi) · ξ(1) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+).
+
+For the first term in Eq. (12), differentiating Tq = G⊤ 
+
+> q
+
+Gq twice gives 
+
+¨Tq = ¨G⊤ 
+
+> q
+
+Gq + 2 ˙G⊤ 
+
+> q
+
+˙Gq + G⊤ 
+
+> q
+
+¨Gq = 2 ˙G⊤ 
+
+> q
+
+˙Gq = 2 ∥u∥22vv ⊤
+
+and so B⊤ 
+
+> q
+
+¨TqBq = 2 ∥a∥22bb ⊤. Therefore by the Daleckii–Krein formula, 
+
+
+
+B⊤ 
+
+> q
+
+Dξ (Tq)[ ¨Tq]Bq
+
+
+
+> ij
+
+= ( B⊤ 
+
+> q
+
+¨TqBq)ij · ξ(1) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+) = 2 ∥a∥22bibj · ξ(1) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+).
+
+For the second term in Eq. (12), again by the Daleckii–Krein formula and using the explicit form of B⊤ 
+
+> q
+
+˙TqBq,
+
+
+
+B⊤ 
+
+> q
+
+D2ξ(Tq)[ ˙Tq, ˙Tq]Bq
+
+
+
+> ij
+
+= 2 
+
+> d
+
+X
+
+> k=1
+
+ξ(2) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+, s 2
+
+> k
+
+)( B⊤ 
+
+> q
+
+˙TqBq)ik (B⊤ 
+
+> q
+
+˙TqBq)jk 
+
+= 2 
+
+> d
+
+X
+
+> k=1
+
+ξ(2) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+, s 2
+
+> k
+
+)( siaibk + skakbi)( sj aj bk + skakbj ).
+
+Plugging into Eq. (12) and Eq. (10) yields 
+
+ϕ′′ (q) = 6 ∥a∥22
+
+> d
+
+X
+
+> j,k =1
+
+skakbkb2 
+
+> j
+
+· ξ(1) (s2
+
+> k
+
+, s 2 
+
+> j
+
+)+ 2 
+
+> d
+
+X
+
+> j,k,ℓ =1
+
+skakbj (skakbℓ + sℓaℓbk)( sj aj bℓ + sℓaℓbj ) · ξ(2) (s2
+
+> k
+
+, s 2 
+
+> j
+
+, s 2 
+
+> ℓ
+
+).
+
+29 We proceed to bound ∥ ¨Yq∥op . We will use that 
+
+> d
+
+X
+
+> k=1
+
+a2 
+
+> k
+
+= ∥a∥22 = ∥u∥22,
+
+> d
+
+X
+
+> k=1
+
+b2 
+
+> k
+
+= ∥b∥22 = ∥v∥22,
+
+> d
+
+X
+
+> k=1
+
+|akbk| ≤ ∥ a∥2∥b∥2
+
+are all Θ(1) uniformly over q with probability 1 − e−Ω( d).Right-multiplying Eq. (10) by Bq, we have 
+
+∥ ¨Yq∥op = ∥ ¨YqBq∥op 
+
+≤ 2∥ub ⊤B⊤ 
+
+> q
+
+˙RqBq∥op + ∥AqSqB⊤ 
+
+> q
+
+¨RqBq∥op 
+
+≲ ∥B⊤ 
+
+> q
+
+˙RqBq∥op + ∥SqB⊤ 
+
+> q
+
+¨RqBq∥op 
+
+≤ ∥ B⊤ 
+
+> q
+
+˙RqBq∥F + ∥SqB⊤ 
+
+> q
+
+¨RqBq∥F.
+
+For the first term, 
+
+∥B⊤ 
+
+> q
+
+˙RqBq∥2F ≤ X
+
+> i,j
+
+(siaibj + sj aj bi)2 · ξ(1) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+)2
+
+≤ 4
+
+
+
+sup 
+
+> i,j
+
+si ξ(1) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+)
+
+2 X
+
+> i,j
+
+a2 
+
+> i
+
+b2
+
+> j
+
+≲
+
+
+
+sup 
+
+> i,j
+
+si ξ(1) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+)
+
+2
+
+.
+
+For the second term, decompose ¨Rq as in Eq. (12). First, 
+
+si
+
+
+
+B⊤ 
+
+> q
+
+Dξ (Tq)[ ¨Tq]Bq
+
+
+
+> ij
+
+≲
+
+
+
+sup 
+
+> i,j
+
+si ξ(1) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+)
+
+
+
+|bibj |.
+
+Next, we have from the triangle inequality, 
+
+si
+
+
+
+B⊤ 
+
+> q
+
+D2ξ(Tq)[ ˙Tq, ˙Tq]Bq
+
+
+
+> ij
+
+≲
+
+> d
+
+X
+
+> k=1
+
+ξ(2) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+, s 2
+
+> k
+
+) · | si(siaibk + skakbi)( sj aj bk + skakbj )|≤
+
+
+
+sup 
+
+> i,j,k
+
+s2 
+
+> i
+
+sj ξ(2) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+, s 2
+
+> k
+
+)
+
+
+
+|aiaj |
+
+> d
+
+X
+
+> k=1
+
+b2
+
+> k
+
++
+
+
+
+sup 
+
+> i,j,k
+
+s2 
+
+> i
+
+sk ξ(2) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+, s 2
+
+> k
+
+)
+
+
+
+|aibj |
+
+> d
+
+X
+
+> k=1
+
+|akbk|
+
++
+
+
+
+sup 
+
+> i,j,k
+
+sisj sk ξ(2) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+, s 2
+
+> k
+
+)
+
+
+
+|aj bi|
+
+> d
+
+X
+
+> k=1
+
+|akbk|
+
++
+
+
+
+sup 
+
+> i,j,k
+
+sis2 
+
+> k
+
+ξ(2) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+, s 2
+
+> k
+
+)
+
+
+
+|bibj |
+
+> d
+
+X
+
+> k=1
+
+a2
+
+> k
+
+30 ≲
+
+
+
+sup 
+
+> i,j,k
+
+si(si + sk)( sj + sk) ξ(2) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+, s 2
+
+> k
+
+)
+
+
+
+(|aiaj | + |aibj | + |biaj | + |bibj |).
+
+Squaring and summing over i, j gives 
+
+∥SqB⊤ 
+
+> q
+
+¨RqBq∥F ≲ sup 
+
+> i,j
+
+si ξ(1) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+) + sup 
+
+> i,j,k
+
+si(si + sk)( sj + sk) ξ(2) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+, s 2
+
+> k
+
+) .
+
+Altogether, we have 
+
+∥ ¨Yq∥op ≲ sup 
+
+> i,j
+
+si ξ(1) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+) + sup 
+
+> i,j,k
+
+si(si + sk)( sj + sk) ξ(2) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+, s 2
+
+> k
+
+) .
+
+Finally, we evaluate this bound with our choice of hλ(z) = z√z2+λ2 , which corresponds to ξ(z) =  
+
+> 1√z+λ2
+
+. Computing the first divided difference directly gives 
+
+ξ(1) (x, y ) = ξ(x) − ξ(y)
+
+x − y = − 1
+
+√x + λ2py + λ2(√x + λ2 + py + λ2),
+
+which is valid when x = y by continuity, and plugging in s2 
+
+> i
+
+, s 2 
+
+> j
+
+yields 
+
+siξ(1) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+) = 1
+
+ps2 
+
+> i
+
++ λ2√s2 
+
+> j
+
++ λ2 × si
+
+ps2 
+
+> i
+
++ λ2 + √s2 
+
+> j
+
++ λ2 ≤ λ−2
+
+for all i, j . Also, for the second divided difference, we obtain 
+
+ξ(2) (x, y, z )= ξ1(x, z ) − ξ(1) (y, z )
+
+x − y
+
+=
+
+√x + λ2 + py + λ2 + √z + λ2
+
+(√x + λ2 + py + λ2)( √x + λ2 + √z + λ2)( py + λ2 + √z + λ2)
+
+× 1
+
+√x + λ2py + λ2√z + λ2 .
+
+It follows that for all i, j, k ,
+
+si(si + sk)( sj + sk) ξ(2) (s2 
+
+> i
+
+, s 2 
+
+> j
+
+, s 2
+
+> k
+
+)
+
+≤ si
+
+ps2 
+
+> i
+
++ λ2
+
+si + sk
+
+ps2 
+
+> i
+
++ λ2 + √s2 
+
+> k
+
++ λ2
+
+sj + sk
+
+√s2 
+
+> j
+
++ λ2 + √s2 
+
+> k
+
++ λ2
+
+×
+
+ps2 
+
+> i
+
++ λ2 + √s2 
+
+> j
+
++ λ2 + √s2 
+
+> k
+
++ λ2
+
+√s2 
+
+> j
+
++ λ2√s2 
+
+> k
+
++ λ2(ps2 
+
+> i
+
++ λ2 + √s2 
+
+> j
+
++ λ2)
+
+≤ 1
+
+√s2 
+
+> j
+
++ λ2√s2 
+
+> k
+
++ λ2 + 1
+
+√s2 
+
+> j
+
++ λ2(ps2 
+
+> i
+
++ λ2 + √s2 
+
+> j
+
++ λ2)
+
+≤ 32λ−2.
+
+Therefore for this choice of ξ, we conclude that ∥ ¨Yq∥op ≲ λ−2 and thus 
+
+|ϕ′′ (q)| = |u⊤ ¨Yqv| ≲ λ−2
+
+for all q ∈ [0 , 1] .31 A.2 Minibatch concentration 
+
+Here, we collect concentration inequalities for the minibatch frequencies q which will be needed in later sections. 
+
+Lemma 14. Define the empirical covariance matrix 
+
+M := X 
+
+> j∈[N]
+
+q2 
+
+> j
+
+uj u⊤ 
+
+> j
+
+.
+
+It holds with probability 1 − O(d−M ) over sampling of q that 
+
+λd/ 2(M) ≲
+
+(
+
+d−2α(log d)2 B ≳ dα,
+
+0 B ≲ dα.
+
+Hereafter, we use M to denote any sufficiently large constant exponent that allows for union bound-ing over (say) N 2 = poly( d) items, and often omit the qualifying high probability statements. 
+
+Proof. Let N be the number of examples satisfying i ≥ d 
+
+> 4
+
+in a minibatch of size B. N is distributed as Bin( B, ρ ) where ρ = P 
+
+> i≥d/ 4
+
+pi ≍ d1−α. From the multiplicative Chernoff bound, it holds that for all ϵ > 0,
+
+Pr ( N ≥ (1 + ϵ)Bρ ) ≤ exp 
+
+
+
+−ϵ2Bρ 
+
+2 + ϵ
+
+
+
+.
+
+If B ≲ dα so that Bρ ≤ d 
+
+> 8
+
+, by taking ϵ = d 
+
+> 4Bρ
+
+− 1 we have 
+
+Pr 
+
+
+
+N ≥ d
+
+4
+
+
+
+≤ exp 
+
+
+
+− (d − 4Bρ )2
+
+4( d + 4 Bρ )
+
+
+
+≤ e−Ω( d).
+
+Hence with high probability, N < d 
+
+> 4
+
+so that the total number of nonzero qi is less than d 
+
+> 2
+
+. It follows that rank( M) < d 
+
+> 2
+
+and so λd/ 2(M) = 0 .Now suppose B ≳ dα. Choose a positive integer K ≍ 1 
+
+> d
+
+B1/α and define the sets Ik := {(k − 1) d + 
+
+> d
+> 2
+
+, · · · , kd + d 
+
+> 2
+
+− 1} for k ≥ 1. Consider the decomposition 
+
+M =
+
+> d/ 2−1
+
+X
+
+> i=1
+
+q2 
+
+> i
+
+uiu⊤
+
+> i
+
+| {z }
+
+> =: M0
+
++ X
+
+> k∈[K]
+
+X
+
+> i∈Ik
+
+q2 
+
+> i
+
+uiu⊤
+
+> i
+
+| {z }
+
+> =: Mk
+
++
+
+> N
+
+X
+
+> i=( K+1 /2) d
+
+q2 
+
+> i
+
+uiu⊤
+
+> i
+
+| {z }
+
+> =: Mtail
+
+.
+
+Since rank( M0) < d 
+
+> 2
+
+, we have λd/ 2(M0) = 0 . By Weyl’s inequality, 
+
+λd/ 2(M) ≤ λd/ 2(M0) + X
+
+> k∈[K]
+
+Mk + Mtail 
+
+> op
+
+≤ X
+
+> k∈[K]
+
+∥Mk∥op + ∥Mtail ∥op . (13) 32 We first control the bulk sum. Since |Ik| ≤ d, it follows from Vershynin [51, Theorem 4.6.1] that 
+
+X
+
+> i∈Ik
+
+uiu⊤
+
+> i
+> op
+
+= O(1) =⇒ ∥Mk∥op ≲ max 
+
+> i∈Ik
+
+q2
+
+> i
+
+with probability 1 − e−Ω( d). To bound this quantity, set ¯pk := max i∈Ik pj ≍ (k − 12 )−αd−α and note that pi ≥ 3−α ¯pk for all i ∈ Ik. By the Chernoff bound for Bq i ∼ Bin( B, p i),
+
+Pr ( qi ≥ (1 + ϵ)pi) ≤ exp 
+
+
+
+−Bp iϵ2
+
+2 + ϵ
+
+
+
+(14) and so union bounding over i ∈ Ik, we have 
+
+Pr 
+
+
+
+max 
+
+> i∈Ik
+
+qi ≥ (1 + ϵ)¯ pk
+
+
+
+≤ d exp 
+
+
+
+−3−αB ¯pkϵ2
+
+2 + ϵ
+
+
+
+≲ 1
+
+dM
+
+by taking ϵ ≳ log dB ¯pk ∨
+
+qlog dB ¯pk . Hence for all k ∈ [K] we have 
+
+max 
+
+> i∈Ik
+
+qi ≲ (1 + ϵ)¯ pk ≲ ¯pk + log dB .
+
+For the tail sum, we exploit the sparsity of the frequencies qi. Define the set of indices 
+
+Itail := 
+
+
+
+i :
+
+
+
+K + 12
+
+
+
+d ≤ i ≤ N, q i > 0
+
+
+
+.Ntail := |Itail | is distributed as Bin( B, ρ tail ) where ρtail = P 
+
+> i≥(K+1 /2) d
+
+pi ≍ B(1 −α)/α , so that 
+
+Ntail ≍ Bρ tail ≍ B1/α with probability 1 − e−Ω( d). Moreover for each i ∈ Itail , it holds that 
+
+pi ≲ (Kd )−α ≍ 1/B and so 
+
+Pr ( Bq i ≥ r) ≤
+
+Br
+
+
+
+pri ≤
+
+eBp i
+
+r
+
+r
+
+= d−ω(1) 
+
+by taking r ≍ log d, hence qi ≲ log dB . It follows from Vershynin [51, Remark 4.7.3] that 
+
+∥Mtail ∥op ≤ max 
+
+> i∈Itail
+
+q2 
+
+> i
+
+· X
+
+> i∈Itail
+
+uiu⊤
+
+> i
+> op
+
+≲
+
+log dB
+
+2 Ntail 
+
+d 1 + 
+
+r dNtail 
+
++ dNtail 
+
+!
+
+≲
+
+log dB
+
+2 B1/α 
+
+d
+
+since B ≳ dα. We conclude from Eq. (13): 
+
+λd/ 2(M) ≲ X
+
+> k∈[K]
+
+
+
+¯pk + log dB
+
+2
+
++
+
+log dB
+
+2 B1/α 
+
+d ≲ d−2α(log d)2,
+
+where we have used that P 
+
+> k≥1
+
+¯p2 
+
+> k
+
+≍ P
+
+> k≥1
+
+(kd )−2α ≍ d−2α.33 Lemma 15 (concentration of tail frequencies) . Let B be a randomly sampled minibatch with em-pirical frequencies q. Let r be any integer and denote q>r = ( qr+1 , · · · , q N ). Then it holds with probability 1 − O(d−M ) that 
+
+∥q>r ∥∞ ≲ r−α + log dB
+
+and 
+
+∥q>r ∥2 ≲
+
+
+
+r1/2−α log d B ≳ rα,
+
+rr1−α
+
+B log d B ≲ rα.
+
+Proof. We first control ∥q>r ∥∞. Let the index i > r so that pi ≲ r−α. Recalling the Chernoff bound Eq. (14) for Bq i ∼ Bin( B, p i), we may choose 
+
+ϵ ≳ 1 + log dBp i
+
+such that 
+
+Pr ( qi ≥ (1 + ϵ)pi) ≤ exp 
+
+
+
+−Bp iϵ2
+
+2 + ϵ
+
+
+
+≤ exp 
+
+
+
+−Bp iϵ
+
+3
+
+
+
+≤ 1
+
+dM ,
+
+which implies 
+
+qi ≲
+
+
+
+1 + log dBp i
+
+
+
+pi ≲ r−α + log dB
+
+for all r < i ≤ N .For ∥q>r ∥2, we repeat the analysis from the proof of Lemma 14. If B ≳ rα, thresholding at B1/α 
+
+gives qi ≲ pi + log dB for items with r < i ≤ B1/α , and qi ≲ log dB for the Ntail ≍ B1/α items with 
+
+i > B 1/α . Combining, we obtain 
+
+∥q>r ∥22 ≲
+
+> B1/α
+
+X
+
+> i=r+1
+
+
+
+pi + log dB
+
+2
+
++ Ntail 
+
+log dB
+
+2
+
+≲ r1−2α + B1/α −2(log d)2
+
+≲ r1−2α(log d)2.
+
+Finally, if B ≲ rα, we may treat all items i > r as in the tail, so that Ntail ∼ Bin( B, ρ tail ) with 
+
+ρtail = P 
+
+> i>r
+
+pi ≍ r1−α and Ntail ≍ Bρ tail ≍ Br 1−α. Hence 
+
+∥q>r ∥22 ≲ Ntail 
+
+log dB
+
+2
+
+≲ r1−α
+
+B (log d)2,
+
+as was to be shown. 34 As a corollary, we prove the following lemma which will be used in Section B. 
+
+Lemma 16. Let r ≍ d  
+
+> (log d)2
+
+. There exists 
+
+λ ≍ max 
+
+(log d)2α+2 
+
+dα , (log d)2
+
+B
+
+
+
+(15) 
+
+such that the event 
+
+Eq : max 
+
+
+
+∥q>r ∥∞, ∥q>r ∥2
+
+√d
+
+
+
+≤ λ
+
+r rd (16) 
+
+satisfies Pr( Eq) ≥ 1 − O(d−M ).Proof. By Lemma 15, we have that when B ≳ rα,
+
+max 
+
+
+
+∥q>r ∥∞, ∥q>r ∥2
+
+√d
+
+
+
+≲ r−α + log dB +
+
+r rd · r−α log d ≲ d−α(log d)2α+1 
+
+and when B ≲ rα,
+
+max 
+
+
+
+∥q>r ∥∞, ∥q>r ∥2
+
+√d
+
+
+
+≲ r−α + log dB +
+
+rr1−α
+
+Bd log d ≲ log dB .
+
+Therefore by choosing λ as in Eq. (15) with an appropriate proportionality constant, we can ensure that Eq occurs with probability 1 − O(d−M ).
+
+A.3 Lower bounding the signal 
+
+We now consider the stabilized sign map hλ(z) = z√z2+λ2 . Recall from Lemma 12 that 
+
+ϕ′(0) = 14
+
+X 
+
+> k̸=ℓ
+
+hλ(sk) + hλ(sℓ)
+
+sk + sℓ
+
+(akbℓ − aℓbk)2 + hλ(sk) − hλ(sℓ)
+
+sk − sℓ
+
+(akbℓ + aℓbk)2
+
+
+
++ X
+
+> k
+
+h′
+
+> λ
+
+(sk)a2
+
+> k
+
+b2
+
+> k
+
+.
+
+Since hλ(sk )−hλ(sℓ)  
+
+> sk−sℓ
+
+is always positive by the mean value theorem and hλ(z)/z is decreasing, we may lower bound ϕ′(0) as 
+
+ϕ′(0) ≥ 14
+
+X 
+
+> k̸=ℓ
+
+hλ(sk) + hλ(sℓ)
+
+sk + sℓ
+
+(akbℓ − aℓbk)2
+
+≥ 12
+
+X
+
+> d/ 2≤k<ℓ
+
+hλ(sk) + hλ(sℓ)
+
+sk + sℓ
+
+(akbℓ − aℓbk)2
+
+≥ hλ(sd/ 2)2sd/ 2
+
+X
+
+> d/ 2≤k<ℓ
+
+(akbℓ − aℓbk)2. (17) 35 Note that a, b are Gaussian conditioned on G−i. Let a′, b ′ be the vectors consisting of the last d
+
+> 2
+
+coordinates of a, b , respectively. It holds that a′, b ′ ∼ N (0 , 1 
+
+> d
+
+Id/ 2) and 
+
+X
+
+> d/ 2≤k<ℓ
+
+(akbℓ − aℓbk)2 = ∥a′∥2∥b′∥2 − ⟨ a′, b ′⟩2. (18) Standard concentration bounds give ∥a′∥2, ∥b′∥2 = Θ(1) while ⟨a′, b ′⟩2 ≲ log dd with probability 
+
+1 − O(d−M ), hence Eq. (18) is lower bounded by a constant. It thus suffices to control the ‘bulk’ singular value sd/ 2. By the lemma below, this can be reduced to controlling the bulk eigenvalues of the weighted covariance matrix 
+
+M := X 
+
+> j∈[N]
+
+q2 
+
+> j
+
+uj u⊤ 
+
+> j
+
+. (19) 
+
+Lemma 17. It holds that sk(G−i) ≲ λk(M)1/2 for all i, k with probability 1 − e−Ω( d).Proof. Let M−i := P  
+
+> j̸=i
+
+q2 
+
+> j
+
+uj u⊤ 
+
+> j
+
+. The kth column of G−i is P  
+
+> j̸=i
+
+qj uj vjk , which for each k is an i.i.d. sample from N (0 , 1 
+
+> d
+
+M−i) conditioned on u1, · · · , u N . Therefore 
+
+G−id
+
+= 1
+
+√dM1/2 
+
+> −i
+
+Z, where Zkℓ ∼ N (0 , 1) i.i.d. It holds that [45, Eq. 2.3] 
+
+Pr 
+
+
+
+∥Z∥op ≤ 3√d
+
+
+
+≥ 1 − 2e−d/ 2
+
+and thus 
+
+sk(G−i) ≤ 1
+
+√dsk
+
+
+
+M1/2
+
+> −i
+
+
+
+∥Z∥op ≲ λk(M−i)1/2 ≤ λk(M)1/2
+
+since λk(·) respects Loewner order. Then by Lemma 14, we have λd/ 2(M) ≲ d−2α(log d)2 and so sd/ 2(G−i) ≲ d−α log d ≲ λ. We conclude from Eq. (17), 
+
+ϕ′(0) ≥ hλ(sd/ 2)2sd/ 2
+
+X
+
+> k<l ≤d/ 2
+
+(akbl + albk)2 ≳ 1
+
+√s2 
+
+> d/ 2
+
++ λ2 ≳ 1
+
+λ.
+
+We have also shown that sup q∈[0 ,1] |ϕ′′ (q)| ≲ λ−2 in Lemma 13. In addition, since ui, v i are independent of G−i and ∥hλ(G−i)∥op ≤ 1 from Proposition 26, a standard concentration bound for subexponential sums [51, Lemma 2.8.6 and Corollary 2.9.2] gives that with probability 1 −
+
+O(d−M ),
+
+|ϕ(0) | = u⊤ 
+
+> i
+
+hλ(G−i)vi ≲
+
+rlog dd .
+
+36 Since ϕ is increasing by Lemma 12, we can therefore Taylor expand ϕ to obtain 
+
+ϕ(q) ≥ ϕ(t) ≥ ϕ(0) + tϕ ′(0) − 12t2 sup 
+
+> 0≤s≤t
+
+|ϕ′′ (s)| ≳ ϕ(0) + tλ − t2
+
+λ2 .
+
+Finally, taking the supremum over t ∈ [0 , q ] gives 
+
+γii = ϕ(qi) ≳ min 
+
+nqi
+
+λ , 1
+
+o
+
+− O
+
+rlog dd
+
+!
+
+. (20) 
+
+A.4 Putting things together 
+
+In Section B, we analyze the interaction terms and show that under Eq (Proposition 18), 
+
+|γij | ≲ (log d)3
+
+√d , ∀i̸ = j. 
+
+Combining with Eq. (20), the uncentered logit gap is thus lower bounded as 
+
+γii − max   
+
+> j̸=i
+
+γij ≳ min 
+
+nqi
+
+λ , 1
+
+o
+
+− O
+
+(log d)3
+
+√d
+
+
+
+.
+
+We now show that centering does not affect the computation. The mean vector is distributed as 
+
+¯u ∼ N (0 , 1 
+
+> N d
+
+Id) so that ∥¯u∥2 ≲ 1/√N , and moreover ∥ui∥2, ∥vi∥2 ≲ 1 for all i ∈ [N ] with probability 1 − e−Ω( d). It follows that 
+
+∥G0 − G∥op ≤ X 
+
+> i∈[N]
+
+qi∥¯u∥2∥vi∥2 ≲ 1
+
+√N . (21) By Proposition 26, for all i, j ,
+
+|u⊤ 
+
+> j
+
+hλ(G0)vi − u⊤ 
+
+> j
+
+hλ(G)vi| ≲ ∥hλ(G0) − hλ(G)∥op 
+
+≤ 1
+
+λ∥G0 − G∥op ≲ dα
+
+√N ≲ 1
+
+√d.
+
+Thus we also have 
+
+u⊤ 
+
+> i
+
+hλ(G0)vi − max   
+
+> j̸=i
+
+u⊤ 
+
+> j
+
+hλ(G0)vi ≳ min 
+
+nqi
+
+λ , 1
+
+o
+
+− O
+
+(log d)3
+
+√d
+
+
+
+.
+
+We conclude that item i will be recovered (regardless of the scaling η) if 
+
+qi ≳ (log d)3
+
+√d λ ≍ max 
+
+(log d)2α+5 
+
+dα+1 /2 , (log d)5
+
+B√d
+
+
+
+.
+
+In the population regime ( B = ∞), taking qi = pi ≍ i−α, we hence recover all items up to 
+
+i ≤ i⋆ ≍ d1+ 12α (log d)−2− 5 
+
+> α
+
+.
+
+37 If qi are obtained from a minibatch of size B, we have from the Chernoff lower bound that 
+
+Pr  qi ≤ 12 pi
+
+ ≤ exp  −12 Bp i
+
+ ≤ d−M for i such that pi ≳ B−1 log d, which also ensures 
+
+qi ≥ pi
+
+2 ≳ max 
+
+(log d)2α+5 
+
+dα+1 /2 , (log d)5
+
+B√d
+
+
+
+for all i ≲ i⋆. Therefore with probability 1 − O(d−M ), we recover all items up to 
+
+i ≲ min 
+
+(
+
+i⋆,
+
+ B
+
+log d
+
+1/α )
+
+. (22) 
+
+A.5 Proof of Corollary 4 
+
+Let ˆp1 := ˆ pW1 be the predicted score under W1. By choosing η ≍ (log d)−4√d, we can guarantee a logit gap to 
+
+u⊤ 
+
+> i
+
+W1vi − max   
+
+> j̸=i
+
+u⊤ 
+
+> j
+
+W1vi ≳ η
+
+
+
+min 
+
+nqi
+
+λ , 1
+
+o
+
+− (log d)3
+
+√d
+
+
+
+≳ (log d)2
+
+for all items i satisfying Eq. (22) (up to an additional polylog factor), which implies that ˆp1(i | i) = 1 − d−ω(1) . We denote these items as i ≤ i′. For all other items, it holds that 
+
+u⊤ 
+
+> i
+
+W1vi − max   
+
+> j̸=i
+
+u⊤ 
+
+> j
+
+W1vi ≳ η
+
+
+
+−(log d)3
+
+√d
+
+
+
+≳ − 1log d,
+
+and so ˆp1(i | i) ≥ 1−o(1)  
+
+> N
+
+and ˆp1(j | i) ≤ 1+ o(1)  
+
+> N
+
+for all j̸ = i. It follows that 
+
+L(W1) = Ei∼p[− log ˆ p1(i | i)] ≲ d−ω(1) + X
+
+> i>i ′
+
+pi log N
+
+≲ d−ω(1) + ( i′)1−α log d
+
+= eO
+
+
+
+max 
+
+n
+
+d12 + 12α −α, B 1 
+
+> α−1
+
+o 
+
+.
+
+38 B Analysis of Interaction Terms 
+
+B.1 Overview 
+
+In this section, we show the following result for the interaction terms. 
+
+Proposition 18. Fix a threshold r ≍ d  
+
+> (log d)2
+
+. Under the event 
+
+Eq : max 
+
+
+
+∥q>r ∥∞, ∥q>r ∥2
+
+√d
+
+
+
+≤ λ
+
+r rd ,
+
+it holds with probability 1 − d−ω(1) that for all pairs i̸ = j of distinct indices, 
+
+|γij | ≲ (log d)3
+
+√d .
+
+We have verified Eq occurs with high probability by a judicious choice of λ in Lemma 16, and assume this for fixed q throughout the section. When either qi or qj ≪ λ, the interaction terms can be bounded by a simple operator Lipschitz concentration argument, which we provide in Sec-tion B.8. The main challenge arises when controlling the leading r × r block, where any operator norm bound fails to capture the correct scale. The analysis for these ‘large’ interactions requires a much more involved perturbative approach, and will be developed throughout Sections B.2-B.7. For the readers’ convenience, we provide a sketch of the argument here. Gather the top r ≍ d  
+
+> (log d)2
+
+items into U = [ u1 · · · ur], V = [ v1 · · · vr] and Q = diag( q1, · · · , q r).We need to bound the off-diagonal entries of K := U⊤hλ(G)V, where the gradient G is split into 
+
+G = UQV ⊤ + Z, Z := 
+
+> N
+
+X
+
+> ℓ=r+1
+
+qℓuℓv⊤ 
+
+> ℓ
+
+.
+
+In the limiting regime r/d → 0, we can ensure that the Gram matrices Gu = U⊤U, Gv = V⊤V
+
+are approximately identity (Section B.2). Utilizing equivariance of hλ and isotropicity of the tail Z
+
+given U, V, we rewrite K in this near-orthonormal basis as 
+
+K d
+
+=
+
+h
+
+G1/2 
+
+> u
+
+0
+
+i
+
+hλ
+
+ G1/2 
+
+> u
+
+QG 1/2
+
+> v
+
+0
+
+
+
++ Z
+
+  G1/2
+
+> v
+
+0
+
+
+
+,
+
+which is a perturbation of the top r×r block of hλ(Q). We then invoke the resolvent representation 
+
+X−1/2 = 1
+
+> π
+
+R ∞ 
+
+> 0
+
+s−1/2(X + sId)−1 ds to get rid of the inverse square root in hλ, and expand all fractional powers and inverses in terms of the error matrices Eu = Gu − Ir, Ev = Gv − Ir
+
+and ˜Z = λ−1Z (Section B.3). This yields the expression (omitting series truncations, which are controlled in Section B.4) 
+
+K = 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2 Ir 0 HD −1/2
+
+> s
+
+X
+
+> k≥0
+
+ D−1/2 
+
+> s
+
+∆D −1/2
+
+> s
+
+kD−1/2
+
+> s
+
+Ir
+
+0
+
+
+
+ds, (23) 39 where Ds =  Q2
+
+> 0
+
+ + ( λ2 + s)Id is diagonal dependent on s and H, ∆ are perturbations, e.g., the expansion for H is 
+
+H =
+
+Q + EuQ
+
+0
+
+
+
++ λ X
+
+> k,ℓ ≥0
+
+12
+
+k
+
+ −12
+
+ℓ
+
+  Eu
+
+0
+
+k
+
+˜Z
+
+Ev
+
+0
+
+ℓ
+
+.
+
+We further expand Eq. (23) entrywise over all summed factors in H, ∆ (recorded as symbols μ, ν )and also over all valid index paths ι, into products Tμ,ν ι of entries of Eu, Ev, ˜Z. Integrating out s
+
+in the coefficients gives the complete expansion Kij = P θμ,ν ι Tμ,ν ι . Along the way, we prove two crucial results: (1) all integrated coefficients |θμ,ν ι | ≤ 1 (Section B.5); and (2) every pair of monomials Tμ,ν ι , Tμ′,ν ′ 
+
+> ι′
+
+are nonnegatively correlated (Section B.6). This lets us strip away all coefficients to construct an isotropic perturbation ˆKij := P Tμ,ν ι which upper bounds Kij :
+
+E[K2 
+
+> ij
+
+] = X θμ,ν ι θμ′,ν ′ 
+
+> ι′
+
+E[Tμ,ν ι Tμ′,ν ′ 
+
+> ι′
+
+] ≤ X E[Tμ,ν ι Tμ′,ν ′ 
+
+> ι′
+
+] = E[ ˆK2 
+
+> ij
+
+].
+
+This new object ˆK is essentially equivalent to removing all scalar coefficients of H, ∆ and factors of Ds in the computation of Eq. (23). Importantly, unlike K, the off-diagonal entries of ˆK are now distributionally invariant. Furthermore, its higher moments can be controlled (after sorting by degree) using standard moment methods, i.e., Gaussian hypercontractivity and decay estimates for 
+
+Eu, Ev, ˜Z (Section B.7). This finally yields the desired upper bound 
+
+|γij | = |Kij | ≲ (log d)3
+
+√d .
+
+B.2 Setup and norm estimates 
+
+We use the notation 
+
+U = u1 · · · ur
+
+ , V = v1 · · · vr
+
+ ∈ Rd×r, Q = diag( q1, · · · , q r)
+
+and K := U⊤hλ(G)V, so that 
+
+G =
+
+> N
+
+X
+
+> ℓ=1
+
+qℓuℓv⊤ 
+
+> ℓ
+
+= UQV ⊤ +
+
+> N
+
+X
+
+> ℓ=r+1
+
+qℓuℓv⊤
+
+> ℓ
+
+| {z }
+
+> =: Z
+
+.
+
+Our goal is to prove Proposition 18 for the case i, j ≤ r, which corresponds to bounding the off-diagonal entries of K. Set 
+
+Gu = U⊤U, Eu = Gu − Ir,
+
+Gv = V⊤V, Ev = Gv − Ir.
+
+We require the following decay estimates. 40 Lemma 19 (decay estimate for Eu, Ev). There exists a constant C > 0 such that 
+
+Pr ∥Eu∥op > C max 
+
+(√r + t
+
+√d ,
+
+√r + t
+
+√d
+
+2)! 
+
+≤ 2e−t2
+
+, ∀t ≥ 0
+
+and similarly for Ev. In particular, it holds with probability 1 − e−Ω( r) that 
+
+∥Eu∥op , ∥Ev∥op ≲
+
+r rd.
+
+Proof. See Theorem 4.6.1 of Vershynin [51]. 
+
+Lemma 20 (decay estimate for Z). Denote q>r = ( qr+1 , · · · , q N ) ∈ [0 , 1] N −r. There exist con-stants C, t 0 > 0 such that 
+
+Pr 
+
+
+
+∥Z∥op > max 
+
+
+
+∥q>r ∥∞, ∥q>r ∥2
+
+√d
+
+
+
+t
+
+
+
+≤ eCd (t0−t), ∀t ≥ t0.
+
+In particular, it holds with probability 1 − e−Ω( d) that 
+
+∥Z∥op ≲ max 
+
+
+
+∥q>r ∥∞, ∥q>r ∥2
+
+√d
+
+
+
+.
+
+Proof. For fixed vectors x, y ∈ Sd−1, √dx ⊤ui and √dy ⊤vi are each N (0 , 1) so that ξi := d(x⊤ui)( v⊤ 
+
+> i
+
+y)
+
+is subexponential with ∥ξi∥ψ1 = O(1) . Then 
+
+x⊤Zy =
+
+> N
+
+X
+
+> i=r+1
+
+qi(x⊤ui)( v⊤ 
+
+> i
+
+y) = 1
+
+d
+
+> N
+
+X
+
+> i=r+1
+
+qiξi
+
+satisfies 
+
+Pr  |x⊤Zy| ≥ τ  ≤ 2 exp −C min 
+
+(
+
+d2τ 2
+
+∥q>r ∥22
+
+, dτ 
+
+∥q>r ∥∞
+
+)! 
+
+by the subexponential Bernstein inequality. Taking 
+
+τ = max 
+
+
+
+∥q>r ∥∞, ∥q>r ∥2
+
+√d
+
+
+
+t
+
+for some t > 0, it follows that Pr  |x⊤Zy| ≥ t ≤ 2e−Cd (t∧t2). Now choose a 1/4-net M of Sd−1
+
+with size |M| ≤ 9d. It holds that 
+
+∥Z∥op = sup 
+
+> x,y ∈Sd−1
+
+|x⊤Zy| ≤ sup 
+
+> x,y ∈M
+
+|x⊤Zy| + 12∥Z∥op 
+
+and so union bounding over M,
+
+Pr 
+
+
+
+∥Z∥op > max 
+
+
+
+∥q>r ∥∞, ∥q>r ∥2
+
+√d
+
+
+
+t
+
+
+
+≤ 2 · 9d · e−Cd (t∧t2) ≤ eCd (t0−t)
+
+for constants C, t 0. The last claim follows by taking t = 2 t0.41 Now define the decay factor ρ as 
+
+ρ ≍
+
+r rd ≍ 1log d (24) and the event Eop as 
+
+Eop : max 
+
+
+
+∥Eu∥op , ∥Ev∥op , ∥Z∥op 
+
+λ
+
+
+
+≤ ρ. (25) From Lemma 19 and Lemma 20, under the event Eq, we can choose the proportionality constant in Eq. (24) so that Pr( Eop ) ≥ 1 − e−Ω( r). We note that the truncated series expansions in Sec-tion B.3-B.4 are valid conditional on Eop , however once we algebraically reduce to the appropriate quantities, we do not condition on Eop for the moment computations in Section B.5-B.7. Under Eop , we also have the following bounds: 
+
+Lemma 21 (series expansion for Gu, Gv). Under the event Eop , it holds for all K ≥ 0,
+
+G1/2 
+
+> u
+
+− ¯G1/2  
+
+> uop
+
+≤ ρK+1 , ¯Gu := 
+
+> K
+
+X
+
+> k=0
+
+12
+
+k
+
+
+
+Eku
+
+!2
+
+,
+
+G−1/2 
+
+> v
+
+− ¯G−1/2  
+
+> vop
+
+≤ ρK+1 , ¯Gv := 
+
+> K
+
+X
+
+> k=0
+
+12
+
+k
+
+
+
+Ekv
+
+!−2
+
+,
+
+G−1 
+
+> v
+
+− ˇG−1  
+
+> vop
+
+≤ ρK+1 , ˇGv := 
+
+> K
+
+X
+
+> k=0
+
+(−Ev)k
+
+!−1
+
+.
+
+Proof. Note that for all k ≥ 0,
+
+12
+
+k
+
+
+
+= (2 k − 3)!! (2 k)!! ≤ 1,
+
+−12
+
+k
+
+
+
+= (2 k − 1)!! (2 k)!! ≤ 1. (26) Then by Higham [17, Theorem 4.8], 
+
+(Ir + Eu)1/2 −
+
+> K
+
+X
+
+> k=0
+
+12
+
+k
+
+
+
+Eku
+
+> op
+
+≤
+
+ 12
+
+K + 1 
+
+
+
+max  
+
+> 0≤t≤1
+
+EK+1  
+
+> u
+
+(Ir + tEu)−K−1/2 
+
+> op
+
+≤ ρK+1 ,
+
+and similarly for the two expansions involving Ev.
+
+B.3 Block resolvent integral representation 
+
+Set Ou = UG −1/2 
+
+> u
+
+, Ov = VG −1/2 
+
+> v
+
+so that O⊤ 
+
+> γ
+
+Oγ = Ir for γ ∈ { u, v }, and let Pγ ∈ Rd×d be an orthonormal completion of Oγ . Also define 
+
+C := 
+
+G1/2 
+
+> u
+
+QG 1/2
+
+> v
+
+0
+
+
+
+.
+
+42 We omit all non-diagonal zero blocks for brevity. Conditioned on U, V, it holds that PuZP ⊤
+
+> vd
+
+= Z,and so 
+
+K = U⊤hλ(G)V
+
+= U⊤hλ(UQV ⊤ + Z)V
+
+= G1/2 
+
+> u
+
+O⊤ 
+
+> u
+
+hλ
+
+ OuG1/2 
+
+> u
+
+QG 1/2 
+
+> v
+
+O⊤ 
+
+> v
+
++ ZOvG1/2
+
+> v
+
+= G1/2 
+
+> u
+
+O⊤ 
+
+> u
+
+hλ
+
+
+
+Pu
+
+G1/2 
+
+> u
+
+QG 1/2
+
+> v
+
+0
+
+
+
+P⊤ 
+
+> v
+
++ Z
+
+
+
+OvG1/2
+
+> vd
+
+=
+
+h
+
+G1/2 
+
+> u
+
+0
+
+i
+
+hλ(C + Z)
+
+G1/2
+
+> v
+
+0
+
+
+
+=
+
+h
+
+G1/2 
+
+> u
+
+0
+
+i
+
+(C + Z) (C + Z)⊤(C + Z) + λ2Id
+
+−1/2
+
+G1/2
+
+> v
+
+0
+
+
+
+.
+
+We invoke the following resolvent integral representation 
+
+X−1/2 = 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2(X + sId)−1 ds. 
+
+Applying to X = ( C + Z)⊤(C + Z) + λ2Id, we have 
+
+K = 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2
+
+h
+
+G1/2 
+
+> u
+
+0
+
+i
+
+(C + Z)( X + sId)−1
+
+G1/2
+
+> v
+
+0
+
+
+
+ds
+
+= 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2
+
+h 
+
+GuQG 1/2 
+
+> v
+
+0
+
+i
+
++
+
+h
+
+G1/2 
+
+> u
+
+0
+
+i
+
+Z
+
+
+
+(X + sId)−1
+
+G1/2
+
+> v
+
+0
+
+
+
+ds
+
+= 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2
+
+GuQ 0 +
+
+h
+
+G1/2 
+
+> u
+
+0
+
+i
+
+Z
+
+G−1/2
+
+> v
+
+Id−r
+
+ 
+
+(27) 
+
+×
+
+ G−1/2
+
+> v
+
+Id−r
+
+
+
+(X + sId)
+
+G−1/2
+
+> v
+
+Id−r
+
+ −1 Ir
+
+0
+
+
+
+ds. (28) Let us further define βs := √λ2 + s, ˜Z := λ−1Z and denote the zero-padded matrix 
+
+JAK := 
+
+A
+
+0
+
+
+
+∈ Rd×d, A ∈ Rr×r.
+
+Note that JAKk = JAkK for k ≥ 1 but JAK0 = Id̸ = JA0K.Expanding Eq. (27) via Lemma 21, we have 
+
+GuQ 0 +
+
+h
+
+G1/2 
+
+> u
+
+0
+
+i
+
+Z
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+= Ir 0  Q + EuQ
+
+0
+
+
+
++
+
+G1/2
+
+> u
+
+Id−r
+
+
+
+Z
+
+G−1/2
+
+> v
+
+Id−r
+
+ 
+
+= Ir 0 (H + Rh),
+
+43 where 
+
+H := 
+
+Q + EuQ
+
+0
+
+
+
++
+
+ ¯G1/2
+
+> u
+
+Id−r
+
+
+
+Z
+
+ ¯G−1/2
+
+> v
+
+Id−r
+
+
+
+= JQK + JEuQK + λ
+
+> K
+
+X
+
+> k,ℓ =0
+
+12
+
+k
+
+ −12
+
+ℓ
+
+
+
+JEuKk ˜ZJEvKℓ (29) and Rh is the error term due to applying the series truncation in Lemma 21. We control truncation errors in Lemma 23 below. Next, from 
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+C⊤ = JQG 1/2 
+
+> u
+
+K = JQK
+
+G1/2
+
+> u
+
+Id−r
+
+
+
+,
+
+the term in the inverse can be expressed as 
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+(X + sId)
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+=
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+(C⊤C + C⊤Z + Z⊤C + Z⊤Z + β2 
+
+> s
+
+Id)
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+=
+
+QG uQ
+
+0
+
+
+
++ JQK
+
+G1/2
+
+> u
+
+Id−r
+
+
+
+Z
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
++
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+Z⊤
+
+G1/2
+
+> u
+
+Id−r
+
+
+
+JQK
+
++
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+Z⊤Z
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
++ β2
+
+> s
+
+G−1
+
+> v
+
+Id−r
+
+
+
+= JQ2K + β2 
+
+> s
+
+Id + JQE uQK + β2
+
+> sK
+
+X
+
+> k=1
+
+J−EvKk
+
++
+
+> K
+
+X
+
+> k,ℓ =0
+
+12
+
+k
+
+ −12
+
+ℓ
+
+ JQKJ EuKkZJEvKℓ + JEvKℓZ⊤JEuKkJQK
+
++
+
+> K
+
+X
+
+> k,ℓ =0
+
+−12
+
+k
+
+ −12
+
+ℓ
+
+
+
+JEvKkZ⊤ZJEvKℓ
+
++ Rδ,s ,
+
+where the error Rδ,s (here dependent on s) is also controlled in Lemma 23. Hence, 
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+(X + sId)
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+= Ds + ∆ + Rδ,s 
+
+where 
+
+Ds = diag( d1,s , · · · , d d,s ) := JQ2K + β2 
+
+> s
+
+Id
+
+44 is diagonal positive-definite and 
+
+∆ := JQE uQK + β2
+
+> sK
+
+X
+
+> k=1
+
+J−EvKk
+
++ λ
+
+> K
+
+X
+
+> k,ℓ =0
+
+12
+
+k
+
+ −12
+
+ℓ
+
+
+
+JQKJ EuKk ˜ZJEvKℓ + JEvKℓ ˜Z⊤JEuKkJQK
+
+
+
++ λ2
+
+> K
+
+X
+
+> k,ℓ =0
+
+−12
+
+k
+
+ −12
+
+ℓ
+
+
+
+JEvKk ˜Z⊤ ˜ZJEvKℓ. (30) Plugging back into Eq. (28), we obtain the expression 
+
+K = 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2 Ir 0 (H + Rh)( Ds + ∆ + Rδ,s )−1
+
+Ir
+
+0
+
+
+
+ds. 
+
+Compare to the quantity obtained by ignoring the truncation errors Rh, Rδ,s and expanding the inverse using the (again truncated) Neumann series: 
+
+˜K = 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2 Ir 0 HD −1/2
+
+> sK
+
+X
+
+> k=0
+
+ −D−1/2 
+
+> s
+
+∆D −1/2
+
+> s
+
+kD−1/2
+
+> s
+
+| {z }
+
+> =: Ψs(H,∆)
+
+Ir
+
+0
+
+
+
+ds. (31) We justify this expansion in Lemma 22 and show ∥K − ˜K∥op = d−ω(1) in Lemma 23. Hence it suffices to bound the off-diagonal entries of ˜K.
+
+B.4 Truncation error bounds 
+
+Here, we show that the errors from truncating the series for G1/2 
+
+> u
+
+, G−1/2 
+
+> v
+
+, G−1 
+
+> v
+
+and the Neumann series in Eq. (31) are ignorable. 
+
+Lemma 22 (Neumann series stability) . Under the event Eop , there exists a constant C such that for every s ≥ 0,
+
+D−1/2 
+
+> s
+
+∆D −1/2  
+
+> sop
+
+≤ Cρ. 
+
+Proof. Define the diagonal matrices 
+
+As := ( Q2 + β2 
+
+> s
+
+Ir)−1/2Q, Bs := βs(Q2 + β2 
+
+> s
+
+Ir)−1/2
+
+so that ∥As∥op , ∥Bs∥op ≤ 1. We bound each of the four terms in (30) separately. For the first term, 
+
+D−1/2 
+
+> s
+
+JQE uQKD−1/2  
+
+> sop
+
+= ∥AsEuAs∥op ≤ ρ. 
+
+For the second term, noting that the sum starts from k = 1 ,
+
+D−1/2 
+
+> s
+
+β2
+
+> sK
+
+X
+
+> k=1
+
+J−EvKk
+
+!
+
+D−1/2
+
+> s
+> op
+
+≤
+
+> K
+
+X
+
+> k=1
+
+∥BsEvBs∥k 
+
+> op
+
+≤
+
+> K
+
+X
+
+> k=1
+
+ρk ≤ ρ
+
+1 − ρ.
+
+45 For the third term, we have 
+
+D−1/2 
+
+> s
+
+JQKJ EuKk 
+
+> op
+
+= AsEku op ≤ ρk,
+
+JEvKℓD−1/2  
+
+> sop
+
+= β−1 
+
+> s
+
+JEvKℓBs op ≤ β−1 
+
+> s
+
+ρℓ.
+
+Then noting that λ ≤ βs,
+
+D−1/2 
+
+> s
+
+λ
+
+> K
+
+X
+
+> k,ℓ =0
+
+12
+
+k
+
+ −12
+
+ℓ
+
+
+
+JQKJ EuKk ˜ZJEvKℓ
+
+!
+
+D−1/2
+
+> s
+> op
+
+≤ λ
+
+> K
+
+X
+
+> k,ℓ =0
+
+D−1/2 
+
+> s
+
+JQKJ EuKk ˜ZJEvKℓD−1/2 
+
+> sop
+
+≤ λβ −1
+
+> sK
+
+X
+
+> k,ℓ =0
+
+ρk+ℓ+1 ≤ ρ
+
+(1 − ρ)2
+
+and similarly for the transposed term. Finally for the fourth term, 
+
+D−1/2 
+
+> s
+
+λ2
+
+> K
+
+X
+
+> k,ℓ =0
+
+−12
+
+k
+
+ −12
+
+ℓ
+
+
+
+JEvKk ˜Z⊤ ˜ZJEvKℓ
+
+!
+
+D−1/2
+
+> s
+> op
+
+≤ λ2
+
+> K
+
+X
+
+> k,ℓ =0
+
+D−1/2 
+
+> s
+
+JEvKk ˜Z⊤ ˜ZJEvKℓD−1/2 
+
+> sop
+
+≤ λ2β−2
+
+> sK
+
+X
+
+> k,ℓ =0
+
+ρk+ℓ+2 ≤ ρ2
+
+(1 − ρ)2 .
+
+Combining the errors concludes the proof. 
+
+Lemma 23 (truncation error bound) . Suppose the decay factor satisfies ρ ≲ 1log d and the truncation threshold K ≳ log d. Under the event Eop , it holds that 
+
+∥K − ˜K∥op = d−ω(1) .
+
+Proof. First we control the errors Rh, Rδ,s . For Rh, we have that 
+
+Rh =
+
+G1/2
+
+> u
+
+Id−r
+
+
+
+Z
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+−
+
+ ¯G1/2
+
+> u
+
+Id−r
+
+
+
+Z
+
+ ¯G−1/2
+
+> v
+
+Id−r
+
+
+
+=
+
+G1/2
+
+> u
+
+Id−r
+
+
+
+ZJG−1/2 
+
+> v
+
+− ¯G−1/2 
+
+> v
+
+K + JG1/2 
+
+> u
+
+− ¯G1/2 
+
+> u
+
+KZ
+
+ ¯G−1/2
+
+> v
+
+Id−r
+
+
+
+.
+
+Then by Lemma 21, 
+
+∥Rh∥op ≤ G1/2 
+
+> u
+
+Z op G−1/2 
+
+> v
+
+− ¯G−1/2  
+
+> vop
+
++ G1/2 
+
+> u
+
+− ¯G1/2  
+
+> uop
+
+Z ¯G−1/2 
+
+> vop
+
+≤
+
+
+
+2p1 + ρ + ρK+1 
+
+
+
+λρ · ρK+1 = d−ω(1) .
+
+46 For Rδ,s , we have that 
+
+Rδ,s = β2 
+
+> s
+
+JG−1 
+
+> v
+
+− ˇG−1 
+
+> v
+
+K
+
++ JQK
+
+ G1/2
+
+> u
+
+Id−r
+
+
+
+Z
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+−
+
+ ¯G1/2
+
+> u
+
+Id−r
+
+
+
+Z
+
+ ¯G−1/2
+
+> v
+
+Id−r
+
+ 
+
++
+
+ G−1/2
+
+> v
+
+Id−r
+
+
+
+Z⊤
+
+G1/2
+
+> u
+
+Id−r
+
+
+
+−
+
+ ¯G−1/2
+
+> v
+
+Id−r
+
+
+
+Z⊤
+
+ ¯G1/2
+
+> u
+
+Id−r
+
+ 
+
+JQK
+
++
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+Z⊤Z
+
+G−1/2
+
+> v
+
+Id−r
+
+
+
+−
+
+ ¯G−1/2
+
+> v
+
+Id−r
+
+
+
+Z⊤Z
+
+ ¯G−1/2
+
+> v
+
+Id−r
+
+
+
+and we can similarly bound, using that ∥Q∥op ≤ 1 and λ = poly( d−1),
+
+∥Rδ,s ∥op = β2 
+
+> s
+
+· d−ω(1) .
+
+It follows that 
+
+D−1/2 
+
+> s
+
+Rδ,s D−1/2  
+
+> sop
+
+= d−ω(1) (32) uniformly over s. Now define 
+
+N1 =  Id + D−1/2 
+
+> s
+
+∆D −1/2 
+
+> s
+
++ D−1/2 
+
+> s
+
+Rδ,s D−1/2
+
+> s
+
+−1,
+
+N2 =  Id + D−1/2 
+
+> s
+
+∆D −1/2
+
+> s
+
+−1,
+
+N3 =
+
+> K
+
+X
+
+> k=0
+
+ −D−1/2 
+
+> s
+
+∆D −1/2
+
+> s
+
+k.
+
+We have that ∥N1∥op , ∥N2∥op = 1 + o(1) due to Lemma 22 and Eq. (32). Moreover, 
+
+∥N1 − N2∥op = N2(N−12 − N−11 )N1 op ≲ D−1/2 
+
+> s
+
+Rδ,s D−1/2  
+
+> sop
+
+= d−ω(1) 
+
+and by the Neumann series, 
+
+∥N2 − N3∥op ≤
+
+> ∞
+
+X
+
+> k=K+1
+
+(Cρ )k = d−ω(1) .
+
+Thus from 
+
+K = 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2 Ir 0 (H + Rh)D−1/2 
+
+> s
+
+N1D−1/2
+
+> s
+
+Ir
+
+0
+
+
+
+ds, 
+
+˜K = 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2 Ir 0 HD −1/2 
+
+> s
+
+N3D−1/2
+
+> s
+
+Ir
+
+0
+
+
+
+ds, 
+
+and ∥H∥op ≲ 1, it follows that 
+
+∥K − ˜K∥op 
+
+47 ≤ 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2 (H + Rh)D−1/2 
+
+> s
+
+N1D−1/2 
+
+> s
+
+− HD −1/2 
+
+> s
+
+N3D−1/2  
+
+> sop
+
+ds
+
+≤ 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2 RhD−1/2 
+
+> s
+
+N1D−1/2  
+
+> sop
+
+ds
+
++ 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2 HD −1/2 
+
+> s
+
+(N1 − N3)D−1/2  
+
+> sop
+
+ds
+
+≤ 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2β−2 
+
+> s
+
+ds ·
+
+
+
+∥Rh∥op ∥N1∥op + ∥H∥op ∥N1 − N3∥op 
+
+
+
+= λ−1d−ω(1) = d−ω(1) ,
+
+as was to be shown. 
+
+B.5 Complete perturbative expansion 
+
+We will now fully multiply out Ψs(H, ∆) in Eq. (31) by plugging in Eq. (29) and Eq. (30) into each instance of H, ∆ and further expanding all matrix products entrywise. Since there are many different types of terms, we will keep track of all terms and coefficients by introducing symbols 
+
+μ ∈ S μ and ν ∈ S ν for H and ∆, respectively. For the rest of the section, we set 
+
+˜q = (˜ q1, · · · , ˜qd) := ( q1, · · · , q r, 0, · · · , 0) 
+
+so that JQK = diag(˜ q). We will also denote by Im the set of length m index sequences or paths 
+
+ι = ( i1, · · · , i m) ∈ [d]m, and by Imij the set of augmented paths ι = ( i0, · · · , i m+1 ) ∈ [d]m+2 with the restriction that i0 = i and im+1 = j.For H, let 
+
+Sμ := {1, 2} ∪ (3 , k, ℓ, ι ) : 0 ≤ k, ℓ ≤ K, ι ∈ I k+ℓ .
+
+From Eq. (29), we can decompose 
+
+Hij = X
+
+> μ∈S μ
+
+aμij Hμij (33) where (1) μ = 1 : (a1 
+
+> ij
+
+, H1 
+
+> ij
+
+) = (˜ qj , JIrKij )
+
+(2) μ = 2 : (a2 
+
+> ij
+
+, H2 
+
+> ij
+
+) = (˜ qj , JEuKij )
+
+(3) μ = (3 , k, ℓ, ι ): recalling ι = ( i1, · · · , i k+ℓ) ∈ [d]k+ℓ,
+
+(aμij , Hμij ) = 
+
+12
+
+k
+
+ −12
+
+ℓ
+
+
+
+λ, 
+
+> k
+
+Y
+
+> m=1
+
+JEuKim−1im ˜Zik ik+1 
+
+> ℓ
+
+Y
+
+> m=1
+
+JEvKik+mik+m+1 
+
+!
+
+,
+
+here with the convention that i0 = i, im+1 = j depending on the pair (i, j ) being expanded. 48 For ∆, let 
+
+Sν := {1} ∪ (2 , k, ι ) : 1 ≤ k ≤ K, ι ∈ I k−1
+
+∪ (3 , k, ℓ, ι ) : 0 ≤ k, ℓ ≤ K, ι ∈ I k+ℓ
+
+∪ (4 , k, ℓ, ι ) : 0 ≤ k, ℓ ≤ K, ι ∈ I k+ℓ
+
+∪ (5 , k, ℓ, ι ) : 0 ≤ k, ℓ ≤ K, ι ∈ I k+ℓ+1 .
+
+From Eq. (30), we can decompose ∆ij with coefficients in the following bilinear form: 
+
+∆ij = X
+
+> ν∈S ν
+
+bνi ∆νij cνj (34) where (1) ν = 1 :
+
+(b1 
+
+> i
+
+, c 1 
+
+> j
+
+, ∆1 
+
+> ij
+
+) = (˜ qi, ˜qj , JEuKij )
+
+(2) ν = (2 , k, ι ):
+
+(bνi , c νj , ∆νij ) = (−1) kβs, β s,
+
+> k
+
+Y
+
+> m=1
+
+JEuKim−1im
+
+!
+
+(3) ν = (3 , k, ℓ, ι ):
+
+(bνi , c νj , ∆νij ) = 
+
+12
+
+k
+
+
+
+˜qi,
+
+−12
+
+ℓ
+
+
+
+λ, 
+
+> k
+
+Y
+
+> m=1
+
+JEuKim−1im ˜Zik ik+1 
+
+> ℓ
+
+Y
+
+> m=1
+
+JEvKik+mik+m+1 
+
+!
+
+(4) ν = (4 , k, ℓ, ι ):
+
+(bνi , c νj , ∆νij ) = 
+
+−12
+
+ℓ
+
+
+
+λ, 
+
+12
+
+k
+
+
+
+˜qj ,
+
+> ℓ
+
+Y
+
+> m=1
+
+JEvKim−1im ˜Ziℓ+1 iℓ
+
+> k
+
+Y
+
+> m=1
+
+JEuKiℓ+miℓ+m+1 
+
+!
+
+(5) ν = (5 , k, ℓ, ι ):
+
+(bνi , c νj , ∆νij ) = 
+
+−12
+
+k
+
+
+
+λ, 
+
+−12
+
+ℓ
+
+
+
+λ, 
+
+> k
+
+Y
+
+> m=1
+
+JEvKim−1im ˜Zik+1 ik
+
+˜Zik+1 ik+2 
+
+> ℓ+1
+
+Y
+
+> m=2
+
+JEvKik+mik+m+1 
+
+!
+
+.
+
+Observe that every Hμij and ∆νij are purely products of entries of JEuK, JEvK or ˜Z, without any numerical coefficients. Returning to Eq. (31), fix a pair of indices i, j ∈ [r], so that 
+
+˜Kij = 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2Ψs(H, ∆)ij ds. (35) 49 By expanding each power   − D−1/2 
+
+> s
+
+∆D −1/2
+
+> s
+
+k along paths ι ∈ I kij and plugging in Eq. (33) and Eq. (34), we obtain 
+
+Ψs(H, ∆)ij =
+
+> K
+
+X
+
+> k=0
+
+h
+
+HD −1/2
+
+> s
+
+ −D−1/2 
+
+> s
+
+∆D −1/2
+
+> s
+
+kD−1/2
+
+> s
+
+i
+
+> ij
+
+=
+
+> K
+
+X
+
+> k=0
+
+(−1) k X
+
+> ι∈I kij
+
+Hi0i1
+
+pdi1,s 
+
+> k
+
+Y
+
+> ℓ=1
+
+∆iℓiℓ+1 
+
+pdiℓ,s diℓ+1 ,s 
+
+!
+
+1
+
+pdik+1 ,s 
+
+=
+
+> K
+
+X
+
+> k=0
+
+(−1) k X
+
+> ι∈I kij
+
+X
+
+> μ∈S μ
+
+aμi0i1 Hμi0i1
+
+pdi1,s 
+
+> k
+
+Y
+
+> ℓ=1
+
+X
+
+> νℓ∈S ν
+
+bνℓ 
+
+> iℓ
+
+∆νℓ 
+
+> iℓiℓ+1
+
+cνℓ
+
+> iℓ+1
+
+pdiℓ,s diℓ+1 ,s 
+
+!
+
+1
+
+pdik+1 ,s 
+
+=
+
+> K
+
+X
+
+> k=0
+
+(−1) k X
+
+> ι∈I kij
+
+X
+
+> μ∈S μ
+
+X
+
+> ν∈S kν
+
+ζμ,ν ι,s Tμ,ν ι , (36) where we have defined for each μ ∈ S μ and ν = ( ν1, · · · , ν k) ∈ S kν (k being implicit), 
+
+ζμ,ν ι,s := aμi0i1
+
+pdi1,s 
+
+> k
+
+Y
+
+> ℓ=1
+
+bνℓ 
+
+> iℓ
+
+cνℓ
+
+> iℓ+1
+
+pdiℓ,s diℓ+1 ,s 
+
+!
+
+1
+
+pdik+1 ,s 
+
+and 
+
+Tμ,ν ι := Hμi0i1
+
+> k
+
+Y
+
+> ℓ=1
+
+∆νℓ 
+
+> iℓiℓ+1
+
+.
+
+Note that Tμ,ν ι is also a product of a number of entries of JEuK, JEvK or ˜Z. We denote this number by the degree nμ,ν ι ; the degree of Tμ,ν ι as a polynomial of Gaussians uij , v ij is 2nμ,ν ι (however, this polynomial is nonhomogeneous due to the presence of the −Ir terms in Eu, Ev). From the definition of H, ∆, we can check that 
+
+0 ≤ nμ,ν ι ≤ (2 K + 1) + K(2 K + 2) ≤ CK 2. (37) The coefficients ζμ,ν ι,s further satisfy the following uniform bound. 
+
+Lemma 24. For all ι ∈ I k and symbols μ ∈ S μ, ν ∈ S kν , there exists an index m = m(ι, μ, ν ) ∈{1, · · · , k + 1 } such that for all s ≥ 0,
+
+|ζμ,ν ι,s | ≤ ˜qim ∨ λdim,s 
+
+.
+
+Proof. Denote the projection of the symbols μ and ν to the integer-valued first coordinate as 
+
+π(μ) ∈ { 1, 2, 3} and π(ν) ∈ { 1, 2, 3, 4, 5}, respectively. First suppose k = 0 . When π(μ) ∈ { 1, 2}, we have aμij = ˜ qj . When π(μ) = 3 , we have |aμij | ≤ λ.Hence 
+
+|ζμ,ν ι,s | = |aμij |
+
+dj,s 
+
+≤ ˜qj ∨ λ
+
+˜q2 
+
+> j
+
++ β2
+
+> s
+
+.
+
+50 Now let k ≥ 1. We first claim that for all i, j and all symbols μ ∈ S μ, ν, ν ′ ∈ S ν , it holds that 
+
+|aμij bνj | ≤ dj,s and |bνj cν′ 
+
+> j
+
+| ≤ dj,s . Indeed, for each i, j ,
+
+aμij ∈ { ˜qj } ∪ 
+
+ 12
+
+k
+
+ −12
+
+ℓ
+
+
+
+λ : k, ℓ ≤ K
+
+
+
+,bνj , c ν′ 
+
+> j
+
+∈ { ˜qj , β s, −βs} ∪ 
+
+ 12
+
+k
+
+
+
+˜qj : k ≤ K
+
+
+
+∪
+
+ −12
+
+ℓ
+
+
+
+λ : ℓ ≤ K
+
+
+
+.
+
+By Eq. (26) and λ ≤ √λ2 + s = βs, we have 
+
+|aμij bνj |, |bνj cν′ 
+
+> j
+
+| ≤ (˜ qj ∨ βs)2 ≤ ˜q2 
+
+> j
+
++ β2 
+
+> s
+
+= dj,s (38) as claimed. Now rewrite 
+
+ζμ,ν ι,s = aμi0i1
+
+pdi1,s 
+
+> k
+
+Y
+
+> ℓ=1
+
+bνℓ 
+
+> iℓ
+
+cνℓ
+
+> iℓ+1
+
+pdiℓ,s diℓ+1 ,s 
+
+!
+
+1
+
+pdik+1 ,s 
+
+= aμi0i1 bν1
+
+> i1
+
+di1,s 
+
+> k
+
+Y
+
+> ℓ=2
+
+cνℓ−1 
+
+> iℓ
+
+bνℓ
+
+> iℓ
+
+diℓ,s 
+
+! cνk
+
+> ik+1
+
+dik+1 ,s 
+
+to consolidate the denominators. We divide into the following cases. (1) π(νk)̸ = 2 : we have 
+
+cνk 
+
+> ik+1
+
+= cνk 
+
+> j
+
+∈
+
+ 12
+
+k
+
+
+
+˜qj : k ≤ K
+
+
+
+∪
+
+ −12
+
+ℓ
+
+
+
+λ : ℓ ≤ K
+
+
+
+so that |cνk 
+
+> j
+
+| ≤ ˜qj ∨ λ. Thus by Eq. (38), 
+
+|ζμ,ν ι,s | = |aμi0i1 bν1 
+
+> i1
+
+|
+
+di1,s kY
+
+> ℓ=2
+
+|cνℓ−1 
+
+> iℓ
+
+bνℓ 
+
+> iℓ
+
+|
+
+diℓ,s 
+
+· |cνk 
+
+> j
+
+|
+
+dj,s 
+
+≤ |cνk 
+
+> j
+
+|
+
+dj,s 
+
+≤ ˜qj ∨ λdj,s 
+
+.
+
+(2) π(νk) = 2 and π(ν1) /∈ { 1, 3}: we have cνk 
+
+> j
+
+= βs and |bν1 
+
+> i1
+
+| ≤ βs, as well as |aμi0i1 | ≤ ˜qi1 ∨ λ
+
+regardless of μ. Then 
+
+|ζμ,ν ι,s | ≤ |aμi0i1 |
+
+di1,s 
+
+· |bν1 
+
+> i1
+
+cνk 
+
+> j
+
+|
+
+dj,s 
+
+≤ ˜qi1 ∨ λdi1,s 
+
+· β2
+
+> s
+
+dj,s 
+
+≤ ˜qi1 ∨ λdi1,s 
+
+.
+
+(3) π(νk) = 2 and π(ν1) ∈ { 1, 3}: let m ∈ { 2, · · · , k } be the smallest index such that π(νm) /∈{1, 3}, so cνk 
+
+> j
+
+= βs and |bνm 
+
+> im
+
+| ≤ βs. Since π(νm−1) ∈ { 1, 3}, we also have either |cνm−1 
+
+> im
+
+| ≤ ˜qim
+
+or |cνm−1 
+
+> im
+
+| ≤ λ. Then 
+
+|ζμ,ν ι,s | ≤ |cνm−1 
+
+> im
+
+|
+
+dim,s 
+
+· |bνm 
+
+> im
+
+cνk 
+
+> j
+
+|
+
+dj,s 
+
+≤ ˜qim ∨ λdim,s 
+
+· β2
+
+> s
+
+dj,s 
+
+≤ ˜qim ∨ λdim,s 
+
+.
+
+This concludes the proof of the lemma. 51 B.6 Positive path correlation and graded recombination 
+
+Substituting Eq. (36) and integrating out s in Eq. (35) thus gives 
+
+˜Kij =
+
+> K
+
+X
+
+> k=0
+
+(−1) k X
+
+> ι∈I kij
+
+X
+
+> μ∈S μ
+
+X
+
+> ν∈S kν
+
+θμ,ν ι Tμ,ν ι (39) where the coefficients are given as 
+
+θμ,ν ι = 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2ζμ,ν ι,s ds. 
+
+Importantly, θμ,ν ι are uniformly bounded: by Lemma 24, there exists an index m such that 
+
+|θμ,ν ι | ≤ 1
+
+π
+
+Z ∞
+
+> 0
+
+s−1/2 · ˜qim ∨ λdim,s 
+
+ds = ˜qim ∨ λ
+
+q
+
+˜q2 
+
+> im
+
++ λ2
+
+≤ 1.
+
+With Eq. (37) in mind, we further introduce a gradation in Eq. (39) according to degree; this is necessary to correctly apply Gaussian hypercontractivity later. 
+
+˜Kij =
+
+> CK 2
+
+X
+
+> n=0
+
+Kij :n, Kij :n := 
+
+> K
+
+X
+
+> k=0
+
+(−1) k X
+
+> ι∈I kij
+
+X
+
+> μ∈S μ
+
+X
+
+> ν∈S kν
+
+θμ,ν ι 1{nμ,ν ι =n}Tμ,ν ι . (40) We now present a key insight which allows us to remove the coefficients θμ,ν ι when computing moments of Kij :n.
+
+Lemma 25 (positive path correlation) . Let k, k ′ ≥ 0. It holds for all paths ι ∈ I k, ι′ ∈ I k′
+
+and symbols μ, μ ′ ∈ S μ, ν ∈ S kν , ν′ ∈ S k′ 
+
+> ν
+
+that 
+
+E
+
+h
+
+Tμ,ν ι Tμ′,ν ′
+
+> ι′
+
+i
+
+≥ 0,
+
+where the expectation is taken over all u1, · · · , u N and v1, · · · , v N .Proof. Tμ,ν ι , Tμ′,ν ′ 
+
+> ι′
+
+are products of indices of JEuK, JEvK or ˜Z, so we may write 
+
+Tμ,ν ι Tμ′,ν ′ 
+
+> ι′
+
+= Y
+
+> (i,j )
+
+JEuKij 
+
+Y
+
+> (i,j )
+
+JEvKij 
+
+Y
+
+> (i,j )
+
+˜Zij (41) where the products range over multisets of index pairs. We can remove the double brackets by restricting to (i, j ) ∈ [r] × [r] for Eu, Ev, otherwise the product will be identically zero. Further expand each entry as 
+
+(Eu)ij = u⊤ 
+
+> i
+
+uj − δij =
+
+> d
+
+X
+
+> ℓ=1
+
+
+
+uiℓ ujℓ − δij 
+
+d
+
+
+
+,
+
+52 (Ev)ij = v⊤ 
+
+> i
+
+vj − δij =
+
+> d
+
+X
+
+> ℓ=1
+
+
+
+viℓ vjℓ − δij 
+
+d
+
+
+
+,
+
+˜Zij = λ−1
+
+> N
+
+X
+
+> ℓ=r+1
+
+qℓuℓi vℓj ,
+
+then Eq. (41) decomposes into a sum of terms with positive coefficients of the form 
+
+Y
+
+> γ
+
+
+
+u2 
+
+> γ
+
+− 1
+
+d
+
+ Y
+
+> γ
+
+
+
+v2 
+
+> γ
+
+− 1
+
+d
+
+ Y
+
+> γ
+
+uγ
+
+Y
+
+> γ
+
+vγ
+
+where γ ∈ [N ] × [d] denote index pairs. Rescale ˜uγ = √du γ so that ˜uγ is i.i.d. N (0 , 1) , then by symmetry it suffices to show 
+
+Y = Y
+
+> γ∈A
+
+(˜ u2 
+
+> γ
+
+− 1) Y
+
+> γ∈B
+
+˜uγ
+
+has nonnegative expectation for arbitrary multisets A, B. Denote multiset union by ⊔. By Isserlis’ theorem, 
+
+E[Y] = X
+
+> m≥0
+
+(−1) m X
+
+> A′⊆A |A\A ′|=m
+
+E
+
+" Y
+
+> γ∈A ′⊔A ′⊔B
+
+˜uγ
+
+#
+
+= X
+
+> m≥0
+
+(−1) m X
+
+> A′⊆A |A\A ′|=m
+
+P(A′ ⊔ A ′ ⊔ B ) (42) where P(C) counts the number of ways to partition C into pairs of equal index pairs. Then by inclusion–exclusion, Eq. (42) exactly counts the number of ways to partition A ⊔ A ⊔ B into pairs which do not contain any of the (γ, γ ) pairs arising from each of the ˜u2 
+
+> γ
+
+− 1 factors, as fixing m
+
+such pairs in A ⊔ A yields a subset of ‘free’ index pairs A′ ⊔ A ′ where |A \ A ′| = m. Hence E[Y]
+
+is a count and thus nonnegative. To utilize this result, define the ‘coefficientless’ recombined version ˆK of ˜K and its gradation ˆK:n
+
+analogously to Eq. (40), 
+
+ˆK := 
+
+> CK 2
+
+X
+
+> n=0
+
+ˆK:n, [ ˆK:n]ij = ˆKij :n := 
+
+> K
+
+X
+
+> k=0
+
+X
+
+> ι∈I kij
+
+X
+
+> μ∈S μ
+
+X
+
+> ν∈S kν
+
+1{nμ,ν ι =n}Tμ,ν ι .
+
+Then we can bound using Lemma 25 and |θμ,ν ι |, |θμ′,ν ′ 
+
+> ι′
+
+| ≤ 1,
+
+E K2
+
+> ij :n
+
+ = X
+
+> k,ι,μ,ν
+
+X
+
+> k′,ι ′,μ ′,ν ′
+
+(−1) k+k′
+
+θμ,ν ι θμ′,ν ′ 
+
+> ι′
+
+1{nμ,ν ι =n}1{nμ′,ν ′  
+
+> ι′=n}
+
+E
+
+h
+
+Tμ,ν ι Tμ′,ν ′
+
+> ι′
+
+i
+
+≤ X
+
+> k,ι,μ,ν
+
+X
+
+> k′,ι ′,μ ′,ν ′
+
+1{nμ,ν ι =n}1{nμ′,ν ′  
+
+> ι′=n}
+
+E
+
+h
+
+Tμ,ν ι Tμ′,ν ′
+
+> ι′
+
+i
+
+53 = E
+
+h ˆK2
+
+> ij :n
+
+i
+
+. (43) Furthermore, define the ‘coefficientless’ versions of H, ∆ as 
+
+ˆH := JIrK + JEuK +
+
+> K
+
+X
+
+> k,ℓ =0
+
+JEuKk ˜ZJEvKℓ, (44) 
+
+ˆ∆ := JEuK +
+
+> K
+
+X
+
+> k=1
+
+JEvKk +
+
+> K
+
+X
+
+> k,ℓ =0
+
+(JEuKk ˜ZJEvKℓ + JEvKℓ ˜Z⊤JEuKk)+
+
+> K
+
+X
+
+> k,ℓ =0
+
+JEvKk ˜Z⊤ ˜ZJEvKℓ. (45) These correspond to removing precisely the coefficients aμij (resp. bνi , c νj ) in the entrywise decom-positions Eq. (33), Eq. (34), yielding the relations 
+
+ˆHij = X
+
+> μ∈S μ
+
+Hμij , ˆ∆ij = X
+
+> ν∈S ν
+
+∆νij 
+
+and 
+
+ˆKij = X
+
+> k,ι,μ,ν
+
+Tμ,ν ι = X
+
+> k,ι,μ,ν
+
+Hμi0i1
+
+> k
+
+Y
+
+> ℓ=1
+
+∆νℓ 
+
+> iℓiℓ+1
+
+=
+
+" KX
+
+> k=0
+
+ˆH ˆ∆k
+
+#
+
+> ij
+
+.
+
+Thus we obtain the recombined expression 
+
+ˆK =
+
+> K
+
+X
+
+> k=0
+
+ˆH ˆ∆k. (46) Since an n-fold product of matrices expands entrywise into a sum of n-fold products of entries, 
+
+ˆK:n is precisely the grading of ˆK according to (polynomial) degree. In particular, we may express 
+
+ˆK:n = Fn(JEuK, JEvK, ˜Z) for some homogeneous matrix polynomial Fn of degree n.Next, let Π be any r × r permutation matrix and let 
+
+Π+ := 
+
+ΠId−r
+
+
+
+.
+
+By symmetry, (U, V) d
+
+= ( UΠ , VΠ ) and independently 
+
+(ur+1 , · · · , u N , v r+1 , · · · , v N ) d
+
+= ( Π⊤
+
+> +
+
+ur+1 , · · · , Π⊤
+
+> +
+
+uN , Π⊤
+
+> +
+
+vr+1 , · · · , Π⊤
+
+> +
+
+vN ),
+
+which implies 
+
+
+
+JEuK, JEvK, ˜Z
+
+ d
+
+=
+
+
+
+JΠ⊤U⊤UΠ − IrK, JΠ⊤V⊤VΠ − IrK, Π⊤ 
+
+> +
+
+˜ZΠ +
+
+
+
+=
+
+
+
+Π⊤
+
+> +
+
+JEuKΠ+, Π⊤
+
+> +
+
+JEvKΠ+, Π⊤ 
+
+> +
+
+˜ZΠ +
+
+
+
+.
+
+54 Then for each n it holds that 
+
+ˆK:n = Fn
+
+
+
+JEuK, JEvK, ˜Z
+
+
+
+> d
+
+= Fn
+
+
+
+Π⊤
+
+> +
+
+JEuKΠ+, Π⊤
+
+> +
+
+JEvKΠ+, Π⊤ 
+
+> +
+
+˜ZΠ +
+
+
+
+= Π⊤
+
+> +
+
+Fn
+
+
+
+JEuK, JEvK, ˜Z
+
+
+
+Π+
+
+= Π⊤ 
+
+> +
+
+ˆK:nΠ+
+
+since Fn is a matrix polynomial, therefore ˆK:n is also distributionally invariant under the permuta-tion Π+. In particular, the second moment of ˆKij :n is equal for any pair of distinct indices i, j ≤ r,and so 
+
+E
+
+h ˆK2
+
+> ij :n
+
+i
+
+= 1
+
+r(r − 1) E
+
+" X
+
+> i,j ≤r,i ̸=j
+
+ˆK2
+
+> ij :n
+
+#
+
+≤ 1
+
+r(r − 1) E
+
+h
+
+∥ ˆK:n∥2F
+
+i
+
+≤ dr(r − 1) E
+
+h
+
+∥ ˆK:n∥2op 
+
+i
+
+. (47) 
+
+B.7 Graded tail bounds and hypercontractivity 
+
+We proceed to bound each ˆK:n. We remark that we only need to control products up to at most polylogarithmic degree since n ≤ CK 2 ≲ (log d)2, otherwise the expectation would suffer su-perexponential blowup in d. In addition, ˆK:0 = JIrK is diagonal (as is K:0 ) and does not affect Eq. (47), so we only consider n ≥ 1.Expanding all products in Eq. (46), the number of summed monomials in the expression ˆK:n =
+
+Fn(JEuK, JEvK, ˜Z) can be upper bounded as follows. Each monomial is an n-fold product of 
+
+JEuK, JEvK, ˜Z which we write as a length n sequence; there are at most 3n possible sequences. This is further partitioned into k + 1 consecutive subsequences which simultaneously determine the power k ≥ 0 of ˆ∆, and which factor of ˆH or ˆ∆ each subsequence originated from. Since all terms in Eq. (44) are distinct, and all terms in Eq. (45) are also distinct, this information uniquely specifies each term in ˆK:n. As a partition can be specified by choosing a subset of points in the sequence as break points, the total number of such partitioned sequences is at most 3n × 2n = 6 n.The discussion thus far implies that 
+
+∥ ˆK:n∥op ≤ 6n max 
+
+n
+
+∥Eu∥op , ∥Ev∥op , ∥˜Z∥op 
+
+on
+
+and so 
+
+E
+
+h
+
+∥ ˆK:n∥2op 
+
+i
+
+≤ 62n
+
+
+
+E ∥Eu∥2n
+
+> op
+
+ + E ∥Ev∥2n
+
+> op
+
+ + E
+
+h
+
+∥˜Z∥2n
+
+> op
+
+i 
+
+. (48) We now bound each moment in turn. For Eu and Ev, recall from Lemma 19 that 
+
+Pr ∥Eu∥op > C max 
+
+(√r + t
+
+√d ,
+
+√r + t
+
+√d
+
+2)! 
+
+≤ 2e−t2
+
+.
+
+55 Applying the tail integral formula and integrating by parts, we have that 
+
+E
+
+h
+
+∥Eu∥2n
+
+> op
+
+i
+
+=
+
+Z ∞
+
+> 0
+
+2ns 2n−1 Pr 
+
+
+
+∥Eu∥op > s 
+
+
+
+ds
+
+≤
+
+
+
+C
+
+r rd
+
+2n
+
++
+
+Z √d−√r
+
+> 0
+
+2n
+
+
+
+C
+
+√r + t
+
+√d
+
+2n−1
+
+2e−t2
+
+· C
+
+√d dt
+
++
+
+Z ∞√d−√r
+
+2n C
+
+√r + t
+
+√d
+
+2!2n−1
+
+2e−t2
+
+· C
+
+√d dt. 
+
+The second term is bounded, using the inequality (a + b)n ≤ 2n−1(an + bn), as 
+
+4nC 
+
+√d
+
+Z √d−√r
+
+> 0
+
+
+
+C
+
+√r + t
+
+√d
+
+2n−1
+
+e−t2
+
+dt
+
+≤ 22nnC 
+
+√d
+
+
+
+C
+
+r rd
+
+2n−1 Z ∞
+
+> 0
+
+e−t2
+
+dt + 22nnC 
+
+√d
+
+Z ∞
+
+> 0
+
+ Ct 
+
+√d
+
+2n−1
+
+e−t2
+
+dt
+
+≲ 22nnC 
+
+√d
+
+
+
+C
+
+r rd
+
+2n−1
+
++ 22nnC 
+
+√d
+
+ C
+
+√d
+
+2n−1
+
+Γ( n)
+
+≲
+
+
+
+2C
+
+r rd
+
+2n−1
+
+,
+
+where we have used that Γ( n) ≲ nn−1/2 ≪ √r2n−1 and n ≲ (log d)2.Similarly, the third term is bounded as 
+
+4nC 
+
+√d
+
+Z ∞√d−√r
+
+C
+
+√r + t
+
+√d
+
+2!2n−1
+
+e−t2
+
+dt
+
+≲ 24nnC 
+
+√d
+
+
+
+C
+
+r rd
+
+4n−2
+
++ 24nnC 
+
+√d
+
+ C
+
+√d
+
+4n−2
+
+Γ
+
+
+
+2n + 12
+
+
+
+≲
+
+
+
+2C
+
+r rd
+
+4n−2
+
+.
+
+We thus have 
+
+E
+
+h
+
+∥Eu∥2n
+
+> op
+
+i
+
+= E
+
+h
+
+∥Ev∥2n
+
+> op
+
+i
+
+≲
+
+
+
+2C
+
+r rd
+
+2n−1
+
+.
+
+For ˜Z, we have from Lemma 20 and Eq. (16) that 
+
+Pr 
+
+
+
+∥˜Z∥op > t 
+
+r rd
+
+
+
+≤ eCd (t0−t), ∀t ≥ t0
+
+for constants C, t 0. Then, substituting s = Cd (t − t0),
+
+E
+
+h
+
+∥˜Z∥2n
+
+> op
+
+i
+
+≤
+
+
+
+t0
+
+r rd
+
+2n
+
++ 2 n
+
+ rd
+
+n Z ∞
+
+> t0
+
+t2n−1eCd (t0−t) dt
+
+56 ≤
+
+
+
+t0
+
+r rd
+
+2n
+
++ 22n−1nr n
+
+Cd n+1 
+
+Z ∞
+
+> 0
+
+ sCd 
+
+2n−1
+
++ t2n−10
+
+
+
+e−s ds
+
+=
+
+
+
+t0
+
+r rd
+
+2n
+
++ 22n−1nr n
+
+Cd n+1 
+
+ Γ(2 n)(Cd )2n−1 + t2n−10
+
+
+
+≲
+
+
+
+2t0
+
+r rd
+
+2n
+
+.
+
+Recalling that ρ ≍ pr/d , we have shown that Eq. (48) is bounded as (Cρ )2n−1 for some constant 
+
+C. Combining Eq. (43) and Eq. (47), it follows that 
+
+E K2
+
+> ij :n
+
+ ≤ E
+
+h ˆK2
+
+> ij :n
+
+i
+
+≤ dr(r − 1) E
+
+h
+
+∥ ˆK:n∥2op 
+
+i
+
+≲ dr2 (Cρ )2n−1.
+
+Now fix an integer L ≍ log d such that CρL ≤ 12 . Observe that each Kij :n is a multilinear polynomial of degree at most 2n in the entries ukℓ , v kℓ , thus by Gaussian hypercontractivity, 
+
+E KLij :n
+
+1/L ≤ (L − 1) n E K2
+
+> ij :n
+
+1/2 ≲
+
+√dL r (CρL )n−1/2 =: t
+
+√L.
+
+By Markov’s inequality, 
+
+Pr( |Kij :n| > t ) ≤ t−L E KLij :n
+
+ ≲ L−L/ 2 = d−ω(1) .
+
+Therefore, union bounding over all 1 ≤ i, j ≤ d with i̸ = j and n ≲ (log d)2, we conclude: 
+
+| ˜Kij | ≤ 
+
+> CK 2
+
+X
+
+> n=1
+
+|Kij :n| ≲
+
+> CK 2
+
+X
+
+> n=1
+
+L√dr (CρL )n−1/2 ≲ (log d)3
+
+√d
+
+and hence 
+
+|Kij | ≲ (log d)3
+
+√d (49) with probability 1 − d−ω(1) .
+
+B.8 Lipschitz concentration for tail logits 
+
+We now bound the magnitude of the interactions γij when either qi or qj ≪ λ, which is true when 
+
+max {i, j } > r under Eq. Here, we only provide the argument for when qj is small. We first show that hλ is λ−1-Lipschitz w.r.t. operator norm. 
+
+Proposition 26 (operator Lipschitz bound) . For λ > 0, hλ(z) = z√z2+λ2 and arbitrary A, B ∈
+
+Rd×d, it holds that ∥hλ(A)∥op ≤ 1 and 
+
+∥hλ(A) − hλ(B)∥op ≤ λ−1∥A − B∥op . (50) 57 We remark that in general, matrix functions do not inherit the Lipschitz constant of the underlying scalar function in operator norm (although this is true in Frobenius norm; see Kittaneh [25]). For this particular result, we rely on a uniform integral representation of hλ.
+
+Proof. The first claim ∥hλ(A)∥op ≤ 1 holds since the range of hλ is contained in [−1, 1] . We now prove the main claim. We first show Eq. (50) for symmetric A, B; note that since hλ is odd, hλ is equal to the usual functional calculus when applied to symmetric matrices. Consider the integral representation 
+
+hλ(t) = 2
+
+π
+
+Z ∞
+
+> 0
+
+tt2 + δ2
+
+> s
+
+ds, δs := √λ2 + s2.
+
+For a real symmetric matrix A, define the map 
+
+hλ,R (A) := 2
+
+π
+
+Z R
+
+> 0
+
+A A2 + δ2 
+
+> s
+
+Id
+
+−1 ds
+
+so that hλ,R (A) → hλ(A) as R → ∞ . Note that 
+
+(A + i δsId)−1 = ( A − iδsId) A2 + δ2 
+
+> s
+
+Id
+
+−1,
+
+(A − iδsId)−1 = ( A + i δsId) A2 + δ2 
+
+> s
+
+Id
+
+−1,
+
+so we may express 
+
+hλ,R (A) = 1
+
+π
+
+Z R
+
+> 0
+
+(A + i δsId)−1 + ( A − iδsId)−1 ds. 
+
+Denoting the spectrum of A by σ(A), it holds that 
+
+(A ± iδsId)−1 
+
+> op
+
+= max 
+
+> μ∈σ(A)
+
+1
+
+|μ ± iδs| = max 
+
+> μ∈σ(A)
+
+1
+
+pμ2 + δ2
+
+> s
+
+≤ 1
+
+δs
+
+.
+
+Hence for all real symmetric A, B,
+
+(A ± iδsId)−1 − (B ± iδsId)−1
+
+> op
+
+= (A ± iδsId)−1(B − A)( B ± iδsId)−1
+
+> op
+
+≤ 1
+
+δ2
+
+> s
+
+∥A − B∥op 
+
+and so 
+
+∥hλ,R (A) − hλ,R (B)∥op ≤ 1
+
+π
+
+Z R
+
+> 0
+
+2
+
+λ2 + s2 ∥A − B∥op ds ≤ 1
+
+λ∥A − B∥op .
+
+Eq. (50) follows by taking R → ∞ .Now for general A, B, define the symmetric dilations 
+
+˜A := 
+
+ 0 AA⊤ 0
+
+
+
+∈ R2d×2d, ˜B := 
+
+ 0 BB⊤ 0
+
+
+
+∈ R2d×2d.
+
+58 Let the SVD of A be A = UΣV ⊤ and define the 2d × 2d orthogonal matrix 
+
+O := 1
+
+√2
+
+U UV −V
+
+
+
+.
+
+Then by a simple computation, ˜A can be diagonalized as 
+
+˜A = O
+
+Σ 00 −Σ
+
+
+
+O⊤
+
+so that 
+
+hλ( ˜A) = O
+
+hλ(Σ) 00 −hλ(Σ)
+
+
+
+O⊤ =
+
+ 0 hλ(A)
+
+hλ(A)⊤ 0
+
+
+
+.
+
+Since operator norm is preserved under dilation, we conclude: 
+
+∥hλ(A) − hλ(B)∥op = ∥hλ( ˜A) − hλ( ˜B)∥op ≤ 1
+
+λ∥ ˜A − ˜B∥op = 1
+
+λ∥A − B∥op .
+
+We now show that (a truncated version of) each logit is a centered Lipschitz function of the pair 
+
+(uj , v j ).
+
+Lemma 27. Let u, v ∼ N (0 , Id/d ) i.i.d. Define the maps 
+
+F : ( Rd)2 → R, F (u, v ) := u⊤hλ(G−j + qj uv ⊤)vi,ι : Rd → Rd, ι(u) = u
+
+1 ∨ 12 ∥u∥2
+
+.
+
+Then the map (u, v ) 7 → F (ι(u), ι (v)) is centered and (2 + 16 λ−1qj )-Lipschitz. Proof. Since (u, v ) d
+
+= ( −u, −v) and 
+
+F (ι(−u), ι (−v)) = F (−ι(u), −ι(v)) = −F (ι(u), ι (v)) ,
+
+we have E[F (ι(u), ι (v))] = 0 by symmetry. Also note that ι is a projection to an L2-ball and thus 
+
+1-Lipschitz. For (u, v ), (u′, v ′) ∈ (Rd)2, let 
+
+H := hλ(G−j + qj ι(u)ι(v)⊤), H′ := hλ(G−j + qj ι(u′)ι(v′)⊤).
+
+Then by Proposition 26 and ∥ι(u)∥2 ≤ 2,
+
+|F (ι(u), ι (v)) − F (ι(u′), ι (v′)) |≤ ∥ ι(u) − ι(u′)∥2∥H∥op ∥ι(vi)∥2 + ∥ι(u′)∥2∥H − H′∥op ∥ι(vi)∥2
+
+≤ 2∥u − u′∥2 + 4qj
+
+λ ι(u)ι(v)⊤ − ι(u′)ι(v′)⊤
+
+> op
+
+≤
+
+
+
+2 + 8qj
+
+λ
+
+
+
+∥u − u′∥2 + 8qj
+
+λ ∥v − v′∥2
+
+≤
+
+
+
+2 + 16 qj
+
+λ
+
+
+
+∥(u, v ) − (u′, v ′)∥2.
+
+This proves the assertion. 59 By Lemma 27 and concentration of Lipschitz functions of Gaussians [54, Theorem 2.26], it follows that 
+
+Pr ( |F (ι(u), ι (v)) | ≥ t) ≤ 2 exp 
+
+
+
+− dt 2
+
+2(2 + 16 λ−1qj )2
+
+
+
+where the extra d factor comes from the variance scaling of u, v . Moreover we have ∥uk∥2, ∥vk∥2 ≤
+
+2 for all k ∈ [N ] with probability 1 − e−Ω( d), so that ι(uj ) = uj , ι(vj ) = vj and 
+
+|γij | = |F (uj , v j )| ≲
+
+
+
+1 + qj
+
+λ
+
+rlog dd . (51) Under Eq, we further have qj ≤ ∥ q>r ∥∞ < λ , hence |γij | ≲
+
+qlog dd if j > r . A similar argument applies when i > r . We remark that while Eq. (51) holds for all i, j ∈ [N ], we still need the more involved argument for the leading block since our guarantee for the signal in Eq. (20) is upper bounded by eO(1) .60 C Proofs for SGD and Optimality 
+
+C.1 Proof of Theorem 5 
+
+Item i is recovered by the SGD update WSGD 1 = ηG0 iff 
+
+u⊤ 
+
+> i
+
+G0vi > max   
+
+> j̸=i
+
+u⊤ 
+
+> j
+
+G0vi. (52) The lower bound amounts to comparing the signal and noise magnitudes of the top d 12α items. For the upper bound, we will show that items i ≳ d 12α are unlikely to be recovered due to the large random noise from the top Θ(log d) competitors. First note that 
+
+max 
+
+> i̸=j
+
+|⟨ ui, u j ⟩| , |∥ ui∥22 − 1|, |⟨ vi, v j ⟩| , |∥ vi∥22 − 1| ≲
+
+rlog dd (53) with probability 1 − O(d−M ), due to the usual concentration bounds. The difference between the centered and uncentered logits can then be bounded as follows: 
+
+Lemma 28. It holds with probability 1 − O(d−M ) that 
+
+max   
+
+> i,j ∈[N]
+
+|u⊤ 
+
+> j
+
+(G0 − G)vi| ≲
+
+√log dd .
+
+This improves upon the uniform control in Eq. (21) as we can explicitly use the inner product structure of the logits in the SGD case. 
+
+Proof. Let ¯u−i := 1
+
+> N
+
+P  
+
+> j̸=i
+
+uj , then ¯u−i ∼ N (0 , N −1  
+
+> N2d
+
+Id) and so |⟨ ui, ¯u−i⟩| ≲
+
+qlog dN d for all i ∈ [N ]
+
+with probability 1 − O(d−M ). Hence, 
+
+|u⊤ 
+
+> j
+
+(G0 − G)vi| = X 
+
+> k∈[N]
+
+−qk⟨ui, ¯u⟩⟨ vk, v i⟩
+
+≤ X 
+
+> k∈[N]
+
+qk|⟨ ui, ¯u−i⟩||⟨ vk, v i⟩| + 1
+
+N
+
+X 
+
+> k∈[N]
+
+qk∥ui∥22|⟨ vk, v i⟩| ≲
+
+rlog dN d + 1
+
+N .
+
+The result follows by noting that N ≳ d.Furthermore, we have from Eq. (53) 
+
+|u⊤ 
+
+> i
+
+Gvi − qi| = qi
+
+ ∥ui∥22∥vi∥22 − 1 + X 
+
+> k̸=i
+
+qk⟨ui, u k⟩⟨ vi, v k⟩
+
+≲ qi
+
+rlog dd + log dd
+
+X 
+
+> k̸=i
+
+qk ≲ log dd
+
+61 and 
+
+|u⊤ 
+
+> j
+
+Gvi − qj ⟨vi, v j ⟩| 
+
+= qi⟨ui, u j ⟩∥ vi∥22 + qj
+
+ ∥uj ∥22 − 1⟨vi, v j ⟩ + X 
+
+> k̸=i,j
+
+qk⟨uj , u k⟩⟨ vi, v k⟩
+
+≲ qi
+
+rlog dd + qj
+
+log dd + log dd
+
+X 
+
+> k̸=i
+
+qk ≲ log dd .
+
+Combining these bounds, we see that Eq. (52) is implied by 
+
+qi ≳
+
+rlog dd > max   
+
+> j̸=i
+
+qj ⟨vi, v j ⟩ + O
+
+log dd
+
+
+
+(54) where the second bound follows from qj ≤ 1 and Eq. (53). By the Chernoff bound, for items satisfying pi ≳ log dB it holds w.h.p. that qi ≍ pi:
+
+Pr 
+
+
+
+|qi − pi| ≥ pi
+
+2
+
+
+
+≤ 2 exp 
+
+
+
+−Bp i
+
+3
+
+
+
+≲ 1
+
+dM , (55) so the first inequality in Eq. (54) holds if 
+
+pi ≳
+
+rlog dd and pi ≳ log dB .
+
+Therefore items i ≲ min {d 12α (log d)− 12α , B 1 
+
+> α
+
+(log d)− 1 
+
+> α
+
+} are always recovered, proving the lower bound. Conversely, Eq. (52) implies 
+
+qi > max   
+
+> j̸=i
+
+qj ⟨vi, v j ⟩ − O
+
+log dd
+
+
+
+. (56) First suppose that B ≳ √d(log d)α+1 and pi ≳ log dB . For each j ≤ L log d, it holds that pj ≥ d−o(1) 
+
+so that the Chernoff bound Eq. (55) holds for index j as well. Then j ≤ d− 12α i so that pj ≳ √dp i
+
+and so qj ≳ √dq i. We also have that qj ≥ 12 pj ≳ d−o(1) . Thus Eq. (56) further implies 
+
+⟨vi, v j ⟩ ≤ 1
+
+qj
+
+
+
+qi + O
+
+log dd
+
+ 
+
+≤ C
+
+√d
+
+for some constant C (independent of L). If pi ≲ log dB , we instead use 
+
+Pr ( Bq i ≥ m) ≤
+
+Bm
+
+
+
+pmi ≤
+
+eBp i
+
+m
+
+m
+
+≲ 1
+
+dM
+
+for sufficiently large m ≍ log d, so qi ≲ log dB and qj ≳ pj ≳ (L log d)−a again implies 
+
+⟨vi, v j ⟩ ≲ 1
+
+qj
+
+· log d
+
+min {B, d } ≤ C
+
+√d. (57) 62 Now since √d⟨vi, v j ⟩ is i.i.d. distributed as N (0 , ∥vi∥22) conditioned on vi and ∥vi∥2 ≥ 12 , this probability can be bounded as 
+
+Pr 
+
+
+
+max   
+
+> j≤Llog d
+
+⟨vi, v j ⟩ ≤ C
+
+√d
+
+
+
+≤ Pr( N (0 , 1) ≤ 2C)L log d ≲ 1
+
+dM
+
+by taking L (and thus B in Eq. (57)) sufficiently large. By a union bound, we conclude that no items i ≳ d 12α log d can be recovered. Finally, if B ≲ √d(log d)α+1 , repeating the analysis for Lemma 15 shows that we sample at most 
+
+O(B1/α ) items such that i > B 1/α . Aside from these items, qi = 0 and so Eq. (56) implies 
+
+⟨vi, v j ⟩ ≤ d−1+ o(1) , hence the same conclusion as above holds. We have thus shown that items 
+
+i > i ⋆ 
+
+> SGD
+
+≍ min 
+
+n
+
+d 12α (log d)1+ 1 
+
+> α
+
+, B 1
+
+> α
+
+o
+
+are not recovered with high probability. It follows that ˆp1(i | i) ≤ 12 for these items, and hence the cross-entropy loss is lower bounded as 
+
+L(WSGD 1 ) = Ei∼p[− log pW(i | i)] ≥ X
+
+> i>i ⋆
+> SGD
+
+pi log 2 ≥ eΩ
+
+
+
+max 
+
+n
+
+d 12α − 12 , B 1 
+
+> α−1
+
+o 
+
+,
+
+as was to be shown. 
+
+C.2 Proof of Proposition 6 
+
+We first show that Spec( d) is equal to the set of (bounded) spectral estimators h which maps an SVD X = ASB ⊤ to h(X) = Ah(S)B⊤ where h(S) is diagonal. Clearly, any such estimator is bi-orthogonally invariant: for any U, V ∈ O(d),
+
+h(UXV ⊤) = h(UASB ⊤V⊤) = UA h(S)B⊤V⊤ = Uh(X)V⊤.
+
+Conversely, let h ∈ Spec( d). Since h(X) = Ah(S)B⊤ by equivariance, it suffices to show that the matrix h(S) is diagonal. Let D = diag( ±1, . . . , ±1) ∈ O(d) be any diagonal sign matrix. Since 
+
+DSD = S, equivariance yields 
+
+h(S) = h(DSD ) = Dh(S)D.
+
+Looking at each entry, this implies for i̸ = j that h(S)ij = ( Dh(S)D)ij = Dii Djj h(S)ij . Choos-ing D with Dii = 1 and Djj = −1 forces h(S)ij = 0 as desired. We proceed to prove minimax optimality of Spec( d). Let νd denote the normalized Haar measure on O(d) and let (U, V) ∼ νd ⊗ νd. Given any measurable h, define its conjugation 
+
+hU,V(X) := U⊤h(UXV ⊤)V,
+
+and also define its bi-orthogonal symmetrization 
+
+¯h(X) := EU,V[hU,V(X)] = EU,V[U⊤h(UXV ⊤)V].
+
+63 The map ¯h is well-defined since h is measurable and ∥h∥F is finite. Moreover for any A, B ∈ O(d),
+
+¯h(AXB ⊤) = EU,V[U⊤h(UAXB ⊤V⊤)V]= A EU,V[( UA )⊤h(UAXB ⊤V⊤)VB ]B⊤ = A¯h(X)B⊤,
+
+hence ¯h ∈ Spec( d).Now for any U, V ∈ O(d), the loss L(W; B) = L(W; ( ui, v i)i∈[N ], B) is invariant to the simulta-neous change of basis 
+
+u′ 
+
+> i
+
+= U⊤ui, v′ 
+
+> i
+
+= V⊤vi, W′ = U⊤WV 
+
+since the values of all logits u⊤ 
+
+> j
+
+Wvi remain unchanged. Denoting the corresponding transformed gradient as G′ 
+
+> 0
+
+= P 
+
+> i
+
+qi(u′ 
+
+> i
+
+− ¯u′)( v′
+
+> i
+
+)⊤ = U⊤G0V, this implies 
+
+R(h) = E L(h(G0); ( ui, v i)i∈[N ], B)
+
+= E L(U⊤h(G0)V; ( U⊤ui, V⊤vi)i∈[N ], B)
+
+= E L(hU,V(G′
+
+> 0
+
+); ( u′
+
+> i
+
+, v ′
+
+> i
+
+)i∈[N ], B)
+
+= R(hU,V).
+
+For the last inequality, we have used that (ui, v i)i∈[N ]
+
+> d
+
+= ( u′
+
+> i
+
+, v ′
+
+> i
+
+)i∈[N ] due to isotropy of the Gaussian distribution. Also note that the map W 7 → L(W) is convex due to convexity of log-sum-exp. Taking expectations over (U, V) ∼ νd ⊗ νd and applying Jensen’s inequality yields 
+
+R(h) = EU,V[R(hU,V)] = EU,V
+
+E L(hU,V(G0))  
+
+≥ E L(EU,V[hU,V(G0)])  = R(¯h).
+
+Therefore, the infimum must be attained by a spectral estimator. 
+
+C.3 Proof of Lemma 8 
+
+We present the proof for the full uncentered gradient G = P  
+
+> i∈[N]
+
+piuiv⊤ 
+
+> i
+
+; the leave-one-out case follows similarly. As in the proof of Lemma 17, we have 
+
+G d
+
+= 1
+
+√dM1/2Z, where Zkℓ ∼ N (0 , 1) i.i.d. where M is the weighted covariance matrix of ui from Eq. (19). We first upper bound the sum of inverse singular values of G, i.e., the nuclear norm of G−1. By submultiplicativity, 
+
+∥G−1∥∗ = √d∥Z−1M−1/2∥∗ ≤ √d∥Z−1∥∗∥M−1/2∥op . (58) We now bound each term. For ∥M−1/2∥op , we have from Vershynin [51, Theorem 4.6.1] that for a sufficiently large constant C,
+
+M ⪰
+
+> Cd
+
+X
+
+> i=d
+
+p2 
+
+> i
+
+uiu⊤ 
+
+> i
+
+⪰ (Cd )−2αCd X
+
+> i=d
+
+uiu⊤ 
+
+> i
+
+⪰ (Cd )−2α · Θ(1) Id
+
+64 and so ∥M−1/2∥op ≲ dα with probability 1 − e−Ω( d).To bound ∥Z−1∥∗, we require more precise control on the singular spectrum of Z. Denote the d × k
+
+matrix consisting of the first k columns of Z as Z1: k. By the Courant–Fisher theorem, 
+
+sk(Z)2 = λk(Z⊤Z) = max   
+
+> dim E=k
+
+min  
+
+> x∈E, ∥x∥=1
+
+x⊤Z⊤Zx ≥ min 
+
+> ∥x∥=1
+
+∥Z1: kx∥22 = smin (Z1: k)2
+
+so that sk(Z) ≥ smin (Z1: k) for all k = 1 , · · · , d . Moreover by Theorem 1.1 of Rudelson and Vershynin [44], we have for all t > 0,
+
+Pr 
+
+
+
+smin (Z1: k) ≤ t(√d − √k − 1) 
+
+
+
+≤ (Ct )d−k+1 + e−Ω( d)
+
+for some constant C. Taking t = (log d)−1 and union bounding, 
+
+Pr smin (Z1: k) ≤√d − √k − 1log d : ∀k
+
+!
+
+≤
+
+> d
+
+X
+
+> k=1
+
+ C
+
+log d
+
+d−k+1 
+
++ e−Ω( d) ≲ 1log d.
+
+This further implies 
+
+sk(Z) ≥ smin (Z1: k) ≥√d − √k − 1log d ≥ d − k + 1 2√d log d
+
+for all k, hence 
+
+∥Z−1∥∗ =
+
+> d
+
+X
+
+> k=1
+
+1
+
+sk(Z) ≤ 2√d log d
+
+> d
+
+X
+
+> k=1
+
+1
+
+d − k + 1 ≲ √d(log d)2.
+
+We conclude from Eq. (58) that 
+
+∥G−1∥∗ ≲ √d · √d(log d)2 · dα = dα+1 (log d)2.
+
+Finally, for the minimum singular value, since M, Z have full rank almost surely, we can lower bound 
+
+smin (G) = 1
+
+√d min 
+
+> ∥x∥=1
+
+∥M1/2Zx∥≥ 1
+
+√d min  
+
+> ∥x∥=1
+
+M1/2 Zx
+
+∥Zx∥ min 
+
+> ∥x∥=1
+
+∥Zx∥
+
+= 1
+
+√dλmin (M1/2)smin (Z)
+
+≳ 1
+
+dα+1 log d,
+
+as was to be shown. 65 C.4 Properties of the Cubic Newton–Schulz Iteration 
+
+Lemma 29. Let h(z) = 32 z − 12 z3 be the cubic Newton–Schulz map and let h(k) denote its k-fold iterate. Then the maps z 7 → h(k)(z)/z are nonincreasing and lim k→∞ h(k)(z) = 1 = sign( z) for all z ∈ (0 , √3) .
+
+In other words, the line segment connecting the origin and the point (z, h (k)(z)) on the graph of h(k)
+
+becomes flatter as z increases, which is clear from visual inspection. 
+
+Proof. Since h maps [0 , √3] onto [0 , 1] , it holds that 0 ≤ h(k) ≤ 1 on [0 , √3] for all k ∈ N. We prove by induction that h(k)(z)/z is nonincreasing on [0 , √3] , equivalently 
+
+h(k)(z)
+
+z
+
+′
+
+= z(h(k))′(z) − h(k)(z)
+
+z2 ≤ 0 ⇔ z(h(k))′(z) ≤ h(k)(z). (59) For k = 1 , the claim is clear. Assume Eq. (59) holds, then 
+
+z(h(k+1) )′(z) = zh ′(h(k)(z))( h(k))′(z)= 32
+
+ 1 − h(k)(z)2z(h(k))′(z)
+
+≤ 32
+
+ 1 − h(k)(z)2h(k)(z).
+
+Thus, 
+
+h(k+1) (z) = h(h(k)(z)) = 
+
+32 − 12h(k)(z)2
+
+
+
+h(k)(z) ≥ z(h(k+1) )′(z).
+
+This proves the first claim. For the pointwise limit, note that the first iterate h(z) ∈ [0 , 1] for any 
+
+z ∈ (0 , √3) and also x ≤ h(x) ≤ 1 for all x ∈ [0 , 1] , so the sequence of iterates {h(k)(z)}k≥1
+
+is monotone increasing. Hence it must converge to a positive fixed point of h, the only solution being 1.66 D Proofs for Multiple Steps 
+
+D.1 Auxiliary Results 
+
+We first collect some necessary concentration inequalities. 
+
+Lemma 30. Let A ∈ RN ×m be fixed and let Z ∈ Rd×N have i.i.d. standard Gaussian entries. Then for every t ≥ 0,
+
+Pr 
+
+
+
+∥ZA ∥op ≥ ∥ A∥F + ( √d + t)∥A∥op 
+
+
+
+≤ 2e−ct 2
+
+for some universal constant c.Proof. Let T := Sm−1 × Sd−1 and define the Gaussian processes 
+
+Xu,v := ⟨ZA u, v ⟩, Yu,v := ⟨g, Au⟩ + ∥A∥op ⟨h, v ⟩,
+
+where g ∼ N (0 , IN ) and h ∼ N (0 , Id) are independent, so that 
+
+∥ZA ∥op = sup 
+
+> (u,v )∈T
+
+Xu,v . (60) We compare the increments of X, Y . For (u, v ), (w, z ) ∈ T ,
+
+E (Xu,v − Xw,z )2 = E ⟨Z, v (Au)⊤ − z(Aw)⊤⟩2F
+
+
+
+= ∥v(Au)⊤ − z(Aw)⊤∥2F
+
+= ∥Au∥22 + ∥Aw∥22 − 2⟨Au, Aw⟩⟨ v, z ⟩.
+
+On the other hand, 
+
+E (Yu,v − Yw,z )2 = ∥A(u − w)∥22 + ∥A∥2op ∥v − z∥22
+
+= ∥Au∥22 + ∥Aw∥22 − 2⟨Au, Aw⟩ + 2 ∥A∥2op (1 − ⟨ v, z ⟩).
+
+Therefore, 
+
+E (Yu,v − Yw,z )2 − E (Xu,v − Xw,z )2 = 2(1 − ⟨ v, z ⟩)
+
+
+
+∥A∥2op − ⟨ Au, Aw⟩
+
+
+
+≥ 0.
+
+Hence by the Sudakov–Fernique inequality and Eq. (60), we obtain 
+
+E[∥ZA ∥op ] = E
+
+"
+
+sup 
+
+> (u,v )∈T
+
+Xu,v 
+
+#
+
+≤ E
+
+"
+
+sup 
+
+> (u,v )∈T
+
+Yu,v 
+
+#
+
+.
+
+Since g, h are independent, the right-hand side is further bounded as 
+
+E
+
+"
+
+sup 
+
+> (u,v )∈T
+
+Yu,v 
+
+#
+
+= E
+
+
+
+sup 
+
+> u∈Sm−1
+
+⟨g, Au⟩
+
+
+
++ ∥A∥op E
+
+
+
+sup 
+
+> v∈Sd−1
+
+⟨h, v ⟩
+
+
+
+= E∥A⊤g∥2 + ∥A∥op E ∥h∥2
+
+67 ≤ ∥ A∥F + √d∥A∥op .
+
+Now for the tail estimate, the map Z 7 → ∥ ZA ∥op is ∥A∥op -Lipschitz with respect to the Frobenius norm, thus by Gaussian concentration we have 
+
+Pr ( ∥ZA ∥op ≥ E[∥ZA ∥op ] + t∥A∥op ) ≤ 2e−ct 2
+
+.
+
+Combining this with the expectation bound yields the claimed bound. 
+
+Lemma 31. Let A ∈ Rd×d be fixed and u, v ∼ N (0 , 1 
+
+> d
+
+Id) i.i.d. Then with probability 1 − O(d−M ),
+
+|u⊤Av| ≲
+
+√log dd ∥A∥F + log dd ∥A∥op .
+
+Proof. By rotational invariance, we may assume A = diag( σ1, · · · , σ d) with σ1, · · · , σ d ≥ 0.Then u⊤Av = P 
+
+> i
+
+σiuivi and du ivi is subexponential with ∥du ivi∥ψ1 = O(1) . By the subexpo-nential Bernstein inequality, 
+
+Pr  |u⊤Av| ≥ τ  ≤ 2 exp 
+
+
+
+−C min 
+
+ d2τ 2
+
+P 
+
+> i
+
+σ2
+
+> i
+
+, dτ 
+
+max i σi
+
+ 
+
+from which the statement follows. 
+
+Lemma 32 (Hanson-Wright inequality) . Let A ∈ Rd×d be fixed and u ∼ N (0 , 1 
+
+> d
+
+Id). There exists a universal constant c such that for all t > 0,
+
+Pr   u⊤Au − E[u⊤Au] > t  ≲ 2 exp 
+
+
+
+−c min 
+
+ d2t2
+
+∥A∥2F
+
+, dt 
+
+∥A∥op 
+
+ 
+
+.
+
+Proof. See Vershynin [51, Theorem 6.2.2]. 
+
+Lemma 33. Let M = PNi=1 qiuiu⊤ 
+
+> i
+
+where ui ∼ N (0 , 1 
+
+> d
+
+Id) i.i.d. and qi ≥ 0. Then with probability 
+
+1 − O(d−M ),
+
+∥M∥op ≲ ∥q∥1
+
+d + ∥q∥∞, ∥M∥F ≲ ∥q∥1
+
+√d + ∥q∥2.
+
+Proof. Let Q := diag( q1, . . . , q N ) and Z = √d u1 · · · uN
+
+ ∈ Rd×N so that Z has i.i.d. standard Gaussian entries and M = 1 
+
+> d
+
+ZQZ ⊤. By Lemma 30, it follows w.h.p. that 
+
+∥ZQ 1/2∥op ≤ ∥ Q1/2∥F + 2 √d∥Q1/2∥op = p∥q∥1 + 2 pd∥q∥∞,
+
+and hence ∥M∥op = 1 
+
+> d
+
+∥ZQ 1/2∥2op ≲ 1 
+
+> d
+
+∥q∥1 + ∥q∥∞.For the second assertion, define f (Z) = ∥ZQZ ⊤∥1/2F = ∥ZQ 1/2∥S4 where ∥·∥ S4 is the Schatten 
+
+4-norm. It holds that E[f (Z)4] = d∥q∥21 + d(d + 2) ∥q∥22 and moreover f is ∥q∥1/2 
+
+> ∞
+
+-Lipschitz: 
+
+|f (Z) − f (Z′)| ≤ ∥ (Z − Z′)Q1/2∥S4 ≤ ∥ (Z − Z′)Q1/2∥F ≤ ∥ q∥1/2 
+
+> ∞
+
+∥Z − Z′∥F.
+
+It follows from Lipschitz concentration that 
+
+f (Z)2 ≲ E[f (Z)4]1/2 + ∥q∥∞(log d)2 ≤ √d∥q∥1 + d∥q∥2,
+
+and the statement follows. 68 We will make use of the following concentration phenomenon for Gaussian maxima. 
+
+Lemma 34 (superconcentration of Gaussian maxima) . Let Z1, · · · , Z n be i.i.d standard Gaussian. There exists a constant C > 0 such that 
+
+Pr 
+
+
+
+max  
+
+> i∈[n]
+
+Zi ≤ p2 log 2 n − C log log n
+
+√log n
+
+
+
+= n−ω(1) .
+
+Proof. The Gaussian cumulative distribution function satisfies 
+
+Pr( Z ≤ a) ≤ 1 − aa2 + 1 1
+
+√2π exp 
+
+
+
+−a2
+
+2
+
+
+
+, ∀a > 0.
+
+Let 
+
+an = p2 log 2 n − C log log n
+
+√2 log 2 n
+
+so that a2 
+
+> n
+
+≤ 2 log 2 n − 2C log log n + 1 for sufficiently large n. It follows that 
+
+Pr 
+
+
+
+max  
+
+> i∈[n]
+
+Zi ≤ an
+
+
+
+≤
+
+
+
+1 − an
+
+a2 
+
+> n
+
++ 1 1
+
+√2π exp 
+
+
+
+−a2
+
+> n
+
+2
+
+ n
+
+≤
+
+
+
+1 − 12√2πa n
+
+exp 
+
+
+
+− log 2 n + C log log n − 12
+
+ n
+
+≤
+
+
+
+1 − eC log log n
+
+8n√πe log 2 n
+
+n
+
+≤ exp 
+
+
+
+− (log n)C
+
+8√πe log 2 n
+
+
+
+= n−ω(1) 
+
+for C > 1.5, where we have used 1 − z ≤ e−z for the last inequality. 
+
+D.2 Proof of Theorem 9 
+
+The logits γt,ij for i, j ∈ [N ] at step t are given as (denoting ht = hλt for brevity) 
+
+γt,ij := u⊤ 
+
+> j
+
+Wtvi = η
+
+> t−1
+
+X
+
+> s=0
+
+u⊤ 
+
+> j
+
+hs( ¯Gs)vi, ¯Gs = X
+
+> i>d s
+
+q(s) 
+
+> i
+
+uiv⊤ 
+
+> i
+
+.
+
+We choose λ0 = λ as in Theorem 3 and 
+
+dt ≍ min 
+
+(
+
+d2−(1 − 12α )t
+
+(log d)14 ,
+
+ B
+
+log d
+
+ 1
+
+> α
+
+)
+
+, λt ≍ d12 −αt d− 12 log d, ∀t ≥ 1. (61) Note that we have made no attempt to optimize the log factors. We first analyze the dynamics of the signal logits. Fix an item i satisfying i ≲ B 1 
+
+> α
+
+(log d)− 1 
+
+> α
+
+and 
+
+dτ −1 < i ≤ dτ for some 1 ≤ τ ≤ T ; when τ = 1 , the argument in Section A.3 directly applies, 69 so we assume τ ≥ 2. In particular, this implies B ≳ dατ −1 log d. Let the leave-one-out gradient at step t be ¯Gt, −i := ¯Gt − q(t) 
+
+> i
+
+uiv⊤ 
+
+> i
+
+and define the function 
+
+ϕt(q) = u⊤ 
+
+> i
+
+ht( ¯Gt, −i + qu iv⊤ 
+
+> i
+
+)vi, q ≥ 0
+
+so that γt,ii = ϕt(q(t) 
+
+> i
+
+). Repeating the argument in Lemma 12, we may express ϕ′
+
+> t
+
+(0) in terms of the SVD of ¯Gt, −i via the Daleckii–Krein formula, 
+
+ϕ′
+
+> t
+
+(0) ≍ 1
+
+d2
+
+X 
+
+> k̸=ℓ
+
+h(sk( ¯Gt, −i)) + h(sℓ( ¯Gt, −i)) 
+
+sk( ¯Gt, −i) + sℓ( ¯Gt, −i) + h(sk( ¯Gt, −i)) − h(sℓ( ¯Gt, −i)) 
+
+sk( ¯Gt, −i) − sℓ( ¯Gt, −i)+ 1
+
+d2
+
+X
+
+> k
+
+h′(sk( ¯Gt, −i)) .
+
+Since ht(z)/z ≤ λ−1 
+
+> t
+
+for all z > 0, we immediately obtain the upper bound ϕ′
+
+> t
+
+(0) ≲ λ−1 
+
+> t
+
+. For the lower bound, as in Lemma 17, we control the singular values of ¯Gt, −i using the eigenvalues of the corresponding weighted covariance matrix: 
+
+sk( ¯Gt, −i) ≲ λk(Mt)1/2, Mt := X
+
+> j>d t
+
+(q(t) 
+
+> j
+
+)2uj v⊤ 
+
+> j
+
+.
+
+When t = 0 , the bulk eigenvalue satisfies λd/ 2(M0) ≲ d−2α(log d)2 ≲ λ20 by Lemma 14. When 
+
+t ≥ 1, we instead use the following uniform bound. 
+
+Lemma 35. For all 1 ≤ t ≤ T , it holds with probability 1 − O(d−M ) over sampling of q(t) that 
+
+∥Mt∥op ≲ max 
+
+
+
+d1−2αt , d1−αt
+
+B
+
+ (log d)2
+
+d .
+
+Proof. First suppose B ≳ dαt . Choose a positive integer K ≍ 1 
+
+> d
+
+B1/α and define the sets Ik := 
+
+{dt + ( k − 1) d + 1 , · · · , d t + kd } for k ≥ 1. Consider the decomposition 
+
+Mt = X
+
+> k∈[K]
+
+X
+
+> i∈Ik
+
+(q(t) 
+
+> i
+
+)2uiu⊤
+
+> i
+
+| {z }
+
+> =: Mt,k
+
++ X
+
+> i>d t+Kd
+
+(q(t) 
+
+> i
+
+)2uiu⊤
+
+> i
+
+| {z }
+
+> =: Mt, tail
+
+. (62) As in Lemma 14, we have that 
+
+∥Mt,k ∥op ≲ max 
+
+> i∈Ik
+
+(q(t) 
+
+> i
+
+)2 ≲ max 
+
+> i∈Ik
+
+p2 
+
+> i
+
++
+
+log dB
+
+2
+
+, ∥Mt, tail ∥op ≲
+
+log dB
+
+2 B1/α 
+
+d .
+
+Therefore from B ≳ dαt ,
+
+∥Mt∥op ≲ X
+
+> k∈[K]
+
+(dt + kd )−2α +
+
+log dB
+
+2 B1/α 
+
+d
+
+≲ d−2α
+
+dt
+
+d
+
+1−2α
+
++
+
+log ddαt
+
+2 dt
+
+d ≲ d1−2αt
+
+(log d)2
+
+d .
+
+70 Now suppose B ≲ dαt . The number of items Nt satisfying i > d t in a minibatch of size B is distributed as Bin( B, ρ t) where ρt = P 
+
+> i>d t
+
+pi ≍ d1−αt , so that Nt ≍ Bρ t ≍ Bd 1−αt . We thus set 
+
+K = 0 in Eq. (62) and bound using pi ≲ d−αt ≲ 1/B ,
+
+∥Mt∥op ≤ ∥ Mt, tail ∥op ≲
+
+log dB
+
+2 Nt
+
+d ≲ (log d)2
+
+dd1−αt
+
+B .
+
+Combining both cases gives the desired bound. For t ≤ τ − 1, since B ≳ dατ −1 log d ≥ dαt , it follows that ∥Mt∥op ≲ d1−2αt d−1 log d ≲ λ2 
+
+> t
+
+and so 
+
+ϕ′
+
+> t
+
+(0) ≳ h(sd/ 2( ¯Gt, −i)) 
+
+sd/ 2( ¯Gt, −i) ≳ 1
+
+sd/ 2( ¯Gt, −i) + λt
+
+≍ 1
+
+λt
+
+.
+
+Moreover ϕ′
+
+> t
+
+(q) ≥ 0 and |ϕ′′  
+
+> t
+
+(q)| ≲ λ−2 
+
+> t
+
+hold identically as in Lemma 12 and Lemma 13. Expand-ing ϕt around zero, we obtain for all t ≤ τ − 1,
+
+u⊤ 
+
+> i
+
+ht( ¯Gt)vi = Θ q(t)
+
+> i
+
+λt
+
+!
+
++ O (q(t) 
+
+> i
+
+)2
+
+λ2
+
+> t
+
++
+
+rlog dd
+
+!
+
+. (63) Since pi ≳ log dB , a Chernoff bound gives q(t) 
+
+> i
+
+≍ pi ≲ d−ατ −1. Thus for t ≤ τ − 1,
+
+q(t)
+
+> i
+
+λt
+
+≲ d−ατ −1
+
+λτ −1
+
+≍ 1log d
+
+s
+
+ddτ −1
+
+= o(1) (64) from Eq. (61), so the second-order term is always dominated by the first. On the other hand, when 
+
+t ≥ τ the embeddings ui, v i do not appear in ¯Gt at all, hence only the noise term shows up in Eq. (63). It follows that for t ≥ τ ,
+
+γt,ii ≥ η · u⊤ 
+
+> i
+
+hτ −1( ¯Gτ −1)vi −
+
+> t−1
+
+X 
+
+> s=0 ,s ̸=τ−1
+
+η · | u⊤ 
+
+> i
+
+hs( ¯Gs)vi|
+
+≳ ηq (τ −1) 
+
+> i
+
+λτ −1
+
+− 
+
+> τ−2
+
+X
+
+> s=0
+
+ηq (s)
+
+> i
+
+λs
+
+− ηt 
+
+rlog dd
+
+≳ ηp i
+
+1
+
+λτ −1
+
+− 
+
+> τ−2
+
+X
+
+> s=0
+
+1
+
+λs
+
+!
+
+− o(1) 
+
+≳ ηd −ατ
+
+λτ −1
+
+− o(1) 
+
+≍√d
+
+(log d)4
+
+d2−(1 − 12α )τ
+
+(log d)14 
+
+!−α
+
+d2−(1 − 12α )τ −1
+
+(log d)14 
+
+!α− 12 √d
+
+log d − o(1) = (log d)2 − o(1) .
+
+It remains to bound the interaction logits. For the first gradient step, we have shown in Propo-sition 18 that u⊤ 
+
+> j
+
+h0( ¯G0)vi is eO(1 /√d) w.h.p. The interaction terms after the first step are much 71 simpler to control; the Lipschitz concentration argument in Section B.8 will suffice. We only con-sider the case j < i by symmetry. Fix τ such that dτ −1 < j ≤ dτ . By the same argument as Lemma 27, the map 
+
+(u, v ) 7 → ι(u)⊤ht
+
+ ¯Gt, −j + q(t) 
+
+> j
+
+ι(u)ι(v)⊤
+
+
+
+vi
+
+for t ≤ τ − 1 has zero mean and Lipschitz constant O(1 + λ−1 
+
+> t
+
+q(t) 
+
+> j
+
+) = O(1) by Eq. (64), therefore 
+
+u⊤ 
+
+> j
+
+ht( ¯Gt)vi concentrates as eO(1 /√d). Moreover when t ≥ τ , ¯Gt is independent of uj so the same order concentration holds. Hence for all t ≤ T ,
+
+|γt,ij | ≤ η
+
+> t−1
+
+X
+
+> s=0
+
+|u⊤ 
+
+> j
+
+hs( ¯Gs)vi| ≲ η (log d)3
+
+√d + ηt 
+
+rlog dd = o(1) .
+
+Together, we have for all t ≥ τ that 
+
+ˆpt(i | i) = eγt,ii 
+
+P 
+
+> j
+
+eγt,ij ≥ e(log d)2
+
+e(log d)2 + N e o(1) ≥ 1 − d−ω(1) , (65) and so item i is recovered at all steps t ≥ τ . We remark that by considering t < τ and choosing i > dτ −1 polylog( d), essentially the same argument shows instead that |γt,ii | = o(1) , hence the item will have near-uniform logits. Finally for the loss guarantee, it similarly follows that γt,ii ≥ − o(1) for all t, i so that no item will be significantly misclassified at any point during training: ˆpt(i | i) ≳ 1/N . Thus, 
+
+L(Wt) = Ei∼p[− log ˆ pt(i | i)] ≲ d−ω(1) + X
+
+> i>d t
+
+pi log N = eO(d1−αt ).
+
+D.3 Proof of Theorem 10 
+
+With learning rate schedule {ηt}t≥0, the logits at step t are given as 
+
+γt,ij := u⊤ 
+
+> j
+
+Wtvi =
+
+> t−1
+
+X
+
+> s=0
+
+ηs · u⊤ 
+
+> j
+
+¯Gsvi =
+
+> t−1
+
+X
+
+> s=0
+
+X
+
+> k>d s
+
+ηsq(s) 
+
+> k
+
+⟨uj , u k⟩⟨ vi, v k⟩.
+
+We first prove the lower bound. As usual, we assume the high-probability event Eq. (53) when needed. Define the sequence d0 = 1 and 
+
+dt+1 := 
+
+(min {d 12α dt(log d)− 5 
+
+> α
+
+, B 1 
+
+> α
+
+(log d)− 1 
+
+> α
+
+} dt < d, 
+
+min {d 1 
+
+> α
+
+d1− 12α 
+
+> t
+
+(log d)− 5 
+
+> α
+
+, B 1 
+
+> α
+
+(log d)− 1 
+
+> α
+
+} dt > d, (66) and set ηt ≍ dαt+1 (log d)2. It is straightforward to check for both cases of Eq. (66) that 
+
+dt+1 
+
+dt
+
+α
+
+≲
+
+√d
+
+(log d)5 , dαt+1 d12 −αt ≲ d
+
+(log d)5 . (67) Fix an item dτ −1 < i ≤ dτ so that B ≳ dατ −1 log d, and fix j̸ = i with dτ ′−1 < j ≤ dτ ′ . We control the bulk of the gradient as follows. 72 Lemma 36. It holds for all i, j and t ≤ τ − 1 that 
+
+X 
+
+> k>d t,k ̸=i,j
+
+q(t) 
+
+> k
+
+ukv⊤
+
+> k
+> F
+
+≲ d12 −αt log d. 
+
+Proof. As in Section B.2, gather all appearing terms into matrices 
+
+U = udt+1 · · · uN
+
+ , V = vdt+1 · · · vN
+
+ ∈ Rd×Θ( N ), Q = diag 
+
+
+
+q(t)
+
+> dt+1
+
+, · · · , q (t)
+
+> N
+
+
+
+.
+
+Since √dU has i.i.d. standard Gaussian entries, by Lemma 30, 
+
+∥UQV ⊤∥F ≤ √d ∥UQV ⊤∥op ≲ ∥QV ⊤∥F + √d ∥QV ⊤∥op ≲ √d ∥QV ⊤∥op .
+
+Applying Lemma 30 again to √dV gives 
+
+∥QV ⊤∥op ≲ 1
+
+√d∥Q∥F + ∥Q∥op ≤ ∥q(t) 
+
+> >d t
+
+∥2
+
+√d + ∥q(t) 
+
+> >d t
+
+∥∞.
+
+Since B ≳ dατ −1 log d ≥ dαt log d, we have that ∥q>d t ∥2 ≲ d12 −αt log d and ∥q>d t ∥∞ ≤ d−αt w.h.p. by Lemma 15. Plugging in above gives the desired result. Combining Lemma 31 and Lemma 36, we have that 
+
+X 
+
+> k>d t,k ̸=i,j
+
+q(t) 
+
+> k
+
+⟨uj , u k⟩⟨ vi, v k⟩ ≲ log dd
+
+X 
+
+> k>d t,k ̸=i,j
+
+q(t) 
+
+> k
+
+ukv⊤
+
+> k
+> F
+
+≲ (log d)2
+
+d d12 −αt . (68) Now we bound the interaction logits at step τ as 
+
+γτ,ij 
+
+= 
+
+> τ−1
+
+X
+
+> t=0
+
+ηtq(t) 
+
+> i
+
+⟨ui, u j ⟩∥ vi∥22 +  
+
+> τ∧τ′−1
+
+X
+
+> t=0
+
+ηtq(t) 
+
+> j
+
+∥uj ∥22⟨vi, v j ⟩ + 
+
+> τ−1
+
+X
+
+> t=0
+
+ηt
+
+X 
+
+> k>d t,k ̸=i,j
+
+q(t) 
+
+> k
+
+⟨uj , u k⟩⟨ vi, v k⟩
+
+≲
+
+rlog dd 
+
+> τ−1
+
+X
+
+> t=0
+
+ηtq(t) 
+
+> i
+
++
+
+rlog dd  
+
+> τ∧τ′−1
+
+X
+
+> t=0
+
+ηtq(t) 
+
+> j
+
++ (log d)2
+
+d 
+
+> τ−1
+
+X
+
+> t=0
+
+ηtd12 −αt
+
+≲ ητ −1
+
+rlog dd
+
+
+
+pi + log dB
+
+
+
++ ητ ∧τ ′−1
+
+rlog dd
+
+
+
+pj + log dB
+
+
+
++ (log d)2
+
+d 
+
+> τ−1
+
+X
+
+> t=0
+
+ηtd12 −αt
+
+≲ (log d)2
+
+rlog dd
+
+ dατ
+
+dατ −1
+
++ dατ ′
+
+dατ ′−1
+
+
+
++ (log d)4
+
+d 
+
+> τ−1
+
+X
+
+> t=0
+
+dαt+1 d12 −αt
+
+≲ 1log d,
+
+73 where we have used Eq. (68), the usual Chernoff bounds with B ≳ dατ −1 log d, and Eq. (67) for the last inequality. Next, for the signal logit, 
+
+γτ,ii = 
+
+> τ−1
+
+X
+
+> t=0
+
+ηtq(t) 
+
+> i
+
+∥ui∥22∥vi∥22 + 
+
+> τ−1
+
+X
+
+> t=0
+
+ηt
+
+X 
+
+> k>d t,k ̸=i
+
+q(t) 
+
+> k
+
+⟨ui, u k⟩⟨ vi, v k⟩
+
+≳ ητ −1q(τ −1)  
+
+> i
+
+− O
+
+ 1log d
+
+
+
+≳ (log d)2,
+
+where we have again used Eq. (68) with i = j and ητ −1q(τ −1)  
+
+> i
+
+≳ dατ (log d)2pi ≳ (log d)2. Therefore item i is recovered as in Eq. (65). We now prove the upper bound. Let {ηt}t≥0 ⊂ R≥0 be any learning rate schedule and suppose 
+
+T = o(√log d). We will recursively show that the largest item recovered by Wt+1 must satisfy w.h.p. 
+
+dτ +1 ≲
+
+(min {d 12α dτ (T log d) 1 
+
+> α
+
+, (T B ) 1 
+
+> α
+
+} dτ ≲ d(log d)−4,
+
+min {d 1 
+
+> α
+
+d1− 12α 
+
+> τ
+
+(T log d) 1 
+
+> α
+
+, (T B ) 1 
+
+> α
+
+} dτ ≳ d(log d)−4. (69) 
+
+Case I: dτ ≲ d(log d)−4 and B ≳ d12 dατ log d. The argument for this regime is a slightly more involved version of Theorem 5. Consider a fixed item i ≍ d 12α dτ so that i ≲ B 1 
+
+> α
+
+(log d)− 1 
+
+> α
+
+and competitors j with dτ < j ≤ 2dτ . Then q(t) 
+
+> j
+
+/q (t) 
+
+> i
+
+≍ pj /p i ≍ √d for all t ≤ τ and 
+
+γτ +1 ,ij − γτ +1 ,ii 
+
+=
+
+> τ
+
+X
+
+> t=0
+
+ηtq(t) 
+
+> i
+
+⟨ui, u j ⟩∥ vi∥22 +
+
+> τ
+
+X
+
+> t=0
+
+ηtq(t) 
+
+> j
+
+∥uj ∥22⟨vi, v j ⟩ +
+
+> τ
+
+X
+
+> t=0
+
+ηt
+
+X 
+
+> k>d t,k ̸=i,j
+
+q(t) 
+
+> k
+
+⟨uj , u k⟩⟨ vi, v k⟩−
+
+> τ
+
+X
+
+> t=0
+
+ηtq(t) 
+
+> i
+
+∥ui∥22∥vi∥22 −
+
+> τ
+
+X
+
+> t=0
+
+ηt
+
+X 
+
+> k>d t,k ̸=i
+
+q(t) 
+
+> k
+
+⟨ui, u k⟩⟨ vi, v k⟩
+
+=
+
+> τ
+
+X
+
+> t=0
+
+ηt q(t) 
+
+> j
+
+⟨uj − ui, u j ⟩⟨ vi, v j ⟩ + q(t) 
+
+> i
+
+⟨ui, u j − ui⟩∥ vi∥22 + X  
+
+> k>d τ,k ̸=i,j
+
+q(t) 
+
+> k
+
+⟨uj − ui, u k⟩⟨ vi, v k⟩
+
+!
+
++ ( uj − ui)⊤
+
+> τ
+
+X
+
+> t=0
+
+ηt
+
+X
+
+> dt<k ≤dτ
+
+q(t) 
+
+> k
+
+⟨vi, v k⟩uk
+
+| {z }
+
+> =: w
+
+. (70) Here, we have separated into terms involving items k > d τ (including the signal and competitor items i, j ), which can be controlled stepwise, and terms involving items k ≤ dτ arising from previous gradients, which we control as a group. Let us first examine the terms in the brackets. We have that 
+
+q(t) 
+
+> j
+
+⟨− ui, u j ⟩⟨ vi, v j ⟩ + q(t) 
+
+> i
+
+⟨ui, u j − ui⟩∥ vi∥22 ≲ log dd pj + pi ≲ d− 12 d−ατ
+
+and also by Eq. (68) 
+
+X  
+
+> k>d τ,k ̸=i,j
+
+q(t) 
+
+> k
+
+⟨uj − ui, u k⟩⟨ vi, v k⟩ ≲ (log d)2
+
+d d12 −ατ ,
+
+74 which is dominated by the previous upper bound under dτ ≲ d(log d)−4. Hence we may choose 
+
+C = Θ(1) so that ⟨vi, v j ⟩ ≥ C/ √d implies for all t ≤ τ ,
+
+q(t) 
+
+> j
+
+⟨uj − ui, u j ⟩⟨ vi, v j ⟩ + q(t) 
+
+> i
+
+⟨ui, u j − ui⟩∥ vi∥22 + X  
+
+> k>d τ,k ̸=i,j
+
+q(t) 
+
+> k
+
+⟨uj − ui, u k⟩⟨ vi, v k⟩
+
+≳ Cq (t)
+
+> j
+
+√d − Θ( d− 12 d−ατ ) > 0.
+
+Then conditioned on vi satisfying ∥vi∥ = Θ(1) , ⟨vi, v j ⟩ ≥ C/ √d holds with constant probability independently for each dτ < j ≤ 2dτ , so the set J of such items j has size Θ( dτ ) w.h.p. Now conditioning on variables v1, · · · , v N and u1, · · · , u dτ (and thus w and J ), the scalars u⊤ 
+
+> i
+
+w
+
+and u⊤ 
+
+> j
+
+w for j ∈ J are i.i.d. Gaussian, hence the largest among them is not u⊤ 
+
+> i
+
+w with probability 
+
+1 − Θ( d−1 
+
+> τ
+
+). It follows from Eq. (70) that 
+
+max   
+
+> j̸=i
+
+γτ +1 ,ij − γτ +1 ,ii > max  
+
+> j∈J
+
+(uj − ui)⊤w > 0
+
+and thus item i cannot be recovered with probability 1 − Θ( d−1 
+
+> τ
+
+), showing that dτ +1 ≲ d 12α dτ .
+
+Case II: dτ ≳ d(log d)−4 and B ≳ dd α− 12 
+
+> τ
+
+log d. Fix an item i ≍ d 1 
+
+> α
+
+d1− 12α 
+
+> τ
+
+with i ≲ B 1 
+
+> α
+
+(log d)− 1 
+
+> α
+
+,noting that i ≫ d, and a competitor j ∈ J = {i + 1 , · · · , i + √d}. Decompose 
+
+γτ +1 ,ij − γτ +1 ,ii 
+
+= ( uj − ui)⊤
+
+> τ
+
+X
+
+> t=0
+
+ηt
+
+ X
+
+> dt<k ≤dτ
+
+q(t) 
+
+> k
+
+⟨vi, v k⟩uk + X 
+
+> k>d τ,k / ∈J ∪{ i}
+
+q(t) 
+
+> k
+
+⟨vi, v k⟩uk
+
+| {z }
+
+> =: w
+
+(71) 
+
++
+
+> τ
+
+X
+
+> t=0
+
+ηt
+
+X
+
+> k∈J
+
+q(t) 
+
+> k
+
+⟨uj − ui, u k⟩⟨ vi, v k⟩ +
+
+> τ
+
+X
+
+> t=0
+
+ηtq(t) 
+
+> i
+
+⟨uj − ui, u i⟩∥ vi∥22. (72) The competing fluctuations will come from Eq. (71). Rewrite 
+
+w = X
+
+> k≤dτ
+
+X
+
+> t:dt<k
+
+ηtq(t) 
+
+> k
+
+⟨vi, v k⟩uk + X 
+
+> k>d τ,k / ∈J ∪{ i}
+> τ
+
+X
+
+> t=0
+
+ηtq(t) 
+
+> k
+
+⟨vi, v k⟩uk.
+
+In particular, w is isotropic Gaussian conditioned on all {vi}i∈[N ], so ∥w∥22 concentrates as 
+
+E ∥w∥22 | { vi}i∈[N ]
+
+ = v⊤
+
+> i
+
+ X
+
+> k≤dτ
+
+X
+
+> t:dt<k
+
+η2 
+
+> t
+
+(q(t) 
+
+> k
+
+)2vkv⊤ 
+
+> k
+
++ X 
+
+> k>d τ,k / ∈J ∪{ i}
+> τ
+
+X
+
+> t=0
+
+η2 
+
+> t
+
+(q(t) 
+
+> k
+
+)2vkv⊤
+
+> k
+
+vi
+
+=
+
+> τ
+
+X
+
+> t=0
+
+η2 
+
+> t
+
+· v⊤
+
+> i
+
+ X
+
+> k>d t,k / ∈J ∪{ i}
+
+(q(t) 
+
+> k
+
+)2vkv⊤
+
+> k
+
+| {z }
+
+> =: Ωt
+
+vi.
+
+75 Denote by ˜q(t) ∈ RN −dt−d−1 the vector consisting of all (q(t) 
+
+> k
+
+)2 with k > d t, k / ∈ J ∪ { i} for each 
+
+t ≤ τ . The number of items k > i + √d in the minibatch is O(Bi −α) by the Chernoff bound. We have that 
+
+∥˜q(t)∥1 = X
+
+> k>d t,k / ∈J ∪{ i}
+
+(q(t) 
+
+> k
+
+)2 = X
+
+> k>d t,k / ∈J ∪{ i}
+
+p2 
+
+> k
+
+± O Bi −α
+
+log dB
+
+2!
+
+≍ d1−2αt ,
+
+∥˜q(t)∥2 ≲ X
+
+> dt<k<i
+
+p4 
+
+> k
+
++ X
+
+> k>i +√d
+
+(q(t) 
+
+> k
+
+)4 ≲ d1−4αt + Bi −α
+
+log dB
+
+4
+
+≲ d1−4αt + d2−4ατ log dd4 ≲ d1−4αt ,
+
+∥˜q(t)∥∞ ≤ max  
+
+> k>d t,k / ∈J ∪{ i}
+
+p2 
+
+> k
+
++
+
+log dB
+
+2
+
+≲ d−2αt .
+
+Then Tr( Ωt) ≍ ∥ ˜q(t)∥1 and by the Hanson-Wright inequality and Lemma 33, we have w.h.p. 
+
+v⊤ 
+
+> i
+
+Ωtvi − Tr( Ωt)
+
+d ≲
+
+√log dd ∥Ωt∥F + log dd ∥Ωt∥op 
+
+≲
+
+√log dd
+
+d1−2αt
+
+√d + d1−4αt
+
+
+
++ log dd
+
+d1−2αt
+
+d + d−2αt
+
+
+
+= o
+
+d1−2αt
+
+d
+
+
+
+.
+
+Defining ¯ηt := max 0≤s≤t ηs, noting that pi ≍ d−1d12 −ατ , we thus have 
+
+∥w∥22 ≍ E ∥w∥22 | { vi}i∈[N ]
+
+ ≍
+
+> τ
+
+X
+
+> t=0
+
+η2 
+
+> t
+
+· v⊤ 
+
+> i
+
+Ωtvi ≳
+
+> τ
+
+X
+
+> t=0
+
+η2 
+
+> t
+
+· d1−2αt
+
+d ≳ d¯η2 
+
+> τ
+
+p2 
+
+> i
+
+.
+
+Also, for Eq. (72), noting that items k ∈ J also satisfy k ≲ B 1 
+
+> α
+
+(log d)− 1 
+
+> α
+
+so that q(t) 
+
+> k
+
+≍ pi, we may directly bound 
+
+> τ
+
+X
+
+> t=0
+
+ηt
+
+X
+
+> k∈J
+
+q(t) 
+
+> k
+
+⟨uj − ui, u k⟩⟨ vi, v k⟩ ≲
+
+> τ
+
+X
+
+> t=0
+
+ηtpi
+
+rlog dd + |J | log dd
+
+!
+
+≲ log d
+
+√d τ ¯ητ pi
+
+and 
+
+> τ
+
+X
+
+> t=0
+
+ηtq(t) 
+
+> i
+
+⟨uj − ui, u i⟩∥ vi∥22 ≲ τ ¯ητ pi.
+
+Defining the i.i.d. standard Gaussian variables Zk := √du ⊤ 
+
+> kw
+> ∥w∥2
+
+for k ∈ J ∪ { i}, we have thus shown that 
+
+γτ +1 ,ij − γτ +1 ,ii ≥ ⟨ uj − ui, w ⟩ − O(τ ¯ητ pi) ≥ ∥w∥2
+
+√d (Zj − Zi − O(T )) .
+
+If item i was recovered at step τ + 1 , it follows that Zi ≥ Zj − O(T ) for all j ∈ J . On the other hand, by Gaussian superconcentration (Lemma 34) it holds that max j∈J Zj = p2 log 2 |J | + o(1) .By Mill’s inequality, supposing T = o(√log d),
+
+Pr 
+
+
+
+Zi ≥ p2 log 2 |J | − O(T )
+
+
+
+≲ e− 12
+
+> 
+
+√2 log 2 |J |− O(T )
+
+> 2
+
+p2 log 2 |J | ≲ eO 
+
+> 
+> T
+
+√log |J | 
+
+> 
+
+|J | plog |J | = o(poly( d)) 
+
+√d .
+
+76 Hence item i cannot be recovered with constant probability among competitors J (in fact, super-concentration is not needed to show an o(1) bound for each step τ , but we elect to demonstrate the stronger near-uniform bound). 
+
+Case III: batch size threshold. Items i ≍ (T B ) 1 
+
+> α
+
+have a constant probability of not being sampled in any minibatch, q(0)  
+
+> i
+
+= · · · = q(T ) 
+
+> i
+
+= 0 so that Wτ +1 is independent of ui, v i. Fixing 
+
+(log d)2 such items and comparing to item 1, it holds that γτ +1 ,i 1 − γτ +1 ,ii = ( ui − u1)⊤Wτ +1 vi
+
+has probability 12 of being positive independently for each i, and so at least one of these items will not be recovered w.h.p. Therefore, if dτ ≳ d(log d)−4 but B ≲ dd α− 12 
+
+> τ
+
+log d, then dτ +1 ≲ (T B ) 1 
+
+> α
+
+≲ d 12α dτ (T log d) 1 
+
+> α
+
+; and if dτ ≳ d(log d)−4 but B ≲ dd α− 12 
+
+> τ
+
+log d, then dτ +1 ≲ (T B ) 1 
+
+> α
+
+≲ d 1 
+
+> α
+
+d1− 12α 
+
+> τ
+
+(T log d) 1 
+
+> α
+
+. Combining with the previous cases concludes Eq. (69). 77

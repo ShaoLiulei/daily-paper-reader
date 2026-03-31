@@ -1,0 +1,630 @@
+Title: Efficient Encrypted Computation in Convolutional Spiking Neural Networks with TFHE
+
+URL Source: https://arxiv.org/pdf/2603.26781v1
+
+Published Time: Tue, 31 Mar 2026 00:07:21 GMT
+
+Number of Pages: 17
+
+Markdown Content:
+# Efficient Encrypted Computation in Convolutional Spiking Neural Networks with TFHE 
+
+Longfei Guo 1,3, Pengbo Li 2,3, Ting Gao 2,3,4∗, Yonghai Zhong 2,3, Haojie Fan 2,3, Jinqiao Duan 5,6 
+
+> 1
+
+School of Cyber Science and Engineering, Huazhong University of Science and Technology, Wuhan, China  
+
+> 2
+
+School of Mathematics and Statistics, Huazhong University of Science and Technology, Wuhan, China  
+
+> 3
+
+Center for Mathematical Science, Huazhong University of Science and Technology, Wuhan, China  
+
+> 4
+
+Steklov-Wuhan Institute for Mathematical Exploration, Huazhong University of Science and Technology, China  
+
+> 5
+
+Department of Mathematics and Department of Physics, Great Bay University, Dongguan, China  
+
+> 6
+
+Guangdong Provincial Key Laboratory of Mathematical and Neural Dynamical Systems, Dongguan, China 
+
+Abstract. With the rapid advancement of AI technology, we have seen more and more concerns on data privacy, leading to some cutting-edge research on machine learning with encrypted computation. Fully Homo-morphic Encryption (FHE) is a crucial technology for privacy-preserving computation, while it struggles with continuous non-polynomial func-tions, as it operates on discrete integers and supports only addition and multiplication. Spiking Neural Networks (SNNs), which use discrete spike signals, naturally complement FHE’s characteristics. In this paper, we introduce FHE-DiCSNN, a framework built on the TFHE scheme, utiliz-ing the discrete nature of SNNs for secure and efficient computations. By leveraging bootstrapping techniques, we successfully implement Leaky Integrate-and-Fire (LIF) neuron models on ciphertexts, allowing SNNs of arbitrary depth. Our framework is adaptable to other spiking neuron models, offering a novel approach to homomorphic evaluation of SNNs. Additionally, we integrate convolutional methods inspired by CNNs to enhance accuracy and reduce the simulation time associated with random encoding. Parallel computation techniques further accelerate bootstrap-ping operations. Experimental results on the MNIST and FashionMNIST datasets validate the effectiveness of FHE-DiCSNN, with a loss of less than 3% compared to plaintext, respectively, and computation times of under 1 second per prediction. We also apply the model into real medi-cal image classification problems and analyze the parameter optimization and selection. 
+
+Keywords: Privacy-preserving · Fully homomrphic encryption · SNNs 
+
+· image classification 
+
+# 1 Introduction 
+
+Privacy-Preserved AI In recent years, privacy preservation has garnered sig-nificant attention in the field of machine learning. Fully Homomorphic Encryp-tion (FHE) has become the most suitable tool to facilitate privacy-preserving 1
+
+> arXiv:2603.26781v1 [cs.CR] 25 Mar 2026
+
+machine learning (PPML) due to its strong cryptographic security and the abil-ity to perform algebraic operations directly on the ciphertext. The foundation of FHE was established in 2009 when Gentry introduced the first fully homo-morphic encryption scheme [11] capable of evaluating arbitrary circuits. His pio-neering work not only proposed the FHE scheme but also outlined a method for constructing a comprehensive FHE scheme from a model with limited yet suf-ficient homomorphic evaluation capacity. Inspired by Gentry’s groundbreaking contributions, subsequent second-generation schemes like BGV [4] and FV [10] had been proposed. The evolution of FHE schemes had continued with third-generation models such as FHEW [9], TFHE [7], and Gao [5], which provided very efficient bootstrapping operations and make unlimited homomorphic com-putation operations possible. The CKKS scheme [6] had attracted considerable interest as a suitable tool for PPML implementation, given its natural handling of encrypted real numbers. However, for homomorphic encryption machine learning, existing FHE frame-works only support arithmetic operations such as addition and multiplication, and the widely used activation functions such as ReLu, sigmoid are non-arithmetic functions. Traditional prediction frameworks that use arithmetic functions to ap-proximate non-arithmetic functions are very inefficient. In a distinct study [2], the authors developed the FHE-DiNN framework, a discrete neural network framework predicated on the TFHE scheme. Unlike traditional neural networks, FHE-DiNN had discretized network weights into integers and utilized the sign function as the activation function. The computation of the sign function had been achieved through bootstrapping on ciphertexts. Each neuron’s output had been refreshed with noise, thereby enabling the neural network to extend com-putations to any depth. Although FHE-DiNN offered high computational speed, it had compromised model prediction accuracy. Given the close resemblance between the sign function and the output of Spiking Neural Network(SNN) neu-rons, this work provided a compelling basis for investigating efficient homomor-phic evaluations of SNNs in the context of PPML. 
+
+CNNs and SNNs Convolutional Neural Networks (CNNs) are powerful tools in computer vision, known for their high accuracy and automated feature extrac-tion [8]. CNNs rely on three key conceptslocal receptive fields, weight sharing, and spatial subsamplingimplemented through convolutional and pooling layers. These components eliminate the need for manual feature extraction and speed up training, making CNNs ideal for visual recognition tasks [24]. In recent years, CNNs have been widely used in image classification [23], Natural Language Pro-cessing (NLP) [3], object detection [17], and video classification [1], driving sig-nificant progress in deep learning. Spiking Neural Networks (SNNs), the third generation of neural networks [20], operate more like biological systems. Unlike Artificial Neural Networks (ANNs), SNNs process information in both space and time, capturing the tem-poral dynamics of biological neurons. Neurophysiologists have developed various neuron models for SNNs, such as the Hodgkin-Huxley (H-H) model [14], leaky 2integrate-and-fire (LIF) model [25], Izhikevich model [15], and the spike response model (SRM) [16]. These models use spikes or "action potentials" to communi-cate information, closely mimicking brain activity. This time-based processing makes SNNs more effective for handling time-series data compared to traditional neural networks. Convolution Spiking Neural Networks (CSNNs) combine CNNs’ spatial fea-ture extraction with SNNs’ temporal processing, enhancing computational effi-ciency and accuracy. Zhou et al. [30] developed a sophisticated SNN architecture using the VGG16 model and GoogleNet. Zhang et al. [27] created a deep CSNN with two convolutional and two hidden layers, using a ReL-PSP-based spiking neuron model and temporal backpropagation. Other CSNNs range from conver-sions of standard CNNs to architectures that apply backpropagation using rate coding or multi-peak neuron strategies [29]. In this paper, we propose the FHE-DiCSNN framework. Based on the efficient TFHE scheme, this framework combines the discrete characteristics of the CSNN model and efficient computation to realize the accurate prediction of ciphertext neural networks. Our contributions are summarized as follows: 
+
+– Proposed FHE-Fire and FHE-Reset Functions Based on Bootstrapping: We introduced FHE-Fire and FHE-Reset functions to enable LIF neuron com-putations on ciphertext, providing a novel solution for privacy preservation in SNN. 
+
+– We enhanced the framework by optimizing encoding methods and boot-strapping computations, ensuring no noise accumulation in deep network extensions while improving computation accuracy and efficiency. 
+
+– Extensive experiments on public datasets and real-world medical datasets demonstrated the feasibility of efficient ciphertext computations, laying a foundation for practical applications of homomorphic encryption techniques. 
+
+# 2 Preliminary Knowledge 
+
+This section provides an overview of bootstrapping in the TFHE scheme and background knowledge on SNNs. 
+
+2.1 TFHE scheme Notations Set Zp = {− p 
+
+> 2
+
++ 1 , . . . , p
+
+> 2
+
+} denote a finite ring defined over the set of integers. The message space for homomorphic encryption is defined within this finite ring Zp.Consider N = 2 k and the cyclotomic polynomial XN + 1 , then 
+
+Rq,N ≜ R/qR ≡ Zq [X]/ (XN + 1 ) ≡ Z[X]/ (XN + 1 , q ) .
+
+Similarly, we can define the polynomial ring Rp,N .3FHEW-like Cryptosystem – LWE (Learning With Errors). We revisit the encryption form of LWE [22], which is employed to encrypt a message m ∈ Zp as 
+
+LW E s(m) = ( a, b ) = 
+
+(
+
+a, ⟨a, s⟩ + e +
+
+⌊ qp m
+
+⌉) 
+
+mod q, 
+
+where a ∈ Znq , b ∈ Zq , and the keys are vectors s ∈ Znq .
+
+– RLWE (Ring Learning With Errors) [19]. An RLWE ciphertext of a message m(X) ∈ Rp,N can be obtained as follows: 
+
+RLW E s(m(X)) = ( a(X), b (X)) , where b(X) = a(X)·s(X)+ e(X)+ 
+
+⌊ qp m(X)
+
+⌉
+
+,
+
+where a(X) ← Rq,N is uniformly chosen at random, and e(X) ← χnσ is selected from a discrete Gaussian distribution with parameter σ.
+
+– GSW [12]. Given a plaintext m ∈ Zp, the plaintext m is embedded into a power of a polynomial to obtain Xm ∈ Rp,N , which is then encrypted as 
+
+RGSW (Xm). RGSW enables efficient computation of homomorphic multi-plication, denoted as ⋄, while effectively controlling noise growth: 
+
+RGSW (Xm0 ) ⋄ RGSW (Xm1 ) = RGSW (Xm0+m1 ) ,RLW E (Xm0 ) ⋄ RGSW (Xm1 ) = RLW E (Xm0+m1 ) .
+
+Programmable Bootstrapping TFHE/FHEW bootstrapping is a core algo-rithm in FHE that enables the computation of any function g with the properties 
+
+g : Zp → Zp and g(v + p 
+
+> 2
+
+) = −g(v). This function g, often referred to as the program function in bootstrapping, defines the transformation applied during the bootstrapping process. Given an LWE ciphertext LW E (m)s = ( a, b ), where m ∈ Zp, a ∈ ZNp ,and b ∈ Zp, it is possible to bootstrap it into LW E s(g(m)) with refreshed ciphertext noise. This process effectively reduces noise accumulation, ensuring the ciphertext remains suitable for further homomorphic computations. 
+
+RLW E z
+
+> Sample Extraction
+
+−−−−−−−−−−−−→ LW E z (g(m)) = ( a, b 0) ,
+
+where a = ( a0, . . . , a N −1) is the coefficient vector of a(X), and b0 is the coefficient of b(X).Given a program function g, bootstrapping is a process that takes an LWE ciphertext LW E s(m) as input and outputs LW E s(g(m)) with the original secret key s:bootstrapping (LW E s(m)) = LW E s(g(m)) .42.2 Leaky Integrate-and-Fire Neuron Model and SNNs 
+
+Neurophysiologists have developed several models to describe the dynamic be-havior of neuronal membrane potentials, crucial for understanding the funda-mental properties of SNNs. Among these, LIF model [26] is widely used due to its simplicity and effectiveness in capturing essential neuronal dynamics, such as leakage, accumulation, and threshold excitation. The LIF model is expressed as: 
+
+τ dV
+
+dt = Vrest − V + RI, (1) where τ represents the membrane time constant, Vrest is the resting potential, 
+
+R is the membrane impedance, and I is the input current. This model can be discretized as: 
+
+
+
+H[t] = V [t − 1] + 1
+
+τ (−(V [t − 1] − Vreset ) + I[t]) ,S[t] = Fire (H[t] − Vth ),V [t] = Reset( H[t]) = 
+
+
+
+Vreset , if H[t] ≥ Vth ,H[t], if Vreset ≤ H[t] ≤ Vth ,Vreset , if H[t] ≤ Vreset .
+
+(2) where H[t] represents the membrane potential, S[t] the spike function, and Vth 
+
+the firing threshold. The Fire (·) function is a step function. The input current I[t]
+
+is the weighted sum of external inputs, such as those from pre-synaptic neurons or image pixels, denoted as I[t] = ∑ 
+
+> j
+
+ωj xj [t]. These inputs can be processed using either convolutional or fully connected layers in a neural network. Training SNNs is challenging due to the non-differentiability of spikes [28]. Traditional backpropagation can’t be directly applied, leading to alternative training methods like ANN-to-SNN conversion, unsupervised Spike-Timing-Dependent Plasticity (STDP), and gradient surrogate methods. We adopt a gradient sur-rogate approach, using continuous functions to approximate the derivative of spikes for backpropagation. To handle diverse input patterns, different encoding methods are used, such as rate coding, temporal coding, and population coding [13]. In this study, Pois-son encoding was used to convert input data into spike trains using a Poisson process. For a time interval ∆t divided into T steps, a random matrix Mt with values in [0 , 255] is generated. Each time step t, the normalized pixel matrix Xo
+
+is compared with Mt to determine spike occurrences. The final spike encoding 
+
+X is: 
+
+X(i, j ) = 
+
+{
+
+0, if Xo(i, j ) ≤ Mt(i, j ),
+
+1, if Xo(i, j ) > M t(i, j ),
+
+where i and j are pixel coordinates. This encoding aligns with a Poisson distribution, effectively adapting input stimuli for SNNs. 53 Proposed Methods 
+
+3.1 Convolutional Spiking Neural Networks 
+
+In SNN neural networks, Poisson coding is a simple stochastic coding technique used to convert continuous signals, such as images, into impulse signals, which are thus suitable as inputs to SNN neural networks. However, Poisson coding itself lacks the ability to extract image features. Due to its stochastic nature, signal coding using Poisson coding requires a large number of impulse samples to encode the complete information, which in turn increases the computational cost and time overhead. Convolutional Spiking Neural Network(CSNN) is a neural network model that combines CNN and SNN, which replaces the use of Poisson coding. In CSNN, the previously mentioned LIF model or other spiking models are used to simulate the electrical activity of the neurons, forming the spiking activation layer in the network, while the convolutional layer of CSNN is used to extract image features and encode them as spiking signals. By utilising the spatial feature extraction capability of CNNs and the spiking properties of SNNs, CSNNs can benefit from both convolutional operations and discrete spiking.A visualisation of the CSNN is shown in Figure (1).  
+
+> Fig. 1. Schematic visualisation of the CSNN network. For the network, we use a con-volutional layer with kernal_size = 3, stridge = 1,padding=1, and an average pooling layer with kernal_size = 2, stridge = 2, padding=0.
+
+3.2 Discretized CSNN 
+
+CSNN relies on real numbers for computation, and the outputs of neurons and network weights are represented as continuous values. However, homomorphic encryption algorithms require the computation to be defined over a ring of in-tegers. Therefore, the outputs and weights of the neural network must be dis-cretised into integers. Discretized CSNNs are characterised by the fact that the neuron outputs consist fundamentally of discrete-valued signals and only the weights need to be discretised. From this perspective, CSNNs are more suitable for homomorphic computation than conventional neural networks. 6We utilize fixed-precision real numbers and apply suitable scaling to convert the weights into integers, effectively discretizing CSNNs into DiCSNNs(Discretized Convolutional Spiking Neural Network). Denote this discretization method as the following function: 
+
+ˆx ≜ Discret( x, θ ) = ⌊x · θ⌉,
+
+where θ ∈ Z is referred to as the scaling factor, and ⌊·⌉ represents rounding to the nearest integer. The discretized result of x is denoted as ˆx. Within the encryption process, all relevant numerical values are defined on the finite ring Zp. Hence, it is imperative to carefully monitor the numerical fluctuations throughout the computation to prevent reductions modulo p, as such reductions could give rise to unanticipated errors in the computational outcomes. Despite scaling and discretizing the weights, several challenges remain in achieving a fully homomorphic encryption-compatible CSNN (FHE-CSNN): 1) The original equations of LIF neurons (Equation 2) and the average pool-ing layer involve division operations, which are incompatible with homomorphic computation. Alternative approaches are necessary to eliminate explicit division while maintaining FHE compatibility. 2) The Fire function, representing the step function in LIF neurons, depends on the bootstrap function g in TFHE. This function must satisfy the condition 
+
+g(x) = −g ( p 
+
+> 2
+
++ x). The Sign function meets this requirement and is worth considering as a substitute for the Fire function. To address these challenges, we introduce Theorem 1, which explains the iterative process of discrete LIF neurons. 
+
+Theorem 1. Under the given conditions Vreset = 0 and Vth = 1 , Eq.( ?? ) can be discretized into the following equivalent form with a discretization scaling factor 
+
+θ:
+
+
+
+ˆH[t] = ˆV [t − 1] + ˆI[t],
+
+2S[t] = Sign 
+
+( ˆH[t] − ˆV τ
+
+> th
+
+)
+
++ 1 ,
+
+ˆV [t] = Reset( ˆH[t]) = 
+
+
+
+ˆVreset , if ˆH[t] ≥ ˆV τ
+
+> th
+
+, ;⌊ τ −1 
+
+> τ
+
+ˆH[t]
+
+⌉
+
+, if ˆVreset ≤ ˆH[t] < ˆV τ 
+
+> th
+
+;ˆVreset , if ˆH[t] ≤ ˆVreset .
+
+(3) 
+
+Here, the hat symbol represents the discretized values, and ˆV τ 
+
+> th
+
+= θ · τ . More-over ˆI[t] = ∑ ˆωj Sj [t].
+
+Proof. We multiply both sides of Equations of the LIF model(Eq.( ?? )) by τ and the Sign function has been substituted for the Fire function, which yields the following equations: 7
+
+τ H [t] = ( τ − 1) V [t − 1] + I[t],
+
+2S[t] = Sign (τ H [t] − V τ 
+
+> th
+
+) + 1 ,
+
+(τ − 1) V [t] = Reset( τ H [t]) = 
+
+
+
+0, if τ H [t] ≥ V τ
+
+> th
+
+;  
+
+> τ−1
+> τ
+
+(τ H [t]) , if 0 ≤ τ H [t] ≤ V τ
+
+> th
+
+;0, if τ H [t] ≤ 0.
+
+Then, we treat τ H [t] and (τ −1) V [t−1] as separate iterations objects. Therefore, we can rewrite τ H [t] as H[t] without ambiguity, as well as (τ − 1) V [t − 1] .Finally, by multiplying the corresponding discretization factor θ, we obtain Eq3. Note that since the division operation has been moved to the Reset function, rounding is applied during discretization. In Eq.(3), the Leaky Integrate-and-Fire (LIF) model degenerates into the Integrate-and-Fire (IF) model when V τ 
+
+> th
+
+= 1 and τ = ∞. To facilitate further discussions, we will refer to this set of equations as the LIF(IF) function. 
+
+2S[t] = LIF (I[t]) ,
+
+2S[t] = IF (I[t]) . (4) LIF(IF) model twice spike signals in Eq (4). If left unaddressed, the next Spiking Activation Layer would receive twice the input. To tackle this issue, we propose a multi-level discretization method that can also resolve the division problem in average pooling. Suppose the input signal is given by 
+
+I[t] = ∑ ωj Sj [t], (5) where ωj represents the weight parameter. For the input to the next layer after the LIF neuron, the normal singular input can be restored by adjusting the scaling factor as follows: 
+
+ˆI[t] = ∑ Discret( ωj , θ
+
+2 ) · 2Sj ≈ θ · I[t]. (6) For the division involved in the pooling layer, the scaling factor is adjusted from θ to θ/n as follows: 
+
+ˆI[t] = ∑
+
+> j
+
+Discret( ωj , θn ) ·
+
+(∑
+
+> k
+
+Sk[t]
+
+)
+
+≈ θ · I[t], (7) where n represents the divisor in the average pooling layer. By leveraging Theorem 1 and the multilevel discretization method, we can ef-fectively address both the discretization and division challenges, ensuring smooth computation of CSNNs on ciphertexts. 83.3 Homomorphic Evaluation of DiCSNNs 
+
+In the framework of FHE-DiCSNN, homomorphic encryption computation is reduced to two main processes: the ciphertext computation for WeightSum and the ciphertext computation for the LIF neuron model. 
+
+Ciphertext Computation for WeightSum. In this process, user data such as input images are encrypted, while model parameters like weights remain publicly accessible on the server side. Essentially, FHE-WeightSum represents the dot product between the plaintext weight vector and the ciphertext vector of the input layer. This computation is described as: 
+
+∑ ˆωj LW E (xj ) = LW E 
+
+(∑ ˆωj xj
+
+)
+
+.
+
+This equation holds under the following conditions: 1) ∑ 
+
+> j
+
+ˆωj xj ∈ [− p 
+
+> 2
+
+, p
+
+> 2
+
+): This is satisfied by choosing a sufficiently large infor-mation space Zp.2) The noise remains within permissible bounds: This requires selecting an appropriate initial noise σ to ensure that the weighted noise ∑ 
+
+> j
+
+|ˆωj · σ| does not exceed the boundary. 
+
+Ciphertext Computation for LIF Neurons. The Fire and Reset func-tions in Equation (refDiscretEquation) are non-polynomial functions, neces-sitating the use of programmable bootstrap methods from Theorem (refPro-gramtfhe). For the FHE-Fire function, we define g(m) as: 
+
+g(m) = 
+
+{
+
+1, if m ∈ [0, p
+
+> 2
+
+) ;
+
+−1, if m ∈ [− p 
+
+> 2
+
+, 0) .
+
+The ciphertext computation for FHE-Fire is then given by: 
+
+2 FHE-Fire (LWE (m)) = bootstrap (LWE (m)) + 1 =
+
+{
+
+LWE (2) , if m ∈ [0, p
+
+> 2
+
+) ;
+
+LWE (0) , if m ∈ [− p 
+
+> 2
+
+, 0) .
+
+= LWE (Sign( m) + 1) = LWE (2 · Spike ).
+
+(8) For the FHE-Reset function, we define g(m) as: 
+
+g(m) ≜
+
+
+
+0, if m ∈
+
+[ ˆVth , p
+
+> 2
+
+)
+
+;
+
+⌊ θ−1 
+
+> θ
+
+m⌉ , if m ∈
+
+[
+
+0, ˆVth 
+
+)
+
+;0, if m ∈
+
+[ ˆVth − p 
+
+> 2
+
+, 0
+
+)
+
+; 
+
+> p
+> 2
+
+− ⌊ θ−1 
+
+> θ
+
+m⌉ , if m ∈
+
+[
+
+− p 
+
+> 2
+
+, ˆVth − p
+
+> 2
+
+)
+
+.
+
+Both functions produce the desired encrypted results. However, if m falls within the interval 
+
+[
+
+− p 
+
+> 2
+
+, ˆVth − p
+
+> 2
+
+)
+
+, the FHE-Reset function may yield incorrect 9results. To prevent this, it is essential to ensure that ˆH[t] does not enter this range. The following theorem demonstrates that this condition is easily satisfied. 
+
+Theorem 2. If M ≜ ˆVth +max t(| ˆI[t]|) and M ≤ p 
+
+> 2
+
+, then ˆH[t] ∈
+
+[ ˆVthreshold − p 
+
+> 2
+
+, p
+
+> 2
+
+)
+
+.Proof. 
+
+max( ˆH[t]) = max( ˆV [t] + ˆI[t]) ≤ τ − 1
+
+τ ˆVth + max  
+
+> t
+
+(| ˆI[t]|) < M ≤ p
+
+2 (9) 
+
+min( ˆH[t]) = min( ˆV [t] + ˆI[t]) ≥ − max  
+
+> t
+
+(| ˆI[t]|) ≥ − p
+
+2 + ˆVth ≥ − p
+
+2 (10) The above theorem states that as long as M ≤ p 
+
+> 2
+
+, the maxima and minima of 
+
+ˆH[t] fall within the interval 
+
+[ ˆVthreshold − p 
+
+> 2
+
+, p
+
+> 2
+
+)
+
+. It can be easily shown that the maximum value generated during CSNN computation must occur in the variable 
+
+ˆH[t]. This result not only validates the correctness of the FHE-Reset function but also facilitates the estimation of the maximum value within the information space. Furthermore, it provides a practical guideline for selecting the parameter 
+
+p for the information space. Additionally, the Bootstrapping procedure refreshes the ciphertext noise, en-suring that subsequent layers of the CSNN inherit the same initial noise level. This capability enables the network to extend to arbitrary depths without con-cerns about noise accumulation. 
+
+# 4 Experiments 
+
+In this chapter, we will empirically demonstrate the superior performance of FHE-DiCSNN in terms of time efficiency and accuracy. Firstly, we theoretically analyse the maximum value of FHE-DiCSNN as well as the relationship between the maximum value of the information space and the maximum noise growth with the discretisation factor θ. Secondly, we will experimentally evaluate the ac-tual accuracy and time efficiency of FHE-DiCSNN under different combinations of the attenuation coefficient τ and the discretisation coefficient θ with different datasets. 
+
+4.1 Experimental Setup Datasets. We use two image datasets in our experiments: 1) MNIST. This dataset includes 70,000 28Œ28 grayscale images of hand-written digits (0-9). It is split into 60,000 training and 10,000 testing images, with the goal of correctly classifying each handwritten digit. 2) FashionMNIST: This dataset contains 70,000 28Œ28 grayscale images across 10 clothing categories (e.g., T-shirts, trousers). It is divided into 60,000 training and 10,000 testing images, with the task of accurately identifying the clothing category in each image. 10 3)Tumor Brain Tumor Classification Dataset: This preprocessed dataset con-sists of 7,023 28Œ28 grayscale brain tumor images, classified into four categories: glioma, meningioma, no tumor, and pituitary. It is split into 5,712 training and 1,311 testing images, aiming to determine the presence of a brain tumor based on brain imaging data. 
+
+Baselines. The performance comparison is made between Plaintext CSNN (Con-volutional Spiking Neural Network) as figure 1 showed trained on plaintext data and evaluated on a plaintext test set, and the FHE-DiCSNN (Fully Homomor-phic Encryption Distributed Convolutional Spiking Neural Network) evaluated on encrypted data. 
+
+Implementaion Details. We trained the model using the Adam optimizer with batch size of 256, an initial learning rate of 0.001, and simulations over 4 time-steps. The privacy-preserving framework was implemented in C++ using the TFHE library 7 for homomorphic encryption. During encrypted inference, the LWE parameters were set with ciphertext dimension of 128, TLWE polynomial size of 215 , and a plaintext message space of 214 . We tested various combinations of the attenuation parameter τ and the discretization scaling factor θ.
+
+4.2 Experimental Results 
+
+In our experiments, image data were encrypted using LWE ciphertext. The encrypted images were then processed by multiplying them with discretized weights, which were passed through the Spiking Activation Layer. Within this layer, the LIF neuron model was applied to the ciphertext, performing FHE-Fire and FHE-Reset operations. Bootstrapping was optimized using FFT technology and parallel computing. This process (steps 1 to 3) was repeated T times, with the resulting outputs accumulated to generate classification scores. After com-pleting these steps, the ciphertext was decrypted, and the class with the highest score was selected as the final classification result. We evaluated various combi-nations of the decay parameter τ and scaling factor θ, with the outcomes detailed in Table 1 and Table 2. The experimental results indicate that both the scaling factor θ and the decay coefficient τ have a significant impact on the accuracy of ciphertext predictions. Specifically, θ has a positive effect on accuracy, as larger θ values tend to improve the prediction precision within the network. However, it is crucial to ensure that the choice of θ matches the size of the information space. Otherwise, an excessively large θ could lead to data overflow, negatively affecting accuracy. As shown in Table 1 and Table 2, FHE-DiCSNN achieves maximum accu-racies of 98.00% and 87.29% on the MNIST and FashionMNIST datasets, re-spectively. In comparison to plaintext predictions, which reached 98.74% and 90.35%, our accuracy losses were less than 1% and 3% for the two datasets.  
+
+> 7https://github.com/tfhe/tfhe
+
+11 Table 1. Different θ and τ parameters on the MNIST dataset (%)                                                                                            
+
+> τ= 2 .0τ= 3 .0τ= 4 .0τ=∞(IF)
+> θ= 20 97.48 97.60 97.10 97.06
+> θ= 30 97.66 97.50 97.60 97.23
+> θ= 40 97.60 97.87 98.00 97.32
+> θ= 50 97.69 97.90 97.30 97.15
+> θ= 60 97.72 97.70 98.00 97.25
+> θ= 100 97.68 97.55 96.90 96.38 Plaintext 98.78 98.88 98.74 98.75
+> Table 2. Different θand τparameters on the FashionMNIST dataset (%)
+> τ= 2 .0τ= 3 .0τ= 4 .0τ=∞(IF)
+> θ= 20 86.38 85.24 86.47 82.38
+> θ= 30 86.65 86.37 86.97 83.20
+> θ= 40 87.20 86.85 85.82 83.38
+> θ= 50 87.04 86.64 79.52 83.27
+> θ= 60 87.29 81.69 77.21 82.67
+> θ= 100 83.11 74.72 74.45 81.76 Plaintext 90.35 90.05 89.99 90.63
+
+This demonstrates that the FHE-DiCSNN model can handle ciphertext data effectively while maintaining high prediction accuracy, validating its reliability. In addition to the public datasets mentioned above, we also tested our frame-work on a medical brain tumor dataset. In the medical field, patient data often carries privacy concerns, making it crucial to perform preliminary diagnostics without exposing sensitive patient information. As shown in Table 3, our FHE-DiCSNN framework achieved an accuracy of up to 87.95% on encrypted Tumor data, with only a 5.4% reduction compared to plaintext results. 
+
+4.3 Time Consumption 
+
+The simulation time T , which can be interpreted as the number of cycles re-quired to process a single image, plays a crucial role in determining the time efficiency of the network. A larger T increases the total number of cycles and consequently the number of bootstrapping operations. In Poisson coding, the inherent randomness demands a sufficiently large T to achieve stable exper-imental results, which significantly raises the time consumption. In contrast, using a convolutional layer-based spike coding approach enables more stable feature extraction, reducing the simulation time to just 4 cycles. This ensures that Leaky Integrate-and-Fire (LIF) neurons accumulate enough membrane po-tential to generate spikes effectively. Bootstrapping, known to be the most time-consuming step in Fully Homo-morphic Encryption (FHE), primarily takes place during the computation of 12 Table 3. Different θ and τ parameters on the Tumor dataset (%) 
+
+τ = 2 .0 τ = 3 .0 τ = 4 .0
+
+θ = 20 81.46 87.95 83.75 
+
+θ = 30 80.42 87.87 86.50 
+
+θ = 40 80.78 87.19 86.04 
+
+θ = 50 80.01 87.41 85.97 
+
+θ = 60 81.79 87.53 85.66 
+
+θ = 100 81.62 84.75 83.60 Plaintext 93.04 93.35 93.89 
+
+LIF neurons in FHE-DiCSNN. Therefore, the number of bootstrapping opera-tions can also serve as a straightforward estimate for the total time consumption. The table below provides a comparison between the CSNN and an equivalent dimension Poisson-coded SNN, as defined in Fig. 1. 
+
+Table 4. T1 and T2 represent the simulation time required for Poisson-encoded SNN and CSNN, respectively, to achieve their respective peak accuracy performances. Typ-ically, T1 falls within the range of [20-100], while T2 falls within the range of [2-4].                          
+
+> Poisson-encoded SNN [18] CSNN bootstrapping (784 ×2 + 2 ×160 + 2 ×10) ×T1(7840 ×2 + 2 ×160 + 2 ×10) ×T2
+> Spiking Activation Layer 5×T16×T2
+
+Table 5. Comparison of the run times of the two models Multi-threading Without multi-threading DiSNN [18] 2.62s 8.32s Ours 0.34s 8.29s 
+
+If we do not consider parallel computing, the number of bootstrapping can be used as a simple estimate of the network’s time consumption. In this case, the time consumption of both Poisson coded SNNs and CSNNs will be very large. However, since the bootstrapping of Spiking Activation Layers and Poisson encoding can be performed in parallel, the time consumption will be proportional to the number of corresponding layers. In the case of parallel computing, CSNN exhibits a time efficiency that is 10 times higher than that of Poisson-encoded SNN. Table 5 presents a comparison of the run times between the two models. 
+
+4.4 Parameters Analysis 
+
+This section discusses the selection of FHE parameters, focusing on the message space Zp. Here, p serves as the modulus, ensuring operations remain within Zp.13 To prevent overflow during subtraction and maintain correctness, Theorem 2 offers a criterion for the maximum allowable value. As long as it is satisfied that 
+
+ˆVth + max  
+
+> t
+
+(| ˆI[t]|) ≈ θ · (Vth + max  
+
+> t
+
+(|I[t]|)) = θ · (Vth + ∑ ωj Sj [t]) ≤ p
+
+2 (11) the value of the intermediate variable will not exceed the message space Zp. The formula indicates that ˆI is proportional to discretization parameter θ.We estimated the true maximum value of Vth + ∑ ωj Sj [t] on the MNIST dataset, and the findings are summarized in Table 6. A technique from DiNN [2] dynamically adjusts the message space to min-imize computational cost and control noise growth, which we also adopt by selecting a smaller plaintext space. Accurate estimation of noise growth is cru-cial, as it only occurs during WeightSum operations. For a single WeightSum, the noise increases from the initial value σ to: 
+
+σ ∑
+
+> j
+
+| ˆwj | ≈ θ · σ ∑
+
+> j
+
+|wj | . (12) Eq. (12) shows that the maximum noise growth can be precomputed since weights are known. Experimental results are summarized in Table 7.                                               
+
+> Table 6. Spiking Activation Layer Results for Different Thresholds τVth + max t(|I[t]|)Spiking Layer1 Spiking Layer2 Spiking Layer3
+> τ= 2 29.60 70.00 24.90
+> τ= 3 36.00 86.00 32.10
+> τ= 4 85.2 175.00 51.70
+> τ=∞(IF) 29.80 31.10 20.60
+> Table 7. Based on the noise estimation mentioned above, the quantity max ∑
+> j|ωj|
+> can be employed to estimate the growth of noise in DiCSNNs for various θ.
+> τ= 2 τ= 3 τ= 4 τ=∞(IF)
+> max ∑
+> j|ωj|17.42 18.87 10.24 11.89
+
+The discussion shows that the message space size and noise upper bound are proportional to θ. Experimental results provide scaling factors to estimate bounds for different θ, allowing selection of suitable FHE parameters or use of standard sets like STD128 [21]. 
+
+# 5 Conclusion 
+
+This paper introduces the FHE-DiCSNN framework, which is built upon the efficient TFHE scheme and incorporates convolutional operations from CNN. 14 The framework leverages the discrete nature of SNNs to achieve exceptional prediction accuracy and time efficiency in the ciphertext domain. The homo-morphic computation of LIF neurons can be extended to other SNNs models, offering a novel solution for privacy protection in third-generation neural net-works. Furthermore, by replacing Poisson encoding with convolutional methods, it improves accuracy and mitigates the issue of excessive simulation time caused by randomness. Parallelizing the bootstrapping computation through engineer-ing techniques significantly enhances computational efficiency. Additionally, we provide upper bounds on the maximum value of homomorphic encryption and the growth of noise, supported by experimental results and theoretical analysis, which guide the selection of suitable homomorphic encryption parameters and validate the advantages of the FHE-DiCSNN framework. There are also promising avenues for future research: 1. Exploring homomor-phic computation of non-linear spiking neuron models, such as QIF and EIF. 2. Investigating alternative encoding methods to completely alleviate simulation time concerns for SNNs. 3. Exploring intriguing extensions, such as combining SNNs with RNNs or reinforcement learning and homomorphically evaluating these AI algorithms. 
+
+# 6 Acknowledgements 
+
+This work was supported by the National Natural Science Foundation of China (12401233), NSFC International Creative Research Team (W2541005), National Key Research and Development Program of China (2021ZD0201300), Guangdong-Dongguan Joint Research Fund (2023A1515140016), Interdisciplinary Research Program of HUST (2023JCYJ012), Guangdong Provincial Key Laboratory of Mathematical and Neural Dynamical Systems (2024B1212010004), Guangdong Major Project of Basic Research (2025B0303000003), and Hubei Key Laboratory of Engineering Modeling and Scientific Computing. 
+
+# References 
+
+> 1. Ballas, N., Yao, L., Pal, C., Courville, A.: Delving deeper into convolutional net-works for learning video representations. arXiv preprint arXiv:1511.06432 (2015) 2. Bourse, F., Minelli, M., Minihold, M., Paillier, P.: Fast homomorphic evaluation of deep discretized neural networks. In: Advances in Cryptology–CRYPTO 2018: 38th Annual International Cryptology Conference, Santa Barbara, CA, USA, August 19–23, 2018, Proceedings, Part III 38. pp. 483–512. Springer (2018) 3. Bradbury, J., Merity, S., Xiong, C., Socher, R.: Quasi-recurrent neural networks. arXiv preprint arXiv:1611.01576 (2016) 4. Brakerski, Z., Gentry, C., Vaikuntanathan, V.: (leveled) fully homomorphic encryp-tion without bootstrapping. ACM Transactions on Computation Theory (TOCT)
+> 6(3), 1–36 (2014) 5. Case, B.M., Gao, S., Hu, G., Xu, Q.: Fully homomorphic encryption with k-bit arithmetic operations. Cryptology ePrint Archive (2019)
+
+15 6. Cheon, J.H., Han, K., Kim, A., Kim, M., Song, Y.: A full rns variant of approx-imate homomorphic encryption. In: Selected Areas in Cryptography–SAC 2018: 25th International Conference, Calgary, AB, Canada, August 15–17, 2018, Revised Selected Papers 25. pp. 347–368. Springer (2019) 7. Chillotti, I., Gama, N., Georgieva, M., Izabachène, M.: Tfhe: fast fully homomor-phic encryption over the torus. Journal of Cryptology 33 (1), 34–91 (2020) 8. Dhillon, A., Verma, G.K.: Convolutional neural network: a review of models, methodologies and applications to object detection. Progress in Artificial Intel-ligence 9(2), 85–112 (2020) 9. Ducas, L., Micciancio, D.: Fhew: bootstrapping homomorphic encryption in less than a second. In: Annual international conference on the theory and applications of cryptographic techniques. pp. 617–640. Springer (2015) 10. Fan, J., Vercauteren, F.: Somewhat practical fully homomorphic encryption. Cryp-tology ePrint Archive (2012) 11. Gentry, C.: Computing arbitrary functions of encrypted data. Communications of the ACM 53 (3), 97–105 (2010) 12. Gentry, C., Sahai, A., Waters, B.: Homomorphic encryption from learning with er-rors: Conceptually-simpler, asymptotically-faster, attribute-based. In: Advances in Cryptology–CRYPTO 2013: 33rd Annual Cryptology Conference, Santa Barbara, CA, USA, August 18-22, 2013. Proceedings, Part I. pp. 75–92. Springer (2013) 13. Georgopoulos, A.P., Schwartz, A.B., Kettner, R.E.: Neuronal population coding of movement direction. Science 233 (4771), 1416–1419 (1986) 14. Hodgkin, A.L., Huxley, A.F.: A quantitative description of membrane current and its application to conduction and excitation in nerve. The Journal of physiology 
+
+117 4 , 500–44 (1952) 15. Izhikevich, E.M.: Simple model of spiking neurons. IEEE transactions on neural networks 14 6 , 1569–72 (2003) 16. Jolivet, R., J., T., Gerstner, W.: The spike response model a framework to predict neuronal spike trains. In: Kaynak, O., Alpaydin, E., Oja, E., Xu, L. (eds.) Artificial Neural Networks and Neural Information Processing textemdash ICANNICONIP 2003. Lecture Notes in Computer Science, Berlin, Heidelberg 17. Kim, K.H., Hong, S., Roh, B., Cheon, Y., Park, M.: Pvanet: Deep but lightweight neural networks for real-time object detection. arXiv preprint arXiv:1608.08021 (2016) 18. Li, P., Gao, T., Huang, H., Cheng, J., Gao, S., Zeng, Z., Duan, J.: Pri-vacy preserving discretized spiking neural network with tfhe. In: 2023 Inter-national Conference on Neuromorphic Computing (ICNC). pp. 404–413 (2023). https://doi.org/10.1109/ICNC59488.2023.10462898 19. Lyubashevsky, V., Peikert, C., Regev, O.: On ideal lattices and learning with errors over rings. In: Advances in Cryptology–EUROCRYPT 2010: 29th Annual Interna-tional Conference on the Theory and Applications of Cryptographic Techniques, French Riviera, May 30–June 3, 2010. Proceedings 29. pp. 1–23. Springer (2010) 20. Maass, W.: Networks of spiking neurons the third generation of neural network models. Electron. Colloquium Comput. Complex. TR96 (1996) 21. Micciancio, D., Polyakov, Y.: Bootstrapping in fhew-like cryptosystems. In: Pro-ceedings of the 9th on Workshop on Encrypted Computing & Applied Homomor-phic Cryptography. pp. 17–28 (2021) 22. Regev, O.: On lattices, learning with errors, random linear codes, and cryptogra-phy. Journal of the ACM (JACM) 56 (6), 1–40 (2009) 23. Simonyan, K., Zisserman, A.: Very deep convolutional networks for large-scale image recognition. arXiv preprint arXiv:1409.1556 (2014) 
+
+16 24. Voulodimos, A., Doulamis, N., Doulamis, A., Protopapadakis, E., et al.: Deep learning for computer vision: A brief review. Computational intelligence and neu-roscience 2018 (2018) 25. Wu, Y., Deng, L., Li, G., Zhu, J., Shi, L.: Spatio-temporal backpropagation for training high-performance spiking neural networks. Frontiers in Neuroscience 12 
+
+(2017) 26. Wu, Y., Deng, L., Li, G., Zhu, J., Shi, L.: Spatio-temporal backpropagation for training high-performance spiking neural networks. Frontiers in neuroscience 12 ,331 (2018) 27. Zhang, M., Wang, J., Wu, J., Belatreche, A., Amornpaisannon, B., Zhang, Z., Miriyala, V.P.K., Qu, H., Chua, Y., Carlson, T.E., et al.: Rectified linear postsynap-tic potential function for backpropagation in deep spiking neural networks. IEEE transactions on neural networks and learning systems 33 (5), 1947–1958 (2021) 28. Zhang, T., Zeng, Y., Zhao, D., Shi, M.: A plasticity-centric approach to train the non-differential spiking neural networks. In: Proceedings of the AAAI conference on artificial intelligence. vol. 32 (2018) 29. Zhang, W., Li, P.: Temporal spike sequence learning via backpropagation for deep spiking neural networks. Advances in Neural Information Processing Systems 33 ,12022–12033 (2020) 30. Zhou, S., Li, X., Chen, Y., Chandrasekaran, S.T., Sanyal, A.: Temporal-coded deep spiking neural network with easy training and robust performance. In: Proceedings of the AAAI conference on artificial intelligence. vol. 35, pp. 11143–11151 (2021) 
+
+17

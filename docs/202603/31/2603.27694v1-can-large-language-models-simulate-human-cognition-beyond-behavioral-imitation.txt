@@ -1,0 +1,1537 @@
+Title: Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation?
+
+URL Source: https://arxiv.org/pdf/2603.27694v1
+
+Published Time: Tue, 31 Mar 2026 01:46:56 GMT
+
+Number of Pages: 42
+
+Markdown Content:
+# Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+Yuxuan Gu 1 Lunjun Liu 1 Xiaocheng Feng 1 Kun Zhu 1 Weihong Zhong 1 Lei Huang 1 Bing Qin 1
+
+# Abstract 
+
+An essential problem in artificial intelligence is whether LLMs can simulate human cognition or merely imitate surface-level behaviors, while ex-isting datasets suffer from either synthetic reason-ing traces or population-level aggregation, failing to capture authentic individual cognitive patterns. We introduce a benchmark grounded in the lon-gitudinal research trajectories of 217 researchers across diverse domains of artificial intelligence, where each author’s scientific publications serve as an externalized representation of their cognitive processes. To distinguish whether LLMs transfer cognitive patterns or merely imitate behaviors, our benchmark deliberately employs a cross-domain, temporal-shift generalization setting. A multi-dimensional cognitive alignment metric is further proposed to assess individual-level cognitive con-sistency. Through systematic evaluation of state-of-the-art LLMs and various enhancement tech-niques, we provide a first-stage empirical study on the questions: (1) How well do current LLMs simulate human cognition? and (2) How far can existing techniques enhance these capabilities? 
+
+# 1. Introduction 
+
+Large language models (LLMs) have demonstrated remark-able advances (Achiam et al., 2023; Dubey et al., 2024; Yang et al., 2025; Team et al., 2025; Liu et al., 2025) in a wide range of applications, such as code completion (Jiang et al., 2024b), complex task solving (Plaat et al., 2024), and science discovery (Zhou et al., 2025). These emerging capa-bilities have reactivated interest in a fundamental question of artificial intelligence: to what extent can machines sim-ulate human intelligence ? (Turing, 2004; McCarthy et al., 2006) Recent progress (Chen et al., 2024a) in role-playing, persona alignment, and individualized generation suggests that LLMs can simulate human behaviors (Shao et al., 2023;    
+
+> 1Harbin Institute of Technology. Correspondence to: Xi-aocheng Feng <xcfeng@ir.hit.edu.cn >.
+> Preprint. March 31, 2026.
+
+Wang et al., 2024; Ye et al., 2025; Wang et al., 2025) and personality traits (Jiang et al., 2023; Serapio-Garc ´ıa et al., 2023; Jiang et al., 2024a; Dai et al., 2025). On the other hand, concerns have also been raised that such behaviors may reflect merely surface-level imitation rather than gen-uine cognitive alignment (Qin et al., 2025), as discussed in the motivating illustration of Figure 1. To date, there is still a lack of large-scale, reliable bench-marks grounded in authentic individual cognitive data for evaluating the extent to which LLMs simulate human cog-nition. Role-playing datasets (Yin et al., 2025; Xiang et al., 2025; Qin et al., 2025; Xie et al., 2025; Wang et al., 2026) use LLMs to synthesize reasoning traces, which are exter-nalized artifacts of cognitive processes (Newell et al., 1972), such approximations remain ontologically distinct from gen-uine human cognition. Meanwhile, human-annotated rea-soning benchmarks (Cobbe et al., 2021; Dalvi et al., 2021; Jiang et al., 2025) typically mix reasoning traces across different individuals, collapsing human cognitive patterns into population-level statistics (Sternberg, 1997), thereby breaking the consistency of the underlying human cognition. These limitations stem from the following fundamental chal-lenges in obtaining human cognitive data: (1) Human cogni-tion is inherently implicit , where only its behavioral artifacts, such as actions, are observable proxies (Ericsson & Simon, 1984); (2) Human cognition is heuristic and unstructured ,making it difficult to obtain a formalized representation (Gilovich et al., 2002); (3) Externalized cognition is ex-tremely hard to accumulate , as humans rarely provide their internal thinking step-by-step in natural settings (Wurgaft et al., 2025), where collecting large amounts of consistent reasoning traces from the same person is even more difficult. In this work, we take a further step toward modeling human cognition by identifying scientific publications (Zhou et al., 2025; Xu et al., 2025) of a specific researcher as a scal-able source. We observe that these publications, especially their introduction sections, naturally externalize the cogni-tive process by which an author solves scientific problems (Newell et al., 1972). Although such scientific documents are not raw cognitive streams (Van Someren et al., 1994) but textualized manifestations of human reasoning shaped by peer discussion, revision, and disciplinary conventions, 1
+
+> arXiv:2603.27694v1 [cs.CL] 29 Mar 2026
+
+Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? Character :
+
+> Research Scientist who is currently centered on finding better recipes to improve the reasoning capability of LLMs.
+
+Memory :    
+
+> Research History on NLI :
+> Observation :language models often fail to capture the semantic nuances of conjunctions and instead rely on shallow heuristics
+> Solution :introduce a dataset called ConjNLI that tests language models to reason about sentences with coordinating conjunctions
+> Research History on Grading :
+> Observation :tutoring systems often fail to grade non-sentential student answers without modeling features of the students
+> Solution :propose novel token-level features that captures lexical similarity between refer-ence and student answers to improve the gen-eralization of student answer grading
+
+Task :
+
+> Review and utilize the insights from your prior academic works conducted before the era of the LLM
+> Address the new problem of enabling LLMs to teach other agents
+
+✓
+
+✓
+
+LLM : Behavioral Simulation     
+
+> 1. We build upon the ConjNLI dataset ... reason over intricate structures ...
+> 2. ... generate human-readable explanations that highlight reasoning steps taken by AI ...
+> 3. We combine token-level features ... capture both fine-grained reasoning steps and ...
+
+Human : Cognitive Internalization     
+
+> 1. Teaching ... being able to personalize its expla-nations based on the recipient’s needs ...
+> 2. ... distillation ... not evaluate a teacher’s ability to identify when students lack understanding
+> 3. We explore Theory of Mind ... simulates stu-dent’s behavior by building a mental model ...
+
+Figure 1. Motivating case of human simulation. The memory panel presents two representative cases of the author’s prior research with reasoning traits: (1) an explicit awareness of shallow heuristic modeling in LLMs and a deliberate effort to avoid such shortcuts, and (2) a problem-solving style that starts from modeling the research objectives. Upper-right Panel: LLMs can correctly interpret the task objective but seem to rely on directly imitating specific methods from the research memory. Lower-right Panel: In contrast, the authentic author shares a consistent abstraction and reasoning trajectory across problem scenarios. This comparison illustrates a central question motivating our study: whether LLMs can transcend behavioral imitation to internalize and reproduce human-like cognitive processes. 
+
+they nevertheless provide a realistic approximation of an individual’s cognitive processes, revealing stable and consis-tent cognitive patterns that persist across different research domains and over time, and thus form a suitable foundation for studying human cognitive alignment in LLMs. In detail, we construct a benchmark grounded in the lon-gitudinal research trajectories of real researchers, building a personalized publication corpus for each of 217 famous researchers, treating each author as a distinct cognitive sub-ject. For each author, we organize their publications into topic-based clusters and adopt a cross-domain generaliza-tion setting, in which papers from earlier or established research topics serve as the source context for retrieval or learning, while papers from the author’s most recent and previously unseen topic are reserved for testing. This design challenges LLMs to reason about new research problems in a novel domain while remaining cognitively consistent with the author’s prior work. By enforcing topic disjointness be-tween source and test domains, our benchmark deliberately limits the effectiveness of surface-level behavioral imitation, such as mimicking writing style or topic-specific methods. Instead, it compels LLMs to capture and transfer stable, individual-level cognitive patterns across domains, such as the personalized philosophy of problem identification and motivation formation. To faithfully evaluate cognitive con-sistency, we further introduce a multi-level evaluation frame-work that includes dedicated cognitive alignment metrics to assess whether the generated reasoning trace preserves consistent cognitive patterns with respect to the target au-thor’s memory, alongside conventional lexical and semantic alignment metrics (Zheng et al., 2023). As a result, we provide a rigorous benchmark to better distinguish genuine cognitive simulation from shallow behavioral mimicry. Building on the framework introduced above, we systemati-cally probe the extent to which LLMs can simulate human cognition. Our analysis is organized around two central questions: (1) How well do current LLMs simulate hu-man cognition? and (2) How far can existing techniques enhance these capabilities? We examine a diverse set of state-of-the-art LLMs, including both open-source and API-based models, and analyze their reasoning patterns under carefully controlled domain-shift conditions. In addition, we evaluate a broad range of enhancement strategies, from theory-guided prompting techniques to supervised learning-based methods. Overall, our contributions are: • We revisit the long-standing problem of human simula-tion in artificial intelligence through the lens of modern LLMs, providing a systematic study at scale. • We present a benchmark that combines authentic indi-vidual cognition histories with explicit domain shifts, facilitating controlled evaluation at the cognitive level. • We conduct a comprehensive analysis on state-of-the-art LLMs and representative enhancement techniques. 
+
+# 2. Cognitive Benchmark Framework 
+
+2.1. Overview Principles Two core principles guide the construction of our benchmark: One is to collect meta-level reasoning trajectories. Rather than merely collecting all reasoning components, annotators are instructed to focus more on the meta-level ones that may reflect human cognition. Besides, we deliberately source research papers from highly influen-tial scholars, as their writings may contain more conceptual and principled thoughts. The other is to prevent cheating 2Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? The Pipeline of Expert Annotation 
+
+Scholars Verification Paper List Collection Cognitive Extraction Paper Classification 
+
+Scholars 
+
+Paper List 
+
+Manual Verification 
+
+✗
+
+> Filter out authors whose paper lists could not be reliably disambiguated
+
+Multi-Source Collection  Rerank and Deduplicate 
+
+✗
+
+> Drop authors whose lists contain insufficient num-ber of accessible papers
+
+Content Extraction 
+
+Cognitive Decomposition 
+
+✗
+
+> Exclude papers with in-sufficient information in the extracted elements
+
+Topic-based Classification on each Author’s Publications 
+
+✗
+
+> Discard authors that do not satisfy the structural validity constraints
+
+The Pipeline of Automatic Annotation 
+
+Paper List Collection Cognitive Extraction Clustering 
+
+Paper Sourcing Paper Collection 
+
+Author Identification Author Filtering 
+
+Paper OCR Structural Parsing 
+
+LLM-based Cognitive Ex-traction and Decomposition 
+
+Topic-based Clustering 
+
+Paper Encoding 
+
+Segmentation Protocol 
+
+Cognitive Evolving 
+
+Train Set  
+
+> History Research
+
+Test Set 
+
+> Latest Research
+> Timeline
+> Topics
+
+Train Set 
+
+> Historical Research
+
+Test Set 
+
+> Latest Research
+
+Figure 2. Overview of the construction pipeline for our benchmark. It consists of two separate lines: Expert Annotation, which involves fine-grained verification and systematic quality filtering at each stage to ensure data reliability, and Automatic Annotation, which utilizes OCR and LLM-based extraction for expandable data collection. The Segmentation Protocol shows a splitting strategy based on the average publication dates of research topics, enabling cognitive evolution from the test set to the train set. 
+
+through behavioral mimicry, where LLMs are not allowed to achieve high scores by superficially memorizing writing styles and tool usage. We explicitly partition the train and test sets with domain and temporal shifts to build imitation gap, with multi-dimensional cognitive evaluation metrics designed in addition to traditional lexical and semantic ones. 
+
+Data Source We identify prominent researchers in the field of artificial intelligence, filtering by the h-index and AMiner rankings 1 to guarantee their influence and recognition. For each selected scholar, we collect papers from arXiv 2 and Semantic Scholar 3 in which they appear as the first author. Since it typically represents the primary intellectual con-tributions rather than collaborative efforts, this setting can make the reasoning trajectories of individual researchers more consistent. We employ 10 senior Ph.D. students with specialized expertise in AI research for human annotation. 
+
+Topic Diversity As shown in Figure 3, our benchmark provides comprehensive coverage across AI subfields, or-ganized into four major categories: Natural Language Pro-cessing, Computer Vision, Machine Learning, and related domains including Bioinformatics, Speech, and Knowledge Graphs. The distribution spans both foundational research 
+
+> 1
+
+https://www.aminer.cn/ranks/home 
+
+> 2
+
+https://arxiv.org/ 
+
+> 3
+
+https://www.semanticscholar.org/ Machine Learning                  
+
+> Natural Language
+> Computer Vision
+> Bioinformatics
+> Speech
+> knowledge Graph
+> Optimization (7.4% )
+> Representation Learning (4.9% )
+> Generative Models (3.7% )
+> Machine Translation (7.0% )
+> Parsing (4.4% )
+> Dialogue Systems (5.0% )
+> Summarization (3.7% )
+> Language Modeling (7.5% )
+> Vison-Language Models (4.9% )Image Classification (12 .6% )
+> Semantic Segmentation (7.7% )
+> Object Detection (8.5% )
+> Biology Information (3.4% )
+> Biomedical and Health (4.5% )
+> Speech Recognition (6.4% )
+> Knowledge Acquisition (3.5% )
+> Knowledge Representation (4.9% )
+
+Figure 3. Research topics in our benchmark. 
+
+areas, such as Optimization ( 7.4% ) and Representation Learning ( 4.9% ), and emerging frontiers including Vision-Language Models ( 4.9% ) and Language Modeling ( 7.5% ). This breadth ensures our evaluation captures diverse cogni-tive patterns across different research paradigms. 
+
+2.2. Dataset Collection and Annotation 
+
+As illustrated in Figure 2, we introduce a dual-stream data construction framework that balances high-fidelity cognitive alignment (Expert Annotation) with scalable generalization (Automatic Annotation). Both streams employ a Segmenta-tion Protocol to maximize domain divergence between train and test sets while maintaining consistent cognitive patterns. 3Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+The Pipeline of Expert Annotation This stream focuses on constructing a high-fidelity dataset through strict man-ual verification and filtering. (1) Scholars Verification :We first anchor our selection on the AMiner rankings and cross-reference candidates with verified profiles on Seman-tic Scholar. Any author associated with more than five unver-ifiable papers is immediately discarded to prevent identity noise of author name ambiguity. (2) Paper List Collec-tion : Then we retrieve PDFs from multiple sources, such as arXiv, and deduplicate different versions of the same pa-per. Authors with insufficient valid publications are dropped to ensure adequate cognitive data for each individual. (3) 
+
+Cognitive Extraction : Annotators manually extract four critical cognitive elements of scientific exploration from the Introduction section: Background , Motivation , Approach ,and Solution . These four elements correspond to the compo-nents of the human problem-solving process (Newell et al., 1972): problem representation, goal identification, operator selection, and execution & evaluation, respectively. In addi-tion, elements are required to be extracted directly from the source text to prevent subjective hallucination. We also ap-ply a content-length filter to exclude papers with insufficient information. (4) Paper Classification : Finally, annotators assign research topics to papers and group them as topic-based collections for each author. To ensure a meaningful assessment of cognitive evolution, we will discard authors that do not satisfy the structural validity constraints: each author should have publications across at least two distinct topics, with a minimum of three papers per collection. 
+
+The Pipeline of Automatic Annotation This stream fo-cuses on the scalability of the dataset with an automatic ex-traction and resolution process. (1) Paper List Collection :First, we employ an API-based paper-to-author collection strategy, where we source all computer science papers from 2022 to 2024, identify their first authors, and apply filtering to remove ambiguous entries. This produces a set of authors and their corresponding first-authored publications, which also enables efficient scaling to construct large-scale author datasets across other research domains. (2) Cognitive Ex-traction : Then, we jointly use the Grobid (Lopez, 2009) and MinerU (Niu et al., 2025) tools to recognize text from PDFs, ensuring robustness across different formats. Struc-tural parsing is further applied to identify the introduction section, where GPT-5-nano segments the section and ex-tracts the four cognitive elements. (3) Clustering : Finally, we use GPT-5-nano to summarize papers into research topics based on their introductions, obtaining the corre-sponding encodings with text-embedding-3-large .K-means clustering with multiple centroid numbers is em-ployed for each author to construct the most suitable topic-based paper collections that satisfy structural validity con-straints, similar to those in expert annotation. 
+
+Segmentation Protocol We adopt a chronological strategy 0 2 4 6 8 10 12 14 16            
+
+> Difference in Average Publication Year (Test −Train)
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> 0.25
+> Density
+> (A) Distribution of Temporal Shifts Between Train and Test Sets
+> Empirical Histogram Kernel Density Estimate 0.10.20.30.40.50.60.70.80.91.0
+> Normalized Centroid L2 Distance of Scholars
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> Density
+> (B) Distribution of Semantic Gaps Between Train and Test Sets
+> Empirical Histogram Kernel Density Estimate Domain Distance
+
+Figure 4. Characterization of temporal and semantic variance between train and test sets across scholars. (A) Distribution of temporal shifts, quantified as the difference in average publication year (test minus train). Almost all authors’ test sets are more recent than their train sets, with the distribution peaking at about 2 years. (B) Distribution of semantic gaps, measured by the normalized centroid L2 distance between each author’s train and test set em-beddings. The dashed line indicates the baseline distance between the global centroids of all train and test sets. It reveals substantial within-author semantic distance concentrated between 0.7 and 0.9.
+
+as the segmentation protocol based on the evolution of re-search topics. Paper collections of each author are sorted by average publication date, with the most recent cluster designated as the test set, representing the author’s latest research direction. Other earlier topics, capturing the au-thor’s historical research, form the train set that serves for model training, retrieval augmentation, and the construction of author profiles including memory and cognitive patterns. As illustrated in Figure 4, this segmentation ensures a cross-domain, temporal-shift generalization setting. 
+
+2.3. Evaluation Framework 
+
+To systematically assess the fidelity of LLM-based human simulation, we propose a multi-level evaluation framework as illustrated in Figure 5. Given a scholar’s memory of historical research, we instruct state-of-the-art LLMs, aug-mented with various prompting techniques and learning-based methods, to generate cognitive processes that solve problems in the same manner as the scholar. We evaluate the consistency between the artificial and authentic human cognitive processes across three hierarchical levels of in-4Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? Evaluation Framework 
+
+Evaluation Elements 
+
+Evaluation Metrics     
+
+> Character
+> Memory
+> Task Objective:
+> Human Simulation
+> State-of-the-art LLMs
+> Prompt Techniques
+> Learning-based Methods
+> Human Cognition
+> Background Motivation
+> Approach Solution
+> Artificial Cognition
+> Background Motivation
+> Approach Solution
+> Level 1:
+> Lexical Coverage
+> Level 2:
+> Semantic Similarity
+> Level 3:
+> Cognitive Consistency
+> Cognition Level
+
+Figure 5. Overview of our evaluation framework. 
+
+creasing cognitive depth. (1) Lexical Coverage : We use 
+
+ROUGE (Lin, 2004) scores to measure the recall of key terms and phrases from the reference cognitive process and BertScore (Zhang et al., 2019) to identify optimal token-level matches. (2) Semantic Similarity : We utilize the LLM-as-a-judge framework, where GPT-5-nano is prompted to score the alignment degree between generated cognitive processes and references. (3) Cognitive Consis-tency : Since it is a universal feature of human cognition that tends to maintain long-term, stable patterns across scenarios (Messick, 1984), we propose five evaluation dimensions corresponding to different levels of cognitive consistency. Based on Witkin’s field dependence-independence theory (Witkin et al., 1977), which demonstrates the perceptual and structural consistency of an individual’s cognition, we design the dimensions of foundational premise consistency and logic mapping consistency. Besides, Kirton’s adaption-innovation theory (Kirton, 1976) posits that individuals ex-hibit stable strategic preferences in problem-solving, where we introduce the consistency dimensions of strategic pref-erence, keyword style, and taboo avoidance. In addition to comparisons with human cognition, the consistency of these cognitive dimensions also needs to be examined in relation to scholars’ memories, where their details are as follows: (a) 
+
+Foundational Premise : whether the generation inherits the author’s consistent perspective and problem framing, e.g., persistently identifying research questions from data noise; (b) Strategic Preference : decision-making tendencies during technical trade-offs, e.g., favoring generalizable theoretical frameworks over practical applications; (c) Logic Mapping :whether the reasoning inherits the author’s logical patterns, 
+
+Table 1. Statistics of our benchmark. 
+
+Statistic Expert Automatic Total 
+
+# Scholars 100 117 217 # Total Papers 1,875 1,547 3,422 Papers per Author 18.8 13.2 15.8 Clusters per Author 2.3 2.3 2.3 
+
+Tokens per Component 
+
+Introduction 614.9 637.2 625.0 Background 178.9 99.0 142.8 Motivation 88.2 55.1 73.2 Approach 107.2 66.2 88.7 Solution 88.6 66.7 78.7 
+
+e.g., consistently employing symbolic formalization when confronting complex problems; (d) Keyword Style : lexi-cal preferences and expression habits, e.g., usually using “feature manifold” rather than “embedding space”; and (e) 
+
+Taboo Avoidance : whether approaches the author has histor-ically criticized are appropriately avoided, e.g., a researcher who critiques assumption-free brute-force fitting should not propose collecting data for direct training without theoreti-cal grounding. For both semantic and cognitive evaluation, we use GPT-5-nano to annotate responses on a 5-point scale (Likert, 1932). A score of 5 denotes high consistency between the generated and human cognition or the author’s cognitive patterns on the given dimension, 3 indicates mod-erate correspondence, and 1 means complete irrelevance. 
+
+2.4. Dataset Statistics 
+
+As illustrated in Table 1, compared to automatic extrac-tion, expert annotations capture richer cognitive signals with longer component lengths, with the most notable be-ing Background ( 178 .9 vs. 99 .0 tokens), which reflects the authors’ philosophy of problem formulation. Such granu-larity variance motivates our experimental design: we fo-cus our primary experiments and evaluations on the expert-annotated data to ensure reliable conclusions, where the automatic one demonstrates the potential for large-scale weak supervision in future work. More details of the two annotation methods are shown in Appendix B. 
+
+# 3. Experiments 
+
+3.1. Overview 
+
+This section presents comprehensive analyses structured around two core research questions regarding the extent to which LLMs can simulate human cognition and how far such capabilities can be enhanced by existing techniques. For the former question, we design a controlled evaluation scenario with systematic ablation variants across multiple LLMs, as illustrated in Table 2 and §3.2. Specifically, we examine how varying levels of information availability and 5Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation?                       
+
+> Table 2. Main results of simulating human cognition across different LLMs. We evaluate five scenarios: (1) BASE MODEL represents the original output without any cognition history conditioning. (2) OTHER uses cognition histories randomly sampled from other authors, serving as an interference control group. (3) SELF incorporates the target author’s cognition history from the train set, representing our standard cross-domain setting. (4) SELF AKIN leverages cognition histories from the same author’s test set, examining in-domain behavioral leakage. (5) LEAKY provides oracle access to the author’s authentic cognition trajectory, serving as an upper bound. We report
+> ROUGE-1/2/L and BertScore for lexical coverage, LLM-as-a-Judge for semantic similarity, and five cognitive consistency dimensions: Foundational Premise, Strategic Preference, Logic Mapping, Keyword Style, and Taboo Avoidance. See Appendix E for more LLMs.
+
+Method Lexical Semantic Cognitive ROUGE-1/2/L BertScore P. S. L. K. T. 
+
+LL AMA-3.1 22 .12 /3.91 /12 .02 81 .39 3.22 3.03 3.15 3.00 3.05 3.20 
+
+- OTHER 23 .11 /3.94 /12 .70 81 .63 2.94 2.74 ↓ 2.95 ↓ 2.73 ↓ 2.89 ↓ 3.09 ↓
+
+- SELF 24 .10 /4.45 /13 .10 81 .89 3.13 3.02 3.23 ↑ 2.98 3.06 3.32 ↑
+
+- SELF AKIN 25 .65 /5.93 /14 .12 82 .36 3.44 3.55 ↑↑ 3.77 ↑↑ 3.41 ↑↑ 3.34 ↑↑ 3.82 ↑↑
+
+- LEAKY 26 .70 /6.79 /14 .75 82 .66 3.63 3.77 ↑↑↑ 3.86 ↑↑↑ 3.55 ↑↑↑ 3.45 ↑↑↑ 3.92 ↑↑↑
+
+QWEN -3 23 .08 /3.25 /11 .00 81 .21 3.41 3.51 3.66 3.44 3.36 3.62 
+
+- OTHER 21 .95 /2.89 /10 .66 81 .30 3.19 3.28 ↓ 3.53 ↓ 3.26 ↓ 3.15 ↓↓ 3.60 ↓
+
+- SELF 22 .14 /3.18 /10 .73 81 .44 3.33 3.51 3.72 ↑ 3.45 3.27 ↓ 3.83 ↑
+
+- SELF AKIN 23 .21 /3.81 /11 .13 81 .76 3.59 4.07 ↑↑ 4.26 ↑↑ 3.96 ↑↑ 3.68 ↑↑ 4.17 ↑↑
+
+- LEAKY 24 .06 /4.42 /11 .43 82 .04 3.83 4.29 ↑↑↑ 4.38 ↑↑↑ 4.08 ↑↑↑ 3.80 ↑↑↑ 4.31 ↑↑↑
+
+GEMINI -2.5 18 .55 /3.48 / 9.05 81 .85 3.48 3.81 3.91 3.84 3.46 4.04 
+
+- OTHER 19 .33 /3.36 / 9.41 81 .65 3.27 3.54 ↓↓ 3.76 ↓ 3.64 ↓↓ 3.31 ↓↓ 3.92 ↓
+
+- SELF 19 .77 /3.63 / 9.59 81 .92 3.42 3.78 ↓ 3.91 3.81 ↓ 3.42 ↓ 4.13 ↑
+
+- SELF AKIN 20 .51 /4.02 / 9.91 82 .11 3.59 4.10 ↑ 4.16 ↑ 4.02 ↑ 3.56 ↑ 4.28 ↑
+
+- LEAKY 21 .72 /4.64 /10 .43 82 .46 3.86 4.27 ↑↑ 4.28 ↑↑ 4.15 ↑↑ 3.73 ↑↑ 4.43 ↑↑
+
+GPT-5.1 9.52 /1.65 / 4.73 80 .65 3.64 4.16 4.39 4.12 3.81 4.40 
+
+- OTHER 9.32 /1.61 / 4.69 80 .61 3.49 4.08 ↓ 4.33 ↓ 4.00 ↓ 3.77 ↓ 4.32 ↓
+
+- SELF 9.35 /1.70 / 4.74 80 .71 3.62 4.26 ↑ 4.45 ↑ 4.14 3.84 ↑ 4.42 
+
+- SELF AKIN 9.81 /1.88 / 4.89 80 .86 3.72 4.51 ↑↑ 4.63 ↑↑ 4.34 ↑↑ 3.99 ↑↑ 4.52 ↑↑
+
+- LEAKY 10 .08 /2.11 / 5.05 81 .15 3.99 4.64 ↑↑↑ 4.69 ↑↑ 4.48 ↑↑↑ 4.08 ↑↑↑ 4.61 ↑↑↑
+
+cognitive leakage affect the fidelity of human cognitive simu-lation. For the latter one, we conduct extensive experiments evaluating various enhancement techniques across different model architectures in Table 4 and §3.3. We experiment on a wide range of state-of-the-art LLMs, in-cluding GPT-5.1 (OpenAI, 2025), G EMINI -2.5 (Comanici et al., 2025), Q WEN -3-8B (Yang et al., 2025), and LL AMA-3.1-8B (Dubey et al., 2024), with additional LLMs re-ported in the appendix. Beyond base models, we evalu-ate both prompting-based and learning-based enhancement techniques. Prompting strategies leverage Big Five person-ality traits (Jiang et al., 2024a; Dai et al., 2025; Zhu et al., 2025) and explicit cognitive modeling guidance (Qin et al., 2025; Zhan et al., 2025), while learning-based approaches (Tang et al., 2024; Dai et al., 2025) either train separate parameterizations for individual scholars or jointly optimize a unified model conditioned on structured scholar profiles. 
+
+3.2. Results on Cognitive Simulation in LLMs How Well Do LLMs Simulate Human Cognition? 
+
+Question 1: 
+
+Can LLMs Achieve Behavioral Simulation? 
+
+Answer: Yes. 
+
+Most state-of-the-art LLMs are capable of achieving behavioral simulation to a considerable extent. 
+
+Our results provide consistent evidence that modern LLMs are capable of behavioral simulation, i.e., reproducing ob-servable, individual-specific decisions and actions. Across all evaluated backbones, conditioning on the target scholar’s research history (S ELF ) yields clear improvements over randomly sampled authors (O THER ), with increases of ap-proximately 0.13 to 0.19 in semantic scores and 0.07 to 0.28 
+
+in cognitive facets. Such gaps (S ELF – O THER ) indicate that LLMs are sensitive to author identity and can condi-tion on personalized behavioral cues rather than producing 6Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation?           
+
+> Table 3. Human Evaluation. Three senior Ph.D. students evaluate 100 papers per method (one randomly sampled per scholar). An-notation scales: Ais no relation to author’s cognition; Bis simple imitation of historical research; Cis attempted but failed cognitive simulation, remaining behavioral; Dis successful thinking pattern transfer. Inter-annotator agreement (Fleiss’ kappa): 0.43 .
+
+Method A B C D   
+
+> QWEN -3-235B -SELF
+
+11% 58% 31% 0% 
+
+- SELF AKIN 3% 35% 60% 1%   
+
+> GPT-5.1 -SELF
+
+9% 51% 38% 2% 
+
+- SELF AKIN 3% 26% 67% 4% 
+
+generic outputs. Given in-distribution, recent scholar his-tories (S ELF AKIN ), LLMs show substantially larger gains than base outputs, improving cognitive facets by 0.10 to 
+
+0.62 . Human evaluation in Table 3 shows that LLM out-puts, whether referencing historical or recent in-distribution research (S ELF and S ELF AKIN ), are predominantly char-acterized by annotators as behavior-level imitation, with at least 89% of cases rated as B or C.
+
+How Well Do LLMs Simulate Human Cognition? 
+
+Question 2: 
+
+Can LLMs Achieve Cognitive Internalization? 
+
+Answer: Not yet. 
+
+Current state-of-the-art LLMs remain distant from achieving reliable cognitive internalization. 
+
+Our results indicate that current LLMs largely fail at cog-nitive internalization, i.e., abstracting and transferring a scholar’s latent cognitive processes across domains. In de-tail, the discrepancy between providing the latest in-domain research (S ELF AKIN ) and the out-of-domain research histo-ries (S ELF ) is consistently large, with cognitive facets under SELF AKIN outperforming S ELF by 0.33 on average, sug-gesting that LLMs struggle to identify and internalize higher-level cognitive invariants shared across a scholar’s work in different research areas. Moreover, revealing the scholar’s cognition trajectories (L EAKY ) yields substantial gains over referencing recent in-domain work (S ELF AKIN ), which fur-ther indicates that current LLMs’ attempts to imitate human cognition remain far from the level of authentic human rea-soning. Human evaluation further supports these findings, while LLMs usually ( 51% of the cases on average belong to 
+
+C or D) attempt to capture underlying cognitive processes, the vast majority ( 95 .6% ) fail and consequently collapse to behavior-level imitation. Instances of successful cogni-tive internalization are exceedingly scarce. Notably, when referencing out-of-distribution historical research, LLMs ex-hibit a lazy tendency that bypasses the effortful extraction of meta-level human cognition and instead takes shortcuts by simply mimicking specific technical approaches or experi-mental setups from the references or even disregarding them entirely, which is evidenced by S ELF having substantially higher A or B ratings ( 31% on average) than S ELF AKIN .
+
+3.3. Results on Enhancing Cognitive Simulation How Far Can Current Techniques Enhance the Cognitive Simulation Capabilities of LLMs? 
+
+Question 3: 
+
+How Effective Are Prompting Techniques? 
+
+Answer: To some extent but with limitations. 
+
+Prompting techniques guided by cognitive theories can provide some gains, but their effectiveness is highly constrained by the base cognitive capacities. 
+
+Guided by cognitive theories and psychological priors, P ER -
+
+> SONALITY
+
+TRAIT and C OGNITIVE GUIDE yield moderate but consistent improvements on several cognitive facets, while leading to slight degradations in lexical metrics. Com-pared to the larger gains achieved by S ELF AKIN and the ora-cle L EAKY setting, prompting-based techniques can indeed steer LLMs toward cognitively aligned reasoning patterns, but their effectiveness remains fundamentally bounded by the models’ intrinsic cognitive capacities, as evidenced by the significant increases observed on Q WEN -3 than on LL AMA-3.1 under C OGNITIVE GUIDE . In particular, prompting appears to reshape the expression of reasoning, rather than reliably inducing deeper cognitive abstraction. 
+
+How Far Can Current Techniques Enhance the Cognitive Simulation Capabilities of LLMs? 
+
+Question 4: 
+
+How Effective Are Learning-based Methods? 
+
+Answer: To a minor extent. 
+
+Learning-based methods focus on statistical fitting rather than higher-level cognitive abstraction. 
+
+Existing supervised learning methods are largely ineffective at cognitive internalization. For T RAIN INDIVIDUAL , LLMs tend to capture surface-level statistical regularities as short-cuts rather than abstract cognitive patterns that generalize across domains. Performance gains are predominantly ob-served at the lexical level, whereas cognitive dimensions demonstrate negligible improvement or even degradation. The situation becomes even more severe for T RAIN UNI -
+
+> FIED
+
+, where LLMs achieve substantial improvements in lexical metrics ( 1.7 to 3.4 in ROUGE), which is in line 7Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation?       
+
+> Table 4. Evaluation of enhancement techniques for human cognitive simulation. We assess the effectiveness of various augmentation strategies on two open-source LLMs: LL AMA-3.1-8B and Q WEN -3-8B. The base model output and the S ELF condition are baselines. We evaluate two categories of enhancement techniques: (1) Prompting techniques, including P ERSONALITY TRAIT that incorporates personality traits as psychological priors, and C OGNITIVE GUIDE which explicitly instructs LLMs with cognitive theories; (2) Learning-based methods, including T RAIN INDIVIDUAL which trains independent parameters for each scholar, and T RAIN UNIFIED that extracts profiles for scholars as their identifiers to train a unified model. The evaluation metrics are shared with those used in Table 2.
+
+Method Lexical Semantic Cognitive ROUGE-1/2/L BertScore P. S. L. K. T. 
+
+LL AMA-3.1 22 .12 /3.91 /12 .02 81 .39 3.22 3.03 3.15 3.00 3.05 3.20 
+
+- SELF 24 .10 /4.45 /13 .10 81 .89 3.13 3.02 3.23 2.98 3.06 3.32 
+
+- PERSONALITY TRAIT 21 .74 /3.82 /11 .77 81 .54 3.21 3.10 ↑ 3.35 ↑ 3.07 ↑ 3.16 ↑ 3.36 ↑
+
+- COGNITIVE GUIDE 19 .36 /3.48 /10 .45 81 .64 3.24 3.23 ↑ 3.47 ↑ 3.24 ↑ 3.21 ↑ 3.50 ↑
+
+- TRAIN INDIVIDUAL 22 .49 /3.94 /12 .19 81 .42 3.21 3.05 3.31 ↑ 3.00 3.15 ↑ 3.28 ↑
+
+- TRAIN UNIFIED 28 .04 /4.34 /14 .09 83 .35 3.03 2.81 ↓ 3.00 ↓ 2.72 ↓ 2.86 ↓ 3.50 ↑
+
+QWEN -3 23 .08 /3.25 /11 .00 81 .21 3.41 3.51 3.66 3.44 3.36 3.62 
+
+- SELF 22 .14 /3.18 /10 .73 81 .44 3.33 3.51 3.72 3.45 3.27 3.83 
+
+- PERSONALITY TRAIT 21 .60 /3.03 /10 .34 81 .36 3.42 3.58 ↑ 3.81 ↑ 3.66 ↑ 3.36 3.77 
+
+- COGNITIVE GUIDE 20 .86 /2.98 /10 .03 81 .25 3.64 4.01 ↑↑ 4.18 ↑↑ 3.97 ↑↑ 3.50 ↑ 4.21 ↑↑
+
+- TRAIN INDIVIDUAL 23 .40 /3.23 /11 .17 81 .18 3.43 3.50 3.71 3.49 ↑ 3.37 3.69 
+
+- TRAIN UNIFIED 27 .16 /4.12 /13 .78 83 .48 2.99 2.71 ↓↓ 2.89 ↓↓ 2.59 ↓↓ 2.82 ↓↓ 3.34 ↓
+
+with common observations in downstream task training, but suffer a systematic collapse in cognitive-level performance. This suggests that averaging individual cognitive traits in massive training will erase their specific patterns, which is inherent to current large-scale pretraining paradigms. 
+
+# 4. Related Work 
+
+Role-playing agents (Chen et al., 2024a) have emerged as a promising direction for creating personalized conversational AI systems. Early studies focus on constructing role-specific dialogue datasets and establishing foundational frameworks for character simulation (Shao et al., 2023; Wang et al., 2024; Yu et al., 2024; Zhou et al., 2024), ranging from trainable character models to domain-specific implementa-tions such as anime characters (Li et al., 2023) and social support agents (Tu et al., 2023). Recent advances turn to sophisticated personality modeling and dynamic character optimization (Gao et al., 2025; Ye et al., 2025; Wang et al., 2025; Yin et al., 2025), including explicitly modeling the Big Five personality dimensions through dynamic profile optimization (Jiang et al., 2024a; Dai et al., 2025). Existing human cognition benchmarks have explored vari-ous dimensions, including theory of mind capabilities (Chen et al., 2024b; Tong et al., 2026) and emotional intelligence (Paech, 2023; Sabour et al., 2024). Recent efforts attempt to benchmark human cognitive simulation capabilities by eval-uating how well LLMs can simulate diverse human personas under predefined psychological characteristics (Xie et al., 2025) or demographic profiles (Wang et al., 2026). They rely on LLMs to synthesize human cognitive processes with manually defined personality traits. In contrast, our work collects and extracts authentic human cognitive processes from real human data, providing a more grounded founda-tion for evaluating LLMs’ cognitive modeling capabilities. 
+
+# 5. Conclusion 
+
+Despite strong performance in behavioral alignment, cur-rent state-of-the-art LLMs remain limited in achieving cog-nitive internalization, with existing prompting techniques and learning-based methods largely reinforcing statistical fitting rather than inducing higher-level cognitive abstrac-tion. More broadly, our findings point to a paradigm-level limitation in current LLM development. Modern LLMs rely heavily on the passive emergence of human-like capabilities from large-scale training, an approach that appears effective for behavioral imitation but insufficient for robust cogni-tive internalization. Advancing toward genuine cognitive modeling may require shifting from passive data exposure to high-level active learning objectives, such as cognitive meta-learning, abstraction-oriented self-supervision, or re-inforcement learning frameworks explicitly aligned with hu-man reasoning processes rather than just outcome rewards. We hope this work clarifies the current boundary of LLM cognitive capabilities and motivates future research toward principled mechanisms for learning and transferring human cognitions. More discussions are in Appendix A. 8Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+# Impact Statement 
+
+This paper introduces a new dataset and benchmark for an-alyzing the extent to which LLMs can simulate aspects of human behavior and cognition. Our goal is to provide a systematic and controlled evaluation framework that helps the research community better understand the capabilities and limitations of current models, rather than to deploy or encourage specific real-world applications. We anticipate that this work will primarily contribute to methodological advances in machine learning evaluation, particularly in the study of model generalization, robustness, and cognitive simulation. By offering finer-grained analysis tools and benchmark data, our work may support future research on building more reliable, interpretable, and safer language models. We do not foresee negative societal impacts arising from this work. The dataset and benchmark are intended for research purposes only and do not introduce new model ar-chitectures or training procedures that could directly amplify harmful behaviors. As with any research on LLMs, there remains a general risk of misuse if models are deployed irresponsibly. However, our contribution focuses on evalua-tion and analysis rather than deployment. We believe that improving understanding of model behavior is an essential step toward mitigating such risks. 
+
+# References 
+
+Achiam, J., Adler, S., Agarwal, S., Ahmad, L., Akkaya, I., Aleman, F. L., Almeida, D., Altenschmidt, J., Altman, S., Anadkat, S., et al. Gpt-4 technical report. arXiv preprint arXiv:2303.08774 , 2023. Bender, E. M., Gebru, T., McMillan-Major, A., and Shmitchell, S. On the dangers of stochastic parrots: Can language models be too big? In Proceedings of the 2021 ACM conference on fairness, accountability, and trans-parency , pp. 610–623, 2021. Berglund, L., Tong, M., Kaufmann, M., Balesni, M., Stick-land, A. C., Korbak, T., and Evans, O. The reversal curse: Llms trained on” a is b” fail to learn” b is a”. arXiv preprint arXiv:2309.12288 , 2023. Bubeck, S., Chandrasekaran, V., Eldan, R., Gehrke, J., Horvitz, E., Kamar, E., Lee, P., Lee, Y. T., Li, Y., Lund-berg, S., et al. Sparks of artificial general intelligence: early experiments with gpt-4 (2023). arXiv preprint arXiv:2303.12712 , 1, 2023. Chen, J., Wang, X., Xu, R., Yuan, S., Zhang, Y., Shi, W., Xie, J., Li, S., Yang, R., Zhu, T., Chen, A., Li, N., Chen, L., Hu, C., Wu, S., Ren, S., Fu, Z., and Xiao, Y. From persona to personalization: A survey on role-playing language agents. Transactions on Machine Learning Research , 2024a. ISSN 2835-8856. URL https:// openreview.net/forum?id=xrO70E8UIZ . Sur-vey Certification. Chen, Z., Wu, J., Zhou, J., Wen, B., Bi, G., Jiang, G., Cao, Y., Hu, M., Lai, Y., Xiong, Z., and Huang, M. ToMBench: Benchmarking theory of mind in large lan-guage models. In Ku, L.-W., Martins, A., and Srikumar, V. (eds.), Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pp. 15959–15983, Bangkok, Thailand, August 2024b. Association for Computational Linguis-tics. doi: 10.18653/v1/2024.acl-long.847. URL https: //aclanthology.org/2024.acl-long.847/ .Cobbe, K., Kosaraju, V., Bavarian, M., Chen, M., Jun, H., Kaiser, L., Plappert, M., Tworek, J., Hilton, J., Nakano, R., Hesse, C., and Schulman, J. Training verifiers to solve math word problems. arXiv preprint arXiv:2110.14168 ,2021. Comanici, G., Bieber, E., Schaekermann, M., Pasupat, I., Sachdeva, N., Dhillon, I., Blistein, M., Ram, O., Zhang, D., Rosen, E., et al. Gemini 2.5: Pushing the frontier with advanced reasoning, multimodality, long context, and next generation agentic capabilities. arXiv preprint arXiv:2507.06261 , 2025. Dai, S.-W., Shie, Y.-W., Yang, T.-H., Ku, L.-W., and Li, Y.-H. Profile-llm: Dynamic profile optimization for re-alistic personality expression in llms. arXiv preprint arXiv:2511.19852 , 2025. Dalvi, B., Jansen, P., Tafjord, O., Xie, Z., Smith, H., Pi-patanangkura, L., and Clark, P. Explaining answers with entailment trees. In Moens, M.-F., Huang, X., Specia, L., and Yih, S. W.-t. (eds.), Proceedings of the 2021 Con-ference on Empirical Methods in Natural Language Pro-cessing , pp. 7358–7370, Online and Punta Cana, Domini-can Republic, November 2021. Association for Computa-tional Linguistics. doi: 10.18653/v1/2021.emnlp-main. 585. URL https://aclanthology.org/2021. emnlp-main.585/ .Dubey, A., Jauhri, A., Pandey, A., Kadian, A., Al-Dahle, A., Letman, A., Mathur, A., Schelten, A., Yang, A., Fan, A., et al. The llama 3 herd of models. arXiv preprint arXiv:2407.21783 , 2024. Ericsson, K. A. and Simon, H. A. Protocol analysis: Verbal reports as data. 1984. Gao, Z., Xing, X., and Xu, X. TailorRPA: A retrieval-based framework for eliciting personalized and co-herent role-playing agents in general domain. In Christodoulopoulos, C., Chakraborty, T., Rose, C., and Peng, V. (eds.), Findings of the Association for Computational Linguistics: EMNLP 2025 , pp. 9Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+5381–5412, Suzhou, China, November 2025. Asso-ciation for Computational Linguistics. ISBN 979-8-89176-335-7. doi: 10.18653/v1/2025.findings-emnlp. 288. URL https://aclanthology.org/2025. findings-emnlp.288/ .Gilovich, T., Griffin, D., and Kahneman, D. Heuristics and biases: The psychology of intuitive judgment . Cambridge university press, 2002. Guo, D., Yang, D., Zhang, H., Song, J., Wang, P., Zhu, Q., Xu, R., Zhang, R., Ma, S., Bi, X., et al. Deepseek-r1 incentivizes reasoning in llms through reinforcement learning. Nature , 645(8081):633–638, 2025. Jiang, G., Xu, M., Zhu, S.-C., Han, W., Zhang, C., and Zhu, Y. Evaluating and inducing personality in pre-trained language models. In Thirty-seventh Conference on Neural Information Processing Systems , 2023. URL https: //openreview.net/forum?id=I9xE1Jsjfx .Jiang, H., Zhang, X., Cao, X., Breazeal, C., Roy, D., and Kabbara, J. PersonaLLM: Investigating the abil-ity of large language models to express personality traits. In Duh, K., Gomez, H., and Bethard, S. (eds.), Findings of the Association for Computational Linguistics: NAACL 2024 , pp. 3605–3627, Mexico City, Mexico, June 2024a. Association for Computa-tional Linguistics. doi: 10.18653/v1/2024.findings-naacl. 229. URL https://aclanthology.org/2024. findings-naacl.229/ .Jiang, J., Wang, F., Shen, J., Kim, S., and Kim, S. A survey on large language models for code generation. arXiv preprint arXiv:2406.00515 , 2024b. Jiang, Q., Chen, X., Zeng, Z., Yu, J., and Zhang, L. Rex-thinker: Grounded object referring via chain-of-thought reasoning, 2025. URL https://arxiv.org/abs/ 2506.04034 .Kirton, M. Adaptors and innovators: A description and measure. Journal of applied psychology , 61(5):622, 1976. Kosinski, M. Evaluating large language models in theory of mind tasks. Proceedings of the National Academy of Sciences , 121(45):e2405460121, 2024. Lake, B. M., Ullman, T. D., Tenenbaum, J. B., and Gersh-man, S. J. Building machines that learn and think like people. Behavioral and brain sciences , 40:e253, 2017. Li, C., Leng, Z., Yan, C., Shen, J., Wang, H., Mi, W., Fei, Y., Feng, X., Yan, S., Wang, H., et al. Chatharuhi: Reviving anime character in reality via large language model. arXiv preprint arXiv:2308.09597 , 2023. Likert, R. A technique for the measurement of attitudes. 
+
+Archives of psychology , 1932. Lin, C.-Y. ROUGE: A package for automatic evalua-tion of summaries. In Text Summarization Branches Out , pp. 74–81, Barcelona, Spain, July 2004. Asso-ciation for Computational Linguistics. URL https: //aclanthology.org/W04-1013/ .Liu, A., Mei, A., Lin, B., Xue, B., Wang, B., Xu, B., Wu, B., Zhang, B., Lin, C., Dong, C., et al. Deepseek-v3. 2: Pushing the frontier of open large language models. 
+
+arXiv preprint arXiv:2512.02556 , 2025. Lopez, P. Grobid: Combining automatic bibliographic data recognition and term extraction for scholarship publica-tions. In Agosti, M., Borbinha, J., Kapidakis, S., Pap-atheodorou, C., and Tsakonas, G. (eds.), Research and Advanced Technology for Digital Libraries , pp. 473–474, Berlin, Heidelberg, 2009. Springer Berlin Heidelberg. ISBN 978-3-642-04346-8. Marcus, G. and Davis, E. Rebooting AI: Building artificial intelligence we can trust . Vintage, 2019. McCarthy, J., Minsky, M. L., Rochester, N., and Shannon, C. E. A proposal for the dartmouth summer research project on artificial intelligence (1955). AI magazine , 27 (4):12–12, 2006. Messick, S. The nature of cognitive styles: Problems and promise in educational practice. Educational psycholo-gist , 19(2):59–74, 1984. Newell, A., Simon, H. A., et al. Human problem solving ,volume 104. Prentice-hall Englewood Cliffs, NJ, 1972. Niu, J., Liu, Z., Gu, Z., Wang, B., Ouyang, L., Zhao, Z., Chu, T., He, T., Wu, F., Zhang, Q., Jin, Z., Liang, G., Zhang, R., Zhang, W., Qu, Y., Ren, Z., Sun, Y., Zheng, Y., Ma, D., Tang, Z., Niu, B., Miao, Z., Dong, H., Qian, S., Zhang, J., Chen, J., Wang, F., Zhao, X., Wei, L., Li, W., Wang, S., Xu, R., Cao, Y., Chen, L., Wu, Q., Gu, H., Lu, L., Wang, K., Lin, D., Shen, G., Zhou, X., Zhang, L., Zang, Y., Dong, X., Wang, J., Zhang, B., Bai, L., Chu, P., Li, W., Wu, J., Wu, L., Li, Z., Wang, G., Tu, Z., Xu, C., Chen, K., Qiao, Y., Zhou, B., Lin, D., Zhang, W., and He, C. Mineru2.5: A decoupled vision-language model for efficient high-resolution document parsing, 2025. URL 
+
+https://arxiv.org/abs/2509.22186 .OpenAI. Gpt-5.1: A smarter, more conversational chat-gpt, 2025. URL https://openai.com/index/ gpt-5-1/ .Ouyang, L., Wu, J., Jiang, X., Almeida, D., Wainwright, C., Mishkin, P., Zhang, C., Agarwal, S., Slama, K., Ray, A., et al. Training language models to follow instructions 10 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+with human feedback. Advances in neural information processing systems , 35:27730–27744, 2022. Paech, S. J. Eq-bench: An emotional intelligence benchmark for large language models. arXiv preprint arXiv:2312.06281 , 2023. Plaat, A., Wong, A., Verberne, S., Broekens, J., van Stein, N., and Back, T. Reasoning with large language models, a survey. arXiv preprint arXiv:2407.11511 , 2024. Qin, H., Zhang, J., Zhang, W., Lu, K., Zhou, M., Liao, H., and Mao, R. R-CHAR: A metacognition-driven framework for role-playing in large language models. In Christodoulopoulos, C., Chakraborty, T., Rose, C., and Peng, V. (eds.), Proceedings of the 2025 Confer-ence on Empirical Methods in Natural Language Pro-cessing , pp. 26984–27002, Suzhou, China, November 2025. Association for Computational Linguistics. ISBN 979-8-89176-332-6. doi: 10.18653/v1/2025.emnlp-main. 1372. URL https://aclanthology.org/2025. emnlp-main.1372/ .Sabour, S., Liu, S., Zhang, Z., Liu, J., Zhou, J., Sunaryo, A., Lee, T., Mihalcea, R., and Huang, M. EmoBench: Evaluating the emotional intelligence of large language models. In Ku, L.-W., Martins, A., and Srikumar, V. (eds.), Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pp. 5986–6004, Bangkok, Thailand, August 2024. Association for Computational Linguis-tics. doi: 10.18653/v1/2024.acl-long.326. URL https: //aclanthology.org/2024.acl-long.326/ .Sap, M., Le Bras, R., Fried, D., and Choi, Y. Neu-ral theory-of-mind? on the limits of social intelli-gence in large LMs. In Goldberg, Y., Kozareva, Z., and Zhang, Y. (eds.), Proceedings of the 2022 Con-ference on Empirical Methods in Natural Language Processing , pp. 3762–3780, Abu Dhabi, United Arab Emirates, December 2022. Association for Computa-tional Linguistics. doi: 10.18653/v1/2022.emnlp-main. 248. URL https://aclanthology.org/2022. emnlp-main.248/ .Serapio-Garc ´ıa, G., Safdari, M., Crepy, C., Sun, L., Fitz, S., Romero, P., Abdulhai, M., Faust, A., and Matari ´c, M. Personality traits in large language models. arXiv preprint arXiv:2307.00184 , 2023. Shao, Y., Li, L., Dai, J., and Qiu, X. Character-LLM: A trainable agent for role-playing. In Bouamor, H., Pino, J., and Bali, K. (eds.), Proceedings of the 2023 Conference on Empirical Methods in Natural Lan-guage Processing , pp. 13153–13187, Singapore, De-cember 2023. Association for Computational Linguis-tics. URL https://aclanthology.org/2023. emnlp-main.814/ .Shapira, N., Levy, M., Alavi, S. H., Zhou, X., Choi, Y., Goldberg, Y., Sap, M., and Shwartz, V. Clever hans or neural theory of mind? stress testing social reasoning in large language models. In Graham, Y. and Purver, M. (eds.), Proceedings of the 18th Conference of the Eu-ropean Chapter of the Association for Computational Linguistics (Volume 1: Long Papers) , pp. 2257–2273, St. Julian’s, Malta, March 2024. Association for Com-putational Linguistics. doi: 10.18653/v1/2024.eacl-long. 138. URL https://aclanthology.org/2024. eacl-long.138/ .Sternberg, R. J. Thinking styles . Cambridge university press, 1997. Tang, X., Zhang, X., Shao, Y., Wu, J., Zhao, Y., Co-han, A., Gong, M., Zhang, D., and Gerstein, M. Step-back profiling: Distilling user history for per-sonalized scientific writing. ArXiv , abs/2406.14275, 2024. URL https://api.semanticscholar. org/CorpusID:270619816 .Team, K., Bai, Y., Bao, Y., Chen, G., Chen, J., Chen, N., Chen, R., Chen, Y., Chen, Y., Chen, Y., et al. Kimi k2: Open agentic intelligence. arXiv preprint arXiv:2507.20534 , 2025. Tong, H., Yue, Z., Zhao, F., Lin, E., Jia, L., Chen, R., Sun, Y., Zhang, Q., and Zeng, Y. Cogtom: A comprehensive the-ory of mind benchmark inspired by human cognition for large language models. arXiv preprint arXiv:2601.15628 ,2026. Tu, Q., Chen, C., Li, J., Li, Y., Shang, S., Zhao, D., Wang, R., and Yan, R. Characterchat: Learning towards con-versational ai with personalized social support. arXiv preprint arXiv:2308.10278 , 2023. Turing, A. Intelligent machinery (1948). B. Jack Copeland ,pp. 395, 2004. Van Someren, M. W., Barnard, Y. F., Sandberg, J. A., et al. The think aloud method: a practical approach to mod-elling cognitive processes. London: AcademicPress , 11 (6), 1994. Wang, N., Peng, Z., Que, H., Liu, J., Zhou, W., Wu, Y., Guo, H., Gan, R., Ni, Z., Yang, J., Zhang, M., Zhang, Z., Ouyang, W., Xu, K., Huang, W., Fu, J., and Peng, J. RoleLLM: Benchmarking, eliciting, and en-hancing role-playing abilities of large language mod-els. In Ku, L.-W., Martins, A., and Srikumar, V. (eds.), Findings of the Association for Computational Linguistics: ACL 2024 , pp. 14743–14777, Bangkok, 11 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+Thailand, August 2024. Association for Computa-tional Linguistics. doi: 10.18653/v1/2024.findings-acl. 878. URL https://aclanthology.org/2024. findings-acl.878/ .Wang, X., Wang, H., Zhang, Y., Yuan, X., Xu, R., tse Huang, J., Yuan, S., Guo, H., Chen, J., Zhou, S., Wang, W., and Xiao, Y. CoSER: Coordinating LLM-based persona simu-lation of established roles. In Forty-second International Conference on Machine Learning , 2025. URL https: //openreview.net/forum?id=BOrR7YqKUt .Wang, X., Yang, J., Li, W., Xie, R., Huang, J.-t., Gao, J., Huang, S., Kang, Y., Gou, L., Feng, H., et al. Hu-manllm: Benchmarking and reinforcing llm anthropo-morphism via human cognitive patterns. arXiv preprint arXiv:2601.10198 , 2026. Witkin, H. A., Moore, C. A., Goodenough, D. R., and Cox, P. W. Field-dependent and field-independent cognitive styles and their educational implications. Review of edu-cational research , 47(1):1–64, 1977. Wurgaft, D., Prystawski, B., Gandhi, K., Zhang, C. E., Tenenbaum, J. B., and Goodman, N. D. Scaling up the think-aloud method. arXiv preprint arXiv:2505.23931 ,2025. Xiang, H., Tang, T., Su, Y., Yu, B., Yang, A., Huang, F., Zhang, Y., Lu, Y., Lin, H., Han, X., Zhou, J., Lin, J., and Sun, L. RMTBench: Benchmarking LLMs through multi-turn user-centric role-playing. In Christodoulopoulos, C., Chakraborty, T., Rose, C., and Peng, V. (eds.), Findings of the Association for Computational Linguistics: EMNLP 2025 , pp. 13555–13571, Suzhou, China, November 2025. Association for Computational Linguistics. ISBN 979-8-89176-335-7. doi: 10.18653/v1/2025.findings-emnlp. 730. URL https://aclanthology.org/2025. findings-emnlp.730/ .Xie, Q., Feng, Q., Zhang, T., Li, Q., Yang, L., Zhang, Y., Feng, R., He, L., Gao, S., and Zhang, Y. Human sim-ulacra: Benchmarking the personification of large lan-guage models. In The Thirteenth International Confer-ence on Learning Representations , 2025. URL https: //openreview.net/forum?id=BCP5nAHXqs .Xu, W., Zhou, Y., Zhou, Y., Cao, Q., Li, S., Bu, J., Liu, B., Chen, Y., He, X., Zhao, X., et al. Probing scientific gen-eral intelligence of llms with scientist-aligned workflows. 
+
+arXiv preprint arXiv:2512.16969 , 2025. Yang, A., Li, A., Yang, B., Zhang, B., Hui, B., Zheng, B., Yu, B., Gao, C., Huang, C., Lv, C., et al. Qwen3 technical report. arXiv preprint arXiv:2505.09388 , 2025. Ye, J., Wang, R., Wu, Y., Ma, V., Fang, F., Huang, F., and Li, Y. CPO: Addressing reward ambiguity in role-playing dialogue via comparative policy opti-mization. In Christodoulopoulos, C., Chakraborty, T., Rose, C., and Peng, V. (eds.), Findings of the Asso-ciation for Computational Linguistics: EMNLP 2025 ,pp. 297–323, Suzhou, China, November 2025. Asso-ciation for Computational Linguistics. ISBN 979-8-89176-335-7. doi: 10.18653/v1/2025.findings-emnlp. 18. URL https://aclanthology.org/2025. findings-emnlp.18/ .Yin, X., Yang, X., Li, Z., Zou, L., and Li, C. Character-Craft: Bridging the literature-reality dialogue gap for practical role-playing agents. In Christodoulopoulos, C., Chakraborty, T., Rose, C., and Peng, V. (eds.), Findings of the Association for Computational Linguistics: EMNLP 2025 , pp. 6074–6106, Suzhou, China, November 2025. Association for Computational Linguistics. ISBN 979-8-89176-335-7. doi: 10.18653/v1/2025.findings-emnlp. 323. URL https://aclanthology.org/2025. findings-emnlp.323/ .Yu, X., Luo, T., Wei, Y., Lei, F., Huang, Y., Peng, H., and Zhu, L. Neeko: Leveraging dynamic LoRA for effi-cient multi-character role-playing agent. In Al-Onaizan, Y., Bansal, M., and Chen, Y.-N. (eds.), Proceedings of the 2024 Conference on Empirical Methods in Nat-ural Language Processing , pp. 12540–12557, Miami, Florida, USA, November 2024. Association for Compu-tational Linguistics. doi: 10.18653/v1/2024.emnlp-main. 697. URL https://aclanthology.org/2024. emnlp-main.697/ .Zhan, X., Fu, X., Sun, H., Li, Y., Guo, J., and Guo, Y. Test-time-matching: Decouple personal-ity, memory, and linguistic style in llm-based role-playing language agent. ArXiv , abs/2507.16799, 2025. URL https://api.semanticscholar. org/CorpusID:280140047 .Zhang, T., Kishore, V., Wu, F., Weinberger, K. Q., and Artzi, Y. Bertscore: Evaluating text generation with bert. arXiv preprint arXiv:1904.09675 , 2019. Zheng, L., Chiang, W.-L., Sheng, Y., Zhuang, S., Wu, Z., Zhuang, Y., Lin, Z., Li, Z., Li, D., Xing, E., Zhang, H., Gonzalez, J. E., and Stoica, I. Judging LLM-as-a-judge with MT-bench and chatbot arena. In Thirty-seventh Conference on Neural Information Processing Systems Datasets and Benchmarks Track , 2023. URL https: //openreview.net/forum?id=uccHPGDlao .Zhou, J., Chen, Z., Wan, D., Wen, B., Song, Y., Yu, J., Huang, Y., Ke, P., Bi, G., Peng, L., Yang, J., Xiao, X., Sabour, S., Zhang, X., Hou, W., Zhang, Y., Dong, Y., 12 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+Wang, H., Tang, J., and Huang, M. CharacterGLM: Customizing social characters with large language mod-els. In Dernoncourt, F., Preo t¸iuc-Pietro, D., and Shi-morina, A. (eds.), Proceedings of the 2024 Conference on Empirical Methods in Natural Language Process-ing: Industry Track , pp. 1457–1476, Miami, Florida, US, November 2024. Association for Computational Linguistics. doi: 10.18653/v1/2024.emnlp-industry. 107. URL https://aclanthology.org/2024. emnlp-industry.107/ .Zhou, Z., Feng, X., Huang, L., Feng, X., Song, Z., Chen, R., Zhao, L., Ma, W., Gu, Y., Wang, B., Wu, D., Hu, G., Liu, T., and Qin, B. From hypothesis to publica-tion: A comprehensive survey of AI-driven research sup-port systems. In Christodoulopoulos, C., Chakraborty, T., Rose, C., and Peng, V. (eds.), Findings of the Asso-ciation for Computational Linguistics: EMNLP 2025 ,pp. 11773–11803, Suzhou, China, November 2025. As-sociation for Computational Linguistics. ISBN 979-8-89176-335-7. doi: 10.18653/v1/2025.findings-emnlp. 631. URL https://aclanthology.org/2025. findings-emnlp.631/ .Zhu, J., Jin, R., and Coifman, K. G. Can llms in-fer personality from real world conversations? 
+
+ArXiv , abs/2507.14355, 2025. URL https: //api.semanticscholar.org/CorpusID: 280283439 .
+
+# A. Discussion 
+
+The experimental results point to a recurring tension in current LLM research: while LLMs increasingly exhibit human-like behaviors at the level of language and task per-formance, these behaviors do not necessarily reflect the acquisition of human-like cognitive structures. Rather than attributing this gap to insufficient scaling or missing data, we argue that it arises from deeper limitations in current model-ing paradigms, specifically, how learning objectives, train-ing data, and architectural biases interact to shape which capabilities can emerge. In this section, we attempt to dis-cuss why cognitive internalization remains elusive under prevailing approaches, which aspects of human cognition are systematically underrepresented, and which modeling principles may be required to bridge this gap. We first ar-ticulate hypotheses on the structural limitations of current paradigms, then reflect on the role and limits of cognitive task design, and finally outline learning architectures that may better support cognitive modeling. 
+
+A.1. Hypotheses on the Limitations of Current Paradigms Statistical Pattern Matching Over Cognitive Modeling 
+
+The current paradigm of LLM development relies fundamen-tally on the passive emergence of capabilities from exposure to massive data. While this approach has proven remark-ably successful at producing models that can generate fluent, contextually appropriate text, our findings suggest it is inher-ently limited in fostering genuine cognitive internalization. The core issue may lie in the nature of learning, especially the self-supervised learning, where current LLMs primar-ily develop statistical associations and surface-level pattern matching capabilities rather than the structured, hierarchical cognitive models that characterize human reasoning (Lake et al., 2017; Marcus & Davis, 2019). When confronted with tasks requiring human-like cognitive simulation, such as perspective-taking, counterfactual reasoning, or theory of mind, LLMs rely on probabilistic heuristics derived from the training data distribution by default, rather than engag-ing in the kind of structured mental simulation that humans employ (Sap et al., 2022; Shapira et al., 2024). This limitation manifests most clearly in the models’ re-liance on contextual association. Even state-of-the-art mod-els, demonstrating impressive capabilities primarily within the distributional bounds of their training data (Bubeck et al., 2023), struggle with systematic generalization, particularly in cognitive tasks that require going beyond surface patterns to engage with underlying causal or intentional structures (Berglund et al., 2023). For instance, while these models can often produce plausible responses about human emotions or social dynamics when similar scenarios exist in training data, they frequently fail when required to reason about 13 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+novel configurations of social relationships or to maintain consistent psychological models across extended interac-tions (Kosinski, 2024). This suggests that what appears as human-like understanding may often be sophisticated pat-tern completion rather than genuine cognitive simulation. 
+
+The Averaging-Out of Cognitive Signatures A second fundamental limitation stems from the nature of the training objective itself. LLMs are trained to predict the next token by learning from an aggregation of human-generated text, essentially optimizing to model the average or most prob-able continuation across diverse human authors, contexts, and cognitive styles (Bender et al., 2021). While this ob-jective enables impressive linguistic fluency and reasoning capabilities (Guo et al., 2025), it may actively work against the development of distinctive cognitive signatures. Human cognition is characterized not by statistical regularities but by individual differences, systematic biases, and context-specific reasoning strategies (Sternberg, 1997), precisely the irregularities that are smoothed out on large-scale data. 
+
+Limited Coverage of Cognitive Phenomena in Train-ing This limitation is not merely a consequence of data scarcity but more fundamentally stems from the objectives imposed during training and alignment. Current alignment techniques, most notably reinforcement learning from hu-man feedback (Ouyang et al., 2022), primarily optimize models to produce outputs that are judged favorably by human evaluators. Such judgments are largely based on surface-level behavioral criteria, including coherence, rele-vance, politeness, and safety. Crucially, these objectives do not explicitly incentivize the model to acquire or represent the underlying cognitive processes that humans use to gen-erate similar responses. As a result, models are rewarded for producing behaviorally appropriate outcomes rather than for constructing internal representations that reflect human-like mental models and causal reasoning mechanisms. Even when training data implicitly contains traces of such cogni-tive phenomena, the absence of explicit objectives guiding their acquisition means that models can achieve high align-ment scores through shortcut strategies and pattern imitation. In this sense, current training paradigms favor behavioral alignment over cognitive internalization, enabling models to approximate human responses without reliably modeling the cognitive structures that underlie them. 
+
+A.2. Future Directions Toward Cognitive Modeling 
+
+Addressing these limitations will likely require fundamental shifts in how we approach LLM development, i.e., moving beyond passive scaling and behavioral optimization toward explicitly targeting the development of structured cognitive capabilities. We outline several possible directions for fu-ture research, organized into two complementary strategies: enriching training data and scenarios to better capture cogni-tive phenomena, and developing novel learning architectures that are better suited to meta-level capabilities, including cognitive abstraction and generalization. 
+
+Cognitive Data and Scenarios Recent task scenarios that explicitly target cognitive phenomena beyond surface-level modeling include perspective-taking and role-playing datasets that require maintaining consistent personas and belief states (Xie et al., 2025), theory-of-mind benchmarks focusing on false-belief reasoning and mental state attribu-tion (Tong et al., 2026), and affective reasoning datasets that probe emotion recognition and empathetic response genera-tion (Sabour et al., 2024). While these datasets provide valu-able probes and, in some cases, limited training signals, they typically operationalize cognition through isolated, task-specific objectives. Therefore, many cognitively salient scenarios remain underexplored, including the decomposi-tion of individual-specific knowledge systems and cognitive patterns from shared world knowledge , the evolution of in-dividual cognition over extended temporal horizons , and the assimilation or divergence of individual cognitive states within group settings . At the same time, an exclusive focus on increasingly fine-grained or narrowly scoped cognitive datasets may be counterproductive. Human cognition does not arise from learning isolated abilities in disjoint scenarios, but instead exhibits strong transfer and abstraction across tasks and contexts. Consequently, while the development of well-designed cognitive modeling scenarios remains an important direction for future research, further progress is likely to depend more critically on advances in cognitive modeling objectives and representations, rather than on the proliferation of ever more specialized datasets. 
+
+Cognitive Learning Achitectures Beyond data-centric improvements, advancing cognitive modeling in LLMs likely requires learning paradigms that explicitly encour-age abstraction, adaptation, and internal structure formation. One promising direction is to move from static behavior optimization toward learning frameworks that emphasize flexibility and transfer , enabling models to adapt their rea-soning strategies across cognitive contexts rather than rely-ing on fixed patterns. Relatedly, self-supervised objectives could be redesigned to prioritize abstract structure , such as causal relations, compositional schemas, and persistent be-lief states, over surface-level token prediction, encouraging models to form representations that generalize across situ-ations rather than memorizing correlations. Another direc-tion involves shifting training signals from purely outcome-based supervision to process-aware objectives , where mod-els are incentivized not only to reach correct conclusions but also to do so through cognitively plausible intermediate reasoning. Finally, incorporating explicit structural induc-tive biases , such as symbolic state representations or hybrid 14 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation?                                
+
+> Table 5. Statistics of our benchmark.
+> Statistic Expert Automatic Total
+> # Scholars 100 117 217 # Total Papers 1,875 1,547 3,422 Papers per Author 18.8 13.2 15.8 Clusters per Author 2.3 2.3 2.3
+> Tokens per Component
+> Introduction 614.9 637.2 625.0 Background 178.9 99.0 142.8 Motivation 88.2 55.1 73.2 Approach 107.2 66.2 88.7 Solution 88.6 66.7 78.7
+
+neural–symbolic components, may help models maintain co-herent internal world models and support counterfactual or long-horizon reasoning. Collectively, these directions sug-gest that meaningful progress in cognitive modeling is more likely to arise from rethinking learning objectives and archi-tectural biases than from incremental extensions of existing training pipelines. Looking further ahead, we anticipate that 
+
+truly human-level cognitive modeling may ultimately require brain-inspired architectures that go beyond the prevailing probabilistic modeling paradigm , offering fun-damentally new principles for representing, learning, and reasoning about intelligence. 
+
+# B. Dataset Analysis 
+
+Expert annotation serves as our Gold Standard. The expert annotators capture the full depth of cognitive reasoning, re-sulting in significantly longer and richer components (e.g., Motivation averages 88.2 tokens in Table 5). In contrast, automatic annotation acts as a Silver Standard. While it validates the scalability of our pipeline, the LLM-based extraction tends to be more concise (Motivation averages 55.1 tokens) and exhibits a summarization bias , capturing the gist rather than the nuanced cognitive steps found in expert annotation. To ensure the rigorousness and validity of our conclusions, we conduct cognitive simulation ex-periments and human evaluations on the expert dataset .To rigorously assess the reliability of the automatic anno-tation, we conducted an alignment analysis using the over-lapping data with the expert annotation. Specifically, we identified 21 authors present on both sides, covering 199 valid papers after filtering (as shown in Table 6). This over-lap allows us to treat the expert annotations as the ground truth and evaluate the fidelity of the LLM-based extraction. We measured the alignment at the token level. For each cognitive component (Background, Motivation, Approach, Solution), we computed the intersection between the tokens in the expert extraction ( Texp ) and those in the automated extraction ( Tauto ). We report the Precision, Recall, and F1 Score based on these token overlaps. Table 7 presents the  
+
+> Table 6. Statistics of the overlapping subset used for quality align-ment check on automatic annotation.
+
+Alignment Metric Count 
+
+Overlapping Authors 21 Total Papers Compared 224 Valid Papers (Success) 199 Invalid Papers (Failed) 25  
+
+> Table 7. Token-level agreement between the expert annotation and the automated extraction.
+
+Component Precision Recall F1 Score 
+
+Background 0.8834 0.6749 0.7318 Motivation 0.6788 0.5412 0.5684 Approach 0.7596 0.6085 0.6405 Solution 0.7557 0.5661 0.6047 component-wise performance. We observe three key trends: • High Precision Regime: The automatic annotation demonstrates notably high precision across all com-ponents (e.g., 88.3% for Background, 76.0% for Ap-proach). This indicates that while the model may oc-casionally omit peripheral details (lower recall), the content it does extract is highly accurate and free from irrelevant noise. This high-precision characteristic is crucial for constructing a clean evaluation dataset. • Cognitive Complexity Variance: Performance varies by component type. Background achieves the highest F1 score (73.2%), as it typically involves explicit fac-tual statements. In contrast, Motivation yields the low-est F1 score (56.8%), reflecting the inherent difficulty of identifying gap analyses and subjective arguments. • Robustness of Automation: Given that token-level overlap is a strictly conservative metric (penalizing synonyms or paraphrasing), the substantial F1 scores confirm that the automatic annotation successfully cap-tures the semantic core of the human cognitive process, justifying its use for large-scale data expansion. To ensure that the automatic topic clustering aligns with human cognitive categorization, we conducted a cluster coherence evaluation. We randomly sampled 30 authors 
+
+from the automated pipeline and presented their generated topic clusters to a hybrid evaluation panel. • Evaluation Panel: It consists of one human expert and two SOTA LLMs ( DeepSeek-R1 and GPT-5.1 ). This setup allows us to assess alignment from both human intuition and strict logical perspectives. 15 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation?  
+
+> Table 8. Inter-rater reliability for the automated topic clustering validation. Gwet’s AC1 is reported as the primary metric due to its robustness against prevalence paradox in high-quality data.
+
+Agreement Metric Value 
+
+Sample Size 30 Authors Raters 1 Human + 2 LLMs Absolute Agreement (3/3) 70.0% (21/30) Fleiss’ Kappa ( κ) 0.44 (Moderate) 
+
+Gwet’s AC1 0.69 (Substantial) 
+
+• Protocol: Evaluators independently assess whether the generated clusters are Acceptable (semantically distinct and internally consistent) or Unacceptable .• Results: As shown in Table 8, the panel achieves a high absolute agreement of 70% (21/30 authors passed unanimously). In addition, we observed a Gwet’s AC1 score of 0.69 , indicating Substantial Agreement . These metrics confirm that the automatic clustering mecha-nism produces taxonomies that are logically sound and aligned with human categorization standards. 
+
+# C. Implementation Details 
+
+To ensure the reproducibility of our results, we provide details of our experimental environment, hyperparameter settings, and inference protocols. 
+
+C.1. Hardware and Environment 
+
+We categorize experiments by model scale and accessibility: • Local Fine-tuning and Inference: For open-source models with parameter sizes under 10B (e.g., LLAMA-3.1-8B , QWEN-3-8B ), experiments were conducted on a single NVIDIA A100-PCIE GPU . We utilized 
+
+PyTorch and the HuggingFace PEFT library with 
+
+bfloat16 precision. • Large-Scale Model Inference: For ultra-large-scale models (e.g., QWEN-3-235B ) and proprietary models (e.g., GPT-5.1 , GEMINI-2.5 ), we performed inference via their official APIs or hosted inference endpoints to ensure standard performance alignment. 
+
+C.2. Training Configurations 
+
+We fine-tune our models using Low-Rank Adaptation (LoRA). As defined in our experimental setup, we imple-ment two primary training strategies: T RAIN UNIFIED (cor-responding to the mixed-author setting) and T RAIN INDI - 
+
+> VIDUAL
+
+(corresponding to the single-author baseline). We                              
+
+> Table 9. Hyperparameter Settings. Optimal configurations for each strategy. Note that the Qwen-Unified model utilizes an effi-cient Attention-Only approach.
+> Model A: Qwen3-8B Hyperparameter UNIFIED INDIVIDUAL
+> Rank ( r)32 16 Alpha ( α)64 32 Learning Rate 5e-5 2e-5 Target Modules Attn Only ‡All Linear Max Seq Length 8,192 2,048
+> Model B: Llama-3.1-8B Hyperparameter UNIFIED INDIVIDUAL
+> Rank ( r)192 256 Alpha ( α)384 32 Learning Rate 7e-5 1e-5 Target Modules All Linear All Linear Max Seq Length 8,192 2,048
+> ‡Updates are restricted to query, key, value, and output projection layers ( q,k,v,o ).
+
+perform grid search to identify the optimal hyperparame-ters. To ensure stable convergence, we generally adopt an effective batch size of 16. The only exception is the Qwen-Unified model, where a smaller batch size of 4 is sufficient due to its parameter-efficient Attention-Only update strategy. 
+
+C.3. Inference Protocols 
+
+During the inference phase, we maintain the same hardware environment to ensure consistency. We employ the Nucleus sampling strategy to balance diversity and coherence in the generated academic text. • Decoding Strategy: We set the sampling temperature to T = 0 .7 and top-p to 0.9 (do sample=True ). This configuration encourages the model to generate more creative and stylistically varied solutions com-pared to greedy decoding. • Generation Limits: To fully accommodate the de-tailed Approach and Solution sections, we set the max-imum generation length ( max new tokens ) to 8,192 
+
+for the T RAIN UNIFIED models. For the T RAIN INDI - 
+
+> VIDUAL
+
+baselines, a limit of 4,096 is sufficient. 
+
+C.4. Experimental Variants and Ablations 
+
+To strictly verify the effectiveness of our proposed method, we design a systematic ablation study aligned with the def-initions in Section 3.2 and Table 2 of the main text. As implemented in our execution protocols, we evaluate five distinct inference settings, where we investigate the impact 16 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+of information availability on cognitive simulation by vary-ing the reference context retrieved (Top-k = 2 ). While the definitions align with the main text, we provide the detailed rationale for each setting below: • BASE MODEL : Represents the original output with-out any cognition history conditioning . Rationale: 
+
+This serves as the lower-bound baseline to isolate the model’s intrinsic default academic voice . By com-paring this with S ELF , we can quantify the specific marginal gain contributed by the retrieval-augmented profiling mechanism. • OTHER : Uses cognition histories randomly sam-pled from other authors , serving as an interference control group . Rationale: This serves as a negative control to verify specificity. If the model performs well here, it indicates the metric merely measures generic scientific plausibility . A drop in this performance con-firms that the model is successfully distinguishing be-tween different scholars’ unique cognitive signatures. • SELF (Standard): Incorporates the target author’s 
+
+cognition history from the training set , representing our standard cross-domain setting . Rationale: This is the core experimental setting. By restricting access to historical papers (past work), we strictly test the model’s ability to perform cognitive internalization ,i.e., extracting abstract thought patterns from history and generalizing them to an unseen research problem. • SELF AKIN : Leverages cognition histories from the 
+
+same author’s test set (excluding the current target), examining in-domain behavioral leakage . Rationale: 
+
+The retrieved papers share the same temporal period and specific sub-topic with the target. This ablation with S ELF allows us to decouple behavioral stylistic 
+
+from cognitive pattern , measuring how much perfor-mance is gained simply by semantic similarity. • LEAKY : Provides oracle access to the author’s authen-tic cognition trajectory (specifically the ground truth Motivation with core idea), serving as an upper bound .
+
+Rationale: By removing the difficulty of exploring the solution, this setting isolates the execution capability .It defines the theoretical ceiling of performance when the model perfectly understands the author’s intent. Regarding learning-based methods in Section 3.3, we inves-tigate both parameter-isolation and -sharing settings. • TRAIN INDIVIDUAL (Specialized Experts): We train a separate model parameter set for each scholar. 
+
+– Data Scope: Each author’s model is fine-tuned ex-clusively on the specific training corpus, ensuring no interference from other cognitive styles. 
+
+– Input Format: The input only contains the raw task context (Instruction + Observation), as the awareness of self-identification is implicitly en-coded in the model weights. • TRAIN UNIFIED (Profile-Conditioned Mix): We jointly optimize a single unified model on the aggre-gated corpus of all researchers with their profiles. 
+
+– Mechanism: To distinguish between different au-thors within shared parameters and prevent cogni-tive averaging , we extract a profile for each author as the identification condition. 
+
+– Input Construction: We prepend the Unified Au-thor Profile (see Profile Synthesis Prompt in Appendix D.1) to every training sample, which forces the model to treat the author’s persona as an explicit condition during learning. We also evaluate specific enhancement strategies in Sec-tion 3.3. Here, we detail their concrete implementations: • PERSONALITY TRAIT (Personality Profiling): Fol-lowing recent works on simulating human behavior in LLMs (Zhu et al., 2025), we condition the model on the scholar’s psychological profile. 
+
+– Data Source & Extraction: We retrieve the au-thor’s 2 representative papers strictly from the training set (historical publications), which en-sures that the profile reflects the author’s most recent established persona without leaking infor-mation from the test set (in-domain recent work). 
+
+– Privacy-Preserving Analysis: We analyze the In-troduction sections of these selected papers using GPT-5.1. To prevent the model from cheating by memorizing specific keywords, we enforce a 
+
+Critical Privacy Instruction : the profiling model is strictly prohibited from mentioning specific re-search domains or algorithms, and is required to focus solely on cognitive-level markers (e.g., prob-lem framing style, motivational reasoning pat-terns, abstraction preferences, epistemic stance, and the structure of argumentative narratives). 
+
+– Prompt Instruction: In addition, we extract Big Five scores (Openness, Conscientiousness, Ex-traversion, Agreeableness, Neuroticism) and in-ject them into the prompt to guide the decision-making style (e.g., High Conscientiousness im-plies a preference for rigorous validation). • COGNITIVE GUIDE (Cognitive Guidance): Building upon the draft generated by P ERSONALITY TRAIT , we implement the COGNITIVE GUIDE pipeline, which adopts the Test-Time-Matching (TTM) framework 17 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+(Zhan et al., 2025) as its underlying reasoning mecha-nism to further refine the solution. 
+
+– Stage 1: Intent Rewriting (Reasoning Planning). 
+
+Taking the personality-conditioned draft as input, the model simulates the author’s cognitive process of recalling specific past experiences. It formu-lates 1-2 specific search queries (Intents) in the third person to address logical gaps or lack of technical detail in the initial draft. 
+
+– Stage 2: Knowledge Refinement (Fact Alignment). 
+
+Using the retrieved historical chunks, the model refines the draft to ensure factual consistency. We strictly enforce a “No Lazy Appending” con-straint: the model is prohibited from merely ap-pending phrases like “Inspired by...” to the end; instead, it must reconstruct the core sections 
+
+(e.g., Approach and Solution) to naturally weave in the retrieved technical details and internalize the perspective from third-person to first-person. 
+
+– Stage 3: Style Transfer (Cognitive Realization). 
+
+The model rewrites the refined content into the final output using the author’s 5-dimensional cog-nitive profile (including Premise, Strategy, Logic, Keyword, and Taboos), which ensures the solu-tion is articulated through the author’s unique cog-nitive lens rather than generic academic language. 
+
+C.5. Expert Annotation: Workflow, Protocols, and Compensation Annotator Qualifications To ensure the high fidelity of the 
+
+Expert Annotation , we recruit a team of 10 senior Ph.D. stu-dents specializing in Artificial Intelligence. Their diverse ex-pertise covers major sub-fields including Natural Language Processing, Computer Vision, and Machine Learning. 
+
+Dataset Construction Workflow The construction process is governed by a rigorous manual-centric protocol, strictly adhering to the following standardization rules: • Broad-spectrum Data Collection: Unlike the automatic annotation restricted to specific open-access APIs, an-notators aggregate papers from a comprehensive range of academic repositories, including Google Scholar, IEEE Xplore, ACM Digital Library, and DBLP .This manual flexibility enables the retrieval of high-impact publications that are often protected by anti-crawling mechanisms. Papers are processed in de-scending order of citation counts to ensure the dataset captures the scholar’s most influential contributions. • Strict Validity & Filtration Protocols: To guarantee in-formation density, we enforce strict length constraints. A valid entry is required to contain an Abstract ( > 50 
+
+characters), an Introduction ( > 100 characters), and extractable cognitive elements ( > 20 characters each). Papers failing to meet these thresholds or missing key sections are discarded. Furthermore, a “clean-text” rule is enforced where annotators manually remove non-textual artifacts such as footnotes and figure captions, ensuring textual integrity. • Cognitive Element Extraction: Annotators extract four specific cognitive elements: Background, Motivation, Approach, and Solution . A strictly objective protocol is mandated: content must be extracted directly from the source text without subjective modification. If a specific cognitive element is explicitly absent in the original paper, the field will be recorded as “null” rather than hallucinated contents. • Topic-based Clustering Criteria: To support the cross-domain generalization setting, papers are clustered based on semantic themes derived from Titles and Ab-stracts. We use a Minimum Category Size principle, requiring each valid cluster to contain at least three papers to ensure statistical significance for testing. Pa-pers that are semantically isolated or can not form a coherent group are excluded to maintain cluster purity. • Limited Auxiliary Tools & Verification: While manual extraction is the default, the use of LLMs is permit-ted strictly as an auxiliary tool for interpreting highly specialized interdisciplinary terminologies. In such cases, a mandatory “Human-in-the-loop” verification is required to validate the accuracy and logic flow of the extracted content against the original source. 
+
+Compensation The annotators are compensated under a performance-based model, calculated based on the number of effective papers (meeting all validity constraints) and clustering tasks completed. In practice, the resulting com-pensation corresponds to approximately three times the local minimum hourly wage. 
+
+# D. Full Prompts 
+
+We provide the complete prompt templates used in our ex-periments. To ensure reproducibility, we categorize them into profile construction (data pre-processing), inference execution, and automated evaluation. 
+
+D.1. Profile Construction Prompts 
+
+This section details the prompts used to extract structured attributes (e.g., style profiles, research interests, personality traits) from raw papers. These attributes serve as condition-ing inputs for the T RAIN UNIFIED model and the C OGNI -
+
+> TIVE
+
+GUIDE enhancement strategies. 18 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+Unified Author Profile Extraction For the T RAIN UNI - 
+
+> FIED
+
+setting (Section 3.3), we condition the model on a comprehensive instruction derived from the author’s writing history. This is a two-step process. 
+
+Single-Paper Analysis We first extract the stylistic finger-print from individual papers. 
+
+Stylometric Analysis Prompt 
+
+You are an expert in academic stylometry. Analyze the provided excerpts from an author’s research pa-pers to identify their unique writing and research style. 
+
+Input Text: {Paper Content }
+
+Task: Extract the author’s stylistic fingerprint across 5 specific dimensions. 
+
+STRICT CONSTRAINT: Do NOT output generic descriptions. All analysis must be grounded in the provided text. 
+
+Dimensions to Analyze: 
+
+• Premise & Worldview: Identify their funda-mental assumptions about the field. • Strategy: How do they typically frame prob-lems? (e.g., contrasting with baselines, propos-ing novel architectures). • Logic: How do they connect ideas? (e.g., deduc-tive, empirical, mathematical proofs). • Keywords: List characteristic terminology or phrasing habits. • Taboos: Identify any methods or assumptions they explicitly avoid or critique. 
+
+Profile Synthesis We then aggregate multiple analyses into a single, coherent system instruction. 
+
+Profile Synthesis Prompt 
+
+Below are multiple stylistic analyses of the same researcher derived from different papers: 
+
+{Aggregated Analyses from Stylometric Analysis }
+
+Task: Your task is to consolidate these observations into a single, coherent **System Instruction** (Au-thor Profile). This profile will be used to instruct an LLM to write exactly like this author. 
+
+Requirements: 
+
+1. Start with: ”You are a researcher who...” 2. Explicitly mention their preferred **Logic** and **Strategy**. 3. List 3-5 characteristic **Keywords** or phras-ing habits. 4. Ensure the tone matches the author’s academic persona. 
+
+Personality Profiling Following established Big Five per-sonality modeling approaches for LLMs (Zhu et al., 2025), we implement the P ERSONALITY TRAIT enhancement to in-fer stable psychological traits with strict privacy constraints. 
+
+Personality Profiling Prompt 
+
+You are a psychologically insightful agent. Your task is to analyze text to infer the author’s stable personality traits based on the Big Five model. 
+
+CRITICAL PRIVACY INSTRUCTION: The in-put text is confidential. Your output (especially the reasoning) MUST NOT reveal specific research top-ics, field names (e.g., NLP, Biology), specific al-gorithms, or technical methodologies mentioned in the text. Focus purely on stylistic markers (e.g., citation patterns, sentence length, modality). 
+
+Input Text: {Paper Introduction }
+
+Output Format: Provide a score for each trait (Con-scientiousness, Agreeableness, Neuroticism, Open-ness, Extraversion) from 1.0 to 5.0. 
+
+D.2. Inference Prompts (Execution) 
+
+This section details the prompts used during the inference phase, covering both the standard baseline settings and our proposed Cognitive Guide pipeline. 
+
+Standard Inference (Baselines / SFT) For baseline set-tings (e.g., B ASE MODEL , S ELF , T RAIN UNIFIED ), we use a standardized prompt structure. 
+
+Standard System Prompt 
+
+You are a brilliant researcher trying to solve a new challenge. Your goal is to develop a research so-lution based on a new observation and potentially inspired by past work. 
+
+Output Structure Definitions: 
+
+• Approach: Introduces the inspiration and con-ceptual framework of the research methods. • Solution: Provides a detailed description of the implementation and execution. 19 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+Standard User Prompt (with RAG Context) 
+
+PART 1: PAST WORK (Inspiration) The follow-ing are related works retrieved from history: 
+
+Paper 1: {Paper Title 1 }
+
+Background: {Paper Background 1 }
+
+... (Repeated for Top-k papers) 
+
+PART 2: NEW CHALLENGE {Target Observation }
+
+TASK INSTRUCTION: Based on the NEW CHALLENGE , and using the PAST WORK as inspiration (if available), formulate a detailed Solu-tion. 
+
+STRICT CONSTRAINT: The response MUST ONLY contain the full text of the Approach and 
+
+Solution . Do not output any conversational fillers. 
+
+Cognitive Guide Pipeline (Enhancement) Based on the initial draft generated by the P ERSONALITY TRAIT module, we implement a progressive Test-Time-Matching to further refine the solution. Adapted from multi-stage reasoning frameworks (Zhan et al., 2025), it transforms the personality-conditioned draft into a cognitively aligned output through intent rewriting, knowledge refinement, and style transfer. 
+
+Intent Rewriting The model formulates search queries based on the initial draft. 
+
+Intent Rewriting Prompt 
+
+Given a scholarly interaction and an initial output: 
+
+User Query: {query }
+
+Initial Draft: {target }
+
+Objective: Identify critical gaps between the Initial Draft and the author’s established research identity. Formulate 1–2 targeted search queries to retrieve grounding evidence from historical publications .
+
+Constraints: 
+
+• Identity-Centric: Focus exclusively on the au-thor’s specific methodologies (e.g., algorithmic preferences, hyperparameters, or unique theoret-ical frameworks). • Third-Person Formulation: Describe the re-quired information using a neutral, third-person perspective (e.g., “The author’s prior approach to...”). • Exclusion Rule: Do NOT seek information re-garding the user; prioritize the author’s internal research consistency. • Precision: Provide only the core queries / state-ments in a concise declarative or interrogative format. 
+
+Knowledge Refinement The model refines the draft using retrieved history, with strict constraints against hallucination and lazy appending. 
+
+Knowledge Refinement Prompt 
+
+Below is a conversation record and relevant memory fragments: 
+
+User: {query }
+
+Initial Response: {target }
+
+Refined Context: {rewritten query }
+
+Memory Fragments: {chunks }
+
+Task: Revise the Initial Response by deeply inte-grating the Memory Fragments .
+
+Guidelines: 
+
+1. Technical Alignment: Replace generic method-ologies (e.g., ”Deep Learning”) with specific techniques from memory (e.g., ”Kernel Meth-ods”, ”Reranking”). Adjust the architecture to reflect any constraints or preferences found in the retrieved chunks. 2. Structural Integration: DO NOT append up-dates at the end. You must rewrite the core sec-tions (e.g., Approach , Steps ) to ensure the new knowledge is woven into the logic flow. 3. First-Person Internalization: Convert third-person memories into your own ”past work” or ”experience”. Conflict Resolution: If the initial draft conflicts with memory, prioritize memory and overwrite the conflicting content. 4. Output Format: Return only the revised re-sponse. No meta-talk, explanations, or ”Here is the revised version”. 
+
+Style Transfer The final rewrite injects the author’s cogni-tive dimensions. 
+
+Style Transfer & Cognitive Realization 
+
+Role: You are now embodying the scholar 
+
+{author name }.
+
+Task: Rewrite the Input Solution to align with your unique 
+
+Research Persona through the Thinking-Through-Mimicry (TTM) process. 
+
+Input Solution: “{input solution }”20 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+Persona Profile (Strictly Follow): 
+
+1. Epistemic Premise (Worldview): Your research philosophy is grounded in: {premise }.2. Methodological Preference (Strategy): Habit-ual approach: {strategy }. Beyond lexical sub-stitution, if the input method contradicts your research habits (e.g., “Deep Learning” vs. your “Probabilistic Models”), you must reframe the entire solution through your preferred lens. 3. Argumentation Architecture (Logic): Your in-herent logical structure follows: {logic }.4. Lexical Signature (Keywords): Habitual usage: 
+
+{keywords }. Action: Systematically replace generic terminology with these specific domain-specific keywords. 5. Conceptual Taboos (Avoidance): Strictly avoids: {taboos }. Action: Eradicate or heavily critique any concepts, assumptions, or baselines falling into this category. 
+
+Execution Guidelines: 
+
+• Total Immersion: Adopt an authoritative first-person voice (e.g., “We contend...”, “In our framework...”). • Cognitive Fidelity: Do not merely mimic the author’s writing style; ensure the underlying rea-soning reflects the author’s intellectual heritage. • Output Specification: Return only the rewritten solution (Approach + Solution). 
+
+D.3. Evaluation Prompts and Scoring Rubrics 
+
+To ensure rigorous evaluation, we design specific scoring rubrics for our hierarchical evaluation framework. The LLM judges are instructed to strictly follow these criteria. 
+
+Semantic Similarity Judge We employ GPT-5-nano 
+
+to assess the alignment between the simulated proposal and the actual ground truth. To standardize the scoring, we explicitly included Anchor Examples (e.g., comparing with other models) in the prompt construction. 
+
+Rubric D.1: Semantic Similarity Rubric 
+
+Score 5 
+
+> High Fidelity
+
+The simulated proposal is highly con-gruent with the ground truth. The technical essence is identical. 
+
+Anchor Example: BLIP ↔ BLIP (Orig-inal) 
+
+Score 4 
+
+> Idea Aligned
+
+The Research Problem and Core Idea are fully consistent, but the implemen-tation shows structural modifications (e.g., a valid successor method). 
+
+Anchor Example: BLIP ↔ BLIP-2 (Successor Work) 
+
+Score 3 
+
+> Topic Aligned
+
+The general Research Problem is cor-rectly identified, but the Methodology 
+
+diverges significantly (different era or architecture). 
+
+Anchor Example: CLIP ↔ ResNet (Im-age Classif. via Contrastive vs. CNN) 
+
+Score 2 
+
+> Domain Match
+
+The proposal falls within the same broad research domain (e.g., Visual Generation) but addresses a different specific task. 
+
+Anchor Example: CLIP ↔ GAN (Both Vision, different tasks) 
+
+Score 1 
+
+> Unrelated
+
+The proposal is completely unrelated 
+
+to the ground truth in terms of problem definition and methodology. 
+
+Anchor Example: CLIP ↔ BERT (Vi-sion vs. NLP) 
+
+Semantic Similarity Judge Prompt 
+
+You are a senior academic researcher. Your task is to rigorously evaluate the relevance and similarity between a ’Simulated Research Proposal’ and an ’Actual Paper’s Research Proposal.’ 
+
+Assessment Dimensions: 
+
+• Research Problem: Is the motivation consis-tent? • Core Idea: Is the technical philosophy aligned? • Logical Framework: Is the argumentation struc-ture similar? 
+
+Scoring Standard: Please rate strictly according to the 5-point scale provided above .
+
+{
+
+"analysis process" : ”Analyze simi-larities and differences across Research Problem, Core Idea, and Logical Framework.”, 
+
+"final score" : (Integer 1-5), 
+
+"score explanation" : ”One-sentence summary of the core reason for this score level.” 
+
+}
+
+21 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+This high-level evaluation involves a two-step pipeline: first construct a Ground Truth Thought Profile from the author’s authentic history, and then score the generated solution. 
+
+Ground Truth Profile Construction Before scoring, we extract the author’s authentic cognitive patterns from their training set. Note: This process is executed separately for each dimension . We instantiate the LLM five times, each time using the specific system instruction and extraction schema corresponding to one of the five dimensions below to ensure focused analysis. 
+
+Ground Truth Extraction (Inheritance Analysis) 
+
+System Role: You are a top-tier expert in the in-heritance analysis of scientific thinking . Your task is to construct a high-fidelity profile of scholarly thinking by analyzing how a scholar’s current re-search is rooted in and inherited from their historical publications. 
+
+Input Materials: 
+
+• Target Paper: The latest research (Title and Introduction). • Historical Paper List: A collection of the au-thor’s prior works. 
+
+Task Description: Take the Target Paper as the central case and analyze how its thought structures are inherited from the provided Historical Papers .
+
+Dimensions to Analyze: 
+
+1. Foundational Premise: Inherited problem for-mulations and theoretical lenses (e.g., probabilis-tic vs. deterministic). 2. Strategic Preference: Core value orientations and modeling philosophies (e.g., preferring inter-pretability over black-box models). 3. High-Level Logic: Argumentation structures and challenge-to-innovation patterns. 4. Keywords: Domain-specific terminology and habitual professional vocabulary. 5. Taboos: Technologies, assumptions, or baselines that the author historically avoids or critiques. 
+
+Chain-of-Thought (CoT) Instructions: 
+
+• Analyze Target : Identify core problem definitions and critique structures in the Target Paper. • Scan Memory : Identify papers in the Histori-cal List that share the exact same theoretical premises. • Verify Inheritance : Ensure the similarity is due to consistent author style rather than general field overlaps. • Select Representatives : Choose 5 distinct papers that best prove this inheritance. 
+
+Output Format: Summarize the features into a JSON profile containing summary of features 
+
+and most representative papers for each dimension. 
+
+Profile-Based Scoring The evaluation phase implements a profile-conditioned judging mechanism to quantify the cognitive alignment. For each test case, the LLM judge is provided with the multi-dimensional Ground Truth Profile 
+
+and the Representative Papers as the evidentiary benchmark. The judge is required to perform a contrastive analysis be-tween the Current Solution and the established Standard Answer , ensuring that the assigned scores are substantiated by specific cognitive traits defined in the profile. This pro-cess moves beyond surface-level similarity, focusing on whether the generated output successfully internalizes the scholar’s underlying research logic and strategic constraints. 
+
+Rubric D.2: Unified Cognitive Consistency Rubric 
+
+Note: For the ”Taboo Avoidance” dimension, ”Re-production” refers to the reproduction of the au-thor’s avoidance behavior (i.e., successful critique or exclusion of forbidden methods). 
+
+Score 5 
+
+> Identity Alignment
+
+The solution perfectly reproduces 
+
+the dimension-specific criteria de-fined in Table 10. • Evidence: Details match the au-thor’s historical habits with no conflicts .• Taboo: The solution strictly ad-heres to all negative constraints. 
+
+Score 4 
+
+> High Consistency
+
+The solution highly captures the core cognitive structures. • Evidence: Captures the main logic/strategy; deviations are mi-nor and restricted to secondary phrasing. • Taboo: Avoids core taboos but may exhibit minor semantic over-lap without adopting the forbidden paradigm. 
+
+Score 3 
+
+> Surface Imitation
+
+The solution exhibits a generic aca-demic style relevant to the field but lacks the author’s unique ”intellectual fingerprint.” • Evidence: The method is valid but 22 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation?                           
+
+> Table 10. Detailed Definition of Cognitive Dimensions. This matrix guides the evaluator to map specific inherited traits to the generated solution.
+> Dimension Assessment Protocol Foundational Premise Focus: The theoretical lens and problem for-mulation style.
+> Target (Score 5): The solution must accu-rately reconstruct how the author typically frames problems (e.g., framing optimization as probabilistic inference) and their founda-tional knowledge base.
+> Strategic Preference Focus: Value trade-offs and research paradigms.
+> Target (Score 5): The solution must mirror the author’s persistent choices, such as favor-ing interpretable frameworks over black-box performance, or theoretical modeling over engineering hacks.
+> High-Level Logic Focus: Argumentation architecture and challenge-response patterns.
+> Target (Score 5): The reasoning flow must follow the author’s deductive style (e.g., “Challenge A →Innovation B”) rather than generic logical templates.
+> Keyword Style Focus: Domain-specific terminology and lin-guistic habits.
+> Target (Score 5): The text naturally embeds the author’s unique vocabulary (e.g., using ”manifold” instead of ”space”) without me-chanical forcing.
+> Taboo Avoid-ance
+> [Inverse Met-ric]
+> Focus: Forbidden methodologies, assump-tions, or baselines.
+> Target (Score 5): The solution successfully avoids or actively critiques approaches the author historically rejects (e.g., explicitly ex-cluding brute-force data fitting).
+
+could have been written by any researcher in the field. 
+
+Score 2 
+
+> Significant Deviation
+
+The solution violates 1-2 core inher-ited patterns. • Evidence: Adopts a strategy dis-tinct from the author’s preference (e.g., using a method they typi-cally consider ”outdated”). • Taboo: Explicitly mentions or re-lies on a discouraged technique. 
+
+Score 1 
+
+> Complete Misalignment
+
+The solution is completely contrary 
+
+to the profile. • Evidence: Adopts a worldview or methodology strictly forbidden by the author’s established research identity. 
+
+Cognitive Scoring Prompt 
+
+System Role: You are a senior academic evalua-tion specialist. Your task is to assess the degree of matching between an AI-generated solution and a scholar’s established research identity. 
+
+Evaluation Materials: 
+
+• A. Scholar Thought Profile: The ground truth features extracted in Step 1. • B. Representative Papers: Historical context providing evidence for the profile. • C. Model Answer: The original human-written solution (as the performance ceiling). • D. Current Solution: The AI-generated output to be evaluated. 
+
+Core Assessment Principle: Evaluate whether the 
+
+Current Solution successfully reproduces the inher-ited thought structures summarized in Profile A .Your assessment must be objective, fair, and trace-able back to the historical evidence in Material B .
+
+Scoring Standard: Assign a score from 1 to 5 
+
+by strictly adhering to the Cognitive Consistency Rubric .The justification must explicitly state how specific el-ements in the solution match or violate the inherited patterns. 
+
+Output Format (JSON): Please strictly output the result in the following JSON format: 
+
+{
+
+"eval dimension" : {Dimension Name },
+
+"justification" : Detailed analysis based on the Cognitive Consistency Rubric..., 
+
+"score" : (Integer 1-5), 
+
+"confidence score" : (Float 0.0 - 1.0) 
+
+}
+
+# E. Experiments 
+
+We provide more experimental results in Tables 11 to 13. 23 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+Table 11. Main results of simulating human cognition across different LLMs. We evaluate each model under five situations: (1) BASE 
+
+MODEL represents the original output without any cognition history conditioning. (2) OTHER uses cognition histories randomly sampled from other authors, serving as an interference control group. (3) SELF incorporates the target author’s cognition history from the train set, representing our standard cross-domain setting. (4) SELF AKIN leverages cognition histories from the same author’s test set, examining in-domain behavioral leakage. (5) LEAKY provides oracle access to the author’s authentic cognition trajectory, serving as an upper bound. We report ROUGE-1/2/L and BertScore for lexical coverage, LLM-as-a-Judge for semantic similarity, and five cognitive consistency dimensions: Foundational Premise, Strategic Preference, Logic Mapping, Keyword Style, and Taboo Avoidance. 
+
+Method Lexical Semantic Cognitive ROUGE-1/2/L BertScore P. S. L. K. T. 
+
+LL AMA-3-8B 22 .28 /3.86 /12 .27 81 .46 3.16 2.98 3.17 2.90 3.11 3.18 
+
+- OTHER 23 .86 /3.85 /13 .13 81 .57 2.70 2.56 2.83 2.58 2.89 3.05 
+
+- SELF 24 .95 /4.36 /13 .48 81 .89 3.01 2.95 3.19 2.87 3.03 3.42 
+
+- SELF AKIN 26 .73 /6.12 /14 .72 82 .40 3.38 3.46 3.69 3.33 3.31 3.82 
+
+- LEAKY 27 .70 /6.66 /15 .05 82 .55 3.54 3.59 3.77 3.42 3.37 3.86 
+
+LL AMA-3.1-8B 22 .12 /3.91 /12 .02 81 .39 3.22 3.03 3.15 3.00 3.05 3.20 
+
+- OTHER 23 .11 /3.94 /12 .70 81 .63 2.94 2.74 2.95 2.73 2.89 3.09 
+
+- SELF 24 .10 /4.45 /13 .10 81 .89 3.13 3.02 3.23 2.98 3.06 3.32 
+
+- SELF AKIN 25 .65 /5.93 /14 .12 82 .36 3.44 3.55 3.77 3.41 3.34 3.82 
+
+- LEAKY 26 .70 /6.79 /14 .75 82 .66 3.63 3.77 3.86 3.55 3.45 3.92 
+
+LL AMA-3.2-3B 22 .11 /3.84 /12 .02 81 .48 3.18 3.01 3.17 2.87 3.09 3.17 
+
+- OTHER 23 .73 /3.85 /12 .86 81 .60 2.70 2.66 2.82 2.62 2.86 3.05 
+
+- SELF 25 .07 /4.40 /13 .34 81 .93 2.97 2.94 3.13 2.88 3.02 3.35 
+
+- SELF AKIN 28 .46 /7.52 /15 .90 82 .79 3.36 3.50 3.75 3.38 3.29 3.82 
+
+- LEAKY 29 .31 /8.15 /16 .38 83 .01 3.53 3.71 3.86 3.55 3.39 3.91 
+
+QWEN -2.5-7B 23 .24 /3.80 /11 .46 81 .64 3.29 3.16 3.27 3.03 3.17 3.21 
+
+- OTHER 23 .65 /3.75 /12 .11 81 .89 2.93 2.85 3.04 2.85 2.94 3.19 
+
+- SELF 24 .19 /4.14 /12 .29 82 .05 3.17 3.13 3.33 3.10 3.08 3.52 
+
+- SELF AKIN 26 .00 /5.69 /13 .40 82 .61 3.50 3.77 3.91 3.62 3.40 3.95 
+
+- LEAKY 27 .26 /6.50 /14 .06 82 .95 3.70 3.92 4.02 3.73 3.52 4.09 
+
+R1-Q WEN -7B 21 .96 /3.23 /11 .16 81 .07 3.28 3.06 3.18 2.97 3.08 3.31 
+
+- OTHER 22 .12 /3.04 /11 .33 81 .21 3.01 2.91 3.03 2.85 2.96 3.27 
+
+- SELF 22 .23 /3.22 /11 .37 81 .32 3.21 3.10 3.23 3.08 3.04 3.56 
+
+- SELF AKIN 23 .37 /3.93 /11 .85 81 .60 3.48 3.63 3.76 3.46 3.36 3.96 
+
+- LEAKY 24 .09 /4.36 /12 .18 81 .82 3.72 3.83 3.86 3.58 3.47 4.05 
+
+QWEN -3-8B 23 .08 /3.25 /11 .00 81 .21 3.41 3.51 3.66 3.44 3.36 3.62 
+
+- OTHER 21 .95 /2.89 /10 .66 81 .30 3.19 3.28 3.53 3.26 3.15 3.60 
+
+- SELF 22 .14 /3.18 /10 .73 81 .44 3.33 3.51 3.72 3.45 3.27 3.83 
+
+- SELF AKIN 23 .21 /3.81 /11 .13 81 .76 3.59 4.07 4.26 3.96 3.68 4.17 
+
+- LEAKY 24 .06 /4.42 /11 .43 82 .04 3.83 4.29 4.38 4.08 3.80 4.31 
+
+QWEN 3-235B 19 .49 /2.29 / 9.13 80 .49 3.36 3.72 3.91 3.63 3.49 3.84 
+
+- OTHER 19 .36 /2.05 / 9.24 80 .78 3.14 3.43 3.76 3.50 3.28 3.81 
+
+- SELF 19 .85 /2.40 / 9.38 80 .94 3.29 3.73 3.93 3.70 3.42 4.04 
+
+- SELF AKIN 20 .39 /2.71 / 9.48 81 .19 3.46 4.19 4.38 4.07 3.68 4.30 
+
+- LEAKY 21 .15 /3.09 / 9.80 81 .46 3.69 4.30 4.44 4.17 3.81 4.42 
+
+24 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation?  
+
+> Table 12. Main results of simulating human cognition across different LLMs.
+
+Method Lexical Semantic Cognitive ROUGE-1/2/L BertScore P. S. L. K. T. 
+
+GLM-4-9B 23 .06 /3.56 /12 .41 80 .82 3.19 2.92 3.03 2.73 3.04 3.19 
+
+- OTHER 21 .94 /3.34 /12 .14 80 .98 2.98 2.72 2.89 2.67 2.93 3.15 
+
+- SELF 22 .58 /3.59 /12 .30 81 .12 3.14 2.92 3.07 2.81 3.02 3.40 
+
+- SELF AKIN 23 .68 /4.54 /13 .01 81 .47 3.37 3.18 3.38 3.07 3.14 3.63 
+
+- LEAKY 25 .31 /5.27 /13 .83 81 .73 3.61 3.39 3.49 3.23 3.19 3.86 
+
+GLM-4.1V-9B 23 .04 /3.43 /11 .03 81 .33 4.35 3.35 3.50 3.33 3.35 3.44 
+
+- OTHER 20 .01 /2.71 /10 .01 81 .14 2.98 3.04 3.33 3.18 3.10 3.50 
+
+- SELF 20 .96 /3.19 /10 .29 81 .42 3.20 3.36 3.61 3.38 3.26 3.79 
+
+- SELF 23 .28 /4.69 /11 .58 82 .02 3.63 3.97 4.13 3.86 3.62 4.10 
+
+- LEAKY 24 .45 /5.91 /12 .54 82 .39 3.82 4.09 4.25 4.01 3.67 4.26 
+
+GEMMA -7B 27 .91 /4.75 /13 .90 82 .30 3.15 2.98 2.94 2.76 3.10 3.11 
+
+- OTHER 23 .53 /2.96 /12 .71 81 .95 1.80 1.91 2.08 2.08 2.20 3.16 
+
+- SELF 25 .51 /3.61 /13 .23 82 .46 2.36 2.36 2.62 2.48 2.51 3.33 
+
+- SELF AKIN 30 .13 /7.38 /16 .40 83 .47 3.08 3.28 3.43 3.21 3.06 3.83 
+
+- LEAKY 31 .31 /8.22 /17 .16 83 .72 3.28 3.39 3.46 3.25 3.17 3.95 
+
+GEMMA -2-9B 23 .84 /3.93 /12 .09 81 .47 3.26 3.06 3.18 2.98 3.05 3.33 
+
+- OTHER 23 .75 /3.71 /12 .08 81 .36 3.10 2.91 3.06 2.85 2.96 3.23 
+
+- SELF 24 .52 /4.10 /12 .40 81 .58 3.22 3.13 3.24 3.05 3.08 3.48 
+
+- SELF AKIN 25 .38 /4.66 /12 .79 81 .81 3.44 3.53 3.61 3.37 3.25 3.73 
+
+- LEAKY 27 .03 /5.87 /13 .84 82 .17 3.77 3.68 3.76 3.50 3.41 3.92 
+
+GEMMA -3-4B 17 .77 /3.13 / 9.00 81 .93 3.21 3.42 3.54 3.46 3.23 3.67 
+
+- OTHER 18 .76 /3.18 / 9.67 81 .78 2.99 3.14 3.26 3.17 3.02 3.50 
+
+- SELF 19 .30 /3.39 / 9.90 81 .97 3.13 3.35 3.52 3.37 3.15 3.71 
+
+- SELF AKIN 20 .14 /3.98 /10 .19 82 .26 3.40 3.82 3.94 3.77 3.42 4.01 
+
+- LEAKY 20 .73 /4.37 /10 .50 82 .43 3.59 3.95 4.03 3.88 3.52 4.09 
+
+GEMINI -2.5 18 .55 /3.48 / 9.05 81 .85 3.48 3.81 3.91 3.84 3.46 4.04 
+
+- OTHER 19 .33 /3.36 / 9.41 81 .65 3.27 3.54 3.76 3.64 3.31 3.92 
+
+- SELF 19 .77 /3.63 / 9.59 81 .92 3.42 3.78 3.91 3.81 3.42 4.13 
+
+- SELF AKIN 20 .51 /4.02 / 9.91 82 .11 3.59 4.10 4.16 4.02 3.56 4.28 
+
+- LEAKY 21 .72 /4.64 /10 .43 82 .46 3.86 4.27 4.28 4.15 3.73 4.43 
+
+DEEP SEEK -R1 17 .19 /1.58 / 7.51 79 .09 2.53 3.66 3.84 3.66 3.34 3.81 
+
+- OTHER 17 .83 /1.50 / 7.87 79 .23 2.35 3.50 3.78 3.55 3.22 3.79 
+
+- SELF 18 .21 /1.68 / 7.96 79 .37 2.50 3.71 3.94 3.71 3.39 3.97 
+
+- SELF AKIN 18 .82 /1.93 / 8.14 79 .49 2.54 4.04 4.25 3.98 3.59 4.11 
+
+- LEAKY 19 .55 /2.20 / 8.46 79 .58 2.66 4.17 4.33 4.10 3.67 4.25 
+
+CLAUDE -HAIKU -4.5 22 .44 /3.46 /10 .15 81 .33 3.62 3.70 3.88 3.65 3.52 3.94 
+
+- OTHER 22 .07 /3.16 /10 .08 81 .54 3.37 3.56 3.86 3.57 3.42 4.02 
+
+- SELF 22 .29 /3.56 /10 .20 81 .83 3.49 3.79 4.01 3.81 3.52 4.16 
+
+- SELF AKIN 23 .40 /4.49 /10 .89 82 .24 3.72 4.17 4.34 4.10 3.72 4.34 
+
+- LEAKY 24 .78 /5.55 /11 .76 82 .60 3.99 4.35 4.46 4.21 3.82 4.49 
+
+25 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+Table 13. Main results of simulating human cognition across different LLMs. 
+
+Method Lexical Semantic Cognitive ROUGE-1/2/L BertScore P. S. L. K. T. 
+
+GROK -4 20 .48 /2.83 / 9.13 79 .44 3.53 3.88 4.05 3.91 3.73 3.92 
+
+- OTHER 19 .99 /2.37 / 9.00 80 .97 3.16 3.53 3.77 3.58 3.45 3.68 
+
+- SELF 20 .77 /2.81 / 9.31 81 .39 3.37 3.81 4.02 3.83 3.61 3.94 
+
+- SELF AKIN 22 .22 /3.50 / 9.94 81 .62 3.65 4.27 4.41 4.19 3.87 4.23 
+
+- LEAKY 23 .15 /4.11 /10 .34 81 .96 3.84 4.42 4.54 4.31 3.98 4.35 
+
+KIMI -K2 15 .50 /1.75 / 6.93 80 .13 3.39 4.00 4.24 4.03 3.52 4.18 
+
+- OTHER 15 .88 /1.74 / 7.28 80 .20 3.08 3.69 4.04 3.77 3.39 4.10 
+
+- SELF 15 .84 /1.96 / 7.28 80 .51 3.30 3.98 4.21 4.00 3.56 4.22 
+
+- SELF AKIN 16 .56 /2.13 / 7.46 80 .73 3.48 4.31 4.52 4.29 3.74 4.32 
+
+- LEAKY 16 .80 /2.37 / 7.61 80 .90 3.67 4.50 4.62 4.40 3.84 4.44 
+
+GPT-3.5 22 .67 /3.75 /11 .14 81 .99 3.38 3.28 3.44 3.14 3.28 3.46 
+
+- OTHER 22 .88 /3.72 /11 .43 82 .01 3.25 3.17 3.37 3.06 3.20 3.47 
+
+- SELF 23 .24 /4.04 /11 .55 82 .16 3.38 3.39 3.57 3.28 3.30 3.69 
+
+- SELF AKIN 23 .95 /4.48 /11 .81 82 .39 3.59 3.72 3.91 3.57 3.50 3.96 
+
+- LEAKY 24 .79 /5.01 /12 .16 82 .67 3.86 3.92 4.06 3.75 3.59 4.12 
+
+GPT-5.1 9.52 /1.65 / 4.73 80 .65 3.64 4.16 4.39 4.12 3.81 4.40 
+
+- OTHER 9.32 /1.61 / 4.69 80 .61 3.49 4.08 4.33 4.00 3.77 4.32 
+
+- SELF 9.35 /1.70 / 4.74 80 .71 3.62 4.26 4.45 4.14 3.84 4.42 
+
+- SELF AKIN 9.81 /1.88 / 4.89 80 .86 3.72 4.51 4.63 4.34 3.99 4.52 
+
+- LEAKY 10 .08 /2.11 / 5.05 81 .15 3.99 4.64 4.69 4.48 4.08 4.61 
+
+26 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+# F. Generated Cases of Human Simulation 
+
+# Case of Q WEN -3 under the S ELF setting. 
+
+# Paper Information 
+
+Authorid : 35106509 
+
+Paperid : e3dfeb8be76960036fbb4439e7cff4b9c7184998 
+
+Title : Can Language Models Teach Weaker Agents? Teacher Explanations Improve Students via Theory of Mind 
+
+Abstract : A hallmark property of explainable AI models is the ability to teach other agents, communicating knowledge of how to perform a task. While Large Language Models (LLMs) perform complex reasoning by generating explanations for their predictions, it is unclear whether they also make good teachers for weaker agents. To address this, we consider a student-teacher framework between two LLM agents and study if, when, and how the teacher should intervene with natural language explanations to improve the student’s performance. Since communication is expensive, we define a budget such that the teacher only communicates explanations for a fraction of the data, after which the student should perform well on its own. We decompose the teaching problem along four axes: (1) if teacher’s test time intervention improve student predictions, (2) when it is worth explaining a data point, (3) how the teacher should personalize explanations to better teach the student, and (4) if teacher explanations also improve student performance on future unexplained data. We first show that teacher LLMs can indeed intervene on student reasoning to improve their performance. Next, inspired by the Theory of Mind abilities of effective teachers, we propose building two few-shot mental models of the student. The first model defines an Intervention Function that simulates the utility of an intervention, allowing the teacher to intervene when this utility is the highest and improving student performance at lower budgets. The second model enables the teacher to personalize explanations for a particular student and outperform unpersonalized teachers. We also demonstrate that in multi-turn interactions, teacher explanations generalize and learning from explained data improves student performance on future unexplained data. Finally, we also verify that misaligned teachers can lower student performance to random chance by intentionally misleading them. 
+
+# Model Input 
+
+Prompt :
+
+You are a brilliant researcher trying to solve a new challenge. Your goal is to develop a research solution based on a new observation and potentially inspired by past work. 
+
+DEFINITIONS :
+
+Approach : Introduces the inspiration and conceptual framework of the research methods. This section focuses on the high-level plan, algorithm, or methodology chosen to address the challenge. 
+
+Solution : Provides a detailed description of the implementation and execution of the approach. This includes specific mathematical models, experimental setups, and concrete results that solve the challenge. 
+
+PAST WORK (Inspiration): 
+
+Title : ConjNLI: Natural Language Inference over Conjunctive Sentences 
+
+Background : Coordinating conjunctions are a common syntactic phenomenon in English: 38.8% of sentences in the Penn Tree Bank have at least one coordinating word between ’and’, ’or’, and ’but’ (Marcus et al., 1993). Conjunctions add complexity to the sentences, thereby making inferences over such sentences more realistic and challenging. A sentence can have many conjunctions, each conjoining two or more conjuncts of varied syntactic categories such as noun phrases, verb phrases, prepositional phrases, clauses, etc. Besides syntax, conjunctions in English have a lot of semantics associated to them and different conjunctions (’and’ vs ’or’) affect the meaning of a sentence differently. Recent years have seen significant progress in the task of Natural Language Inference (NLI) through the development of large-scale datasets like SNLI (Bowman et al., 2015) and MNLI (Williams et al., 2018). Although large-scale pre-trained language models like BERT (Devlin et al., 2019) and RoBERTa (Liu et al., 2019b) have achieved super-human performances on these datasets, there have been concerns raised about these models exploiting idiosyncrasies in the data using tricks like pattern matching (McCoy et al., 2019). Thus, various stress-testing datasets have been proposed that probe NLI models for simple lexical inferences (Glockner et al., 2018), 
+
+27 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+quantifiers (Geiger et al., 2018), numerical reasoning, antonymy and negation (Naik et al., 2018). However, despite the heavy usage of conjunctions in English, there is no specific NLI dataset that tests their understanding in detail. Although SNLI has 30% of samples with conjunctions, most of these examples do not require inferences over the conjuncts that are connected by the coordinating word. On a random sample of 100 conjunctive examples from SNLI, we find that 72% of them have the conjuncts unchanged between the premise and the hypothesis (e.g., ’Man and woman sitting on the sidewalk’ → ’Man and woman are sitting’) and there are almost no examples with non-boolean conjunctions (e.g., ’A total of five men and women are sitting.’ → ’A total of 5 men are sitting.’ (contradiction)). 
+
+Motivation : As discussed below, inference over conjuncts directly translates to boolean and non-boolean semantics and thus becomes essential for understanding conjunctions. In our work, we introduce CONJNLI, a new stress-test for NLI over diverse and challenging conjunctive sentences. Our dataset contains annotated examples where the hypothesis differs from the premise by either a conjunct removed, added or replaced. These sentences contain single and mul: Mohler et al. [18] proposed a method that uses graph alignment and lexical-semanticegations, and requiring diverse boolean and non-boolean inferences over conjuncts. Table 1 shows many examples from CONJNLI and compares these with typical conjunctive examples from SNLI and MNLI. In the first two examples, the conjunct ’a Worcester resident’ is removed and added, while in the third example, the other conjunct ’a member of the Democratic Party’ is replaced by ’a member of the Republican Party’. Distribution over conjuncts in a conjunctive sentence forms multiple simple sentences. For example, the premise in the first example of Table 1 can be broken into ’He is a Worcester resident.’ and ’He is a member of the Democratic Party.’. Correspondingly, from boolean semantics, it requires an inference of the form ’A and B → A’. Likewise, the third example is of the form ’A and B → A and C’. While such inferences are rather simple from the standpoint of boolean logic, similar rules do not always translate to English, e.g., in non-boolean cases, i.e., an inference of the form ’A and B → A’ is not always entailment or an inference of the form ’A or B → A’ is not always neutral (Hoeksema, 1988). Consider the three examples marked with a † in Table 1 showing non-boolean usages of ’and’, ’or’ and ’but’ in English. In the fifth example, the total time is a single entity and cannot be separated in an entailed hypothesis. In the sixth example, ’or’ is used as ’exclusive-or’ because the person began recording in either 1889 or 1890. We observe that state-of-the-art models such as BERT and RoBERTa, trained on existing datasets like SNLI and MNLI, often fail to make these inferences for our dataset. For example, BERT predicts entailment for the non-boolean ’and’ example #5 in Table 1 as well. This relates to the lexical overlap issue in these models (McCoy et al., 2019), since all the words in the hypothesis are also part of the premise for the example. Conjunctions are also challenging in the presence of negations. For example, a sentence of the form ’not A or B’ translates to ’not A and not B’, as shown in example #8 of Table 1. Finally, a sentence may contain multiple conjunctions (with quantifiers), further adding to the complexity of the task (example #7 in Table 1). Thus, our CONJNLI dataset presents a new and interesting real-world challenge task for the community to work on and allow development of deeper NLI models. 
+
+Approach : We also present some initial model advancements that attempt to alleviate some of these challenges in our new dataset. First, we create synthetic training data using boolean and non-boolean heuristics. We use this data to adversarially train RoBERTa-style models by an iterative adversarial fine-tuning method. Second, we make RoBERTa aware of predicate semantic roles by augmenting the NLI model with the predicate-aware embeddings of the premise and the hypothesis. Predicate arguments in sentences can help distinguish between two syntactically similar inference pairs with different target labels (Table 5 shows an example). 
+
+Solution : Overall, our contributions are: • We introduce CONJNLI, a new stress-test for NLI in conjunctive sentences, consisting of boolean and non-boolean examples with single and multiple coordinating conjunctions (’and’, ’or’, ’but’, ’nor’), negations, quantifiers and requiring diverse inferences over conjuncts (with high inter-annotator agreement between experts). • We show that BERT and RoBERTa do not understand conjunctions well enough and use shallow heuristics for inferences over such sentences. • We propose initial improvements for our task by adversarially fine-tuning RoBERTa using an iterative adversarial fine-tuning algorithm and also augmenting RoBERTa with predicate-aware embeddings. We obtain initial gains but with still large room for improvement, which will hopefully encourage future work on better understanding of conjunctions. 
+
+Title : Sentence Level or Token Level Features for Automatic Short Answer Grading?: Use Both 
+
+Background : Short answer grading, an integral part of Intelligent Tutoring Systems, is positioned as a research problem at the intersection of natural language understanding and its application to educational technologies. Formally, the problem is to grade a student answer in the context of a question and its reference answer(s). The grades are either discrete or bounded real numbers. Thus, traditionally, the short answer grading problem is often 
+
+28 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+modeled as a classification or regression task. While early works on automatic short answer grading used manually generated patterns from reference answers, recently Ramachandran et al. proposed a method to automate the generation of patterns. However, patterns do not scale well across domains. They are not a good fit for grading non-sentential student answers as they violate the structural patterns of the corresponding reference answers. The non-sentential answers, also called fragments, lack a complete sentential form but whose meaning can be inferred from the question context. While some research efforts have proposed dedicated techniques for short answer grading, others view this problem as a specific application of generic natural language understanding tasks of textual entailment or semantic textual similarity. Traditionally, all machine learning based techniques have revolved around hand-crafted features. It is only recently that techniques have been proposed to utilize deep learning based approaches for short answer grading. Hand-crafted Features Mohler et al. proposed a method involving graph alignment and lexical semantic similarity features. Heilman and Madnani proposed a short answer scoring method that uses stacking and domain adaptation techniques. Jimenez et al. proposed a 42 dimensional soft cardinality based feature representation for student answer analysis. The abstraction of the feature representation makes it more suitable for unseen domain scenarios. In an ensemble approach, Ott et al. learn a meta-classifier by combining three different grade prediction systems. In one of the recent works, Sultan et al. proposed a method for short answer grading in a feature ensemble approach involving text alignment, semantic similarity, question demoting, term weighting, and length ratios. Overall, the hand-crafted features often rely on dependency or constituency parsers to encode the structural as well as semantic information of the student answers and the reference answers. However, it becomes restrictive in dialog-based tutoring systems, as the student answers can be non-sentential. Additionally, dependency parsers are slow and are not suitable for deployment in real-world systems. Apart from these task-specific approaches, there have been numerous research efforts to model short answer grading as problems of textual entailment or textual similarity. Deep Learning Approaches Deep learning techniques, mostly using Recurrent Neural Networks (RNN) and their variants, particularly Long Short-Term Memory (LSTM) have achieved state-of-the-art results in various natural language understanding tasks including textual similarity and textual entailment. A few of such efforts include an LSTM based approach, a Siamese LSTM model and a Siamese bi-LSTM model using earth mover’s distance. Recently, LSTMs have also been used in the education community for detecting misconceptions from students’ responses. Conneau et al. proposed a method, termed as InferSent, for learning universal sentence representations using a bi-LSTM network with max pooling. They trained the network on the Stanford Natural Language Inference corpus to generate sentence embeddings, which are shown to work well across various natural language understanding tasks. These techniques either train an end-to-end deep neural network or learn an embedding network followed by training a classifier. The former requires a large labeled data to learn, which is often a limitation for short answer grading. The later (embedding learning techniques) can be problematic for non-sentential answers, which is a common occurrence in dialog-based tutoring systems. However, Conneau et al. showed that their pre-trained sentence embeddings can be transferred to other NLP tasks without having to learn them. Thus, we use these embeddings to obtain sentence level features for short answer grading. 
+
+Motivation : We observe that in dialog-based tutoring systems, the student answers are either (1) well-formed, or (2) non-sentential responses. Table 1 presents such an example. The second category of answers can derail techniques that depend on accurate parsing, non-contextual completeness, and grammatical structure of answers. Further, there is significant scope for fine-tuning hand-crafted features to make them suitable for partial answers in dialog-based tutors. We have also observed that hand-crafted features generalize better across domains, as compared to sentence embedding based approaches. To this end, we believe that using hand-crafted features in conjunction with sentence embedding features is necessary for improved short answer grading. 
+
+Approach : In keeping with this goal, we make the following salient contributions. We develop novel token level features that are specifically tuned for understanding partially correct student answers. We call them Histogram of Partial Similarities (HoPS). Certain Part-of-Speech tags are more important than others for certain question types. Thus, we use question type information and combine HoPS per POS Tag of the expected answer tokens to further refine our features. To the best of our knowledge, using question types and POS tags as features for short answer grading is another novel contribution of our work. Our features are fast, easy to compute, and domain-independent. We combine token level features with sentence level features obtained using InferSent. Solution: The effectiveness of this expanded feature set is verified empirically across a variety of short answer grading tasks and datasets. We also present comparable or better results than previously reported state-of-the-art results on SemEval-2013 task, Mohler et al. dataset, and a large-scale industry dataset. Further, we showcase that our features work equally well on both 
+
+29 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+in-domain and out-of-domain data across various classification and regression tasks in short answer grading. 
+
+NEW CHALLENGE AND OBSERVATION :Teaching, or the ability to provide needed information in a way that is understood by others, is often considered an important property of Explainable AI. When AI models ’teach’ by providing meaningful and interpretable explanations, it fosters transparency, warranted trust, and the ability for humans to make informed decisions based on AI recommendations. One way the goodness of an explanation can be judged is by its ability to communicate knowledge of how to solve a problem to other agents. Explanations fulfill this purpose not only by being informative but also by means of filling in specific gaps in the recipient agent’s knowledge. This is enabled by the explainer having theory of mind (ToM), understanding what the recipient does not know, and being able to personalize its explanations based on the recipient’s needs. Recent work has argued that LLMs like GPT-3.5 now exhibit ToM, based on their ability to answer questions about mental states of hypothetical people in classical theory-of-mind tests. However, we do not yet know how well language models can teach other agents to solve reasoning tasks via explanations. 
+
+TASK :Based on the NEW CHALLENGE AND OBSERVATION, and using the PAST WORK as inspiration (or not, if ’No history’ is provided), formulate a detailed Solution (as defined above). The response MUST ONLY contain the full text of the Approach and Solution, formatted clearly with Markdown headings: ’## Approach’ and ’## Solution’. Do not include any other commentary, titles, or headings (except the required ’## Approach’ and ’## Solution’). 
+
+# Reference 
+
+Background : Teaching, or the ability to provide needed information in a way that is understood by others, is often considered an important property of Explainable AI. When AI models ’teach’ by providing meaningful and interpretable explanations, it fosters transparency, warranted trust, and the ability for humans to make informed decisions based on AI recommendations. One way the goodness of an explanation can be judged is by its ability to communicate knowledge of how to solve a problem to other agents. Explanations fulfill this purpose not only by being informative but also by means of filling in specific gaps in the recipient agent’s knowledge. This is enabled by the explainer having theory of mind (ToM), understanding what the recipient does not know, and being able to personalize its explanations based on the recipient’s needs. Recent work has argued that LLMs like GPT-3.5 now exhibit ToM, based on their ability to answer questions about mental states of hypothetical people in classical theory-of-mind tests. However, we do not yet know how well language models can teach other agents to solve reasoning tasks via explanations. 
+
+Motivation : In this work, we are motivated by this essential goal of evaluating explanations (specifically, Chain-of-Thought) rationales) from the perspective of teaching and improving weaker agents in solving reasoning tasks. In order to improve smaller models’ reasoning skills, recent works propose knowledge distillation by fine-tuning a smaller model on the reasoning steps generated by a larger model. Yet, an important component of human teaching is understanding when and how the teacher should explain particular things to the student. Current distillation approaches do not evaluate a teacher’s ability to identify when a student lacks understanding, and past work has not explored how to personalize teacher explanations to the student’s needs. A smaller student model might already be good at answering certain questions but might require the teacher’s intervention for some harder questions. When there are many things to teach the student and teaching is laborious, it is important to choose which problems merit explanation in order to improve teaching efficiency. Moreover, for more effective teaching, it is desirable to have the teacher personalize its explanations to help a particular student, and a teacher that lacks understanding of the student’s needs (i.e., lacks Theory of Mind) will be unable to do this. Motivated by the efficiency of human explanations, we consider a student-teacher framework where a teacher model guides the reasoning of a student model, with the goal of improving the student’s reasoning on current and future data. 
+
+Approach : In order to do so, we explore a Theory of Mind-inspired approach, where the teacher simulates the student’s behavior by building a mental model of the student. Our overall research question investigates whether the teacher’s intervention (in the form of natural language explanations) can enable the student to make more accurate predictions both on explained as well as unexplained future data. However, communication is expensive, and therefore we assume that a cost is incurred each time the teacher intervenes with (communicates) an explanation to 
+
+30 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+the student for a particular data point. We refer to this as the intervention budget, the percentage of test data points the teacher intervenes on. In order to comprehensively answer our overall research question, we further decompose the teaching problem into the following constituent questions: 1. RQ1. Can a teacher LLM intervene at test time to improve a student LLM’s predictions? 2. RQ2. Given a fixed intervention budget, when should the teacher intervene (i.e., on which data points), in order to maximize student performance? 3. RQ3. Given a set of intervention data, can a teacher model personalize its explanations for a student model to improve student performance? 4. RQ4. In multi-turn interactions, do teacher explanations generalize and improve student performance across data points (beyond the explained samples)? 5. RQ5. Can misaligned teacher LLMs lower student performance by providing misleading explanations to the student? 
+
+Solution : We answer RQ1 by assuming that the teacher intervenes on random data points in four different settings: using a human or LLM teacher, and, when the teacher is an LLM, using an LLM student that is either weaker or stronger than its teacher (§5.1). Across three different reasoning tasks (StrategyQA, GSM8k, and CommonsenseQA) and two different model families (Flan-T5 and LLaMA), we observe that (1) teacher LLMs can effectively intervene on student reasoning, improving student performance on the end task, and (2) more intervention typically leads to a monotonic increase in student performance, though model teachers are not as good as human teachers. Fig. 1 shows the intervention process and the two student prompts (in the right part of Fig. 1) that are used to generate predictions. RQ2 explores how to intelligently select which data points to explain for the student model, in order to improve teaching efficiency (§5.2). Past work in cognitive science also considers teaching efficiency in young children by deciding what to teach by maximizing the learner’s expected utility of learning [12]. With a similar motivation, we develop an Intervention Function that is inspired from the principle of a teacher having a Theory of Mind. In particular, the teacher builds a mental model of the student’s reasoning process, with the goal of intervening only on samples that are most likely to maximize student performance. Our Intervention Function is based on Expected Utility, in which the teacher first estimates the utility of an intervention by simulating the student’s prediction pre-intervention (without intervention) and post-intervention (with intervention), then constructs a rank ordering of the samples according to this utility (see the middle part of Fig. 1). The teacher builds this mental model in a few-shot manner, only assuming access to the student’s predictions preand post-intervention for a few samples. We demonstrate that our proposed Intervention Function based on Expected Utility (1) outperforms other baseline Intervention Functions, (2) improves student performance when the teacher is not 100% accurate, and (3) enables weaker LLMs to teach stronger ones, unlike with random intervention in RQ1. Next, in RQ3, we explore how the teacher should explain data points to a particular student model, including how the teacher can personalize explanations for a student model (§5.3). That is, after deciding which data points to intervene on (RQ2), we decide how the teacher should explain those data points. A clear limitation of the teacher just generating explanations as if it is solving the task is that the explanations are not at all personalized for the student. Given that good explanations are designed to fill in gaps in student knowledge [2], we believe that equipping the teacher with basic personalization skills will improve its teaching ability. With this motivation, we propose another few-shot mental model for the teacher that encourages it to tailor its explanations to be helpful for the particular student model it is teaching. The teacher builds this model by conditioning on a few demonstrations of ’useful’ human explanations that rectify a student’s answer, thereby encouraging explanations that are more likely to help the student (see Fig 1 for an example of the teacher’s personalization prompt). We demonstrate this prompt’s effectiveness against unpersonalized explanations that are generated by prompting the teacher with random human explanations, showing that LLMs can personalize their explanations. RQ4 tests whether LLMs can teach student models to generalize to new unexplained examples (§5.4), rather than improve their reasoning at test-time (RQ1-RQ3). In other words, we now explore the ability of LLMs to teach using the teaching components introduced in RQ2 and RQ3 of when and how to explain samples. This leads us to explore a multi-round interactive setting, where each round consists of the teacher selecting a set of best points to explain (according to RQ2) and generating explanations for them (according to RQ3). The student then conditions on these teacher explanations as in-context demonstrations to perform the reasoning task on future unexplained samples. We demonstrate that teacher explanations indeed generalize and improve student performance on unexplained data. Finally, in RQ5, we investigate the negative implications of teacher explanations on student LLMs (§5.5). Given that LLMs can improve student agents, we also want to test whether they can lower student performance. If a misaligned teacher provides non-factual explanations in scenarios where the student directly adopts them, does that lead to a drop in student performance? In fact, we show that teacher models can lower student performance to random chance by intervening on data points with the intent of misleading 
+
+31 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+the student. This has potential implications for LLMs giving explanations in a context where other agents adopt them with unwarranted trust in their correctness. In summary, our comprehensive studies highlight the ability of LLMs to teach and improve weaker LLMs, demonstrated via improvements on explained test examples as well as future unexplained data. Broadly, equipping LLMs with an ability to effectively and efficiently teach, opens the door to (1) using LLMs as personalized tutors for humans (where efficiency is critical), (2) distilling knowledge into weaker or more compute-efficient student models, and (3) improving human decision making via AI recommendations and explanations. 
+
+# Model Output 
+
+<think > Alright, I need to help the user by formulating a detailed solution based on the new challenge and observation they provided. The challenge is about making AI models explain their reasoning in a way that’s understandable and useful for teaching other agents, leveraging their Theory of Mind. First, I should understand the core idea. The user wants AI models to not only provide answers but also give explanations that help others understand how to solve problems. This means the explanations need to be both informative and tailored to the recipient’s knowledge gaps. Looking at the provided past work, especially the CONJNLI dataset, it’s clear that handling complex structures like conjunctions is a challenge in NLI. Similarly, the new challenge seems to extend this to explanations in AI, requiring models to handle intricate reasoning steps. The approach should integrate reasoning and explainability. I’ll consider enhancing the model’s ability to generate explanations by incorporating reasoning steps. This could involve modifying the model to not only predict answers but also provide a rationale based on logical steps, much like how humans explain their reasoning. For the solution, I’ll outline the use of a reasoning-based approach where the model identifies the reasoning steps needed to arrive at an answer. This would involve analyzing the problem, breaking it down into components, and then explaining each step clearly. Additionally, integrating this reasoning process into the model’s architecture or training could help it generate more effective explanations. I should also think about how to structure the solution. It needs to clearly explain the methodology, the components involved, and the expected outcomes. Including a concrete example would help illustrate how the approach works in practice. I need to ensure that the solution is comprehensive, addressing both the reasoning and explainability aspects, and how they contribute to the overall effectiveness of the AI model in teaching others. This should tie back to the new challenge and observation, showing a clear path forward for improving AI explainability. Finally, I’ll make sure the language is clear and the solution is well-structured, avoiding any markdown in the thinking process but providing a coherent and detailed answer as required. 
+
+</think >
+
+Approach 
+
+Our approach to enhance AI explainability while solving reasoning tasks involves integrating reasoning-based reasoning and explainable AI (XAI) techniques. The goal is to enable AI models to not only provide answers but also generate meaningful explanations that help others understand how to solve reasoning tasks effectively. This approach is inspired by the challenges in natural language inference (NLI) and the need for AI models to bridge the gap between reasoning and explainability. 
+
+Key Components of the Approach 
+
+1. **Reasoning-Based Framework**: - We build upon the CONJNLI dataset, which emphasizes understanding complex and challenging conjunctive sentences. This dataset helps us develop models that can reason over intricate structures, such as conjunctions, negations, and quantifiers. - We extend this reasoning capability to other domains by creating a generalized reasoning framework that can handle a variety of reasoning tasks, including those involving partial answers in dialog-based tutoring systems. 2. **Explainable AI (XAI) Techniques**: - We leverage techniques from XAI to generate human-readable explanations that highlight the reasoning steps taken by the AI model. This includes identifying critical reasoning components and mapping them to the problem-
+
+32 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+solving process. - We augment the model with predicate-aware embeddings, as described in the past work, to better understand the semantic relationships between different parts of the reasoning process. 3. **Iterative Adversarial Fine-Tuning**: - To improve the model’s reasoning and explainability, we employ an iterative adversarial fine-tuning algorithm. This algorithm enhances the model’s ability to provide meaningful explanations by iteratively refining its reasoning steps and aligning them with human-like understanding. - The adversarial training ensures that the model not only predicts outcomes accurately but also provides explanations that resonate with human cognition, making them more effective for teaching purposes. 4. **Integration of Token-Level and Sentence-Level Features**: - We combine token-level features, such as partial similarities and part-of-speech (POS) tag-based features, with sentence-level features derived from pre-trained sentence embeddings (e.g., InferSent). This integration allows the model to capture both fine-grained reasoning steps and broader contextual understanding. 
+
+Solution 
+
+Our solution focuses on enhancing AI explainability in reasoning tasks by integrating reasoning-based approaches with XAI techniques. The proposed method addresses the challenge of generating meaningful and interpretable explanations, enabling AI models to teach others effectively. 
+
+Key Components of the Solution 
+
+1. **Enhanced Reasoning Framework**: - The model is equipped with a reasoning engine that identifies critical reasoning steps and components. This engine is designed to handle complex structures, such as conjunctions, negations, and quantifiers, as demonstrated in the CONJNLI dataset. - The reasoning engine generates a structured representation of the problem-solving process, which forms the basis of the explanations. 2. **Explainable AI (XAI) Integration**: - The model incorporates techniques to generate human-readable explanations that highlight the reasoning steps taken to arrive at a solution. These explanations are tailored to the recipient’s knowledge gaps and are presented in a way that facilitates understanding. - Predicate-aware embeddings are used to map the reasoning components to the problem’s context, ensuring that the explanations are contextually relevant and actionable. 3. **Iterative Adversarial Fine-Tuning**: - An iterative adversarial fine-tuning algorithm is employed to refine the model’s reasoning and explanation capabilities. This algorithm ensures that the model not only predicts outcomes accurately but also provides explanations that are aligned with human-like reasoning. - The adversarial training helps bridge the gap between the model’s internal reasoning processes and the human understanding of the problem-solving process. 4. **Comprehensive Explanation Generation**: - The model generates explanations in two stages: first, identifying the critical reasoning components, and second, mapping these components to the problem’s context and the recipient’s knowledge base. - The explanations are structured to highlight the logical steps taken, making them easier for others to follow and learn from. 
+
+Example of the Solution in Action 
+
+Consider a reasoning task where a student provides a partial answer to a question. The AI model processes the answer, identifies the relevant reasoning components, and generates an explanation that bridges the gap between the student’s knowledge and the problem-solving process. For instance: - **Question**: ”Why did the car not start?” - **Student Answer**: ”The car didn’t have enough fuel.” - **AI Explanation**: ”The car didn’t start because it lacked sufficient fuel. This can be understood by analyzing the relationship between the car’s fuel level and its starting mechanism.” This example demonstrates how the AI model not only provides an answer but also generates a clear and meaningful explanation that helps others understand the reasoning behind the answer. 
+
+Expected Outcomes 
+
+33 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+- Improved accuracy in reasoning tasks through enhanced reasoning-based frameworks. - More interpretable and actionable explanations that facilitate teaching and learning. - Better alignment between AI reasoning processes and human understanding, enabling more effective knowledge transfer. - Scalability of the approach across diverse reasoning tasks and domains, as demonstrated in the industry dataset. By integrating reasoning-based approaches with XAI techniques, our solution addresses the growing need for AI models that not only solve problems but also provide insights that enhance human understanding and collaboration. 
+
+# Case of GPT-5.1 under the S ELF setting. 
+
+# Paper Information 
+
+Authorid : 1683562 
+
+Paperid : 2b74f47b1336c948d2371a30209ec56c936763a9 
+
+Title : SemEval-2014 Task 9: Sentiment Analysis in Twitter 
+
+Abstract : We describe the Sentiment Analysis in Twitter task, ran as part of SemEval-2014. It is a continuation of the last year’s task that ran successfully as part of SemEval2013. As in 2013, this was the most popular SemEval task; a total of 46 teams contributed 27 submissions for subtask A (21 teams) and 50 submissions for subtask B (44 teams). This year, we introduced three new test sets: (i) regular tweets, (ii) sarcastic tweets, and (iii) LiveJournal sentences. We further tested on (iv) 2013 tweets, and (v) 2013 SMS messages. The highest F1score on (i) was achieved by NRC-Canada at 86.63 for subtask A and by TeamX at 70.96 for subtask B. 
+
+# Model Input 
+
+Prompt :
+
+You are a brilliant researcher trying to solve a new challenge. Your goal is to develop a research solution based on a new observation and potentially inspired by past work. 
+
+DEFINITIONS :
+
+Approach : Introduces the inspiration and conceptual framework of the research methods. This section focuses on the high-level plan, algorithm, or methodology chosen to address the challenge. 
+
+Solution : Provides a detailed description of the implementation and execution of the approach. This includes specific mathematical models, experimental setups, and concrete results that solve the challenge. 
+
+PAST WORK (Inspiration): 
+
+Title :Solving Relational Similarity Problems Using the Web as a Corpus 
+
+Background : Despite the tremendous amount of work on word similarity (see (Budanitsky and Hirst, 2006) for an overview), there is surprisingly little research on the important related problem of relational similarity – semantic similarity between pairs of words. Students who took the SAT test before 2005 or who are taking the GRE test nowadays are familiar with an instance of this problem – verbal analogy questions, which ask whether, e.g., the relationship between ostrich and bird is more similar to that between lion and cat, or rather between primate and monkey. These analogies are difficult, and the average test taker gives a correct answer 57% of the time (Turney and Littman, 2005). 
+
+Motivation : Many NLP applications could benefit from solving relational similarity problems, including but not limited to question answering, information retrieval, machine translation, word sense disambiguation, and information extraction. For example, a relational search engine like TextRunner, which serves queries like “find all X such that X causes wrinkles”, asking for all entities that are in a particular relation with a given entity (Cafarella et al., 2006), needs to recognize that laugh wrinkles is an instance of CAUSE-EFFECT. While there are not many success stories so far, measuring semantic similarity has proven its advantages for textual entailment (Tatu and Moldovan, 2005). 
+
+Approach : In this paper, we introduce a novel linguistically-motivated Web-based approach to relational similarity, which, despite its simplicity, achieves stateof-the-art performance on a number of problems. 
+
+34 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+Solution : Following Turney (2006b), we test our approach on SAT verbal analogy questions and on mapping noun-modifier pairs to abstract relations like TIME, LOCATION and CONTAINER. We further apply it to (1) characterizing noun-noun compounds using abstract linguistic predicates like CAUSE, USE, and FROM, and (2) classifying the relation between pairs of nominals in context. 
+
+Title : Using the Web as an Implicit Training Set: Application to Structural Ambiguity Resolution 
+
+Background : Resolution of structural ambiguity problems such as noun compound bracketing, prepositional phrase (PP) attachment, and noun phrase coordination requires using information about lexical items and their cooccurrences. This in turn leads to the data sparseness problem, since algorithms that rely on making decisions based on individual lexical items must have statistics about every word that may be encountered. Past approaches have dealt with the data sparseness problem by attempting to generalize from semantic classes, either manually built or automatically derived. More recently, Banko and Brill (2001) have advocated for the creative use of very large text collections as an alternative to sophisticated algorithms and hand-built resources. They demonstrate the idea on a lexical disambiguation problem for which labeled examples are available “for free”. The problem is to choose which of 2-3 commonly confused words (e.g., principle, principal) are appropriate for a given context. The labeled data comes “for free” by assuming that in most edited written text, the words are used correctly, so training can be done directly from the text. Banko and Brill (2001) show that even using a very simple algorithm, the results continue to improve log-linearly with more training data, even out to a billion words. A potential limitation of this approach is the question of how applicable it is for NLP problems more generally – how can we treat a large corpus as a labeled collection for a wide range of NLP tasks? In a related strand of work, Lapata and Keller (2004) show that computing n-gram statistics over very large corpora yields results that are competitive with if not better than the best supervised and knowledge-based approaches on a wide range of NLP tasks. For example, they show that for the problem of noun compound bracketing, the performance of an n-gram based model computed using search engine statistics was not significantly different from the best supervised algorithm whose parameters were tuned and which used a taxonomy. 
+
+Motivation : They find however that these approaches generally fail to outperform supervised state-of-the-art models that are trained on smaller corpora, and so conclude that web-based n-gram statistics should be the baseline to beat. We feel the potential of these ideas is not yet fully realized. We are interested in finding ways to further exploit the availability of enormous web corpora as implicit training data. This is especially important for structural ambiguity problems in which the decisions must be made on the basis of the behavior of individual lexical items. The trick is to figure out how to use information that is latent in the web as a corpus, and web search engines as query interfaces to that corpus. 
+
+Approach : In this paper we describe two techniques – surface features and paraphrases – that push the ideas of Banko and Brill (2001) and Lapata and Keller (2004) farther, enabling the use of statistics gathered from very large corpora in an unsupervised manner. 
+
+Solution : In recent work (Nakov and Hearst, 2005) we showed that a variation of the techniques, when applied to the problem of noun compound bracketing, produces higher accuracy than Lapata and Keller (2004) and the best supervised results. In this paper we adapt the techniques to the structural disambiguation problems of prepositional phrase attachment and noun compound coordination. 
+
+NEW CHALLENGE AND OBSERVATION :In the past decade, new forms of communication have emerged and have become ubiquitous through social media. Microblogs (e.g., Twitter), Weblogs (e.g., LiveJournal) and cell phone messages (SMS) are often used to share opinions and sentiments about the surrounding world, and the availability of social content generated on sites such as Twitter creates new opportunities to automatically study public opinion. Working with these informal text genres presents new challenges for natural language processing beyond those encountered when working with more traditional text genres such as newswire. The language in social media is very informal, with creative spelling and punctuation, misspellings, slang, new words, URLs, and genrespecific terminology and abbreviations, e.g., RT for re-tweet and #hashtags1 .Moreover, tweets and SMS messages are short: a sentence or a headline rather than a document. 
+
+TASK :Based on the NEW CHALLENGE AND OBSERVATION, and using the PAST WORK as inspiration (or not, if ’No history’ is provided), formulate a detailed Solution (as defined above). The response MUST ONLY contain the full 
+
+35 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+text of the Approach and Solution, formatted clearly with Markdown headings: ’## Approach’ and ’## Solution’. Do not include any other commentary, titles, or headings (except the required ’## Approach’ and ’## Solution’). 
+
+# Reference 
+
+Background : In the past decade, new forms of communication have emerged and have become ubiquitous through social media. Microblogs (e.g., Twitter), Weblogs (e.g., LiveJournal) and cell phone messages (SMS) are often used to share opinions and sentiments about the surrounding world, and the availability of social content generated on sites such as Twitter creates new opportunities to automatically study public opinion. Working with these informal text genres presents new challenges for natural language processing beyond those encountered when working with more traditional text genres such as newswire. The language in social media is very informal, with creative spelling and punctuation, misspellings, slang, new words, URLs, and genre-specific terminology and abbreviations, e.g., RT for re-tweet and #hashtags. Moreover, tweets and SMS messages are short: a sentence or a headline rather than a document. 
+
+Motivation : How to handle such challenges so as to automatically mine and understand people’s opinions and sentiments has only recently been the subject of research (Jansen et al., 2009; Barbosa and Feng, 2010; Bifet et al., 2011; Davidov et al., 2010; O’Connor et al., 2010; Pak and Paroubek, 2010; Tumasjan et al., 2010; Kouloumpis et al., 2011). Several corpora with detailed opinion and sentiment annotation have been made freely available, e.g., the MPQA newswire corpus (Wiebe et al., 2005), the movie reviews corpus (Pang et al., 2002), or the restaurant and laptop reviews corpora that are part of this year’s SemEval Task 4 (Pontiki et al., 2014). These corpora have proved very valuable as resources for learning about the language of sentiment in general, but they do not focus on tweets. While some Twitter sentiment datasets were created prior to SemEval-2013, they were either small and proprietary, such as the isieve corpus (Kouloumpis et al., 2011) or focused solely on message-level sentiment. 
+
+Approach : Thus, the primary goal of our SemEval task is to promote research that will lead to better understanding of how sentiment is conveyed in Social Media. Toward that goal, we created the SemEval Tweet corpus as part of our inaugural Sentiment Analysis in Twitter Task, SemEval-2013 Task 2 (Nakov et al., 2013). Another interesting phenomenon that has been studied in Twitter is the use of the #sarcasm hashtag to indicate that a tweet should not be taken literally (Gonz ´alez–Ib ´a ˜nez et al., 2011; Liebrecht et al., 2013). In fact, sarcasm indicates that the message polarity should be flipped. 
+
+Solution : It contains tweets and SMS messages with sentiment expressions annotated with contextual phrase-level and message-level polarity. This year, we extended the corpus by adding new tweets and LiveJournal sentences. With this in mind, this year, we also evaluate on sarcastic tweets. In the remainder of this paper, we first describe the task, the dataset creation process and the evaluation methodology. We then summarize the characteristics of the approaches taken by the partici- pating systems, and we discuss their scores. 
+
+# Model Output 
+
+Approach 
+
+We propose an unsupervised / weakly supervised framework for sentiment and opinion analysis in noisy, short social media texts that treats the Web and social platforms themselves as an implicit training set. The core ideas are: 1. **Weak Labels from Social Media Conventions** Use community conventions (hashtags, emojis, reaction markers, retweet/like behavior) as distant supervision signals for sentiment and stance, analogously to using correctly spelled words in edited text as “free” labels. 2. **Surface Pattern and Paraphrase Mining Across Web and Social Media** Extend the “surface features + paraphrases” idea to map highly variable, slangy social expressions into a smaller set of abstract **opinion templates** (e.g., PRAISE(Target), COMPLAIN(Target), SARCASM(Target)). We induce these templates by: - Extracting surface patterns that link opinion targets with evaluative expressions in tweets/posts. - Clustering these patterns via paraphrase similarity, augmented with web-scale co-occurrence statistics. 3. **Web-Backed Lexical Normalization and Slang Expansion** Use the Web as a background corpus and implicit lexicon to: 
+
+36 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+- Normalize creative spellings and abbreviations into canonical forms. - Infer sentiment polarity and intensity of new slang and hashtags by their distributional similarity and co-occurrences with seed sentiment words across web and social corpora. 4. **Context Expansion for Short Messages** Address the brevity of tweets/SMS by expanding each message with: - User-level context (recent posts, profile description). - Conversational context (preceding and following messages in a thread). - Topical context from the Web (snippets about mentioned entities/hashtags). 5. **Multi-Task Representation Learning** Learn a shared encoder for social messages with multiple weakly supervised tasks: - Sentiment classification (positive/negative/neutral and finer-grained). - Stance detection toward explicit targets. - Normalization (noisy → canonical text reconstruction). - Pattern/template prediction (which abstract opinion template applies). This mimics treating the Web/social text as a massive implicit training set with heterogeneous but noisy labels. 6. **Noise-Robust Training and Calibration** Treat weak labels as noisy observations of latent sentiment/stance variables: - Use noise-aware losses and label aggregation to denoise distant supervision. - Calibrate predictions using a small, high-quality annotated set, with web-based statistics as a strong baseline to beat. The overall system is thus a pipeline that (i) normalizes and contextually enriches noisy short messages, (ii) maps them into abstract opinion templates learned from web+social paraphrases, and (iii) jointly learns sentiment/stance predictors using massive, weakly-labeled data plus a small gold standard. 
+
+Solution 1. Data Sources and Weak Supervision Signals 
+
+We construct three interacting corpora: 1. **Social Media Corpus S** - Collected from microblogs (e.g., Twitter-like platforms) and SMS-like datasets where available. - Each message ‘m‘ is a short sequence of tokens with metadata: user id, timestamp, replies/retweets/likes, linked URLs, and conversation/thread id. 2. **Web Corpus W** - Large-scale web text (e.g., Common Crawl, blog/forum dumps). - Used for co-occurrence statistics and lexical normalization, not necessarily labeled. 3. **Review/Opinion Corpus R (Optional but Beneficial)** - Product/movie/app reviews with associated ratings (e.g., 1–5 stars). - Serves as an explicit sentiment-labeled subset, analogous to “edited text with correct usage”. From S we derive weak labels: - **Hashtag Labels** - Define a set of sentiment-bearing hashtags ‘H s‘ (e.g., ‘#loveit‘, ‘#hateit‘, ‘#fail‘, ‘#awesome‘, ‘#sucks‘, etc.) and stance hashtags ‘H st‘ (e.g., ‘#ProX‘, ‘#AntiX‘, ‘#TeamA‘, ‘#TeamB‘). - For message ‘m‘: - If it contains ‘h \in H s‘, assign a weak sentiment label ‘y s(m) = label(h)‘ (e.g., positive, negative, sarcastic). - If it contains ‘h \in H st‘ with a recognizable target ‘T‘, assign a weak stance label ‘y st(m, T)‘ (e.g., favor, against). - If multiple conflicting hashtags occur, mark as ambiguous and downweight in training. - **Emoji / Emoticon Labels** - Maintain a mapping from emojis/emoticons to sentiment distributions. - Automatically derive this mapping from co-occurrences in R and W (see §2.3). - **Engagement-Based Signals** - For controversial topics, retweets and likes often correlate with agreement: - If message ‘m1‘ expresses a clear stance toward target ‘T‘ (via hashtags or polarity and explicit mention), then users who retweet it are weakly labeled as sharing that stance toward ‘T‘. 
+
+37 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+- For a subsequent message ‘m2‘ by the same user about ‘T‘ without explicit stance markers, propagate the stance label with decaying weight. We thus obtain a large set of messages ‘m‘ with weak sentiment labels ‘ \tildey s(m)‘ and stance labels ‘ \tildey st(m, T)‘. 
+
+2. Preprocessing and Normalization 2.1 Tokenization and Structure Preservation 
+
+For each message ‘m‘, we apply a social-media-specific tokenizer: - Split on whitespace and punctuation but keep: - Hashtags as single tokens (e.g., ‘#GameOfThrones‘). - Mentions (‘user‘) as special entity tokens. - URLs as a single ‘URL‘ token plus domain features (e.g., ‘youtube.com‘). - Preserve: - Elongated words (‘sooooo‘, ‘coooool‘) as is, with a second “compressed” variant (‘soo‘, ‘cool‘). - Repeated punctuation (‘!!!‘, ‘???‘) as features. The goal is not over-normalization: we keep signal-bearing phenomena as features. 
+
+2.2 Normalization Model 
+
+We learn a noisy-to-canonical mapping ‘g \phi‘: - Let ‘x‘ be a noisy token sequence from S. - Let ‘z‘ be a canonical token sequence representing the same content. We build pseudo-parallel data in two ways: 1. **URL-Linked Paraphrases** - For messages ‘m‘ linking to a news article or blog post, retrieve: - The article headline or snippet ‘a‘. - The message text ‘m‘. - Align named entities and key nouns across ‘m‘ and ‘a‘, creating partial token-level alignments and pairs ‘(x noisy, z canonical)‘. 2. **User Rewrites and Code-Switched Alternations** - Detect near-duplicate messages by the same user where one is more formal (e.g., cross-posting from Twitter to a blog, or “fixed” versions). - Use approximate string matching (e.g., Jaccard similarity on n-grams) to collect ‘(x, z)‘ pairs. We then train a sequence-to-sequence normalization model: - Encoder-decoder with attention (e.g., Transformer), parameters ‘ \phi‘. - Objective: 
+
+\[
+
+\mathcal {L} {\ text {norm }} (\phi) = - \sum {(x,z) \in \mathcal {D} {\ text {norm }}} \ log P \phi(z \mid x) 
+
+\]During inference: - For each message ‘m‘, produce: - Normalized text ‘ \hat {z} = g \phi(m)‘. - Alignment scores between original tokens and normalized equivalents. - These normalized tokens feed into downstream encoders as additional features; we never discard the original. 
+
+3. Lexical and Slang Sentiment Induction Using the Web 
+
+We treat new slang, hashtags, and creative spellings as lexical items whose sentiment is **latent** but inferable from co-occurrence patterns in W + S. 
+
+3.1 Distributional Similarity with Seed Sentiment Words 
+
+Define: - A small seed set of positive words ‘P‘ (e.g., “good”, “great”, “love”, “awesome”) and negative words ‘N‘ (“bad”, “terrible”, “hate”, “awful”). For each candidate term ‘w‘ (e.g., ‘lit‘, ‘wack‘, ‘#fail‘): 1. Build context vectors from W \cup S: - ‘c W(w)‘ from web contexts (windowed n-grams or sentence-level). - ‘c S(w)‘ from social contexts. 2. Compute cosine similarities: 
+
+38 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+\[s ˆ +(w) = \frac {1}{\ vert P \vert } \ sum {p \in P } \ cos(c(w), c(p)) 
+
+\]
+
+\[sˆ -(w) = \frac {1}{\ vert N \vert } \ sum {n \in N } \ cos(c(w), c(n)) 
+
+\]where ‘c(w)‘ can be a concatenation or weighted sum of ‘c W(w)‘ and ‘c S(w)‘. 3. Define sentiment score: 
+
+\[
+
+\sigma(w) = s ˆ +(w) - sˆ -(w) 
+
+\]and an associated uncertainty ‘u(w)‘ based on variance and frequency. We incorporate ‘ \sigma(w)‘ and ‘ \mu(w)‘ as prior features for the downstream classifier and as additional weak labels for messages whose sentiment is conveyed mainly by such terms. 
+
+3.2 Web Co-Occurrence with Opinion Patterns 
+
+We mimic “web as corpus” querying: - For each candidate ‘w‘, count approximate occurrences in W with patterns like: - “is so w” - “makes me feel w” - “I’m so w right now” - Compare these with the same patterns filled by known positive/negative adjectives: - Compute pointwise mutual information (PMI) estimates and cluster ‘w‘ with the adjectives whose pattern distributions are most similar. This helps disambiguate cases where ‘w‘ has ambiguous distributional similarity but clearly occurs in positive or negative opinion templates. 
+
+4. Surface Pattern and Paraphrase-Based Opinion Templates 
+
+We now define abstract templates capturing relational structure between **opinion holders**, **opinion targets**, and **evaluative content**. 
+
+4.1 Pattern Extraction from Social Media 
+
+From weakly labeled messages in S: - Use dependency parsers robust to noisy text, or simpler n-gram and POS templates when parsing fails. - Extract patterns where: - A target entity or topic ‘T‘ is explicitly mentioned (e.g., a product, person, hashtag). - The message has an associated weak sentiment label ‘ \tilde {y} s(m)‘ or stance label ‘ \tilde {y} st(m, T)‘. Example extracted patterns: - “I [verb] T” with ‘ \tilde {y} s = positive‘ → PRAISE(T) (e.g., “I love T”, “I stan T”, “I’m obsessed with T”). - “T is [adj]” with ‘ \tilde {y} s = negative‘ → COMPLAIN(T) (e.g., “T is trash”, “T is lame”). - Hashtag patterns: “T #fail”, “#BoycottT”. Represent each pattern ‘p‘ as a normalized surface string and/or syntactic skeleton (e.g., dependency path from ‘T‘ to opinion word). 
+
+4.2 Paraphrase Clustering with Web Statistics 
+
+We cluster patterns into templates: 1. **Pattern Representation** - For each pattern ‘p‘, build: - A TF-IDF representation over its tokens. - A contextual embedding (e.g., by feeding a template sentence containing ‘p‘ into a pre-trained encoder). - Optionally incorporate web co-occurrence statistics: frequency of ‘p‘ instantiated with random targets in W. 2. **Similarity Graph** - Construct a graph where patterns are nodes. - Edge weights combine: - Embedding cosine similarity. - Jaccard similarity over token sets. 
+
+39 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+- Correlation of sentiment distributions (patterns that mostly appear in positive contexts vs negative). 3. **Clustering** - Use graph clustering (e.g., spectral clustering or community detection) to form clusters of paraphrastic patterns. - Each cluster ‘C k‘ represents an abstract opinion template ‘T k‘. 4. **Template Labeling** For each cluster: - Aggregate sentiment and stance labels of messages that instantiate patterns in the cluster. - Define: 
+
+\[P(y s \mid T k), \quad P(y {st } \ mid T k, \text {polarity toward target })
+
+\]- Keep clusters with high label purity as reliable opinion templates (e.g., PRAISE, COMPLAIN, SARCASM, APPROVAL, DISAPPROVAL). Messages in which explicit sentiment-bearing words are absent but that instantiate a known template can still be assigned sentiment/stance based on the template’s learned distribution. 
+
+5. Context Expansion for Short Messages 
+
+Given a message ‘m‘ with tokens ‘x‘ and normalized tokens ‘z‘: 1. **User Context** - Collect the user’s recent ‘K‘ messages (e.g., last 50) and extract: - Personal sentiment baseline (always positive, always negative, sarcastic, etc.). - Frequent topics and known stances (via templates and hashtags). 2. **Conversation Context** - If ‘m‘ is a reply or part of a thread, gather the surrounding messages ‘m {-L }, \cdots, m {+L }‘. - Encode them using the same encoder as for ‘m‘ and obtain a context vector ‘c conv(m)‘. 3. **Topical Web Context** - Identify entities and hashtags in ‘m‘ (using NER and hashtag segmentation). - Retrieve short descriptions/snippets for those entities from W (pre-crawled offline to avoid latency). - Encode these descriptions to obtain ‘c web(m)‘. We then define a combined contextual representation: 
+
+\[c(m) = f {\ text {agg }}\ big( f {\ text {user }} (m), f {\ text {conv }} (m), f {\ text {web }} (m) \big) 
+
+\]where each ‘f *‘ is a small neural network, and ‘f agg‘ can be a gated or attention-based fusion mechanism. 
+
+6. Multi-Task Sentiment and Stance Model 6.1 Encoder 
+
+We define a shared encoder ‘E \theta‘: - Input: - Original tokens ‘x‘. - Normalized tokens ‘z = g \phi(x)‘. - Token-level metadata (elongation, repeated punctuation, capitalization, slang priors ‘ \sigma(w)‘). - Architecture: - Embedding layer combining: - Subword embeddings for ‘x‘ and ‘z‘. - Lexicon features (e.g., from sentiment and slang induction). - A contextual encoder (e.g., Transformer) producing a sequence of hidden states ‘h 1, \cdots,h n‘. - A pooling mechanism (e.g., self-attention) to produce a message-level representation ‘h m‘. Context expansion: - Concatenate ‘h m‘ with contextual representation ‘c(m)‘ from \S 5 to get final message representation ‘u m‘. 
+
+6.2 Task Heads 
+
+We define several prediction heads: 1. **Sentiment Head** - Output distribution over sentiment labels ‘Y s‘ (e.g., ‘very neg, neg, neutral, pos, very pos‘). 
+
+40 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+- Softmax: 
+
+\[
+
+\hat {y} s = \text {softmax }(W s u m + b s) \]2. **Stance Head** - For messages with identifiable target ‘T‘: - Construct a target-specific representation ‘u {m,T }‘ (e.g., by aggregating token representations aligned with ‘T‘, plus ‘u m‘). - Predict stance ‘Y st‘ (e.g., ‘favor, against, neutral‘): 
+
+\[
+
+\hat {y} { st } = \text {softmax }(W {st } u {m,T } + b {st })]3. **Template Head** - Predict the most likely opinion template ‘T k‘: 
+
+\[
+
+\hat {t} = \text {softmax }(W t u m + b t) ]- Training labels for this head come from pattern/template assignments in \S 4. 4. **Normalization Head (Auxiliary)** - We retain the original normalization ‘g \phi‘ as a separate module but can also share lower layers with ‘E \theta‘ to encourage robustness to noise. 
+
+6.3 Noise-Aware Loss 
+
+Due to weak/noisy labels, we define a noise-aware training objective. Let ‘D w‘ be the weakly labeled dataset and ‘D g‘ a small gold-standard human-annotated dataset. For ‘m \in D w‘: - Treat weak label ‘ \tilde {y} s(m)‘ as a distribution ‘q s(m)‘ over ‘Y s‘, encoding uncertainty via: - Hashtag/emoji class confusion. - Slang sentiment prior uncertainty ‘u(w)‘. - Loss: \ [
+
+\mathcal {L} {\ text {sent-weak }} = - \sum {m \in D w } \ sum {y \in Y s } q s(m)[y] \log \hat {y} s(m)[y] 
+
+\]Similarly for stance ‘q {st }(m,T)‘. For ‘m \in D g‘ with gold labels ‘y s ˆ *(m)‘, ‘y {st } ˆ*(m,T)‘: 
+
+\[
+
+\mathcal {L} {\ text {sent-gold }} = - \sum {m \in D g } \ log \hat {y} s(m)[y s ˆ *(m)] 
+
+\]
+
+\[
+
+\mathcal {L} {\ text {stance-gold }} = - \sum {(m,T) \in D g } \ log \hat {y} { st }(m,T)[y {st } ˆ*(m,T)] 
+
+\]Template prediction loss: 
+
+\[
+
+\mathcal {L} {\ text {templ }} = - \sum {m \in D {\ text {templ }}} \ log \hatt(m)[t ˆ *(m)] 
+
+\]Normalization loss is as in §2.2. Total loss: 
+
+\[
+
+\mathcal {L} = \lambda w ( \mathcal {L} {\ text {sent-weak }} + \mathcal {L} {\ text {stance-weak }} )+ \lambda g ( \mathcal {L} {\ text {sent-gold }} + \mathcal {L} {\ text {stance-gold }} )+ \lambda t \mathcal {L} {\ text {templ }} 
+
++ \lambda n \mathcal {L} {\ text {norm }} \]Hyperparameters ‘ \lambda *‘ control the relative influence of each component. We train ‘ \theta‘ and ‘ \phi‘ jointly or in alternating phases, starting with heavy emphasis on normalization and template prediction, then gradually increasing the weight of sentiment/stance heads. 
+
+41 Can Large Language Models Simulate Human Cognition Beyond Behavioral Imitation? 
+
+7. Calibration and Evaluation 7.1 Calibration Against Gold Data 
+
+We reserve a small, high-quality annotated dev set of social messages with: - Gold sentiment labels. - Gold stance labels for a subset of targets. - Annotation of sarcasm and irony where possible. We: - Perform temperature scaling or isotonic regression on the outputs of sentiment and stance heads using this dev set, improving probability calibration. - Evaluate per-class F1, macro-averaged F1, and calibration metrics (e.g., Brier score). 
+
+7.2 Baseline Comparisons 
+
+We implement several baselines: - **N-gram + Lexicon Baseline** - Traditional sentiment lexicons augmented with slang priors ‘ \sigma(w)‘, ignoring templates and context. - **Supervised Only Baseline** - A classifier trained only on the small gold set, without weak labels or web-based features. - **Web N-gram Only Baseline** - Sentiment classification based purely on web co-occurrence statistics between message terms and sentiment words, similar to web n-gram models for other tasks. We expect our multi-task, web-augmented model to outperform these baselines, especially on: - Messages with heavy slang/creative spelling. - Cases where sentiment is conveyed indirectly via templates rather than explicit sentiment words. - Short, context-dependent messages where user/conversational context is necessary. 
+
+7.3 Ablation Studies 
+
+To understand contributions, we perform ablation experiments: - Remove normalization (‘ \lambda n = 0‘). - Remove template clustering and template head (‘ \lambda t = 0‘). - Remove web-based slang priors ‘ \sigma(w)‘. - Remove user/conversation context ‘c(m)‘. We expect: - Normalization to be critical for rare noisy spellings. - Templates to be crucial for cases with minimal lexical sentiment cues. - Web-based priors to particularly help for new or rapidly evolving slang. 
+
+8. Deployment Considerations 
+
+For a practical system: - Precompute and periodically update: - Slang sentiment priors ‘ \sigma(w)‘. - Template clusters and their sentiment distributions. - Web snippets and entity descriptions for common hashtags and entities. - Maintain an online component that: - Incorporates new slang/hashtags dynamically by computing their distributional similarity and web co-occurrences. - Updates priors without retraining the whole model, by adjusting an auxiliary lookup table. The end result is a robust, adaptive sentiment and stance analysis system for noisy, short social media texts that leverages the web as an implicit training corpus, combines surface pattern and paraphrase-based relational templates, and explicitly addresses informal language phenomena characteristic of microblogs and SMS. 
+
+42
