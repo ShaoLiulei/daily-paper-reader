@@ -1,0 +1,571 @@
+Title: Attention Frequency Modulation: Training-Free Spectral Modulation of Diffusion Cross-Attention
+
+URL Source: https://arxiv.org/pdf/2603.28114v1
+
+Published Time: Tue, 31 Mar 2026 01:43:44 GMT
+
+Number of Pages: 16
+
+Markdown Content:
+# Attention Frequency Modulation: Training-Free Spectral Modulation of Diffusion Cross-Attention 
+
+Seunghun Oh and Unsang Park 
+
+Sogang University, Seoul, Republic of Korea 
+
+{gnsgus190, uspark}@sogang.ac.kr 
+
+Abstract. Cross-attention is the primary interface through which text conditions latent diffusion models, yet its step-wise multi-resolution dy-namics remain under-characterized, limiting principled training-free con-trol. We cast diffusion cross-attention as a spatiotemporal signal on the latent grid by summarizing token-softmax weights into token-agnostic concentration maps and tracking their radially binned Fourier power over denoising. Across prompts and seeds, encoder cross-attention ex-hibits a consistent coarse-to-fine spectral progression, yielding a stable time–frequency fingerprint of token competition. Building on this struc-ture, we introduce Attention Frequency Modulation (AFM), a plug-and-play inference-time intervention that edits token-wise pre-softmax cross-attention logits in the Fourier domain: low- and high-frequency bands are reweighted with a progress-aligned schedule and can be adaptively gated by token-allocation entropy, before the token softmax. AFM provides a continuous handle to bias the spatial scale of token-competition patterns without retraining, prompt editing, or parameter updates. Experiments on Stable Diffusion show that AFM reliably redistributes attention spec-tra and produces substantial visual edits while largely preserving seman-tic alignment. Finally, we find that entropy mainly acts as an adaptive gain on the same frequency-based edit rather than an independent con-trol axis. 
+
+Keywords: Diffusion Models · Cross-Attention · Training-Free Control 
+
+## 1 Introduction 
+
+Diffusion-based text-to-image models achieve state-of-the-art synthesis by pro-gressively denoising text-conditioned latent representations [5, 18]. Despite their success, the inference-time internal dynamics that govern how global layout, fine detail, and sample-to-sample variability emerge over denoising steps remain under-explored [6, 10]. This gap is not only an interpretability issue but also a controllability bottleneck: widely used controls such as prompt engineering and guidance tuning often act as user-facing heuristics that entangle multiple fac-tors, offering limited insight into what changes inside the model and when those changes occur [1, 3, 6]. A central yet under-explored component is cross-attention, which injects tex-tual conditioning into the U-Net at multiple resolutions and at every denoising  
+
+> arXiv:2603.28114v1 [cs.CV] 30 Mar 2026 2Seunghun Oh and Unsang Park
+
+step [18,24]. Because it is repeatedly applied along the diffusion trajectory, cross-attention is a natural carrier of stage-dependent signals (e.g., layout formation early vs. detail refinement late) [18, 24]. However, existing analyses typically fo-cus on attention heatmaps at a few timesteps or token relevance scores, leaving the time-resolved organization across spatial scales unclear and limiting princi-pled, training-free control. We ask whether cross-attention exhibits a consistent multi-scale organization over denoising, and whether that structure can be used for controllable, inference-time edits. 
+
+Hypothesis and approach. We hypothesize that diffusion cross-attention exhibits a robust coarse-to-fine spectral progression over denoising, and that steering this progression in logit space provides a training-free knob that biases token-competition toward coarser or finer spatial patterns (as measured by our attention-spectrum diagnostics), rather than directly measuring or guaranteeing image-level layout/detail disentanglement. To test this hypothesis, we (i) extract a token-agnostic attention concentration map from cross-attention and summarize its spectrum over sampling progress, and (ii) intervene by frequency-selective, token-wise reweighting of pre-softmax cross-attention logits. Empirically, en-coder cross-attention exhibits the most stable and monotonic spectral trajectory across prompts and seeds, so we use it as the primary locus for both analysis and intervention, while still reporting downstream effects in middle/decoder blocks. 
+
+A frequency-domain view. We operationalize cross-attention as a spatial signal on the latent grid by mapping each step’s token distribution to a token-agnostic concentration statistic (top-K) and analyzing its radially binned Fourier power. This yields a compact time–frequency fingerprint that is stable across prompts and random seeds, revealing a consistent coarse-to-fine evolution inside the de-noising trajectory. 
+
+Training-free control via AFM. Motivated by this fingerprint, we introduce At-tention Frequency Modulation (AFM), a plug-and-play inference-time interven-tion that applies frequency-selective reweighting to token-wise pre-softmax cross-attention logits. AFM provides an interpretable control handle by reshaping to-ken competition patterns in logit space over sampling progress, without retrain-ing or architectural modification. We emphasize that AFM does not “inject” high-frequency detail directly. Instead, it perturbs token competition in logit space, which can steer the observed coarse-to-fine spectral progression measured on post-softmax attention summaries. Unless otherwise stated, we apply AFM to encoder cross-attention modules, where the spectral trajectory is most stable, and report downstream effects in middle/decoder blocks. 
+
+Contributions. (i) Frequency characterization of diffusion cross-attention. We characterize cross-attention using a token-agnostic concentration signal (top-
+
+K mean) and track its spectral evolution over denoising, providing a stable fingerprint of coarse-to-fine token competition across prompts and random seeds. Attention Frequency Modulation (AFM) 3    
+
+> (a) Baseline (b) SAG (c) FreeU (d) Ours
+> Fig. 1: Qualitative comparison on Stable Diffusion v1.5 under matched sampling set-tings (same prompt/seed). (a) Baseline, (b) SAG, (c) FreeU, (d) Ours (AFM).
+
+(ii) Training-Free Attention Frequency Modulation (AFM). We propose an inference-time method that directly intervenes on cross-attention logits in the frequency domain, applied token-wise before softmax. AFM-curve suppresses late-stage high-frequency fragmentation in encoder attention (as measured by the post-softmax top-K spectrum / ρs) while preserving alignment, indicating controllability over the internal progression. (iii) Entropy as a secondary gating signal. We analyze attention entropy as a complementary statistic capturing concentration/dispersion. When paired with AFM, entropy gates the effective intervention strength and influences variability distributionally. 
+
+Related work. Training-free diffusion control. Prior work modifies diffusion infer-ence without retraining, including attention-based editing/excitation and feature-space interventions [1–3, 7, 12, 14, 21, 23]. Related controllable generation and parameter-efficient adaptation methods include ControlNet, T2I-Adapter, and LoRA [8,15,26]. We include SAG and FreeU as representative training-free base-lines for direct comparison in our experiments. In contrast, we first characterize a stable frequency structure in cross-attention over timesteps and then derive a frequency-aligned, logit-space intervention. We choose SAG and FreeU as rep-resentative training-free interventions that modify the sampling dynamics with-out additional training or external models, matching our plug-and-play setting. Other editing methods that rely on prompt-specific inversion or extra optimiza-tion steps are orthogonal and not directly comparable under our fixed-sampling paired protocol. Frequency perspectives and mechanistic analyses. Frequency-domain tools and mechanistic analyses have been used to probe representation bias and dif-fusion dynamics [9, 13, 17, 22, 25]. Entropy and information measures. Entropy has long been used to quantify dispersion in probabilistic assignments [20]. We show entropy mainly acts as a gating statistic that modulates the effective strength/variability of frequency-based interventions, rather than defining an orthogonal control axis. 4 Seunghun Oh and Unsang Park 
+
+## 2 Background 
+
+2.1 Diffusion models and cross-attention along the denoising trajectory 
+
+Diffusion models synthesize images via an iterative denoising process [5]. Latent diffusion models (LDMs) perform this process in a learned latent space for ef-ficient high-resolution generation [18]. At denoising step t, given latent xt and text condition c, the reverse update is 
+
+xt−1 = fθ (xt, t, c ), (1) where fθ is typically a U-Net with multi-resolution blocks: the downsampling path (encoder), the bottleneck (middle), and the upsampling path (decoder). Text conditioning is injected through cross-attention layers. With queries Q from latent features and keys/values K, V from text embeddings, a standard cross-attention operation is 
+
+Attn( Q, K, V ) = softmax 
+
+ QK ⊤
+
+√d
+
+
+
+V.  (2) Because cross-attention is applied at every denoising step and at multiple spatial resolutions, it naturally admits a stage-dependent view of generation dynamics. In this work, we treat cross-attention as a temporally evolving internal condition-ing signal, rather than a static alignment artifact. For clarity across schedulers, we later reparameterize the step index by a monotone denoising progress. 
+
+2.2 Cross-attention maps as spatial signals 
+
+For a layer/head at sampling iteration s, token-softmax cross-attention yields 
+
+As ∈ RHW ×T (spatial queries × tokens). Since each row sums to 1, naive token summation is uninformative. We therefore analyze token-agnostic concentration summaries (e.g., mean top-K probability) as spatial signals on the latent grid and study their spectral evolution over denoising. All definitions (top-K/top-1, entropy statistics) are provided in Sec. 3.1 and Sec. 3.3. 
+
+Entropy statistics (used for AFM gating). We use the normalized mean token entropy ¯Htok  
+
+> s
+
+(Eq. (17)) as an optional gate for AFM. Additional entropy diag-nostics are deferred to the supplement. 
+
+## 3 Method 
+
+We present a frequency-domain framework to analyze and edit diffusion cross-attention at inference time. We first define a measurement pipeline that converts cross-attention into a stable spatial signal and quantifies its spectral evolution over denoising, and then introduce a training-free, plug-and-play intervention that edits token-wise pre-softmax cross-attention logits via frequency-selective reweighting. Attention Frequency Modulation (AFM) 5
+
+Key design choices. Two choices are central. First, we treat cross-attention as a spatiotemporal signal evolving over denoising progress, which motivates a spec-tral (Fourier) view. Second, for controllability we operate on token-wise logits (pre-softmax), because token-softmax invariances can render per-query scalar biases broadcast across tokens a no-op (Sec. 3.3). 
+
+3.1 Cross-attention as a spatiotemporal signal 
+
+Cross-attention in latent diffusion U-Nets. We consider latent diffusion models (LDMs) with a U-Net backbone and cross-attention conditioning [18]. At each denoising step, cross-attention maps latent/image features (queries) to text fea-tures (keys/values). Let a given U-Net block have latent spatial size H × W
+
+(flattened into HW queries) and let the prompt contain T tokens. For a single attention head, the pre-softmax logits are 
+
+Ls = QsK⊤
+
+> s
+
+√d ∈ RHW ×T , (3) and the token-normalized attention weights are 
+
+As = softmax( Ls) ∈ RHW ×T , (4) where softmax is applied row-wise over the token dimension. For multi-head attention, we apply the same definitions per head and either analyze heads in-dividually or average derived statistics over heads. 
+
+Denoising progress (implementation index). We index the S sampling iterations in the exact order executed by the sampler as s ∈ { 0, . . . , S −1} (s=0 : most noisy, 
+
+s=S−1: most clean), and use the normalized progress u(s) = s/ (S−1) for all schedules and plots. 
+
+Scheduler timesteps (annotation only). Some samplers (e.g., DDIM) associate each iteration s with a scheduler timestep τs (e.g., ddim_timesteps[s]), which is monotone decreasing in s. We occasionally use τs only for figure tick labels. All schedules, interventions, and analyses in this paper are indexed by the sampler step s (or its normalized progress u(s)), i.e., the horizontal axis is always early 
+
+→ late in s.
+
+Why an “attention map” is non-trivial under token-softmax. A cross-attention row As(i, :) is a probability distribution over tokens at each spatial query i. Thus, naive token summation is constant: PTj=1 As(i, j ) = 1 for all i. This motivates constructing a spatial analysis signal that is (i) defined over H × W , (ii) stable across prompts/seeds, and (iii) non-trivial under token normalization. 6 Seunghun Oh and Unsang Park 
+
+Token-agnostic spatial summary ( top-1 / top-K). We build a token-agnostic confidence/peakedness map capturing how concentrated the token distribution is at each location. For each spatial query i,
+
+Stop 1 
+
+> s
+
+(i) = max   
+
+> j∈{ 1,...,T }
+
+As(i, j ), (5) 
+
+Stop Ks (i) = 1
+
+K
+
+X
+
+> j∈Top K(As(i, :); K)
+
+As(i, j ), (6) and we reshape Ss(·) back into Ss ∈ RH×W .
+
+Why top-K and top-1. top-1 can be sensitive to winner-takes-all fluctuations, producing noisier trajectories across seeds. top-K reduces variance by averag-ing among the most attended tokens, yielding smoother and more reproducible spectral statistics. We therefore use top-K in the main analysis and report top-1 as an ablation to show the coarse-to-fine trend is not an artifact of aggregation choice. 
+
+3.2 Frequency decomposition and coarse-to-fine metrics 
+
+2D Fourier transform and normalized power spectrum. Given Ss ∈ RH×W , we compute the 2D Fourier transform ˆSs = F(Ss). We define the normalized power spectrum 
+
+Ps(fx, f y ) = | ˆSs(fx, f y )|2
+
+P 
+
+> fx,f y
+
+| ˆSs(fx, f y )|2 , X
+
+> fx,f y
+
+Ps(fx, f y ) = 1 . (7) 
+
+Radial coordinate and binning (time–frequency matrix). Using FFT-shifted co-ordinates, we define the normalized radius 
+
+r =
+
+q
+
+f 2 
+
+> x
+
++ f 2
+
+> y
+
+rmax 
+
+∈ [0 , 1] , (8) and bin Ps into B radial bins to obtain the radial energy profile 
+
+Es(b) = X 
+
+> (fx,f y)∈bin( b)
+
+Ps(fx, f y ),
+
+> B
+
+X
+
+> b=1
+
+Es(b) = 1 . (9) 
+
+High-frequency ratio as a coarse-to-fine indicator. We summarize coarse-to-fine behavior via the high-frequency (HF) energy ratio using a cutoff radius rc:
+
+ρs = X 
+
+> b:rb≥rc
+
+Es(b). (10) Since Es is normalized, ρs measures the fraction of spectral energy in the HF band. A consistent increase of ρs over u(s) indicates a progressive shift toward more localized attention structure. Attention Frequency Modulation (AFM) 7
+
+Cutoff choice and robustness. The LF/HF split depends on rc, but the trajectory shape can remain robust even when absolute values shift. We use a default rc for main plots and test robustness with cutoff sweeps (multiple rc values), verifying that coarse-to-fine trends and AFM-induced deltas persist. For intuition, with square grids rmax ≈ √0.52 + 0 .52 in cycles/pixel, so rc=0 .25 corresponds to a radial frequency of about 0.18 cycles/pixel (roughly a 5−6 pixel wavelength). 
+
+Intervention diagnostics: deltas and log-ratios. To isolate how an inference-time edit changes spectral composition, we compute 
+
+∆ρ s = ρ(target)  
+
+> s
+
+− ρ(ref)  
+
+> s
+
+, (11) and a frequency-resolved log-ratio 
+
+Rs(b) = log E(target)  
+
+> s
+
+(b) + ϵE(ref)  
+
+> s
+
+(b) + ϵ , (12) with small ϵ for numerical stability. Rs(b) provides a direct “what frequencies changed, and when” explanation. 
+
+3.3 Training-Free Attention Frequency Modulation (AFM) 
+
+We now describe AFM, a plug-and-play inference-time attention editing method that performs token-wise logit-space spectral reweighting during denoising. 
+
+Why we edit logits (pre-softmax) instead of attention weights. Post-softmax edits of As can be attenuated by the row-wise token normalization. In particular, token-softmax is invariant to adding a per-query scalar bias broadcast across tokens: 
+
+softmax  Ls(i, :) + b(i)1 = softmax  Ls(i, :) . (13) Therefore, a purely spatial additive bias shared across tokens cannot change token assignment. To induce a non-trivial change in As, the intervention must be token-dependent and applied before normalization, motivating token-wise edits on Ls(: , j ).
+
+Token-wise spectral reweighting on logit maps. For each token j ∈ { 1, . . . , T },we reshape the logit column Ls(: , j ) into a spatial map Zs,j ∈ RH×W and apply FFT:  ˆZs,j = F(Zs,j ). (14) Let MLF = I(r ≤ rc) and MHF = I(r > r c) with MLF + MHF = 1. AFM defines the edited spectrum as 
+
+ˆZ′ 
+
+> s,j
+
+= αLF 
+
+> s
+
+ ˆZs,j ⊙ MLF 
+
+ + αHF 
+
+> s
+
+ ˆZs,j ⊙ MHF 
+
+, (15) followed by Z′ 
+
+> s,j
+
+= F−1(ˆZ′ 
+
+> s,j
+
+) and flattening back to L′
+
+> s
+
+(: , j ). Finally, we compute the edited attention weights as A′ 
+
+> s
+
+= softmax( L′
+
+> s
+
+).8 Seunghun Oh and Unsang Park 
+
+Hard vs. soft masks (ringing reduction). Hard binary masks can introduce mild spatial ringing due to sharp spectral boundaries. Optionally, one may replace 
+
+MLF , M HF with a smooth radial transition (e.g., cosine ramp around rc) while preserving interpretability. Our reported spectral statistics are robust as long as the effective LF/HF separation remains comparable. 
+
+Stability details: DC term and real-valuedness. Logit maps can contain token-specific global biases that affect overall token competitiveness. Optionally, we preserve the DC coefficient while applying band scaling to the remaining coeffi-cients. Radially symmetric masks preserve conjugate symmetry, and the inverse FFT returns a real map up to numerical precision (we take the real part). 
+
+Scheduled (curve) scaling aligned with denoising progress (entropy off ). We use a progress-dependent schedule 
+
+αLF  
+
+> s
+
+= 1 + λ(1 − u(s)) , αHF  
+
+> s
+
+= 1 + λu (s), (16) where λ controls the overall edit strength. 
+
+Entropy gating (entropy on). We compute mean normalized token entropy from the (unmodified) attention weights As = softmax( Ls):
+
+¯Htok  
+
+> s
+
+= 1
+
+HW log T
+
+> HW
+
+X
+
+> i=1
+
+−
+
+> T
+
+X
+
+> j=1
+
+As(i, j ) log( As(i, j ) + ϵ)
+
+ , (17) and gate the band scaling as 
+
+αLF  
+
+> s
+
+= 1 + λ(1 − u(s)) (1 + β ¯Htok  
+
+> s
+
+), αHF  
+
+> s
+
+= 1 + λu (s) (1 + γ(1 − ¯Htok  
+
+> s
+
+)) . (18) When AFM is disabled ( λ = 0 ), entropy gating is a strict no-op by construction. 
+
+Important: where the frequency is measured. Eq. (16)–(18) modulate the logit maps Ls(: , j ) in the Fourier domain before the token softmax, whereas ρs is com-puted from the post-softmax concentration map Stop Ks . Because token softmax is nonlinear and induces token competition, the effect of logit-space band scaling on ρs is not monotonic; we therefore treat ρs as a diagnostic of token-competition patterns, not a direct measure of image-frequency content. 
+
+Entropy as an auxiliary gating signal (not an independent edit). ¯Htok  
+
+> s
+
+(Eq. (17)) summarizes token dispersion: high entropy indicates diffuse token assignment, while low entropy indicates concentrated assignment. We use it only to gate band scaling (Eq. (18)), and it becomes a strict no-op when λ = 0 .
+
+Layer/block scope. AFM is compatible with any subset of U-Net cross-attention modules ( attn2 ). In our main setting, we apply AFM to encoder cross-attention modules only, and leave self-attention (attn1; context=None) unchanged. We still log encoder/middle/decoder spectra to separate direct edits from downstream effects. Attention Frequency Modulation (AFM) 9
+
+Algorithm 1: AFM: token-wise logit-space spectral reweighting 
+
+Input: Cross-attention logits Ls ∈ RHW ×T at denoising progress s
+
+Output: Edited logits L′
+
+> s
+
+Compute progress u(s) ∈ [0 , 1] ;compute ¯Htok  
+
+> s
+
+using Eq. (17); Set (αLF  
+
+> s
+
+, α HF  
+
+> s
+
+) using Eq. (16) (entropy off) or Eq. (18) (entropy on); 
+
+for j = 1 to T do 
+
+Reshape Ls(: , j ) to Zs,j ∈ RH×W ;FFT: ˆZs,j = F(Zs,j );Apply LF/HF reweighting with cutoff rc (Eq. (15)); (Optional) preserve DC coefficient; iFFT: Z′ 
+
+> s,j
+
+= F−1( ˆZ′ 
+
+> s,j
+
+);Flatten Z′ 
+
+> s,j
+
+back into L′
+
+> s
+
+(: , j );
+
+return L′
+
+> s
+
+## 4 Experiments 
+
+We evaluate Training-Free Attention Frequency Modulation (AFM) along three axes: (i) attention-level evidence that cross-attention exhibits a consistent coarse-to-fine spectral evolution and that AFM induces controlled spectral redistribu-tion, (ii) image-level sensitivity under paired generation (LPIPS), and (iii) text– image alignment stability (CLIP cosine similarity). Unless otherwise stated, we use paired comparisons with matched prompts and random seeds to isolate the causal effect of AFM. 
+
+4.1 Setup 
+
+Models. Our main attention-spectrum analyses are conducted on Stable Diffu-sion v1.5 [18]. We additionally report image-level robustness (LPIPS/CLIP) on Stable Diffusion v1.4 under the same prompt/seed and sampling protocol. 
+
+Sampling (fixed across methods). For reproducibility and fair comparison, within each checkpoint all methods use the same scheduler, number of steps, CFG scale, resolution, and negative prompt. We generate 512 ×512 images using a DDIM scheduler with S=50 denoising steps and guidance scale 7.5, and use paired sampling with fixed random seeds {2025 , 2026 , 2027 , 2028 } for every prompt. Only the inference-time intervention (Baseline / SAG / FreeU / AFM) differs. 
+
+Prompt sets. We use two prompt sources: (i) a COCO-2017 validation caption subset [11] ( Nprompt =50 ), and (ii) a LAION caption subset (caption-like samples) [19] ( Nprompt =100 ). We use Nseed =4 fixed seeds per prompt, yielding Npair =
+
+Nprompt × Nseed paired generations (COCO: 200; LAION: 400). 10 Seunghun Oh and Unsang Park 
+
+AFM configuration. Unless specified otherwise, AFM uses top-K aggregation with K=8 for attention analysis and a radial cutoff rc=0 .25 for LF/HF sep-aration. We apply logit-space spectral reweighting to encoder cross-attention modules only, and log spectra for encoder/middle/decoder to measure both di-rect and downstream effects on attention dynamics. We use the curve schedule in Eq. (16) with λ = 0 .2. For entropy gating (when enabled), we use (β, γ ) = (20 , 4) 
+
+in Eq. (18). 
+
+Intervention scope vs. logging scope. Unless otherwise stated, AFM is applied 
+
+only to encoder cross-attention modules (attn2 in the downsampling path / in-put_blocks). Middle and decoder cross-attention modules are not directly mod-ified; we report their spectra only as downstream diagnostics induced by the altered denoising trajectory. 
+
+Compared settings. We evaluate: Baseline (AFM disabled), curve (AFM-curve; entropy gating off), and curve + entropy (AFM-curve; entropy gating on). We also include a negative control Baseline + entropy, where entropy is com-puted/enabled but AFM strength is set to λ=0 ; by construction, this should produce identical outputs to Baseline. 
+
+Attention logging and aggregation. We instrument cross-attention modules to record step-wise statistics. For frequency analysis, we report encoder cross-attention (6 layers averaged), which yields the most stable trajectories. We con-vert token-softmax attention weights into a token-agnostic spatial signal using top-K aggregation (Sec. 3.1), then compute frequency statistics per denoising step. 
+
+Step convention. All plots use denoising progress u(s) (early → late); tick labels optionally show the corresponding scheduler timesteps τs (Sec. 3.1). 
+
+Metrics. Attention-level: time–frequency heatmaps (radially binned normalized FFT power over steps), HF energy ratio ρs (Eq. 10), and log-ratio heatmaps between settings. Image-level: LPIPS [27] on paired outputs. Alignment: CLIP cosine similarity distributions (ViT-B/32) [4, 16]. Additionally, we report band-wise LPIPS (LPIPS low /LPIPS high ) by decomposing outputs into Gaussian low-pass and residual high-pass components to quantify structure vs. detail changes. 
+
+4.2 Attention-level results 
+
+Baseline cross-attention exhibits a coarse-to-fine spectral evolution. We first es-tablish a step-wise spectral signature of diffusion conditioning dynamics. Fig. 2 shows the time–frequency evolution of encoder cross-attention under Baseline. Energy concentrates near low radius early and progressively shifts outward as denoising proceeds, consistent with a coarse-to-fine transition in attention struc-ture. We observe a consistent coarse-to-fine progression throughout denoising, supporting that the spectral dynamics are stable across runs. Attention Frequency Modulation (AFM) 11 
+
+Fig. 2: Time–frequency evolution of encoder cross-attention (top-K, mean). Left/middle: normalized radial energy distributions for Baseline and AFM-curve. Right: log energy ratio log( Ecurve /E baseline ), highlighting frequency bands ampli-fied/suppressed by AFM over denoising progress. The x-axis is denoising progress 
+
+u(s) (early → late); tick labels show the corresponding DDIM scheduler timesteps τs (decreasing). Dashed line indicates the HF cutoff radius rc used in ρs.45 40 30 25 15 5       
+
+> progress index (0=early late)
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> 0.35
+> 0.40
+> 0.45
+> 0.50
+> HF ratio (r  0.25)
+> HF ratio (mean±std) | cutoff=0.25 | encoder | agg=topk | entropy_off
+> baseline
+> curve
+> 45 40 30 25 15 5
+> progress index (0=early late)
+> 0.15
+> 0.10
+> 0.05
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> HF
+> HF(t) = HF[curve] - HF[baseline]
+
+(a) HF ratio ρs and ∆ρ s.0.0 0.2 0.4 0.6 0.8 1.0       
+
+> normalized radius
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> 0.35
+> ring energy
+> baseline
+> early=45
+> late=5
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> normalized radius
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> ring energy
+> curve
+> early=45
+> late=5
+
+(b) Radial energy profiles. 
+
+Fig. 3: Quantitative summary of coarse-to-fine and AFM effects (encoder, top-K). 
+
+(a) uses denoising progress u(s) (early → late); tick labels show decreasing DDIM timesteps τs. (b) shows radial energy profiles over normalized radius 
+
+r.
+
+AFM induces time-aligned spectral redistribution. AFM-curve is designed to modulate spectral allocation over denoising. In practice, encoder attention shows a consistent reduction in the late-stage HF ratio ρs of the post-softmax top-K
+
+concentration map (our diagnostic) under AFM-curve, indicating suppression of high-frequency fragmentation relative to the natural coarse-to-fine progression. Note that this “HF suppression” refers to ρs measured on the post-softmax top-K
+
+attention summary Ss, not the raw logit spectra being scaled by Eq. (16). Fig. 3 summarizes this effect using the HF ratio ρs and ∆ρ s (curve minus Baseline). 
+
+Late-stage summary. We report the HF ratio averaged over the last 20% of steps (10 steps for S=50 ) and its paired difference ∆ρ late (curve minus Baseline). 
+
+Statistical significance of attention-spectrum changes. We evaluate the paired ef-fect of AFM-curve on the encoder HF ratio ρs (Eq. 10) using matched prompt/seed generations. Bootstrap confidence intervals on the mean ∆ρ late exclude zero, and the direction is consistent across pairs. This indicates that AFM-curve sup-presses late-stage high-frequency fragmentation in encoder cross-attention, even though it induces substantial perceptual changes at the image level (LPIPS) with largely overlapping CLIP cosine similarity distributions. We repeat the analysis with alternative spatial summaries (e.g., top-1 and varying top-K) and observe the same direction of ∆ρ late , suggesting the trend is not a top-K artifact. 12 Seunghun Oh and Unsang Park 
+
+Table 1: Robustness of late-stage HF-ratio shift ∆ρ late across rc ∈ { 0.20 , 0.25 , 0.30 }
+
+and Nsub ∈ { 50 , 100 } (top-K=8 ). ∆ρ late is averaged over the last 20% denoising steps (u ≥ 0.8). AFM is applied only to the encoder cross-attention; middle/decoder reflect downstream changes. We report the fraction of pairs with ∆ρ late < 0 and the min–max range of the mean ∆ρ late across sweeps.              
+
+> Stage Neg. pairs (%) Mean ∆ρ late (min–max) Encoder 98–99 [−0.063 ,−0.040 ]Middle 72–78 [−0.0346 ,−0.0317 ]Decoder 56–64 [−0.0161 ,−0.0092 ]
+
+Robustness across rc and sample size. To verify that the observed encoder HF-ratio shift is not an artifact of a particular metric cutoff in ρs (Eq. 10) or a small sample size, we sweep the HF cutoff used in the metric, rc ∈ { 0.20 , 0.25 , 0.30 },and subsampled prompt–seed pairs Nsub ∈ { 50 , 100 } (top-K=8 ). We define 
+
+∆ρ late = 1
+
+> |S late |
+
+P 
+
+> s∈S late
+
+(ρcurve  
+
+> s
+
+− ρbaseline  
+
+> s
+
+) with Slate = {s : u(s) ≥ 0.8}. Across all sweeps, the encoder shows a highly consistent negative shift ( ∆ρ late < 0
+
+for 98–99% of pairs), with mean ∆ρ late in the range [−0.063 , −0.040] (Tab. 1). Middle/decoder show negative means but reduced sign consistency (middle: 72– 78% negative; decoder: 56–64% negative), indicating a weaker and more variable downstream tendency. 
+
+Block-wise diagnostics across U-Net stages. All U-Net stages exhibit non-trivial spectral structure over denoising, but encoder cross-attention shows the most stable and monotonic coarse-to-fine trajectory across prompts and seeds. Accord-ingly, we apply AFM only to encoder cross-attention and treat middle/decoder cross-attention as downstream diagnostics. Despite modifying only the encoder, the mean late-stage HF-ratio shift is negative in middle and decoder, but with reduced sign consistency (Tab. 1), indicating weaker and more variable down-stream effects. 
+
+4.3 Image-level controllability and alignment 
+
+We compare AFM against SAG and FreeU as representative training-free inference-time baselines under identical prompts, seeds, and sampling settings [7, 21]. Prompts are sampled from COCO and LAION, and results are averaged over fixed seeds (2025–2028). All methods share the same scheduler, step count, CFG scale, and output resolution to isolate the effect of the intervention. 
+
+Baselines and our setting. For SAG we use sag_scale=1.0. For FreeU we use 
+
+(b1, b 2, s 1, s 2) = (1 .1, 1.2, 0.9, 0.2) . For AFM-curve (ours) we apply logit-space frequency modulation to cross-attention with rc = 0 .25 and the timestep-scheduled curve in Eq. (16), unless stated otherwise. We use default/recommended hyper-parameters from the authors’ official implementations, without additional tun-ing. We evaluate all methods on both SD v1.5 (main) and SD v1.4 (checkpoint Attention Frequency Modulation (AFM) 13 
+
+Table 2: Paired LPIPS ↑ (mean ±std) under matched prompt/seed sampling. 
+
+Higher indicates larger perceptual deviation from Baseline. Results are reported for SD v1.5 (main) and SD v1.4 (checkpoint robustness).                           
+
+> SD v1.5 SD v1.4 Comparison COCO LAION COCO LAION Baseline vs. AFM-curve 0.237 ±0.138 0.249 ±0.142 0.232 ±0.132 0.258 ±0.144 Baseline vs. AFM-curve + entropy 0.409 ±0.131 0.419 ±0.149 0.405 ±0.134 0.417 ±0.143
+> Baseline vs. Baseline (entropy, λ=0 )0.000 ±0.000 0.000 ±0.000 0.000 ±0.000 0.000 ±0.000 Baseline vs. FreeU 0.300 ±0.131 0.302 ±0.158 0.296 ±0.117 0.294 ±0.112 Baseline vs. SAG 0.111 ±0.084 0.125 ±0.108 0.106 ±0.055 0.121 ±0.071
+
+Table 3: Band-wise LPIPS decomposition (COCO; N =200 ). We decom-pose each output image into Ilow = Gσ (I) (Gaussian blur; σ=4 at 512 ×512 ) and 
+
+Ihigh = clip [0 ,1] (I − Ilow + 0 .5) , and compute LPIPS on each band after resizing to 256 ×256 . LPIPS low proxies structure/layout change and LPIPS high proxies de-tail/texture change. High/Low is the per-pair ratio LPIPS high /LPIPS low averaged over pairs (undefined for the exact no-op). P (high > low) is the fraction of pairs where LPIPS high exceeds LPIPS low .                   
+
+> Setting LPIPS low LPIPS high High/Low P(high >low)
+> AFM-curve 0.171 ±0.115 0.188 ±0.112 1.21 ±0.28 78.0% AFM-curve + entropy 0.312 ±0.116 0.329 ±0.110 1.08 ±0.15 72.5% Entropy only ( λ=0 )0.000 ±0.000 0.000 ±0.000 ––
+
+robustness) for image-level metrics under the same prompt/seed and sampling protocol. 
+
+Paired perceptual deviation (LPIPS). We quantify image-level sensitivity using LPIPS on paired prompt/seed generations (Tab. 2). AFM induces substantial perceptual deviations relative to Baseline. As a negative control, enabling entropy while disabling AFM ( λ = 0 ) yields identical outputs (LPIPS = 0 ), confirming that entropy computation is a strict no-op and only modulates the effective strength when paired with AFM. 
+
+Quantifying controllability: structure vs. detail (band-wise LPIPS). To make the notion of “control” explicit at the image level without ground-truth layouts, we decompose each generated image I into a low-frequency component Ilow = Gσ (I)
+
+(Gaussian blur) and a high-frequency residual Ihigh = clip( I − Ilow + 0 .5) . We then compute LPIPS on each band between paired baseline and edited outputs. LPIPS low serves as a proxy for coarse structure/layout changes, while LPIPS high 
+
+captures fine-detail/texture changes. As shown in Tab. 3, AFM tends to induce larger perceptual changes in the high-frequency residual than in the low-frequency component ( LPIPS high 
+
+> LPIPS low for the majority of pairs; see P (high > low) ), suggesting that AFM steers generation changes toward fine-detail/texture variations more than coarse structure. 14 Seunghun Oh and Unsang Park 
+
+Table 4: CLIP cosine similarity ↑ (ViT-B/32; mean ±std) under matched prompt/seed sampling. Higher indicates better text–image alignment. Results are reported for SD v1.5 (main) and SD v1.4 (checkpoint robustness).                          
+
+> SD v1.5 SD v1.4 Setting COCO LAION COCO LAION Baseline 0.318 ±0.031 0.306 ±0.038 0.320 ±0.027 0.306 ±0.039 AFM-curve 0.319 ±0.030 0.306 ±0.039 0.318 ±0.029 0.304 ±0.040 AFM-curve + entropy 0.316 ±0.030 0.303 ±0.040 0.317 ±0.030 0.303 ±0.038 FreeU 0.307 ±0.031 0.310 ±0.037 0.307 ±0.029 0.310 ±0.034
+> SAG 0.305 ±0.032 0.307 ±0.036 0.304 ±0.029 0.308 ±0.033
+
+Entropy acts as gain control for frequency-based editing. Entropy gating amplifies the frequency-based edit (Tab. 2); enabling entropy with AFM disabled ( λ = 0 )is a strict no-op. 
+
+Text–image alignment (CLIP cosine similarity). We evaluate prompt alignment using CLIP cosine similarity distributions (Tab. 4). Distributions largely overlap across settings with small mean differences, suggesting AFM redistributes how conditioning manifests rather than collapsing it. Baseline comparisons are sum-marized in Tab. 4. The same qualitative trend is observed on SD v1.4, indicating checkpoint-level robustness. 
+
+## 5 Conclusion 
+
+We presented a frequency-domain view of diffusion cross-attention by inter-preting attention-derived concentration maps as spatial signals on the latent grid, revealing a stable coarse-to-fine spectral progression over denoising. Build-ing on this structure, we introduced Attention Frequency Modulation (AFM), a training-free inference-time intervention that edits token-wise pre-softmax cross-attention logits in the Fourier domain with a progress-aligned low/high-frequency schedule. AFM provides an interpretable inference-time knob to bias how con-ditioning manifests across spatial scales in attention-derived diagnostics, which in turn tends to yield stronger changes in image high-frequency residuals under our proxy evaluation. We further find that attention entropy mainly acts as an adaptive gain for the same frequency-based edit and is a strict no-op when AFM strength is zero. 
+
+Limitations and potential negative impact. Our coarse-to-fine interpreta-tion is based on spatial-frequency statistics of attention-derived top-K concentra-tion maps, which quantify token-competition structure on the latent grid. These signals are proxies and do not directly measure image Fourier content, object layout, or semantic detail. Accordingly, our image-level evaluation (band-wise LPIPS) should be interpreted as heuristic evidence rather than a ground-truth disentanglement metric. Attention Frequency Modulation (AFM) 15 
+
+## References 
+
+1. Chefer, H., Alaluf, Y., Vinker, Y., Wolf, L., Cohen-Or, D.: Attend-and-excite: Attention-based semantic guidance for text-to-image diffusion models. arXiv preprint arXiv:2301.13826 (2023) 2. He, Q., Wang, J., Liu, Z., Yao, A.: Aid: Attention interpolation of text-to-image diffusion. In: Advances in Neural Information Processing Systems (2024) 3. Hertz, A., Mokady, R., Tenenbaum, J., Aberman, K., Pritch, Y., Cohen-Or, D.: Prompt-to-prompt image editing with cross attention control. arXiv preprint arXiv:2208.01626 (2022) 4. Hessel, J., Holtzman, A., Forbes, M., Le Bras, R., Choi, Y.: Clipscore: A reference-free evaluation metric for image captioning. arXiv preprint arXiv:2104.08718 (2021) 5. Ho, J., Jain, A., Abbeel, P.: Denoising diffusion probabilistic models. arXiv preprint arXiv:2006.11239 (2020) 6. Ho, J., Salimans, T.: Classifier-free diffusion guidance. arXiv preprint arXiv:2207.12598 (2022) 7. Hong, S., Lee, G., Jang, W., Kim, S.: Improving sample quality of diffusion models using self-attention guidance. arXiv preprint arXiv:2210.00939 (2022) 8. Hu, E.J., Shen, Y., Wallis, P., Allen-Zhu, Z., Li, Y., Wang, S., Wang, L., Chen, W.: Lora: Low-rank adaptation of large language models. arXiv preprint arXiv:2106.09685 (2021) 9. Jiang, Z., Bolya, D., Yu, Q., Wang, J., Minhas, M.R., Moorthy, K., Friedrich, C.M., Wang, R., Hoffman, J.: Dissecting and mitigating diffusion bias via mechanistic interpretability. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) (2025) 10. Karras, T., Aittala, M., Aila, T., Laine, S.: Elucidating the design space of diffusion-based generative models. arXiv preprint arXiv:2206.00364 (2022) 11. Lin, T.Y., Maire, M., Belongie, S., Bourdev, L., Girshick, R., Hays, J., Perona, P., Ramanan, D., Zitnick, C.L., Dollár, P.: Microsoft coco: Common objects in context. In: European Conference on Computer Vision (ECCV) (2014) 12. Lin, Y., Bansal, H., Zhao, J., Gu, S., Li, J., Meng, Y., Li, X., Yang, J., Ramanan, D.: Ctrl-x: Controlling structure and appearance for text-to-image generation without guidance. In: Advances in Neural Information Processing Systems (2024) 13. Liu, B., Wang, C., Huang, J., Jia, K.: Towards understanding cross and self-attention in stable diffusion for text-guided image editing. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) (2024) 14. Mokady, R., Hertz, A., Aberman, K., Pritch, Y., Cohen-Or, D.: Null-text in-version for editing real images using guided diffusion models. arXiv preprint arXiv:2211.09794 (2022) 15. Mou, C., Wang, X., Xie, L., Wu, Y., Zhang, J., Qi, Z., Shan, Y., Qie, X.: T2i-adapter: Learning adapters to dig out more controllable ability for text-to-image diffusion models. arXiv preprint arXiv:2302.08453 (2023) 16. Radford, A., et al.: Learning transferable visual models from natural language supervision. arXiv preprint arXiv:2103.00020 (2021) 17. Rahaman, N., Arpit, D., Baratin, A., Draxler, F., Lin, M., Hamprecht, F.A., Ben-gio, Y., Courville, A.: On the spectral bias of neural networks. Proceedings of the 36th International Conference on Machine Learning (ICML) (2019) 18. Rombach, R., Blattmann, A., Lorenz, D., Esser, P., Ommer, B.: High-resolution image synthesis with latent diffusion models. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) (2022) 16 Seunghun Oh and Unsang Park 19. Schuhmann, C., et al.: Laion-5b: An open large-scale dataset for training next generation image-text models. arXiv preprint arXiv:2210.08402 (2022) 20. Shannon, C.E.: A mathematical theory of communication. Bell System Technical Journal (1948) 21. Si, C., Huang, Z., Jiang, Y., Liu, Z.: Freeu: Free lunch in diffusion u-net. arXiv preprint arXiv:2309.11497 (2023) 22. Tancik, M., Srinivasan, P.P., Mildenhall, B., Fridovich-Keil, S., Raghavan, N., Singhal, U., Ramamoorthi, R., Barron, J.T., Ng, R.: Fourier features let net-works learn high frequency functions in low dimensional domains. arXiv preprint arXiv:2006.10739 (2020) 23. Tang, R., Liu, L., Pandey, A., Jiang, Z., Yang, G., Kumar, K., Stenetorp, P., Lin, J., Türe, F.: What the daam: Interpreting stable diffusion using cross attention. arXiv preprint arXiv:2210.04885 (2022) 24. Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, Ł., Polosukhin, I.: Attention is all you need. arXiv preprint arXiv:1706.03762 (2017) 25. Yi, Z., Xia, M., Li, R., Zhou, T., Lyu, S.: Towards understanding the working mechanism of text-to-image diffusion model. In: Advances in Neural Information Processing Systems (2024) 26. Zhang, L., Rao, A., Agrawala, M.: Adding conditional control to text-to-image diffusion models. arXiv preprint arXiv:2302.05543 (2023) 27. Zhang, R., Isola, P., Efros, A.A., Shechtman, E., Wang, O.: The unreasonable effec-tiveness of deep features as a perceptual metric. arXiv preprint arXiv:1801.03924 (2018)

@@ -1,0 +1,732 @@
+Title: Firing Rate Neural Network Implementations of Model Predictive Control
+
+URL Source: https://arxiv.org/pdf/2603.25959v1
+
+Published Time: Mon, 30 Mar 2026 00:20:34 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# Firing Rate Neural Network Implementations of Model Predictive Control 
+
+Jaidev Gill and Jing Shuang (Lisa) Li 
+
+Abstract — Human and animal brains perform planning to enable complex movements and behaviors. This process can be effectively described using model predictive control (MPC); that is, brains can be thought of as implementing some version of MPC. How is this done? In this work, we translate model predictive controllers into firing rate neural networks, offering insights into the nonlinear neural dynamics that underpin planning. This is done by first applying the projected gradi-ent method to the dual problem, then generating alternative networks through factorization and contraction analysis. This allows us to explore many biologically plausible implementa-tions of MPC. We present a series of numerical simulations to study different neural networks performing MPC to balance an inverted pendulum on a cart (i.e., balancing a stick on a hand). We illustrate that sparse neural networks can effectively implement MPC; this observation aligns with the sparse nature of the brain. 
+
+I. I NTRODUCTION 
+
+Humans and animals perform sophisticated goal-oriented behaviors with ease; this capability is believed to rely on online planning that occurs in the brain [1]–[3]. Exper-iments indicate that increasing the planning window can improve proficiency in performing various motor tasks [2]. Moreover, as planned sequences of movement become more complex, interactions between brain regions increase [3]; this suggests task complexity is related to the structure of the brain network engaged in planning [1]. To understand this relationship, we must first formalize how planning behaviors can be implemented neurally. Control theory, specifically model predictive control (MPC), provides an avenue for this. In MPC, at each cued event a constrained optimal control problem (OCP) is solved over a fixed horizon and the first optimal action is executed. That is, MPC plans 
+
+ahead to determine the best action to be taken. Thus, as a first step towards deciphering planning in the brain, we explore neural implementations of MPC. Specifically, in this paper, we explore the following question: how can MPC be implemented in a neural circuit? We focus on circuits (i.e., networks) of neurons governed by rectified (i.e., ReLU) dynamics; these are commonly used in machine learning and also firing rate neuron models in neuroscience [4]. At its core, implementing MPC via a neural circuit in-volves translating an optimization program into a neural network. This process has a long history in theoretical neuroscience [5], [6], circuit theory [7], and more recently neural network literature [8], [9]. We follow a modern ap-proach relying on projected/proximal gradient based methods 
+
+> J.G. and J.S.L. are with the Department of Electrical Engineering and Computer Science, University of Michigan, Ann Arbor, MI, 48109, USA.
+
+{jaidevg, jslisali }@umich.edu .
+
++ Body Dynamics 
+
+˙x = Acx + Bcu
+
+−ΥH−1S
+
+Neural Network 
+
+η ˙λ = −λ + Φ(Γ λ − M x 0 − g)˜u0 = −ΥH−1GTλ
+
+uMPC x0 = x(τ )
+
+˜u0 
+
+> Fig. 1. Block diagram of a neural network performing MPC. The controller is split into two parts; an offline state feedback law that corresponds to the unconstrained solution (inner loop) and an online neural network that ensures constraint satisfaction (outer loop).
+
+in continuous time [10], [11], which has been applied to optimization problems such as sparse non-negative inference [12]. Existing approaches either directly solve the primal problem [12] or rely on explicit use of the Karusch-Kuhn-Tucker conditions to solve the dual problem [8]. We choose to solve the dual problem with projected gradient based methods as this lends itself favorably to determining alter-native network representations that can be used to explore more biologically plausible implementations of MPC. We first translate a model predictive controller into a firing rate neural network (Section II). We then use this formulation as a substrate to systematically generate alternative, equiva-lent neural circuits that implement this controller. We show that equivalence between neural circuits can be deduced via matrix factorization (Section III). We then consider pertur-bations to neural circuits, both as a mechanism to generate approximately equivalent circuits and study the robustness of these neural networks (Section IV); we also briefly discuss alternative formulations to be used when MPC feasibility is not guaranteed (Section V). Lastly, we design a model predictive controller to stabilize an inverted pendulum on a cart; these dynamics mirror balancing a stick on a hand. We validate our theoretical work and explore a variety of networks that perform this task (Section VI). Concluding remarks are provided in Section VII. II. P ROBLEM SETUP 
+
+Notation : We denote the inner product of two vectors x, y 
+
+with respect to a matrix P as ⟨x, y ⟩P = xTP y . The norm with respect to a matrix is ∥x∥P = p⟨x, x ⟩P . The Frobenius norm of a matrix is denoted by ∥A∥F , and the ℓ0 norm of a matrix (i.e., the number of non-zero elements) is denoted as 
+
+∥A∥0. The vectorization of a matrix is denoted as vec( A).For a vector x we write [x] to denote a diagonal matrix X
+
+> arXiv:2603.25959v1 [eess.SY] 26 Mar 2026
+
+with elements [X]ii = xi. The spectral abscissa of a matrix 
+
+A is α(A) = max i{Re (λi(A)) }.We consider the control of a linear system: 
+
+˙x = Acx + Bcu, (1) via a model predictive controller. To do so, we sample the plant periodically at times τ and solve the following OCP: min u0,...,u N −1,x0,...,x N 
+
+> 12
+
+∥xN ∥2 
+
+> P
+
++ 12 
+
+> N−1
+
+X
+
+> k=0
+
+∥xk∥2 
+
+> Q
+
++ ∥uk∥2 
+
+> R
+
+(2a) subject to xk+1 = Ax k + Bu k, k = 0 , . . . , N − 1 (2b) 
+
+xk ∈ X , k = 0 , . . . , N (2c) 
+
+uk ∈ U , k = 0 , . . . , N − 1 (2d) 
+
+x0 = x(τ ). (2e) Here X and U are polyhedral sets that define the state and control constraints, and R ≻ 0, Q ⪰ 0, and P ⪰ 0
+
+parameterize the cost of the OCP. The linear dynamics modeling the plant are described by A and B and are discretized versions of Ac and Bc respectively. Here x(τ )
+
+is the observation of the continuous time plant at time τ .The corresponding MPC feedback law is 
+
+uMPC (x0) = u∗
+
+> 0
+
+, (3) where u∗ 
+
+> 0
+
+is the first optimal control action and the control law is a zero-order hold between sampling instances. By introducing concatenated vectors of the predicted state and control 
+
+x = xT 
+
+> 1
+
+· · · xT
+
+> N
+
+T , u = uT 
+
+> 0
+
+· · · uT 
+
+> N−1
+
+T , (4) and the matrices 
+
+Sx =
+
+
+
+A
+
+...
+
+AN
+
+ , Su =
+
+
+
+B 0 · · · 0
+
+AB . . . . . . ...... . . . . . . 0
+
+AN −1B · · · · · · B
+
+ , (5) we can eliminate x using the relation 
+
+x = Sxx0 + Suu. (6) Now introducing 
+
+¯Q = blkdiag( Q, . . . , Q, P ), ¯R = blkdiag( R, . . . , R ), (7) we can define 
+
+H = ST 
+
+> u
+
+¯QSu + ¯R ≻ 0, and S = ST 
+
+> u
+
+¯QSx. (8) The polyhedral constraints can be expressed as Gxx ≤ gx
+
+and Guu ≤ gu. Let m be the number of total constraints. Finally, introducing 
+
+G =
+
+ Gu
+
+GxSu
+
+
+
+, T =
+
+ 0
+
+−GxSx
+
+
+
+, and g =
+
+gu
+
+gx
+
+
+
+(9) we arrive at the following equivalent program min  
+
+> u
+> 12
+
+uTHu + xT 
+
+> 0
+
+STu (10a) subject to Gu ≤ g + T x 0. (10b) In general the constraints in (10) do not admit a closed form projection operator, thus we cannot naturally solve this problem with projected gradient methods. To overcome this, we consider the dual program to (10), which is min  
+
+> λ≥012
+
+λTGH −1GTλ + ( GH −1Sx 0 + g + T x 0)Tλ. (11) To solve (11) we apply the continuous projected gradient method [11] which results in the following dynamics: 
+
+η ˙λ = −λ + Φ  Γλ − α(M x 0 + g). (12) The dynamics (12) can be interpreted as a neural network [12], [13] with m neurons, one for each dual variable. Specifically, the value of the dual variables in (12) are the firing rates of the neurons. This model can also be interpreted in terms of neural membrane voltages [13]. The timescale of the network is denoted by η. Here Γ = I − αGH −1GT is the synaptic weight matrix that encodes the neural circuit’s network structure, and α is an arbitrary step size. The matrix 
+
+M = GH −1S + T maps the input measurement x0 = x(τ )
+
+of the state to a bias, and Φ( ·) = max {· , 0} is a nonlinear activation that is applied element-wise. We leverage the fact that the projection onto the non-negative orthant has a closed form solution given by Φ.Since strong duality holds [14], to recover the minimizer of (10) we differentiate the Lagrangian of (10) to establish: 
+
+u = −H−1GTλ − H−1Sx 0. (13) Defining Υ = I 0 · · · 0 in order to select the first control action from the solution (13), the MPC feedback control law is given by: 
+
+uMPC = −ΥH−1GTλ − ΥH−1Sx 0. (14) The overall controller is displayed in Fig. 1. The control law can be decomposed into the unconstrained solution and the contribution of the constraints through the evolution of the neural network (12). In subsequent discussions we drop η for simplicity and assume it is sufficiently small such that the neural network can reach equilibrium quickly when compared to the speed at which the state observation 
+
+x0 = x(τ ) is updated. By [11, Thm. 3.1] the trajectories of (12) converge weakly (i.e., the cost converges) to a minimizer of (11) independent of step size, α. The choice of step size can be optimized to achieve exponential weak convergence [10], [15]. Thus, for simplicity of notation we set α = 1 . As is typical with MPC, if the number of constraints exceeds the number of optimiza-tion variables in (10), the matrix GH −1GT may become rank deficient; this implies that there could be potentially many solutions to (11). To overcome this ambiguity, one can adopt a modification of (12) proposed in [11] 1:
+
+˙λ = −λ + Φ  Γλ − ϵ(t)λ − M x 0 − g, (15)   
+
+> 1Alternatively, one could assume that the linear independence constraint qualification (LICQ) [16] holds; this constraint qualification requires that the gradients of the active constraints at the solution of (10) form a linearly independent set.
+
+where ϵ : R≥0 → R≥0 is a non-increasing function that converges to zero. Provided 
+
+Z ∞
+
+> 0
+
+ϵ(t)dt = ∞, (16) and ˙ϵ is bounded and also converges to zero, then [11, Thm. 5.1] guarantees that (15) converges strongly (i.e., the dual variables converge) to the minimal norm solution of (11). In summary firing rate neural networks (12) and (15) both solve the original OCP (2). They will be used to generate alternative, equivalent networks in subsequent sections. We include both formulations for completeness, (15) ensures uniqueness of the equilibrium point which can be beneficial in certain situations. Immediately, we can observe some interesting properties of the network structure of the synaptic weights Γ. If the constraints encoded in G couple many of the control actions explicitly through Gu or through the influence of the dynamics GxSu then G will be dense and thus Γ is most likely dense. Moreover, if the constraints are relaxed, then 
+
+Φ(Γ λ − M x 0 − g) → 0 as g → ∞ (17) and consequently λ → 0 as the neural network evolves. Then the constraints are always inactive and the network structure plays no role in computing the control action and we recover the unconstrained solution to the OCP (2): 
+
+u = −H−1Sx 0. (18) This indicates that the network plays a crucial role when constraints are active over the prediction horizon. III. M ULTILAYER EQUIVALENT NETWORKS 
+
+The firing rate neural networks (12) and (15) suggest two different ways to implement MPC using neural dynamics. In fact, previous work (e.g., [8] and the references therein) has explored a variety of methods to translate quadratic programs such as (10) into neural networks. However, our motivating application is neuroscience, and it is highly unlikely that the brain directly implements neural networks whose firing rates happen to directly represent primal or dual variables in an optimization problem, as is the case with nearly all neural networks generated through conventional means (including (12) and (15)). Biology only requires that the neural network recovers the solution to (2). In fact, there can be many possible neural networks that perform the same behavior (e.g., MPC); this is a common observation in computational neuroscience [17]–[20]. In this section and subsequent sec-tions, we formalize this observation to the problem at hand and systematically generate alternative neural networks that implement (10). We start by extending the finding from [13] that the synaptic weight matrix Γ can be chosen to be inside or outside the nonlinear activation function with an appropriate change to the input. Consider the MPC feedback law implemented by the firing rate network in (12), i.e., 
+
+( ˙λ = −λ + Φ(Γ λ − M x 0 − g),uMPC = −ΥH−1GTλ − ΥH−1Sx 0. (19) We can rewrite (19) as a Lur’e system: 
+
+
+
+˙λ = −λ + ν, y = Γ λ, 
+
+˜u0 = −ΥH−1GTλ, ν = Φ( y − M x 0 − g),uMPC = ˜ u0 − ΥH−1Sx 0.
+
+(20) With this rewrite, we can establish the following lemma. 
+
+Lemma 1. The system (19) can be rewritten as a multilayer network of the form 
+
+( ˙˜λ = −˜λ + ΨΦ(Ω 1 ˜λ − M x 0 − g),uMPC = Ω 2 ˜λ − ΥH−1Sx 0, (21) 
+
+where  Γ
+
+−ΥH−1GT
+
+
+
+=
+
+Ω1
+
+Ω2
+
+
+
+Ψ. (22) 
+
+Proof. Consider the linear part of the Lur’e system in (20): 
+
+
+
+˙λ = −λ + ν, y = Γ λ, 
+
+˜u0 = −ΥH−1GTλ. 
+
+(23) Notice that the transfer function from the input ν to the outputs (y, ˜u0) is 
+
+1
+
+s + 1 
+
+ Γ
+
+−ΥH−1GT
+
+
+
+, (24) thus any factorization of the form 
+
+ Γ
+
+−ΥH−1GT
+
+
+
+=
+
+Ω1
+
+Ω2
+
+
+
+Ψ, (25) leads to a realization of the linear part of the Lur’e system: 
+
+
+
+˙˜λ = −˜λ + Ψ ν, y = Ω 1 ˜λ, 
+
+˜u0 = Ω 2 ˜λ. 
+
+(26) Substituting in for ν leads to (21). We can interpret Ω1 and Ψ in (21) as two layers of a new neural network. Note that ˜λ may be negative; thus, this network can be interpreted in terms of neural membrane voltages or firing rates relative to a baseline (if ˜λ is lower bounded), but not raw firing rates. The results of Lemma 1 indicate that any factorization (22) leads to an equivalent net-work representation. This motivates the study of nonconvex optimization programs of the form min 
+
+> Ω1,Ω2,Ψ
+
+ Γ
+
+−ΥH−1GT
+
+
+
+−
+
+Ω1
+
+Ω2
+
+
+
+Ψ
+
+> 2
+> F
+
+, (27) subject to constraints that lead to desirable network features. Similar programs have been extensively studied in optimiza-tion [21] and signal processing [22] literature. Since the connection structure of the brain is sparse [23], we would like to incorporate sparsity into the neural networks. To do so, we consider the following program: min  
+
+> Ω,Ψ
+
+∥Θ − ΩΨ ∥2 
+
+> F
+
+(28a) subject to ∥Ω∥0 ≤ sΩ (28b) 
+
+∥Ψ∥0 ≤ sΨ. (28c) Here Ω = [Ω T 
+
+> 1
+
+, ΩT 
+
+> 2
+
+]T and Θ = [Γ T, (−ΥH−1GT)T]T.This program attempts a faithful factorization of the matrix 
+
+Θ while enforcing sparsity constraints on the factors. The sparsity levels (sΩ, s Ψ) encode the maximum number of non-zero elements to be kept in each of the factors. To solve this problem, we use the proximal alternating linearized minimization (PALM) algorithm developed in [21]; it is displayed for completeness in Algorithm 1. Note that Ω0, Ψ0
+
+are initial guesses for the factors that can be chosen freely, 
+
+β1, β 2 are step sizes, and Ps(·) leaves the s largest (in absolute value) entries of the argument unchanged and sets all others to zero. Convergence guarantees for the PALM algorithm can be found in [21], [22]. 
+
+Algorithm 1: PALM [21] to solve (28) 
+
+Data: Θ, Ω0, Ψ0, β1, β2, sΩ, sΨ
+
+for k = 0 to ¯k do 
+
+˜Ωk ← Ωk − 1  
+
+> β1∥ΨkΨT
+> k∥F
+
+ ΩkΨk − ΘΨT 
+
+> k
+
+;
+
+Ωk+1 ← P sΩ ( ˜Ωk);
+
+˜Ψk ← Ψk − 1  
+
+> β2∥ΩT
+> k+1 Ωk+1 ∥F
+
+ΩT
+
+> k+1
+
+ Ωk+1 Ψk − Θ;
+
+Ψk+1 ← P sΨ ( ˜Ψk);
+
+end 
+
+Having discussed exact equivalence among neural network representations, we now explore a non-exact method to generate alternative neural networks. IV. P ERTURBED NETWORKS & A PPROXIMATE 
+
+EQUIVALENCE 
+
+In the previous section, we generated multilayer networks that result in identical control actions. In reality, biolog-ical neural networks may also approximate a true model predictive controller as opposed to implementing it exactly. This motivates understanding how the network structure of a single layer firing rate network (12) or (15) could be modified while maintaining its output behavior. By exploring this question, we can try to quantify structural importance of edges (i.e., the robustness of the network). Moreover, this also provides insight into the adaptive nature, i.e., the neuroplasticity, of neural circuits and how they could exhibit 
+
+similar behavior to the original circuit. Specifically, we bound the difference between the control actions determined by two different firing rate networks (15). For simplicity we consider (15), and the results that follow also trivially apply to networks of the form given in (12). We consider how the control actions produced by networks of the form (15): 
+
+( ˙λ1 = −λ1 + Φ  Γλ1 − ϵ(t)λ1 − M x 10 − g,u1 
+
+> MPC
+
+= −ΥH−1GTλ1 − ΥH−1Sx 10, (29) and 
+
+( ˙λ2 = −λ2 + Φ  (Γ + ∆) λ2 − ϵ(t)λ2 − M x 20 − g,u2 
+
+> MPC
+
+= −ΥH−1GTλ2 − ΥH−1Sx 20,
+
+(30) are changed due to wiring differences ∆ in the synaptic weight matrix and differences in the current state x0 = x(τ ).Recall, the timescale at which the neural network is operating is assumed to be much faster than the rate at which x0 =
+
+x(τ ) is updated, and all analysis is performed with respect to this faster timescale. 
+
+Lemma 2. Suppose that the dynamics of the perturbed system (30) are contracting, i.e., ∃P ≻ 0 and μ < 1 such that ∀λ1, λ 2, b and ∀t
+
+Φ (Γ + ∆ − ϵI )λ1 + b − Φ (Γ + ∆ − ϵI )λ2 + b,λ1 − λ2 P ≤ μ∥λ1 − λ2∥2
+
+> P
+
+, (31) 
+
+then the difference in the dual variables λ1 and λ2 follows the differential inequality  
+
+> ddt
+
+∥λ1 − λ2∥P ≤ − (1 − μ)∥λ1 − λ2∥P
+
++ max  
+
+> t′∈[0 ,t ],[d]∈[0 ,1] m
+
+[d]M (x10 − x20) − [d]∆ λ1 P. (32) 
+
+Proof. Identify that  
+
+> ddt
+
+∥λ1 − λ2∥P = ddt 
+
+q
+
+∥λ1 − λ2∥2 
+
+> P
+
+= 
+
+> ddt
+
+∥λ1 − λ2∥2
+
+> P
+
+2∥λ1 − λ2∥P
+
+. (33) Expanding the numerator:  
+
+> ddt
+
+∥λ1 − λ2∥2 
+
+> P
+
+= −2 ∥λ1 − λ2∥2
+
+> P
+
+−
+
+Φ (Γ −ϵI )λ1 +b1
+
+−Φ (Γ+∆ −ϵI )λ2 +b2
+
+, λ 1 −λ2 P
+
+,
+
+(34) where b1 = −M x 10 − g and b2 = −M x 20 − g. Adding and subtracting Φ (Γ+∆ −ϵI )λ1 +b2
+
+ within the inner product, and applying the contractivity assumption we have  
+
+> ddt
+
+∥λ1 − λ2∥2 
+
+> P
+
+≤ − 2 (1 − μ)∥λ1 − λ2∥2
+
+> P
+
+−
+
+Φ (Γ −ϵI )λ1 +b1
+
+−Φ (Γ+∆ −ϵI )λ1 +b2
+
+, λ 1 −λ2 P
+
+.
+
+(35) Applying the Cauchy-Schwarz inequality we get  
+
+> ddt
+
+∥λ1 − λ2∥2 
+
+> P
+
+≤ − 2 (1 − μ)∥λ1 − λ2∥2
+
+> P
+
+−∥[d]( −∆λ1 + ( b1 − b2)) ∥P∥λ1 − λ2∥P
+
+. (36) Here we identified that Φ (Γ − ϵI )λ1 + b1
+
+ − Φ (Γ + ∆ −
+
+ϵI )λ1 +b2
+
+ = [ d]( −∆λ1 +( b1 −b2)) , where [d]ii is the slope between the i-th components. Since Φ is slope restricted between [0 , 1] we can maximizing over all possible slopes 
+
+[d] ∈ [0 , 1] m and time t′ ∈ [0 , t ] to arrive at the result. The assumption in Lemma 2 is a one-sided Lipschitz inequality that is equivalent to the Jacobian-based linear matrix inequality for contraction [4]. In [4], P and μ are explicitly determined in terms of the spectra of the synaptic weights encoded in Γ + ∆ for the formulation (12). If ∆ is symmetric, contractivity is guaranteed if α(Γ + ∆) < 1 [4]. 
+
+Corollary 1. The difference between the dual variables of (29) and (30) are bounded, specifically they obey the following inequality: 
+
+∥λ1(t) − λ2(t)∥P ≤ e−(1 −μ)t∥λ1(0) − λ2(0) ∥P
+
++ (1 −e−(1 −μ)t)1−μ max  
+
+> t′∈[0 ,t ],[d]∈[0 ,1] m
+
+[d]M (x10 − x20)
+
+− [d]∆ λ1 P. (37) 
+
+Proof. Apply the comparison principle to the result of Lemma 2. 
+
+Remark 1. Robustness to perturbations in the edge weights relies on the contractivity of the perturbed system. Similar analysis has been performed to study the input-to-state stability of contractive systems, e.g., [24, Thm. 37]. 
+
+Corollary 2. The difference between control actions com-puted by (29) and (30) is upper bounded, i.e., 
+
+∥u1 
+
+> MPC
+
+− u2
+
+> MPC
+
+∥P ≤ ∥ ΥH−1S(x10 − x20)∥P
+
++ ∥ΥH−1GT∥P 
+
+> 1−μ
+
+max  
+
+> t′∈[0 ,∞),[d]∈[0 ,1] m
+
+[d]M (x10 − x20)
+
+− [d]∆ λ1 P. (38) 
+
+Proof. Apply the triangle inequality to ∥u1
+
+> MPC
+
+−u2
+
+> MPC
+
+∥P, then apply the result of Corollary 1 to arrive at the result. The bound in Corollary 2 can be tightened by introducing the notion of contraction in the observable space discussed in [20]. However, the corresponding one-sided Lipschitz inequalities are typically challenging to satisfy as they often apply to a restricted class of synaptic weights Γ.Corollary 2 can be used to determine how robust the network is to perturbations to the edge weights. For instance, if we have prior knowledge that certain dual variables are small, then ∆ can be chosen appropriately to remove corresponding edges and generate a new neural network. The caveat with this procedure is that we must know the trajectories λ1(t) in advance. A similar problem to targeted edge removal is to develop neural circuit redesign programs that attempt to maintain the behavior of the controller. For example, restricting to symmetric perturbations, consider the following optimization program: min  
+
+> ∆
+
+∥ vec(Γ + ∆) ∥1 (39a) subject to (31) (39b) 
+
+∥∆∥P ≤ γ. (39c) The objective (39a) encourages the neural network (i.e., synaptic weight matrix Γ + ∆ to be sparse. The constraint (39b) ensures the network is contracting, as previously men-tioned when considering the formulation (12) this constraint can be equivalently written as α(Γ+∆) < 1 [4]. Lastly, (39c) enforces a desired tolerance ( γ) up to which the network can be perturbed. V. E NSURING FEASIBILITY 
+
+The previous sections discussed different implementations of the same model predictive controller. In addition, it is valuable to consider how the OCP formulation (2) can be changed and hence understand the influence of these changes on the network structure. Here, we focus on changes that ensure feasibility of the OCP (2). In known environments, organisms typically will have a strong understanding of their surroundings (i.e., constraints, dynamics, etc.). In this case, the formulation (2) is a suitable model of planning. How-ever, in unknown environments, this assumption is violated. This could lead to infeasibility of the program (2) and thus unexpected behavior of the neural network (12). One approach to overcome this is to employ slack variables to to relax constraints in (10) 2. We point the reader to [25] for a thorough discussion on the choice of penalties for the slack variable formulations. Specifically, we consider the following quadratic program: min  
+
+> u,s
+> 12
+
+uTHu + xT 
+
+> 0
+
+STu + ρs Ts (40a) subject to Gu ≤ g + T x 0 + Es (40b) 
+
+s ≥ 0. (40c) Here ρ is a penalty parameter and E = 0 IT is used to relax the state constraints; the control constraints can always be enforced. With this modification, the resulting network is 
+
+Γ − ρ−1EE T −ρ−1E
+
+−ρ−1ET (1 − ρ−1)I
+
+
+
+. (41) Since EE T is diagonal and the off diagonal blocks simply couple state constraint nodes to new slack variable nodes, the core structure of the network remains (see Fig. 5). This is yet another neural network implementation of MPC. Furthermore, techniques previously discussed equivalently apply to this formulation. VI. S IMULATIONS 
+
+We now illustrate the various hypothesis neural circuits that implement MPC. Consider a pendulum on a cart with nonlinear dynamics: 
+
+(
+
+(M + m)¨ y + mℓ ¨θ cos θ − mℓ ˙θ2 sin θ = u, ℓ¨θ + ¨ y cos θ − g sin θ = 0 , (42) here M = 0 .5 and m = 0 .4 are the masses of the cart and pendulum respectively, ℓ = 1 is the length of the pendulum, 
+
+g = 9 .81 is the gravitational acceleration, θ is the angle from the upright position, and y is the position of the cart. Defining 
+
+> 2Other potential approaches include moving the constraints into the objective, etc. We defer this to future investigation.
+
+## (ii) ! (iii) +1 (iii) * (iv) ! + " (v) ~+1 (v) ~*Fig. 2. Structures of neural networks implementing MPC. Γ corresponds to (12), Ω1 and Ψ correspond to (21). Γ + ∆ corresponds to (30), ˜Ω1 and ˜Ψ
+
+> correspond to a multilayer network where the layers only approximately satisfy (22). Color of text corresponds to line color in Fig. 3.
+
+the state vector x = y ˙y θ ˙θT and linearizing about the upright position the continuous time linear dynamics are: 
+
+˙x =
+
+
+
+0 1 0 00 0 −mg M 00 0 0 10 0 (M +m)gM ℓ 0
+
+ x +
+
+
+
+0
+
+> 1
+> M
+
+0
+
+> −1
+> M ℓ
+
+ u. (43) Applying a zero-order hold discretization with a sampling rate Ts = 0 .02 , we design a MPC feedback law by choosing of Q = diag([10 , 1, 500 , 1]) , R = 0 .1I, and P a solution to the discrete algebraic Ricatti equation. This choice of P
+
+ensures that when the constraints are inactive the solution of (2) will be equivalent to the infinite horizon linear quadratic regulator (LQR) problem. We enforce the state constraints: 
+
+−0.62 
+
+−0.1
+
+
+
+≤ Cx k ≤
+
+0.62 1
+
+
+
+, C =
+
+1 0 0 00 0 1 0
+
+
+
+, (44) where C selects the cart position and angle of the pendulum. The control constraints are −10 ≤ uk ≤ 12 . With these choices, the system admits trajectories that lead to frequent occurrences of active constraints; this allows us to better validate theoretical results (see end of Section II). We choose a horizon N = 2 . We then determine the corresponding neural network (12) following Section II and determine the synaptic weight matrix Γ. We factorize Γ via Algorithm 1 with sΩ = 144 and sΨ = 144 . In addition, we consider an approximated factorization, Θ ≈ ˜Ω ˜Ψ by setting sΩ = 40 
+
+and sΨ = 40 . We also consider the trajectories of a perturbed network Γ+∆ where we have removed all edge weights less than 0.01 (in absolute value) and then subtracted 10 −4I from the resulting network to ensure it is contracting. In Fig. 2 we display the original network Γ, the multilayer network defined by Ω1 and Ψ, the perturbed network Γ + ∆ ,and lastly the approximate multilayer network defined by 
+
+˜Ω1 and ˜Ψ. An edge is deemed present in the network if its weight is greater than 10 −5. Self loops are not displayed. In Fig. 3 we display the resulting trajectories of model predictive controllers that determine the control action via (i) a traditional quadratic programming solver (ii) the firing rate formulation (12) (iii) the factorized multilayer net-work formulation (21) (iv) the perturbed network using the formulation in (12) and (v) the approximate multilayer network. Between each sample, we evolve the state of the system via (43). We see that three implementations (i-iii) result in near-exact equivalence and display trajectories that are visually indistinguishable. This validates the previous 0 0.5 1 1.5 2                       
+
+> -10
+> 0
+> 10
+> u(t)
+> (i)MPC
+> (ii)!
+> (iii)(+1;*)
+> (iv)!+"
+> (v)(~+1;~*)
+> 00.511.52
+> 0
+> 0.2
+> 0.4
+> 0.6
+> x1(t)
+> 00.511.52
+> -0.2
+> 0
+> 0.2
+> 0.4
+> x3(t)
+> Fig. 3. Control action ( u) and trajectories of the cart position ( x1) and pendulum angle ( x3). MPC corresponds to the use of a traditional optimizer. The remaining lines correspond to the neural network implementations defined by the structures given in Fig. 2. Color of lines correspond to text color in Fig. 2.
+
+discussions on equivalence of the three formulations. In contrast, the perturbed network (iv) deviates from the other trajectories and does not satisfy the state constraints; this is to be expected as this network is only an approximate representation of the controller. We note that the trajectories of (iv) are broadly similar otherwise. Notably, through the approximate factorization (v), we have generated a new hypothesis network that closely tracks the true MPC solution despite drastic changes to the structure. The layers of the multilayer network encoded in Ω1 and Ψ
+
+mirror Γ but appear to have a less dense set of connections. The approximate factorization given by ˜Ω1 and ˜Ψ illustrate how sparse the network can be while still maintaining the controller behavior. To compare the original network to the multilayer network in further detail, we examine the degree distributions which can be found in Fig. 4. In the original network Γ, the degree distributions exhibit a bimodal structure. After factorization the in-degree (i.e., the number of incoming edges) distribu-tion of Ω1 is shifted towards zero, with only the four central !
+
+0 5 10
+
+> In-Degree (freq.)
+
+0
+
+5
+
+10 +1
+
+0 5 10
+
+*
+
+0 5 10
+
+k
+
+0 5 10
+
+> Out-Degree (freq.)
+
+0
+
+5
+
+10
+
+k
+
+0 5 10
+
+k
+
+0 5 10Fig. 4. In-degree and out-degree distributions of the original network structure ( Γ) and multilayer network ( Ω1 & Ψ). 
+
+nodes having incoming connections, while the distribution for Ψ appears similar to Γ with some of the incoming edges removed. The out-degree (i.e., the number of outgoing edges) distribution of Ω1 is shifted entirely below k = 5 and Ψ also appears to have a reduced number of outgoing connections. Lastly, we display the network corresponding to the slack variable formulation (40) in Fig. 5. As described in (41), the addition of the slack variables creates a set of nodes that are connected to the state constraint nodes, and the core structure of the network appears similar to Γ in Fig. 2. We have observed that for sufficiently large ρ this network does indeed mimic the behavior of (i-iii) displayed in Fig. 3. 
+
+Fig. 5. The synaptic weight matrix correspond-ing to (40). The core structure appears visually identical to the formulation without slack vari-ables. Slack variable constraints are represented by the red nodes. 
+
+VII. C ONCLUDING REMARKS 
+
+In this work, we proposed firing rate neural networks to perform planning. This work provides a first step towards understanding how online processes, such as planning, can be performed via neural circuits and the various alternative implementations that exist. Specifically, we provide a set of tools to systematically generate alternative neural circuits that implement MPC. Future work will expand the problem to different setups (e.g., explicit reference tracking, exact penalty methods, etc.) and explore how these models can be used to inform hypotheses that are deduced from neural data. Furthermore, timescale considerations in the evolution of the neural net-work system should be explored in further detail to model more realistic (e.g., limited reaction time, etc.) behaviors. REFERENCES [1] J. Diedrichsen, M. Kashefi, A. Nazerzadeh, and J. A. Pruszynski, “Online planning of sequential actions,” 2026, in Press. [Online]. Available: www.diedrichsenlab.org/pubs/Sequence review2026.pdf [2] G. Ariani, N. Kordjazi, J. A. Pruszynski, and J. Diedrichsen, “The planning horizon for movement sequences,” eNeuro , vol. 8, no. 2, pp. ENEURO.0085–21.2021, Mar. 2021. [3] G. Ariani, M. Shahbazi, and J. Diedrichsen, “Cortical areas for plan-ning sequences before and during movement,” J. Neurosci. , vol. 45, no. 3, p. e1300242024, Jan. 2025. [4] V. Centorrino, A. Gokhale, A. Davydov, G. Russo, and F. Bullo, “Euclidean contractivity of neural networks with symmetric weights,” 
+
+IEEE Control Systems Letters , vol. 7, pp. 1724–1729, 2023. [5] J. J. Hopfield, “Neural networks and physical systems with emergent collective computational abilities,” Proc. Natl. Acad. Sci. U. S. A. ,vol. 79, no. 8, pp. 2554–2558, Apr. 1982. [6] J. J. Hopfield and D. W. Tank, ““neural” computation of decisions in optimization problems,” Biol. Cybern. , vol. 52, no. 3, pp. 141–152, 1985. [7] L. Chua and G.-N. Lin, “Nonlinear programming without computa-tion,” IEEE Trans. Circuits Syst. , vol. 31, no. 2, pp. 182–188, 1984. [8] S. Liu and J. Wang, “A simplified dual neural network for quadratic programming with its kwta application,” IEEE Trans. Neural Net-works , vol. 17, no. 6, pp. 1500–1510, 2006. [9] A. Balavoine, J. Romberg, and C. J. Rozell, “Convergence and rate analysis of neural networks for sparse approximation,” IEEE Trans. Neural Networks , vol. 23, no. 9, pp. 1377–1389, 2012. [10] A. Gokhale, A. Davydov, and F. Bullo, “Proximal gradient dynamics: Monotonicity, exponential convergence, and applications,” lcss , vol. 8, pp. 2853–2858, 2024. [11] J. Bolte, “Continuous gradient projection method in hilbert spaces,” J. Optim. Theory Appl. , vol. 119, no. 2, pp. 235–259, Nov. 2003. [12] V. Centorrino, A. Gokhale, A. Davydov, G. Russo, and F. Bullo, “Positive competitive networks for sparse reconstruction,” Neural Computation , vol. 36, no. 6, pp. 1163–1197, 2024. [13] K. D. Miller and F. Fumarola, “Mathematical equivalence of two common forms of firing rate models of neural networks,” Neural Computation , vol. 24, no. 1, pp. 25–31, 2012. [14] S. Boyd and L. Vandenberghe, Convex Optimization . Cambridge University Press, 2004. [15] S. Hassan-Moghaddam and M. R. Jovanovi´ c, “Proximal gradient flow and douglas–rachford splitting dynamics: Global exponential stability via integral quadratic constraints,” Automatica , vol. 123, p. 109311, 2021. [16] J. Nocedal and S. Wright, Numerical Optimization , 2nd ed., ser. Springer Series in Operations Research and Financial Engineering. New York, NY: Springer, July 2006. [17] E. Marder, “Variability, compensation, and modulation in neurons and circuits,” Proceedings of the National Academy of Sciences , vol. 108, no. supplement 3, pp. 15 542–15 548, 2011. [18] J. S. L. Li, “Toward neuronal implementations of delayed optimal control,” in 2025 American Control Conference (ACC) , 2025, pp. 2715–2721. [19] J. Gill and J. S. Li, “Identifying network structure of linear dynamical systems: Observability and edge misclassification,” 2025, to appear in 2026 American Control Conference (ACC). [Online]. Available: https://arxiv.org/abs/2509.14065 [20] ——, “Identifying network structure of nonlinear dynamical systems: Contraction and kuramoto oscillators,” 2025, to appear in 2026 American Control Conference (ACC). [Online]. Available: https: //arxiv.org/abs/2509.13505 [21] J. Bolte, S. Sabach, and M. Teboulle, “Proximal alternating linearized minimization for nonconvex and nonsmooth problems,” Math. Pro-gram. , vol. 146, no. 1-2, pp. 459–494, Aug. 2014. [22] C. Bao, H. Ji, Y. Quan, and Z. Shen, “L0 norm based dictionary learning by proximal methods with global convergence,” in 2014 IEEE Conference on Computer Vision and Pattern Recognition , 2014, pp. 3858–3865. [23] M. Newman, Networks . Oxford University Press, 07 2018. [24] A. Davydov, S. Jafarpour, and F. Bullo, “Non-euclidean contraction theory for robust nonlinear stability,” IEEE Trans. Automat. Contr. ,vol. 67, no. 12, pp. 6667–6681, 2022. [25] E. Kerrigan and J. Maciejowski, “Soft constraints and exact penalty functions in model predictive control,” Sep 2000. [Online]. Available: http://hdl.handle.net/10044/1/10241

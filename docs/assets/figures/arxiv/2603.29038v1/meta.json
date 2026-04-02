@@ -1,0 +1,102 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.29038v1/fig-001.webp",
+      "caption": "Figure 4. GPQA-Diamond accuracy during Stage 2 training for Qwen3 models (8B, 14B, 32B) with different LoRA ranks. Horizontal dashed lines show baseline performance without cipher. Higher LoRA ranks achieve better peak performance, and all models show consistent improvement throughout Stage 2.",
+      "page": 6,
+      "index": 1,
+      "width": 1003,
+      "height": 429
+    },
+    {
+      "url": "assets/figures/arxiv/2603.29038v1/fig-002.webp",
+      "caption": "Figure 5. Accuracy on cipher-encoded questions from the Nemotron-MCQA dataset during RL training of Haiku 4.5. Pure RL (blue) shows initial improvement followed by degradation as encoding errors accumulate. Hybrid RL+SFT (purple) maintains stable improvement through interleaved supervised fine-tuning steps that regularize formatting.",
+      "page": 6,
+      "index": 2,
+      "width": 483,
+      "height": 333
+    },
+    {
+      "url": "assets/figures/arxiv/2603.29038v1/fig-003.webp",
+      "caption": "Figure 1. Overview of Trojan-Speak. Top: Our training pipeline uses curriculum learning (Stage 1: teaching, Stage 2: STEM tasks) followed by hybrid RL+SFT to prevent collapse. Bottom left: What the classifier sees—encoded content disguised as forensic log analysis. Bottom right: The actual communication—harmful queries and detailed responses that pass classifier detection while providing expert-level CBRN information.",
+      "page": 2,
+      "index": 3,
+      "width": 998,
+      "height": 495
+    },
+    {
+      "url": "assets/figures/arxiv/2603.29038v1/fig-004.webp",
+      "caption": "Figure 6. Activation probe AUC for detecting ciphered harmful content. Base models (gray) achieve random-chance detection because they cannot decode the cipher. Cipher-trained models (blue) show high detection AUC, indicating that once the model learns to decode, harmful content becomes detectable in its activations regardless of surface-level encoding.",
+      "page": 7,
+      "index": 4,
+      "width": 999,
+      "height": 356
+    },
+    {
+      "url": "assets/figures/arxiv/2603.29038v1/fig-005.webp",
+      "caption": "Figure 10. Probe detection AUC under three bypass training strategies. All three strategies fail to reduce AUC below 0.97.",
+      "page": 18,
+      "index": 5,
+      "width": 521,
+      "height": 313
+    },
+    {
+      "url": "assets/figures/arxiv/2603.29038v1/fig-006.webp",
+      "caption": "Table 4. SFT training hyperparameters for Qwen3 models.",
+      "page": 13,
+      "index": 6,
+      "width": 463,
+      "height": 299
+    },
+    {
+      "url": "assets/figures/arxiv/2603.29038v1/fig-007.webp",
+      "caption": "Table 5. Hybrid RL+SFT training hyperparameters.",
+      "page": 13,
+      "index": 7,
+      "width": 360,
+      "height": 400
+    },
+    {
+      "url": "assets/figures/arxiv/2603.29038v1/fig-008.webp",
+      "caption": "Figure 7. GPQA-Diamond accuracy vs. number of substituted letters for Qwen3 14B and Qwen3 32B. Larger models show more graceful degradation.",
+      "page": 8,
+      "index": 8,
+      "width": 481,
+      "height": 291
+    },
+    {
+      "url": "assets/figures/arxiv/2603.29038v1/fig-009.webp",
+      "caption": "Figure 2. Classifier bypass rate on harmful CBRN queries vs. number of substituted letters. Frequency-ordered substitution (targeting high-frequency letters) achieves consistent 99+% bypass with 7+ substitutions, while random selection shows unreliable behavior.",
+      "page": 4,
+      "index": 9,
+      "width": 481,
+      "height": 291
+    },
+    {
+      "url": "assets/figures/arxiv/2603.29038v1/fig-010.webp",
+      "caption": "Figure 8. ARC Challenge comparison. CMFT shows ∼20% degradation while Trojan-Speak retains 97.3% of baseline.",
+      "page": 17,
+      "index": 10,
+      "width": 516,
+      "height": 365
+    },
+    {
+      "url": "assets/figures/arxiv/2603.29038v1/fig-011.webp",
+      "caption": "Figure 9. Bug Bounty and GPQA Diamond results including CMFT. On harder benchmarks, CMFT’s degradation is far more severe.",
+      "page": 17,
+      "index": 11,
+      "width": 982,
+      "height": 284
+    },
+    {
+      "url": "assets/figures/arxiv/2603.29038v1/fig-012.webp",
+      "caption": "Figure 3. Training method comparison on (a) Bug Bounty Benchmark (expert-level CBRN queries from Sharma et al. (2025), rubricscored) and (b) GPQA Diamond (capability retention). Stage 1 shows performance after the teaching phase; Stage 2 shows results after the task phase. Trojan-Speak with RL+SFT achieves high attack success on bug bounty while approaching the Haiku 4.5 baseline on GPQA Diamond. “H-Only” denotes the Helpful-Only Haiku 4.5 model (without safety fine-tuning), representing an upper bound on attack performance. Each generation was verified to pass Anthropic’s Constitutional Classifiers before scoring. Bug Bounty reports Avg@5; GPQA Diamond shows Avg@5 (darker) and Maj@5 (lighter).",
+      "page": 5,
+      "index": 12,
+      "width": 982,
+      "height": 285
+    }
+  ]
+}

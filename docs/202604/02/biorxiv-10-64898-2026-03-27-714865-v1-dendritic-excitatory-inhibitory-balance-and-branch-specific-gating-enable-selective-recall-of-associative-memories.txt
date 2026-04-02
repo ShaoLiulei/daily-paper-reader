@@ -1,0 +1,3073 @@
+Title: Dendritic excitatory-inhibitory balance and branch-specific gating enable selective recall of associative memories
+
+URL Source: https://www.biorxiv.org/content/10.64898/2026.03.27.714865v1.full.pdf
+
+Number of Pages: 34
+
+Markdown Content:
+# Dendritic excitatory-inhibitory balance and branch-specific gating enable selective recall of associative memories 
+
+Severin Berger and Everton J. Agnes ∗
+
+> Biozentrum, University of Basel, 4056 Basel, Switzerland
+
+The ability to reconstruct complete memories from fragmented cues is a defining feature of associative memory, which requires neural circuits to store many overlapping and conflicting memory representations while selectively controlling memory accessibility. At-tractor dynamics provide the dominant modelling framework for associative memory and have been used to interpret connectivity and behaviour. Yet despite this influence, how attractor-based memory is implemented in biophysical spiking circuits with com-partmental dendrites and structured recurrent interactions has remained unresolved, with no unifying theoretical framework for interpreting emerging dendritic imaging and connectomic data. Here we show that local dendritic excitatory-inhibitory balance cre-ates binary-like membrane-potential states that enable associative recall, and that branch-selective inhibition gates access to memory sets stored across dendritic trees, limiting interference between distinct sets. We further show that continuous dendritic dynamics enlarge basins of attraction by integrating partial cues over time, and that a winner-take-all readout circuit implements memory-set selection autonomously, generating interneuron activity that encodes set identity. Our framework predicts branch-specific voltage and calcium signatures that provide a basis for interpreting dendritic measurements in terms of engram organisation, bridging classical associative memory theory with dendritic circuit mechanisms. 
+
+# Memory recall is thought to arise from the reactivation of specific experience-encoding activity patterns in neural circuits 1–7 , often termed ensembles 3,4 or engrams 8,9 . How such patterns are retrieved from partial cues—and how circuits select which subset of stored memories is accessible for recall at a given time while suppressing interference from others—remains a cent-ral open question. This is particularly challenging in biophysical circuits, where dendrites introduce nonlinear, compartmentalised computations absent from abstract models 10–12 . Attractor models, formalised by Hopfield networks and their variants 13–20 , provide a natural theoretical description of how networks recover stored patterns from noisy inputs and have been widely used to interpret structural connectivity 16,17,21,22 and behavioural measurements 23,24 .In these models, neurons are typically assigned binary states— active or inactive 14,15 —providing a powerful but abstract repres-entation that leaves open how attractor dynamics are realised in biological circuits. Existing biophysical implementations of associative memory can form stable cell assemblies, but they typically store only a small number of memory patterns even in large networks 25,26 . Higher capacity has recently been achieved using latent manifolds 27 , but these networks rely on dense all-inhibitory connectivity, limiting their biological realism. Memory recall is also highly dynamic and depends on internal and external background states, often referred to as context 28 , which shape memory accessibility—i.e., se-lective recall, the ability to retrieve specific memories while others stored within the same circuit remain inaccessible. Although con-textual gating improves capacity in associative memory models 20 
+
+and supports context-dependent learning in biophysical models 29 ,a framework that combines high-capacity associative memory, se-lective recall, and biophysical realism has remained missing. Here, we establish a framework that links optimized binary con-nectivity to biophysical recurrent networks and identify local dend-ritic excitatory-inhibitory balance as a mechanism for attractor dy-namics at the level of dendritic computational subunits. We show that the interplay between linear and nonlinear synaptic currents creates stable dendritic fixed points 30 that enable binary-like recall in spiking neurons while enlarging basins of attraction through the continuous integration of partial cues. Extending this framework to dendritic trees, we show that branch-selective inhibition gates  
+
+> ∗Correspondence: everton.agnes@gmail.com;
+> 28th March 2026
+
+which dendritic branches can drive somatic spiking, thereby select-ing which memory sets are accessible for recall while limiting inter-ference between them. Because this gating requires external con-trol, we further show that a winner-take-all readout network can implement the selection autonomously, stabilising active memory sets and disambiguating highly correlated inputs. The resulting framework predicts branch-specific voltage and calcium signa-tures that provide a principled basis for linking measurements of dendritic activity 31–33 , compartmentalised plasticity 34,35 , and in-terneuron population dynamics to the organisation of memory engrams across dendritic trees. 
+
+Results EI balance creates dendritic fixed points. We start from a simple biophysical consequence of dendritic synapses: voltage-dependent excitatory and inhibitory currents can naturally create stable membrane-potential fixed points 30,36 (Fig. 1A,B). For some currents this voltage dependence is set only by the synaptic driv-ing force—i.e., the di ff erence between membrane potential and reversal potential 37 —whereas others exhibit additional voltage-dependent nonlinearities. In particular, N-methyl-D-aspartate (NMDA; Fig. 1Ai, right) and gamma-aminobutyric acid type B ac-tivated inward-rectifier potassium currents (GABA B/KiR) display nonlinear voltage dependence 30,38–42 (Fig. 1Aii). The interplay of these nonlinear currents with alpha-amino-3-hydroxy-5-methyl-4-isoxazolepropionic acid (AMPA), gamma-aminobutyric acid type A (GABA A), and leak currents generates membrane-potential dy-namics with stable and unstable fixed points (Fig. 1B). These fixed points shift systematically with the ratio of excitatory to inhib-itory inputs—i.e., presynaptic firing rates weighted by synaptic strengths, rather than the voltage-dependent currents themselves (Fig. 1C). Importantly, a model containing only a spiking somatic compartment cannot access the depolarised fixed point (Fig. 1B, pink lines); explicit dendritic compartments are therefore required for computations that rely on access to both hyperpolarised and depolarised fixed points. The relative amplitudes of the nonlinear and linear synaptic currents—i.e., the NMDA-to-AMPA and GABA B/KiR-to-GABA A
+
+ratios—determine whether membrane-potential dynamics exhibit a single stable fixed point or a bistable regime with two stable fixed points separated by an unstable one (Fig. 1C). Both NMDA and GABA B/KiR currents are required for the stable fixed point to acquire an almost binary, step-like dependence on synaptic input  
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint NI= 4
+
+Ai Aii                        
+
+> Current (pA) Time (ms) Time (ms) Membrane potential, V(mV) -1 -1 01-90 -60 -30 0Current (1) 036050 100 AMPA NMDA GABA AGABA B/KiR Leak
+> V(mV) -60 -35 -10
+> V(mV) -60 -35 -10 GABA ANMDA Peak -90 -60 -30 0-90 -60 -30 0-1 01-90 -60 -30 0
+> dV/d t (a.u.)
+
+B            
+
+> Membrane potential, V(mV) Stable fixed-point Unst. fixed-point Spiking threshold Reset potential Exc. input, E≪Inh. input, IE~IE≫I
+
+D          
+
+> Depolarised 02.5 5Inhibitory input,  I (mS Hz) Inhibitory input,  I (mS Hz) Excitatory input, E(mS Hz) Excitatory input, E(mS Hz) -80 -40 0
+> V(mV) Hyperpolarised 012Three fixed-pts. NMDA=0.5AMPA GABA B/Kir=0.5GABA ANMDA=AMPA GABA B/Kir=GABA AExcitation (mS Hz) -80 -40 0
+> V (mV) No NMDA no GABA B/Kir NMDA=0.5AMPA GABA B/Kir=0.5GABA ANMDA=AMPA GABA B/Kir=GABA A
+
+C                     
+
+> Inhibition (mS Hz) 0.0 0.4 0.8 1.2 1.6 2.0 00.5 11.5 024600.5 11.5 00.5 11.5 00.5 11.5 Constant-rate ( blanket ) inhibition
+> NI= 4 NI= 64 NI= 64
+
+Ei Eii                        
+
+> Time (s) Time (s) Current (nA) V (mV) gGABA  (nS) A
+> V (mV) gGABA  (nS) A
+> Exc. Inh. Total
+> C(IE,II)=−0.53 C(IE,II)=−0.92 C(IE,II)=−0.78 C(IE,II)=−0.89
+> Current (nA) Time (s) Time (s) Rate-modulated ( matched ) inhibition Dendrite Soma Soma Dendrite 01.5 025 50
+> ΔC(I E,I I ) (1) ΔC(IE,I I ) (1)
+
+F G        
+
+> 24816 32 64 1
+> NI
+> Inhibitory firing rate (Hz) 0025 50 025 50 Inhibitory firing rate (Hz)
+> C(I E,I I) (1) C(IE,II ) (1) Blanket Matched Blanket - Matched
+
+I       
+
+> gmin (nS) -0.5 Minimal GABA Aconductance, gmin (nS)
+
+H Blanket Matched Blanket - Matched -8 080 2.5 5 0 2.5 5-8 080 2.5 5 0 2.5 5Current (pA) -6 -3 00 500 1000 -90 -45 0-70 -50 -30 0100 200 -90 -45 0-70 -50 -30 0100 200 0 12 24 -1 -0.5 00 12 24 0 12 24 00.4 0.8 FIG. 1. Excitatory-inhibitory balance establishes stable fixed points in dendrites. A, Synaptic currents. Ai, Example GABA A (left) and NMDA (right) current dynamics for three membrane potentials. Aii, Normalised peak synaptic and leak currents as a function of membrane potential, V. B, Rate of change of membrane potential, d V/dt, which is proportional to the sum of the currents (cf. panel Aii), as a function of membrane potential, V, for three combinations of excitatory and inhibitory input. Zeros of d V/dt define stable and unstable fixed points. C, Stable membrane-potential fixed points as a function of excitatory input for di ff erent levels of inhibitory input. The discontinuity marks values of excitatory and inhibitory input for which three fixed points coexist (cf. panel B, middle). D, Heat map of membrane-potential fixed points (colour) as a function of excitatory (x-axis) and inhibitory (y-axis) input, yielding a state-space representation of the membrane-potential dynamics. E, Excitatory, inhibitory, and total currents (top), dendritic and somatic membrane potentials (middle), and GABA A conductance (bottom) as a function of time. Ei, Constant-rate (blanket) inhibition. Eii, Rate-modulated (matched) inhibition. The number of inhibitory neurons is denoted by NI . The Pearson correlation between excitatory and inhibitory currents is denoted by C(IE, II). F, Pearson correlation between excitatory and inhibitory currents, C(IE, II), as a function of inhibitory firing rate for di ff erent numbers of inhibitory connections, showing that stronger EI balance emerges with larger inhibitory populations or higher firing rates. G, Di ff erence in C(IE, II)between blanket and matched inhibition as a function of inhibitory firing rate and the number of inhibitory connections. H, I, Same as panels F and G, but plotted against the minimum GABA A conductance, gmin .
+
+(Fig. 1C). We can thus define a two-dimensional state space de-scribed by the excitatory and inhibitory input a dendritic branch receives (Fig. 1D). At each point in this state space, the membrane-potential fixed point is defined by the vanishing of the total cur-rent, making local excitatory-inhibitory balance the quantity that specifies dendritic state. 
+
+Blanket inhibition balances dendrites. The fixed-point state-space description above (cf. Fig. 1A–D) is defined in terms of tem-porally averaged excitatory and inhibitory input, raising the ques-tion of whether the same balance can be maintained under realistic spiking dynamics. To test this directly, we compared two inhibitory regimes in a single-neuron model: blanket 43,44 and matched 45 inhib-ition. In both cases, excitatory spikes follow correlated temporal profiles with modulated firing rates 46,47 (Fig. S1A,B). Under blanket inhibition, inhibitory neurons fire at a constant rate (Fig. S1A), and inhibitory currents become strongly anti-correlated with excitatory currents only when many inhibitory connections converge onto a dendrite (Fig. 1Ei). Under matched inhibition, inhibitory spike times follow the same firing-rate modulation as excitatory spikes (Fig. S1B), so fewer inhibitory connections are su ffi cient for anti-correlated currents to emerge (Fig. 1Eii). Throughout, we interpret anti-correlated excitatory and inhibitory currents as a signature of EI balance, because anti-correlation indicates that fluctuations in excitation are matched by corresponding changes in inhibition. Low inhibitory firing rates or too few inhibitory synapses fail to balance excitatory currents in both the blanket and matched conditions. With enough inhibitory neurons or su ffi ciently high inhibitory firing rates, however, inhibitory currents become anti-correlated with excitatory currents, indicating EI balance (Fig. 1F). Matched inhibitory spike timing provides a clear advantage only when the number of inhibitory neurons is very small and inhibit-ory firing rates are low (Fig. 1G). The key quantity governing EI balance is the e ff ective minimum inhibitory GABA A conductance (Fig. 1E, bottom; Fig. 1H; Fig. S1C,D; see Methods). Matched inhib-itory spike timing is therefore only required when this minimum GABA A conductance is low (Fig. 1I). A decomposition of the individual synaptic currents (cf. Fig. 1Aii) shows that GABA A can counterbalance NMDA currents in the depolarised regime, whereas GABA B/KiR can counterbal-ance AMPA currents in the hyperpolarised regime. Because the balancing current is given by the product of driving force, non-linear voltage-dependence, and synaptic conductance, the total GABA A conductance on a dendrite (i.e., contribution of all inhib-itory synapses), acting on the order of 10 ms per synaptic event 37 ,must remain continuously above zero. Maintaining this conduct-ance therefore requires either many convergent inhibitory inputs or su ffi ciently high inhibitory firing rates. Although inhibitory neurons are fewer in number overall, the high firing rates reported for many inhibitory cell types 48–50 support the idea that special-ised inhibitory physiology is integral to sustaining the minimum conductance required for dendritic EI balance. 
+
+Bi-stable dendrites enable memory recall. The nonlinear depend-ence of dendritic fixed points on excitatory input creates a sharp transition in dendritic membrane potential (Fig. 2A, top), which in 
+
+Berger & Agnes (2026) 2 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint 010 0.9 1.8 
+
+> -80 -40 0
+> V (mV)
+
+A Inhibition (mS Hz) 0.0 0.4 0.8 020 40 60 Excitation (mS Hz) 0 0.5 1Firing rate (Hz)  1.2 1.6 2.0 010 0.5 1Excitation (a.u.)              
+
+> S (1) External input (cue)
+> NE= 800; aE= 0.2
+> NI= 200; aI= 0.4 p = 202 ( p/N= 0.202)
+> cE≈0.1; cI≈0.2
+
+C
+
+> Time (s) Overlap (1)
+
+DB       
+
+> Neuron 100  Excitatory  Inhibitory
+> C(IE,II)(1) CV ISI Rate (Hz) Count (1)
+
+FGH
+
+> V (mV)
+
+E           
+
+> Exc. Inh. Dendrite Soma Act. Inac. Excitatory Inhibitory
+> θS= 0
+> S= 1
+> θ
+> E - αI =  θ
+> I (mS Hz) 1200
+> E(mS Hz) 0.5 11.5
+> V(mV) -80 -40 00.5 Time (s)
+> I (nA) Exc. Inh. Total -30 030 00.2 1.1 1.3 -80 -40 000.1 0.2 Reliability (1) 00.4 0.8 Overlap (1)
+
+IJK                                 
+
+> 0.1 0.5 Present. time (s) 1Initial condition 0.2 0.7 1.0 Av. Theory Theory Theory Present. time (s) 0.05 0.1 0.5 2Bin. Bin. clamp. Time (s) ISI (ms) 10 -4 10 -2 10 0
+> V (mV) -80 -40 0012Presentation time (s) 012Initial condition (1) 00.5 100.5 1Count (1) Count (1) 10 110 210 310 410 -4 10 -2 10 01/ ν0
+> T
+> →nT 2T
+> 00.1 0.2 0612 020 40 -1 01-1 01
+
+FIG. 2. Binary-to-biophysical mapping enables associative recall through dendritic EI balance. A, Membrane-potential fixed points, V (top; cf. Fig. 1C), the resulting firing rate (middle), and the corresponding binary state (bottom) as a function of excitatory input for di ff erent levels of inhibition. 
+
+B, State-space of dendritic membrane potential (cf. Fig. 1D). The dashed line separates hyperpolarised ( S = 0) and depolarised ( S = 1) states. C, Schematic of the recurrent excitatory-inhibitory network. Key parameters shown: N, number of neurons; a, activity level; c, connection density; p, number of stored patterns. Superscripts E and I denote excitatory and inhibitory populations. D, Spike times of excitatory (red) and inhibitory (blue) neurons (top) and memory overlap (bottom) as a function of time. Shaded areas indicate periods of external stimulation. E, Examples of membrane potential (top) and currents (bottom) during active (left) and inactive (right) periods of a neuron during recall of two memory patterns (cf. panel D). F, Histograms of 
+
+C(IE, II) for excitatory (left) and inhibitory (right) neurons, separated into active (black) and inactive (grey) populations. G, Distribution of interspike intervals (ISIs) for di ff erent initial condition sizes, defined as the fraction of the memory pattern that is externally activated. Key parameters: ν0, firing-rate during active recall; T, period of external activation; nT , interval spanning n activation periods. H, Distribution of the coe ffi cient of variation of interspike intervals, CV ISI (left), and neuronal firing rates (right). I, Examples of dendritic membrane-potential trajectories for di ff erent presentation times. J, Overlap between the final network state and the target memory pattern as a function of initial condition size (cf. panel G). K, Reliability of memory recall, defined as one minus the smallest initial condition size for which the average overlap exceeds 0 .9 (from panel J), as a function of presentation time. Higher reliability indicates that smaller fractions of a memory pattern are su ffi cient to trigger full recall. Pink lines show the equivalent binary network without (dashed) and with (dotted) clamped initial-condition units. 
+
+turn produces a steep increase in firing rate over the same input range (Fig. 2A, middle). This input-output relationship approx-imates the active /inactive dynamics of binary associative memory networks 14,15 (Fig. 2A, bottom). The state-space description in-troduced above (cf. Fig. 1D), combined with the somatic spiking threshold, defines a boundary that separates active (depolarised) and inactive (hyperpolarised) dendritic states as a function of excit-atory and inhibitory input (Fig. 2B), with each state corresponding to a distinct postsynaptic firing rate (Fig. S2). This allows each neuron to be approximated as either inactive, producing no out-put spikes, or active, firing at a defined rate above an inhibition-dependent input threshold. On this basis, we derive a binary-to-biophysical mapping that embeds associative memory dynamics in biophysical spiking networks (see Methods for details). To test this binary-to-biophysical mapping, we trained a bin-ary network to store memory patterns using a modified per-ceptron learning rule (modPLR), based on previous work 17,51,52 ,and mapped the resulting connectivity onto our biophysical spik-ing network (Fig. 2C; see Methods). The modPLR allows us to maximise memory capacity while constraining synaptic density to match biological observations (Figs. S3 and S4A). The mapped bio-physical spiking network exhibits robust attractor dynamics and reliably recalls memories from strongly corrupted inputs (Fig. 2D). To recall a given memory, a subset of neurons corresponding to a corrupted version of that memory is driven for a defined period by external excitatory input in the form of Poisson spikes (shaded green and orange backgrounds in Fig. 2D). When a neuron belongs to the recalled memory, it becomes active and receives strong but balanced currents (Fig. 2E, left). The same neuron, when it does not belong to the recalled memory, remains inactive, with hyper-polarised dendritic and somatic membrane potentials and weak but balanced currents (Fig. 2E, right). As in the single-neuron analysis (cf. Fig. 1E), neurons in the recurrent network receive anti-correlated excitatory and inhibitory currents (Fig. 2F), consist-ent with a state of EI balance. When multiple patterns are recalled in sequence by successive external activations, interspike intervals (ISIs) show a bimodal distribution (Fig. 2G), together with high coe ffi cients of variation and low firing rates (Fig. 2H), consistent with activity reported in hippocampal 53–55 and cortical 56 neurons. Membrane-potential dynamics unfold over tens of milliseconds, allowing dendritic activation to integrate and persist over time (Fig. 2I). This di ff ers markedly from binary networks, in which neurons integrate their inputs and update instantaneously at each time step, and from single-compartment spiking neurons, which reset after each spike and cannot access the depolarised fixed point (cf. Fig. 1B, pink lines). The longer external stimulation keeps a partial memory pattern active, the more likely it is that additional neurons belonging to that memory are recruited. As a result, even small externally activated fractions of a memory pattern, which we define as the initial condition size, can trigger full recall if the stimulation lasts long enough (Figs. 2J and S4B). Across all ini-tial condition sizes, recall performance increases with presentation time: 100 ms matches binary-network performance, whereas ap-proximately 1 s matches the performance of binary networks with clamped units (Figs. 2K and S4B). These results establish that optimized binary connectivity can be mapped onto biophysical spiking networks through stable dend-ritic membrane-potential fixed points that arise directly from syn-aptic current dynamics. This mapping remains robust across a broad range of network parameters (Figs. S5 and S6; see Supple-mentary Text). Recall remains reliable in the biophysical model whenever the stability of memory patterns in the binary network exceeds a threshold (Fig. S5F), although performance decreases as the number of stored patterns increases (Fig. S5G). Beyond fixed-point recall, the same mapping also supports autonomous sequential recall when connectivity is optimized to embed trans-itions between memory patterns 17 (Fig. S7). This establishes a bio-physical realisation of classical attractor-memory theory and links dendritic integration to collective network dynamics. 
+
+Inhibition gates selective recall. Distributing memory storage across dendritic branches creates the possibility of selective re-call. Adding a second dendritic compartment (Fig. 3A) expands 
+
+Berger & Agnes (2026) 3 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint the computational capacity of the network by enabling additional memories to be stored and selectively accessed 20 . Assigning an independent weight matrix to this second dendrite separates stor-age into two memory sets (Fig. 3Bi). Without further regulation, however, these two sets interfere strongly and recall fails (Fig. 3C). To resolve this interference, we introduced a second class of in-hibitory connections that gates dendrites by shunting one branch, leaving only the other free to integrate excitatory input (Fig. 3Bii). For this gating mechanism, we modelled nitric-oxide-synthase-expressing (NOS) neurogliaform cells 57 with an activation non-linearity that e ff ectively shunts the targeted dendrite (Fig. 3D). By controlling dendritic accessibility over time, this externally ap-plied gating enables selective recall of two independent memory sets without interference (Fig. 3E). Inhibitory gating has two main consequences for network per-formance. First, distributing a fixed total number of synaptic con-nections across multiple dendrites slightly reduces overall memory capacity because of increased synaptic sparsity 17 (Fig. S8A), but in-creases the stability of individual stored memories (Fig. S8B,C). Second, gating renders the attractor structure of the network dynamic 20 . Switching the inhibitory state changes which memory set defines the stable basins of attraction available for recall (Fig. 3F; see Supplementary Text). To extend selective recall across multiple memory sets, memor-ies can be distributed across a complex dendritic tree (Fig. 4A), provided that active dendritic amplification counteracts passive attenuation and preserves synaptic democracy 58 (Fig. S9). In our framework, memory-encoding synapses are confined to terminal dendritic branches (leaves), and recalling a given memory set re-quires branch-specific shunting inhibition to select the correspond-ing leaf (Fig. 4B). As additional memory sets are stored, more ex-tensive inhibitory gating is required to silence inactive branches (cf. Fig. 3). We therefore considered three gating strategies that select a single active leaf (Fig. 4C): inhibiting all o ff -pathway dendrites (“All”), inhibiting only the inactive leaves (“Memory-set-specific”), or inhibiting only the branches that share branching points with the active path (“Optimal”). The last strategy is optimal in the sense that it minimises the number of gated branches required to isolate a memory (Fig. 4D). Both the “All” and “Optimal” strategies require inhibitory synapses to be distributed across the dendritic tree, matching structural observations in hippocampal pyramidal neurons 59 .In our framework, when a given memory set is recalled, only the leaf dendrite storing that set influences somatic output—the recall 
+
+leaf dendrite (Fig. 4B). Under the optimal gating strategy (Fig. 4C), only the adjacent leaf is explicitly gated o ff —the gated leaf dend-rite. As a result, other non-recall leaves can still become depol-arised by network activity without a ff ecting somatic spiking—the 
+
+isolated leaf dendrites—because intermediate trunk dendrites con-necting these non-recall leaves to the soma are shunted. These compartmentalised dynamics could be tested experimentally us-ing targeted measurements of dendritic membrane potential 31,33 or calcium fluorescence imaging ( ∆F/F)32,33 , which should reveal loc-alised transients in isolated leaves driven by concurrent network activity (Fig. 4Ei). We predicted the statistical signatures of inhibitory gating by comparing the recall, gated, and isolated leaves (cf. Fig. 4B) in net-works storing either independent (Fig. 4E) or overlapping (Fig. 4F) memory sets. In both cases, the membrane potential of the re-call leaf follows a bimodal distribution whose depolarised mode reflects the sparsity of the memory patterns (for example, depol-arised for roughly 20% of the time when activity is 20% sparse) (Fig. 4Eii, Fi; red). By contrast, the adjacent gated leaf remains hyperpolarised (Fig. 4Eii, Fi; blue), whereas the isolated leaf shows Bi Bii AC Di Dii            
+
+> External input No gating Overlap (1) Time (s) Gating s 1Hyperpolarized Gating s 2Weight matrix memory set s 1Weight matrix memory set s 2
+> V (mV)  V(mV) Input -70 -35 0
+> 00.5 1150 150
+> α5Memory set s 2Memory set s 1Dendrite 1 Dendrite 2
+> 𝜇 =9 of s 1
+> 𝜇 =9 of s 2
+> I (mS Hz)  Current (1) 1200
+> E(mS Hz) 0.5 1
+> V(mV) -80 -40 01.5 -1 01-90 -60 -30 002.5 5
+
+E Gating Time (s) Active Inactive Overlap (1)  V (mV)  Input -70 -35 0  
+
+> 00.5 1150 150 01.25 2.5
+
+w ij s 1 wij s2  
+
+> Gating current through GABA A-α5State space with GABA A-α5
+
+F Attractor landscape for memory set s 2Change gating    
+
+> Network state x1x2
+> Pseudo-energy
+> Attractor landscape for memory set s 1
+
+FIG. 3. Targeted dendritic inhibition switches which memory set is available for recall. A, Schematic of the simulated network with a second dendrite (extension of Fig. 2C). B, Memory storage and inhibitory gating. 
+
+Bi, Schematic of a neuron with two distinct connectivity matrices, one per dendrite, ws1 
+
+> ij
+
+and ws2 
+
+> ij
+
+, storing two sets of memory patterns, s1 and 
+
+s2. Bii, Schematic of inhibitory gating. External inhibitory connections target opposite dendrites, so that recalling memories stored in one dendrite requires shunting the other dendrite across the network. C, Temporal evolution of the input (top), dendritic membrane potential (middle), and network overlap with the stored memories (bottom) without inhibitory gating. Shaded areas indicate periods of external stimulation (cf. Fig. 2D). 
+
+D, Gating through GABA A-α5 synapses. Di, Same as Fig. 1Aii, but with an added GABA A-α5 peak current. Dii, Same as Fig. 1D, but with constant GABA A-α5 input. E, Same as panel C, but with active inhibitory gating. Narrow shaded bars indicate periods of external stimulation (as in panel C), and broad coloured backgrounds indicate which memory set is accessible for recall: pink when s1 is accessible (dendrite 2 shunted) and purple when 
+
+s2 is accessible (dendrite 1 shunted). F, Schematic showing that inhibitory gating switches which attractor landscape is accessible. x1 and x2 denote hypothetical reduced neuronal dimensions, and the vertical axis denotes the pseudo-energy of the system. 
+
+a broad and fluctuating voltage distribution driven by general net-work activity (Fig. 4Eii, Fi; black). Simulated calcium fluorescence broadly mirrors these voltage distributions, but di ff ers from mem-brane voltage in its cross-branch correlations (Fig. 4Eiii, Fii). In particular, small subthreshold fluctuations in the shunted leaf re-main correlated with the recall dendrite at the level of membrane voltage, whereas calcium fluorescence acts as a slower nonlinear filter that is dominated by large depolarisations (Fig. 4Ei). As a result, fluorescence correlations between recall and gated leaves fall to near zero. By filtering out shared subthreshold fluctuations, dendritic fluorescence provides a clearer and higher-contrast sig-nal than membrane voltage for identifying the degree of structural overlap between stored memory sets (Fig. 4G). Distinct architec-tures of overlap across dendritic memory sets also generate di ff er-ent predictions for synapse-per-pair statistics, providing an addi-tional structural signature of how memories are distributed across dendritic trees (Fig. S10; Supplementary Text). These results identify branch-specific activity and correlation patterns as experimentally accessible signatures of how memory 
+
+Berger & Agnes (2026) 4 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint A B    
+
+> Depolarized Hyperpolarized Gated leaf Dep. or hyperp. s1s2s3 s4 s5s6s7 s8 s8
+
+wij s8
+
+D All Memory-set-specific Optimal 124816 32 64 2 4 8 16 32 Memory sets Hyperp. dendrites 
+
+Ei 
+
+> Time (s)
+> ΔF/F (1)
+
+Eii Eiii             
+
+> Recall Isolated Gated Count (1) Correlation (1) -1 0100.2 0100.1 0.1 0.2 Voltage
+> ΔF/F
+> ΔF/F (1) 0
+> V(mV) -80 -40 00
+> V (mV) -80 -40 0Indep. memories 03600.5 10.1 0.5 Recall & gated Recall & isolated Recall & gated Recall & isolated Voltage
+> ΔF/F
+
+Fi Fii G                   
+
+> Count (1) Count (1) Voltage
+> o= 0.5
+> Voltage
+> o= 0.98
+> Correlation (1) -1 0100.5 100.1 0.1 0.1 0.2
+> ΔF/F
+> o= 0.5
+> ΔF/F
+> o= 0.98
+> Correlation (1) Corr. (1) ΔCorr. (1) Overlap, o(1) -1 0100.5 100.2 Memory set overlap; o= 0.5
+> o= 0.98
+> V(mV) 0-80 -40 0000.5 100.5 100.5 1Optimal Memory-set-specific
+
+C All Recall leaf Isolated leaves FIG. 4. Complex dendritic trees predict branch-specific signatures of inhibitory gating. A, Complex dendritic tree in which each branch bifurcates into two branches. Each leaf dendrite receives a distinct weight matrix, for example ws8 
+
+> ij
+
+. B, Neuron with one recall leaf dendrite driving somatic output, one gated leaf, and isolated leaves that may be either depolarised or hyperpolarised. C, Three inhibitory gating strategies that select a single recall leaf dendrite (to ensure somatic access): gating all dendrites (All), only leaf dendrites (Memory-set-specific), or only branches sharing a branching point with the active path (Optimal). D, Number of hyperpolarised dendrites as a function of the number of memory sets for the strategies in C. E, Activity comparison for independent memories across three leaf dendrites: recall, gated, and isolated. Ei, Temporal evolution of membrane potential (top) and the corresponding fluorescence signal (bottom). Eii, Distributions of membrane potential (top) and fluorescence signal (bottom). Eiii, Pearson correlation distributions for membrane potential (left) and fluorescence (right) between the recall dendrite and gated or isolated dendrites. F, Activity comparison for overlapping memory sets. Fi, Distributions of membrane potential for memory-set overlap o = 0.5 (top) and o = 0.98 (bottom). Fii, Pearson correlation distributions for membrane potential (left) and fluorescence (right) for o = 0.5 (top) and o = 0.98 (bottom). G, Mean Pearson correlation between the recall dendrite and gated or isolated dendrites as a function of overlap (top), and the di ff erence between recall-gated and recall-isolated pairs as a function of overlap (bottom). 
+
+sets are distributed across dendritic trees. For this gating mech-anism to operate without external control, the circuit itself must determine which dendrite is active. 
+
+Readout networks control memory access. To make dendritic gating an intrinsic circuit mechanism rather than an externally imposed control, we constructed a closed-loop system of three interconnected networks (Fig. 5A). This architecture converts se-lective recall into an autonomous circuit computation by coupling the core memory network to dedicated readout and gating cir-cuits. The core memory network is configured as above, with recurrent excitatory connectivity derived using our modified per-ceptron learning rule. Its excitatory neurons project to a readout network in which local inhibitory neurons implement winner-take-all competition so that only one memory pattern is represented at a time (Fig. 5A,B). To mirror the microcircuitry of hippocampal area CA1 60 , we omitted recurrent excitatory-to-excitatory connections within the readout network, although this constraint can be relaxed to model, e.g., CA3 laminar organisation 61 or cortical circuitry 62 .Both memory-to-readout and recurrent readout connections were derived using the same modified perceptron learning rule, yielding a readout circuit with only excitatory-to-inhibitory and inhibitory-to-excitatory recurrent connections—a simple lateral-inhibition ar-chitecture. For simplicity, we assigned non-overlapping repres-entations to readout neurons (Fig. 5B), although the same archi-tecture is compatible with distributed coding. Finally, gating in-hibitory neurons receive excitation from the readout network and return shunting inhibition to the dendrites of the memory network, thereby closing the loop (Fig. 5B; cf. Fig. 4C). We first stored independent memory patterns and tested their recall by externally activating the memory network (Figs. 5C–E and S11A–C). Starting from a silent state, partial activation is suf-ficient to trigger recall of an initial memory, as shown by both memory overlap and readout activity (Fig. 5C). The readout neur-ons then recruit a subset of gating inhibitory neurons (Fig. 5C), which shunt the corresponding dendrites in the memory network (Fig. S11A). Subsequent partial activation of other memories from the same set also induces full recall (Fig. 5C). Once a memory set has been established in this way, partial activation of a memory from a di ff erent set is insu ffi cient to overcome the current gating state (Fig. 5D). Instead, full activation of memories from distinct sets is required to switch the gating state and enable recall of the corresponding memories (Fig. 5E). Reducing the strength of recur-rent excitatory-to-inhibitory and inhibitory-to-excitatory connec-tions in the readout network allows partial activation to switch memory sets fully (Figs. 5F and S11D). Thus, autonomous recruit-ment of gating neurons by the readout network stabilises the active memory set against interference from competing sets. Beyond protecting active memory sets, the winner-take-all readout also resolves ambiguity between highly overlapping pat-terns. When two memory sets contain strongly overlapping memories ( o = 0.9), activity in the memory network becomes highly redundant, as reflected by the overlap measure (Figs. 5G and S11E). Despite this redundancy, the readout network selects a single memory representation (Fig. 5G), which in turn drives the corresponding gating feedback. When memories from di ff er-ent sets are instead activated simultaneously, competition in the readout network ensures that only one memory is fully recalled and represented (Figs. 5H and S11F). The readout network thus transforms redundant memory-network activity into a unique pat-tern selection, even when the underlying representations are nearly indistinguishable. Notably, the activity of gating neurons encodes memory-set identity rather than individual memory patterns (Fig. 5C–H, bot-tom), providing a set-level signal that may not be directly available from the memory network itself. Our framework therefore predicts that the dendrite-targeting interneuron population that controls memory-set selectivity—such as NOS neurogliaform cells 38,57 —should exhibit sustained activity that is invariant to which memory is recalled within a set, but switches sharply when a di ff erent memory set becomes accessible. This encoding does not need to be as localised as in our implementation; a distributed representa-tion across gating interneurons would su ffi ce, provided it consist-
+
+Berger & Agnes (2026) 5 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint 045 045 
+
+AC D E  
+
+> External input Memory network Gating neurons Readout network
+
+B           
+
+> Partial activation (0.75)
+> 𝜇 =1 s1 s2 s3 s 4
+> 𝜇 =2
+> 𝜇 =3
+> 𝜇 =4
+> 𝜇 =5
+> 𝜇 =6
+> 𝜇 =7
+> 𝜇 =8 Hyperpol. Depol. Memory sets s ns1 s2 s3 s4 Input Mean firing-rate (Hz)  Overlap (1)  150 150 150 150 Partial activation (0.75) Full activation (1.0) 036 Time (s) 020 40 60 Readout neurons Gating neurons (leaves) Readout neurons Readout neurons Gating neurons (leaves) Gating neurons (trunks) Gating neurons (trunks) Gating neurons (trunks) Gating neurons (leaves) 00.5 1
+> Time (s) 020 40 60 Time (s) 020 40 60
+
+F G HPartial activation (0.75) Facilitated switch Full activation (1.0) Overlapping patterns (s 1 & s 4 )          
+
+> 00.5 1Input Mean firing-rate (Hz)  Overlap (1)  150 150 150 150 Time (s) 020 40 60 Readout neurons Gating neurons (leaves) Readout neurons Readout neurons Gating neurons (leaves) Gating neurons (trunks) Gating neurons (trunks) Gating neurons (trunks) Gating neurons (leaves) Time (s) 020 40 60 Time (s) 020 40 60 036 045 045 Partial activation (0.75) Facilitated switch & mult. activ.
+
+FIG. 5. An autonomous readout network gates dendrites to prevent memory interference. A, Schematic of the coupled-network architecture, comprising a memory network, a readout network, and gating neurons. 
+
+B, Schematic of the readout and gating connectivity. Readout neurons representing the recalled memory activate gating neurons, which in turn shunt selected dendrites in the memory network. C, Temporal evolution of external input, memory overlap, and the mean firing rates of readout and gating neurons during sequential partial activation of six memories from set s1. Each memory is activated by external stimulation of 75% of its neurons during a 500 ms period indicated by the dashed line. D, Same as panel C, but for partial activation of memories from multiple sets. Partial activation of memories from a di ff erent set does not switch the active gating state. E, Same as panel D, but with full external activation of each memory. Full activation is su ffi cient to switch the active memory set and the cor-responding gating state. F, Same as panel D, but with reduced recurrent connectivity in the readout network. This facilitates switching between memory sets under partial activation. G, Same as panel E, but for highly overlapping memory patterns from sets s1 and s4. The readout network selects a single memory representation despite overlap in the memory net-work. H, Same as panel F, but with simultaneous partial activation of two memories from di ff erent sets. The network resolves the competition by selecting a single readout and gating state. 
+
+ently distinguishes between memory sets. Together, these results establish autonomous readout-gating as a circuit mechanism for controlling memory accessibility, protecting active engrams from interference, and disambiguating overlapping inputs. 
+
+Discussion 
+
+Our work establishes a biophysical route by which classical associative-memory dynamics can be implemented in spiking neural circuits. We show that local dendritic membrane-potential fixed points can support attractor recall even under a “blanket of inhibition”, where inhibitory spikes do not need to pre-cisely track fast excitatory fluctuations. By providing a math-ematical bridge between classical attractor-memory theory 13,14,16–18 
+
+and biophysical circuit mechanisms, our framework reframes dendritic properties—often viewed as complications for network computation—as the substrate that enables both high-capacity re-call and selective memory access through local EI balance and branch-specific gating. EI balance is a cornerstone of many network models and is also an actively regulated property of biological circuits 63,64 , but its mechanistic implementation varies widely. Previous frame-works have relied on macroscopic statistical cancellation to gener-ate chaotic asynchronous states 65 , precise microscopic spike track-ing to minimise representational errors 66 , or finely tuned feed-back to stabilise strongly recurrent networks—either globally 67 or through state-dependent supralinear scaling 68 . Recent work has also shown that precise balance can shape the geometry and dy-namics of memory representations in recurrent networks 69 , but this too operates at the somatic level. In contrast to these network-level or somatic formulations, EI balance in our framework emerges locally as dendritic membrane-potential fixed points. These fixed points arise from the interaction between distinct synaptic currents and their voltage-dependent driving forces, showing how local biophysics can stabilise memory computations without requiring instantaneous spike-by-spike cancellation. The computational roles required by our framework— dendritic inhibition, gating, and blanket inhibition—map onto distinct interneuron classes with known connectivity and physiology 48,60,61,70,71 . In our framework, memory-related in-hibition targets leaf dendrites, consistent with the connectivity of somatostatin-expressing (SOM) interneurons 48,60 . Controlling memory accessibility further requires a second class of gating in-terneurons, for which NOS neurogliaform cells provide one plaus-ible candidate implementation 38,57,59 . More generally, the interplay between these interneuron classes suggests how dendritic inhib-ition and disinhibition could be coordinated across cell types 72 .Because direct SOM-to-SOM connectivity is sparse, this coordin-ation could also involve vasoactive intestinal peptide (VIP) neur-ons, which provide targeted disinhibition of SOM networks 60,73 .Fast-spiking parvalbumin (PV) neurons could, in turn, contribute to the blanket of inhibition required by the model 44,70 . Di ff erent circuit motifs could in principle implement the same computa-tional roles, so the mappings proposed here should be viewed as candidate solutions rather than unique biological assignments. In particular, our results predict that the population of dendrite-targeting gating interneurons should carry a sustained signal en-coding memory-set identity that is invariant to which individual memory is recalled. Our framework therefore generates testable hypotheses about how specialised interneuron populations may support dendritic memory gating in biological circuits. Memory accessibility is highly dynamic, with external cues re-calling di ff erent memories depending on context 28,74,75 . Recent work further suggests that hippocampal representations are tuned to the computational demands of context-rich memory tasks and that dendritic modulation can support such context-dependent computations 76,77 . In our framework, memory sets stored in separ-ate dendritic leaves provide a natural substrate for such functional contexts. In hippocampal circuits, this contextual gating could in principle be influenced by feedforward input from the dentate 
+
+Berger & Agnes (2026) 6 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint gyrus (DG) 78,79 or by feedback from CA1 and cortex 59,74,80,81 , and the coexistence of functionally distinct excitatory populations with specific inhibitory interactions within CA3 itself 61 suggests that memory and readout computations do not need to reside in sep-arate areas. Disruption of this gating mechanism suggests links to pathological memory states. For example, the artificial recov-ery of “lost” memories in Alzheimer’s models 82 is consistent with normally inaccessible memories becoming retrievable when in-hibitory gating is altered, and disrupted hippocampal bursting in Alzheimer’s-related pathology 83 could further destabilise select-ive recall. Conversely, weakened gating could allow inappropriate memory sets to become accessible in safe contexts—as observed in post-traumatic stress disorder (PTSD), where traumatic memories intrude despite contextual safety 84 . More broadly, conditions that shift the GABA A reversal potential—such as disrupted chloride regulation in Down syndrome 85 —may compromise the dendritic EI balance required for stable fixed points, and thereby also impair both recall and gating. Our model uses mathematically optimised connectivity matrices as a benchmark for binary associative memory networks 16,17 . How such structured connectivity is learned in vivo remains unresolved. One possibility is that it emerges through compartmentalised learning 35,86 , driven by dendrite-specific plasticity rules 29,47,87–91 
+
+and shaped by distinct inhibitory plasticity mechanisms 46,63,92 . Epi-genetic regulation of neuronal excitability 93,94 may further influ-ence which neurons are allocated to specific engrams, thereby de-termining the structure of the memory patterns that our framework takes as given. Our work isolates the minimal ingredients required to explain a specific problem: how selective recall of memory attractors can be implemented in biophysical spiking circuits. Optimized connectiv-ity isolates the mapping between classical associative-memory solutions and biophysical networks 16,17 ; branch-specific shunting inhibition isolates the access-control problem 20,57 ; and active dend-ritic amplification isolates the conditions under which selective recall can scale across dendritic trees 58 . From this perspective, the autonomous readout circuit should be interpreted as a biologically motivated proof of principle rather than a unique circuit realisa-tion. Although we use CA3 and CA1 as motivating examples for the memory and readout networks, respectively, the same com-putational architecture could be realised within a single area—for example, across layers of CA3 or cortex 48,62 , or among function-ally distinct neuron types within the same region 5,61 . Similarly, the experimental links developed here are intended not as fits to a par-ticular dataset, but as structural and functional signatures that can distinguish this mechanism from alternative implementations 32,34 .For instance, the active dendritic amplification required for select-ive recall across complex dendritic trees is known to be suppressed during general anaesthesia 95 , illustrating how specific biophysical conditions can gate the mechanism as a whole. An important next step will be to determine how closely biological circuits approxim-ate these requirements and how such organisation could emerge through development 5,96 and learning 35,47 , particularly given re-cent evidence that hippocampal neurons can encode large numbers of sparse, distinct memory representations 6.Our work establishes dendritic balance and branch-selective gating as su ffi cient circuit mechanisms for selective attractor re-call in biophysical spiking networks. By grounding associative-memory dynamics in dendritic physiology, our framework trans-forms the dendritic tree from a passive recipient of synaptic input into an active organiser of memory accessibility—with branch-specific voltage and calcium signatures that make this organisation experimentally visible. As tools for measuring and manipulating dendritic activity in vivo continue to advance, the framework de-veloped here provides a theoretical foundation for reading out how memories are distributed, selected, and protected across the dendritic trees of single neurons. 
+
+References 
+
+[1] L. G. Reijmers, B. L. Perkins, N. Matsuo, and M. Mayford, Localization of a stable neural correlate of associative memory, Science 317 , 1230 (2007). [2] P. W. Frankland, S. A. Josselyn, and S. Köhler, The neurobiological foundation of memory retrieval, Nature Neuroscience 22 , 1576 (2019). [3] S. A. Josselyn and S. Tonegawa, Memory engrams: Recalling the past and ima-gining the future, Science 367 , eaaw4325 (2020). [4] L. Carrillo-Reid, W. Yang, Y. Bando, D. S. Peterka, and R. Yuste, Imprinting and recalling cortical ensembles, Science 353 , 691 (2016). [5] V. A. Kveim, L. Salm, T. Ulmer, M. Lahr, S. Kandler, F. Imhof, and F. Donato, Divergent recruitment of developmentally defined neuronal ensembles supports memory dynamics, Science 385 , eadk0997 (2024). [6] S. N. Chettih, E. L. Mackevicius, S. Hale, and D. Aronov, Barcoding of episodic memories in the hippocampus of a food-caching bird, Cell 187 , 1922 (2024). [7] S. Y. Ko, Y. Rong, A. I. Ramsaran, X. Chen, A. J. Rashid, A. J. Mocle, J. Dhali-wal, A. Awasthi, A. Guskjolen, S. A. Josselyn, and P. W. Frankland, Systems consolidation reorganizes hippocampal engram circuitry, Nature 643 , 735 (2025). [8] S. A. Josselyn, S. Köhler, and P. W. Frankland, Finding the engram, Nature Re-views Neuroscience 16 , 521 (2015). [9] M.-m. Poo, M. Pignatelli, T. J. Ryan, S. Tonegawa, T. Bonhoe ff er, K. C. Martin, A. Rudenko, L.-H. Tsai, R. W. Tsien, G. Fishell, C. Mullins, J. T. Gonçalves, M. Shtrahman, S. T. Johnston, F. H. Gage, Y. Dan, J. Long, G. Buzsáki, and C. Stevens, What is memory? The present state of the engram, BMC Biology 14 ,40 (2016). [10] T. Branco and M. Häusser, The single dendritic branch as a fundamental func-tional unit in the nervous system, Current Opinion in Neurobiology 20 , 494 (2010). [11] B. B. Ujfalussy, J. K. Makara, T. Branco, and M. Lengyel, Dendritic nonlinearities are tuned for e ffi cient spike-based computations in cortical circuits, eLife 4, e10056 (2015). [12] B. B. Ujfalussy, J. K. Makara, M. Lengyel, and T. Branco, Global and multiplexed dendritic computations under in vivo-like conditions, Neuron 100 , 579 (2018). [13] J. J. Hopfield, Neural networks and physical systems with emergent collective computational abilities, Proceedings of the National Academy of Sciences 79 ,2554 (1982). [14] J. Hertz, A. Krogh, and R. G. Palmer, Introduction to the theory of neural computation 
+
+(Addison-Wesley /Addison Wesley Longman, 1991). [15] M. V. Tsodyks and M. V. Feigelman, The enhanced storage capacity in neural networks with low activity level, Europhysics Letters 6, 101 (1988). [16] J. Chapeton, T. Fares, D. LaSota, and A. Stepanyants, E ffi cient associative memory storage in cortical circuits of inhibitory and excitatory neurons, Proceedings of the National Academy of Sciences 109 , E3614 (2012). [17] N. Brunel, Is cortical connectivity optimized for storing information?, Nature Neuroscience 19 , 749 (2016). [18] R. Rubin, L. F. Abbott, and H. Sompolinsky, Balanced excitation and inhibition are required for high-capacity, noise-robust neuronal selectivity, Proceedings of the National Academy of Sciences 114 , E9366 (2017). [19] D. Krotov, A new frontier for Hopfield networks, Nature Reviews Physics 5, 366 (2023). [20] W. F. Podlaski, E. J. Agnes, and T. P. Vogels, High capacity and dynamic access-ibility in associative memory networks with context-dependent neuronal and synaptic gating, Physical Review X 15 , 011057 (2025). [21] S. J. Guzman, A. Schlögl, M. Frotscher, and P. Jonas, Synaptic mechanisms of pattern completion in the hippocampal CA3 network, Science 353 , 1117 (2016). [22] J. F. Watson, V. Vargas-Barroso, R. J. Morse-Mora, A. Navas-Olive, M. R. Tavakoli, J. G. Danzl, M. Tomschik, K. Rössler, and P. Jonas, Human hippocampal CA3 uses specific functional connectivity rules for e ffi cient associative memory, Cell 188 ,501 (2025). [23] S. Romani, I. Pinkoviezky, A. Rubin, and M. Tsodyks, Scaling laws of associative memory retrieval, Neural Computation 25 , 2523 (2013). [24] M. Naim, M. Katkov, S. Romani, and M. Tsodyks, Fundamental law of memory recall, Physical Review Letters 124 , 018101 (2020). [25] A. Litwin-Kumar and B. Doiron, Formation and maintenance of neuronal assem-blies through synaptic plasticity, Nature Communications 5, 5319 (2014). [26] F. Zenke, E. J. Agnes, and W. Gerstner, Diverse synaptic plasticity mechanisms orchestrated to form and retrieve memories in spiking neural networks, Nature Communications 6, 6922 (2015). [27] W. F. Podlaski and C. K. Machens, Storing overlapping associative memories on latent manifolds in low-rank spiking networks, arXiv preprint , 2411.17485 (2025). [28] S. Maren, K. L. Phan, and I. Liberzon, The contextual brain: implications for fear conditioning, extinction and psychopathology, Nature Reviews Neuroscience 14 ,417 (2013). [29] S. Onasch, C. Miehl, M. M. Mi ˛ ekus, and J. Gjorgjieva, Assembly-based computa-tions through contextual dendritic gating of plasticity, bioRxiv preprint , 666089 (2025). [30] H. Sanders, M. Berends, G. Major, M. S. Goldman, and J. E. Lisman, NMDA and GABAB (KIR) conductances: the “perfect couple” for bistability, Journal of Neuroscience 33 , 424 (2013). 
+
+Berger & Agnes (2026) 7 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint [31] J. J. Moore, P. M. Ravassard, D. Ho, L. Acharya, A. L. Kees, C. Vuong, and M. R. Mehta, Dynamics of cortical dendritic membrane potential and spikes in freely behaving rats, Science 355 , eaaj1497 (2017). [32] J. J. Moore, S. K. Rashid, E. Bicker, C. D. Johnson, N. Codrington, D. B. Chklovskii, and J. Basu, Sub-cellular population imaging tools reveal stable apical dendrites in hippocampal area ca3, Nature Communications 16 , 1119 (2025). [33] K. C. Gonzalez, S. Terada, A. Noguchi, G. N. Zakka, C. O’Toole, G. Bilbao, L. Reynolds, A. Jász, B. Kertész, Z. Szadai, A. Shen, F. St-Pierre, F. Polleux, A. Losonczy, and B. Rózsa, Movement-stabilized three-dimensional optical re-cordings of membrane potential changes and calcium dynamics in hippocampal ca1 dendrites, Neuron In Press (2026). [34] M. Sehgal, D. A. Filho, G. Kastellakis, S. Kim, J. Lee, Y. Shen, S. Huang, A. Lavi, G. Fernandes, I. Davila Mejia, S. S. Martin, A. Pekcan, M. S. Wu, W. D. Heo, P. Poirazi, J. T. Trachtenberg, and A. J. Silva, Compartmentalized dendritic plas-ticity in the mouse retrosplenial cortex links contextual memories formed close in time, Nature Neuroscience 28 , 602 (2025). [35] S. d’Aquin, A. Szonyi, M. Mahn, S. Krabbe, J. Gründemann, and A. Lüthi, Compartmentalized dendritic plasticity during associative learning, Science 376 ,eabf7052 (2022). [36] A. Quaresima, H. Fitz, P. Hagoort, and R. Duarte, Nonlinear dendritic integration supports up–down states in single neurons, Journal of Neuroscience 45 (2025). [37] W. Gerstner, W. M. Kistler, R. Naud, and L. Paninski, Neuronal dynamics: From single neurons to networks and models of cognition (Cambridge University Press, 2014). [38] J. M. Schulz, F. Knoflach, M.-C. Hernandez, and J. Bischofberger, Enhanced dendritic inhibition and impaired nmdar activation in a mouse model of down syndrome, Journal of Neuroscience 39 , 5210 (2019). [39] M. Yamada, A. Inanobe, and Y. Kurachi, G protein regulation of potassium ion channels, Pharmacological Reviews 50 , 723 (1998). [40] I. Khalilov, M. Minlebaev, M. Mukhtarov, E. Juzekaeva, and R. Khazipov, Post-synaptic GABA(B) receptors contribute to the termination of giant depolarizing potentials in CA3 neonatal rat hippocampus, Frontiers in Cellular Neuroscience 
+
+11 , 179 (2017). [41] B. H. Gähwiler and D. A. Brown, GABAB-receptor-activated K + current in voltage-clamped CA3 pyramidal cells in hippocampal cultures, Proceedings of the National Academy of Sciences 82 , 1558 (1985). [42] J. K. Makara and J. C. Magee, Variable dendritic integration in hippocampal CA3 pyramidal neurons, Neuron 80 , 1438 (2013). [43] A. M. Packer and R. Yuste, Dense, unspecific connectivity of neocortical parvalbumin-positive interneurons: a canonical microcircuit for inhibition?, Journal of Neuroscience 31 , 13260 (2011). [44] M. M. Karnani, M. Agetsuma, and R. Yuste, A blanket of inhibition: functional inferences from dense inhibitory connectivity, Current Opinion in Neurobiology 
+
+26 , 96 (2014). [45] A. Bhatia, S. Moza, and U. S. Bhalla, Precise excitation-inhibition balance controls gain and timing in the hippocampus, eLife 8, e43415 (2019). [46] E. J. Agnes, A. I. Luppi, and T. P. Vogels, Complementary inhibitory weight profiles emerge from plasticity and allow flexible switching of receptive fields, Journal of Neuroscience 40 , 9634 (2020). [47] E. J. Agnes and T. P. Vogels, Co-dependent excitatory and inhibitory plasticity accounts for quick, stable and long-lasting memories in biological networks, Nature Neuroscience 27 , 964 (2024). [48] X. Jiang, S. Shen, C. R. Cadwell, P. Berens, F. Sinz, A. S. Ecker, S. Patel, and A. S. Tolias, Principles of connectivity among morphologically defined cell types in adult neocortex, Science 350 , aac9462 (2015). [49] J. Csicsvari, H. Hirase, A. Mamiya, and G. Buzsáki, Ensemble patterns of hip-pocampal CA3-CA1 neurons during sharp wave–associated population events, Neuron 28 , 585 (2000). [50] A.-M. M. Oswald, B. Doiron, J. Rinzel, and A. D. Reyes, Spatial profile and dif-ferential recruitment of GABAB modulate oscillatory activity in auditory cortex, Journal of Neuroscience 29 , 10321 (2009). [51] C. Clopath, J.-P. Nadal, and N. Brunel, Storage of correlated patterns in stand-ard and bistable Purkinje cell models, PLoS Computational Biology 8, e1002448 (2012). [52] C. Clopath and N. Brunel, Optimal properties of analog perceptrons with excit-atory weights, PLoS Computational Biology 9, e1002919 (2013). [53] M. Frerking, J. Schulte, S. P. Wiebe, and U. Staubli, Spike timing in ca3 pyr-amidal cells during behavior: implications for synaptic transmission, Journal of Neurophysiology 94 , 1528 (2005). [54] K. Mizuseki, S. Royer, K. Diba, and G. Buzsáki, Activity dynamics and behavioral correlates of CA3 and CA1 hippocampal pyramidal neurons, Hippocampus 22 ,1659 (2012). [55] J. N. McGregor, C. A. Farris, S. Ensley, A. Schneider, L. J. Fosque, C. Wang, E. I. Tilden, Y. Liu, J. Tu, H. Elmore, K. D. Ronayne, R. Wessel, E. L. Dyer, K. Bhaskaran-Nair, D. M. Holtzman, and K. B. Hengen, Failure in a population: Tauopathy disrupts homeostatic set-points in emergent dynamics despite stability in the constituent neurons, Neuron 112 , 3567 (2024). [56] D. S. Reich, F. Mechler, K. P. Purpura, and J. D. Victor, Interspike intervals, receptive fields, and information encoding in primary visual cortex, Journal of Neuroscience 20 , 1964 (2000). [57] J. M. Schulz, F. Knoflach, M.-C. Hernandez, and J. Bischofberger, Dendrite-targeting interneurons control synaptic NMDA-receptor activation via nonlinear 
+
+α5-GABAA receptors, Nature Communications 9, 3576 (2018). [58] P. Poirazi and A. Papoutsi, Illuminating dendritic function with computational models, Nature Reviews Neuroscience 21 , 303 (2020). [59] S. A. Booker and I. Vida, Morphological diversity and connectivity of hippocam-pal interneurons, Cell and Tissue Research 373 , 619 (2018). [60] A. Tzilivaki, J. J. Tukker, N. Maier, P. Poirazi, R. P. Sammons, and D. Schmitz, Hippocampal gabaergic interneurons and memory, Neuron 111 , 3154 (2023). [61] J. F. Watson, V. Vargas-Barroso, and P. Jonas, Cell-specific wiring routes inform-ation flow through hippocampal CA3, Cell Reports 44 , 116080 (2025). [62] A. Motta, M. Berning, K. M. Boergens, B. Sta ffl er, M. Beining, S. Loomba, P. Hen-nig, H. Wissler, and M. Helmstaedter, Dense connectomic reconstruction in layer 4 of the somatosensory cortex, Science 366 (2019). [63] G. Hennequin, E. J. Agnes, and T. P. Vogels, Inhibitory plasticity: balance, control, and codependence, Annual Review of Neuroscience 40 , 557 (2017). [64] Z. Okur, N. Schlauri, V. Bitsikas, M. Panopoulou, R. Ortiz, M. Schwaiger, K. Kar-makar, D. Schreiner, and P. Schei ff ele, Control of neuronal excitation–inhibition balance by bmp–smad1 signalling, Nature 629 , 402 (2024). [65] C. van Vreeswijk and H. Sompolinsky, Chaos in neuronal networks with balanced excitatory and inhibitory activity, Science 274 , 1724 (1996). [66] S. Denève and C. K. Machens, E ffi cient codes and balanced networks, Nature Neuroscience 19 , 375 (2016). [67] G. Hennequin, T. P. Vogels, and W. Gerstner, Optimal control of transient dynam-ics in balanced networks supports generation of complex movements, Neuron 
+
+82 , 1394 (2014). [68] G. Hennequin, Y. Ahmadian, D. B. Rubin, M. Lengyel, and K. D. Miller, The dynamical regime of sensory cortex: stable dynamics around a single stimulus-tuned attractor account for patterns of noise variability, Neuron 98 , 846 (2018). [69] C. Meissner-Bernard, F. Zenke, and R. W. Friedrich, Geometry and dynamics of representations in a precisely balanced memory network related to olfactory cortex, eLife 13 , RP96303 (2025). [70] K. A. Pelkey, R. Chittajallu, M. T. Craig, L. Tricoire, J. C. Wester, and C. J. McBain, Hippocampal gabaergic inhibitory interneurons, Physiological Reviews 97 , 1619 (2017). [71] M. Valero, P. Abad-Perez, A. Gallardo, M. Picco, R. García-Hernandez, J. Brotons, A. Martínez-Félix, R. Machold, B. Rudy, and G. Buzsáki, Cooperative actions of interneuron families support the hippocampal spatial code, Science 389 , eadv5638 (2025). [72] K. Li, K. Koukoutselos, M. Sakaguchi, and S. Ciocchi, Distinct ventral hippo-campal inhibitory microcircuits regulating anxiety and fear behaviors, Nature Communications 15 , 8228 (2024). [73] H. J. Pi, B. Hangya, D. Kvitsiani, J. I. Sanders, Z. J. Huang, and A. Kepecs, Cortical interneurons that specialize in disinhibitory control, Nature 503 , 521 (2013). [74] C. Xu, S. Krabbe, J. Gründemann, P. Botta, J. P. Fadok, F. Osakada, D. Saur, B. F. Grewe, M. J. Schnitzer, E. M. Callaway, and A. Lüthi, Distinct hippocampal pathways mediate dissociable roles of context in memory retrieval, Cell 167 , 961 (2016). [75] H. S. C. Chiossi, M. Nardin, G. Tkaˇ cik, and J. Csicsvari, Learning reshapes the hippocampal representation hierarchy, Proceedings of the National Academy of Sciences 122 , e2417025122 (2025). [76] L. M. Boyle, L. Posani, S. Irfan, S. A. Siegelbaum, and S. Fusi, Tuned geometries of hippocampal representations meet the computational demands of social memory, Neuron 112 , 1358 (2024). [77] W. A. M. Wybo, M. C. Tsai, V. A. K. Tran, B. Illing, J. Jordan, A. Morrison, and W. Senn, Nmda-driven dendritic modulation enables multitask represent-ation learning in hierarchical sensory processing pathways, Proceedings of the National Academy of Sciences 120 , e2300558120 (2023). [78] X. Liu, S. Ramirez, P. T. Pang, C. B. Puryear, A. Govindarajan, K. Deisseroth, and S. Tonegawa, Optogenetic stimulation of a hippocampal engram activates fear memory recall, Nature 484 , 381 (2012). [79] C. A. O. Coelho, A. J. Mocle, A. D. Jacob, A. I. Ramsaran, A. J. Rashid, S. Köhler, S. A. Josselyn, and P. W. Frankland, Dentate gyrus ensembles gate context-dependent neural states and memory retrieval, Science Advances 10 , eadn9815 (2024). [80] M. Bausch, J. Niediek, T. P. Reber, S. Mackay, J. Boström, C. E. Elger, and F. Mor-mann, Distinct neuronal populations in the human brain combine content and context, Nature 650 , 690 (2026). [81] K. K. Cowansage, T. Shuman, B. C. Dillingham, A. Chang, P. Golshani, and M. Mayford, Direct reactivation of a coherent neocortical memory of context, Neuron 84 , 432 (2014). [82] D. S. Roy, A. Arons, T. I. Mitchell, M. Pignatelli, T. J. Ryan, and S. Toneg-awa, Memory retrieval by activating engram cells in mouse models of early Alzheimer’s disease, Nature 531 , 508 (2016). [83] S. S. Harris, R. Ellingford, J. Hartmann, D. Dasgupta, M. Kehring, R. M. Rajani, D. Graykowski, N. Quittot, D. Sivasankaran, C. Commins, Z. Fan, S. A. Bond, F. Wolf, D. Dupret, R. J. Dolan, A. Konnerth, A. Neef, B. T. Hyman, and M. A. Busche, Alzheimer’s disease patient-derived high-molecular-weight tau impairs bursting in hippocampal neurons, Cell 188 , 3775 (2025). [84] G. Leone, H. Casanave, C. Postel, F. Fraisse, T. Vallée, V. de La Sayette, J. Dayan, D. Peschanski, F. Eustache, and P. Gagnepain, Plasticity of human resilience mechanisms, Science Advances 11 , eadq8336 (2025). [85] G. Deidda, M. Parrini, S. Naskar, I. F. Bozarth, A. Contestabile, and L. Cancedda, Reversing excitatory GABAAR signaling restores synaptic plasticity and memory in a mouse model of down syndrome, Nature Medicine 21 , 318 (2015). [86] W. J. Wright, N. G. Hedrick, and T. Komiyama, Distinct synaptic plasticity rules operate across dendritic compartments in vivo during learning, Science 388 , 322 (2025). 
+
+Berger & Agnes (2026) 8 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint [87] R. Urbanczik and W. Senn, Learning by the dendritic prediction of somatic spik-ing, Neuron 81 , 521 (2014). [88] J. Bono and C. Clopath, Modeling somatic and dendritic spike mediated plasticity at the single neuron and network level, Nature Communications 8, 706 (2017). [89] G. Kastellakis, A. J. Silva, and P. Poirazi, Linking memories across time via neuronal and dendritic overlaps in model neurons with active dendrites, Cell Reports 17 , 1491 (2016). [90] A. C. Frank, S. Huang, M. Zhou, A. Gdalyahu, G. Kastellakis, T. K. Silva, E. Lu, X. Wen, P. Poirazi, J. T. Trachtenberg, and A. J. Silva, Hotspots of dendritic spine turnover facilitate clustered spine addition and learning and memory, Nature Communications 9, 422 (2018). [91] J. H. Kirchner and J. Gjorgjieva, Emergence of local and global synaptic organiz-ation on cortical dendrites, Nature Communications 12 , 4005 (2021). [92] Y. K. Wu, C. Miehl, and J. Gjorgjieva, Regulation of circuit organization and function through inhibitory synaptic plasticity, Trends in Neurosciences 45 , 884 (2022). [93] G. Santoni, S. Astori, M. Leleu, L. Glauser, S. A. Zamora, M. Schioppa, I. Tarulli, C. Sandi, and J. Grä ff , Chromatin plasticity predetermines neuronal eligibility for memory trace formation, Science 385 , eadg9982 (2024). [94] G. Delamare, S. Wagle, J. Grä ff , and C. Clopath, A computational framework for epigenetic plasticity in memory, Brain advance online publication , awag094 (2026). [95] M. Suzuki and M. E. Larkum, General anesthesia decouples cortical pyramidal neurons, Cell 180 , 666 (2020). [96] S. Lakhera, E. Herbert, and J. Gjorgjieva, Modeling the emergence of circuit organization and function during development, Cold Spring Harbor Perspectives in Biology 17 , a041511 (2025) 
+
+Acknowledgements 
+
+We thank Josef Bischofberger for discussions on the role of cell-type-specific interneurons in dendritic gating. This research was funded by the Swiss National Science Foundation (SNSF) [10005175]. For the purpose of Open Access, a CC BY public copy-right licence is applied to any Author Accepted Manuscript (AAM) version arising from this submission. 
+
+Software and code availability 
+
+Code will be made available upon publication. 
+
+Competing interests 
+
+The authors declare no competing interests. 
+
+Berger & Agnes (2026) 9 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint Methods Biophysical model 
+
+Dendritic compartment. The membrane potential, Vi(t), of dendritic compartment i in a neuron ( i = 1, . . . , ND, where ND is the total number of dendritic compartments) evolves according to 
+
+Ci
+
+dVi(t)dt = − ˆgL
+
+> i
+
+hVi(t) − VRi − IS 
+
+> i
+
+(t) − IC 
+
+> i
+
+(t) − ICa  
+
+> i
+
+(t), (1) where Ci = C∆Ai and ˆ gL 
+
+> i
+
+= ˆgL∆Ai are the total capacitance and leak conductance of compartment i, obtained by multiplying the capacitance per unit area, C, and leak conductance per unit area, ˆ gL, by the branch area, ∆Ai. This choice gives all dendritic compartments the same membrane time constant, τM = C/ ˆgL. Throughout, hatted conductances denote absolute conductances (for example, in nS), whereas unhatted conductances denote conductances normalized by the compartment-specific leak conductance, ˆ gL 
+
+> i
+
+. In Eq. 1, VR is the resting membrane potential, IS 
+
+> i
+
+(t) is the total synaptic current onto compartment i, and IC 
+
+> i
+
+(t) is the current from neighbouring compartments. For neurons with multiple dendritic compartments, we additionally include a voltage-gated calcium-channel current, ICa  
+
+> i
+
+(t), to support active propagation of depolarization towards the soma. The total synaptic current onto compartment i, IS 
+
+> i
+
+(t), is given by 
+
+IS 
+
+> i
+
+(t) =
+
+X
+
+> X
+
+ˆgXi (t) hVi(t) − EXi HX(Vi(t)) (2) 
+
+= ˆgA 
+
+> i
+
+(t) hVi(t) − EAi
+
++ ˆgGA 
+
+> i
+
+(t) hVi(t) − EGA
+
+i
+
++ ˆgN 
+
+> i
+
+(t) hVi(t) − ENi HN (Vi(t)) 
+
++ ˆgK/GB 
+
+> i
+
+(t) hVi(t) − EK/GB
+
+i HK/GB (Vi(t)) 
+
++ ˆgGα 
+
+> i
+
+(t) hVi(t) − EGα
+
+i HGα (Vi(t)) , (3) where ˆ gA 
+
+> i
+
+(t), ˆ gGA 
+
+> i
+
+(t), ˆ gN 
+
+> i
+
+(t), and ˆ gGα 
+
+> i
+
+(t) denote the total conductances of AMPA, GABA A, NMDA, and α5-GABA A channels on compartment 
+
+i, respectively, whereas ˆ gK/GB 
+
+> i
+
+(t) denotes the total conductance of inwardly rectifying potassium (Kir) channels opened through GABA B
+
+activation. The corresponding reversal potentials are denoted by EA, EGA , EN, EK/GB , and EGα . The functions HN(V), HK/GB (V), and HGα (V)describe the nonlinear voltage dependence of NMDA, Kir /GABA B, and α5-GABA A currents, respectively, and are given by 
+
+HX(V) = 11 + aX exp ( V/bX) , (4) where aX and bX are parameters and X = {N, K/GB, Gα}. For the linear channels, HA(V) = HGA (V) = 1 for all V.The temporal evolution of each synaptic conductance is described by d ˆ gXi (t)dt = − ˆgXi (t)
+
+τX + ˆgL
+
+> i
+
+X
+
+> k∈X
+
+wXik sk(t), (5) where τX is the time constant of channel X, wXik is the connection strength from presynaptic neuron k onto compartment i for channel X,
+
+X is the set of presynaptic neurons that activate channel X, and sk(t) is the spike train of presynaptic neuron k. Here, wXik is expressed relative to the leak conductance ˆ gL 
+
+> i
+
+. The spike train is defined as 
+
+sk(t) =
+
+X
+
+> n
+
+δ(t − tnk ), (6) where δ(·) is the Dirac delta and tnk is the time of the nth spike of presynaptic neuron k. Presynaptic neurons may represent either external input sources or neurons within the simulated recurrent network, as described below. We define the baseline connection strength from presynaptic neuron k to dendritic compartment i as wik . Excitatory connections comprise both AMPA and NMDA components, with wA 
+
+> ik
+
+= wik and wN 
+
+> ik
+
+= RN/Awik , where RN/A is the ratio of NMDA to AMPA synaptic strength. We consider two classes of dendrite-targeting inhibitory interneurons in our simulations. A standard inhibitory interneuron, motivated by somatostatin-expressing (SOM) GABAergic cells, comprises both GABA A and Kir /GABA B components, with wGA 
+
+> ik
+
+= wik 
+
+and wK/GB 
+
+> ik
+
+= RGB/GA wik , where RGB/GA is the ratio of Kir /GABA B to GABA A synaptic strength. A gating-specific interneuron, motivated by nitric-oxide-synthase-expressing (NOS) neurogliaform cells, contributes only an α5-GABA A component, with wGα 
+
+> ik
+
+= wik .The current flowing from neighbouring compartments into compartment i, IC 
+
+> i
+
+(t), is given by 
+
+IC 
+
+> i
+
+(t) =
+
+> ND
+
+X
+
+> j=0
+
+ˆgC
+
+> ij
+
+hVi(t) − Vj(t)i , (7) 
+
+Berger & Agnes (2026) 10 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint where ˆ gC 
+
+> ij
+
+is the passive conductance coupling compartment j to compartment i. For convenience, we denote the somatic membrane potential by V0(t), so the sum starts at j = 0 to include the soma, whose dynamics are defined below. The current through the VGCC in compartment i, ICa  
+
+> i
+
+(t), is given by 
+
+ICa  
+
+> i
+
+(t) = ˆgCa 
+
+> i
+
+hVi(t) − ECa i HCa (Vi(t)) , (8) where ECa is the reversal potential of the VGCC, ˆ gCa  
+
+> i
+
+is the corresponding conductance, and HCa (V) describes its voltage dependence. For simplicity, we use the same functional form for HCa (V) as for the nonlinear synaptic activation functions (Eq. 4) with a hard activating threshold, 
+
+HCa (V) = H V − VR
+
+1 + aCa exp ( V/bCa ) , (9) where H(x) is the Heaviside step function, with H(x) = 1 for x ⩾ 0 and H(x) = 0 otherwise. Dividing Eq. 1 by ˆ gL 
+
+> i
+
+yields the normalized membrane-potential dynamics, 
+
+τM dVi(t)dt = − hVi(t) − VRi −
+
+X
+
+> X
+
+gXi (t) hVi(t) − EXi HX(Vi(t)) −
+
+X
+
+> j
+
+gC
+
+> ij
+
+hVi(t) − Vj(t)i − gCa 
+
+> i
+
+hVi(t) − ECa i HCa (Vi(t)) , (10) where gXi (t) = ˆgXi (t)/ ˆgL 
+
+> i
+
+, gC 
+
+> ij
+
+= ˆgC 
+
+> ij
+
+/ ˆgL 
+
+> i
+
+, and gCa  
+
+> i
+
+= ˆgCa  
+
+> i
+
+/ ˆgL 
+
+> i
+
+are conductances normalized by the leak conductance and are therefore dimen-sionless. 
+
+Somatic compartment. The somatic membrane potential, V0(t), evolves according to 
+
+τM dV0(t)dt = − hV0(t) − VRi −
+
+> ND
+
+X
+
+> j=1
+
+gC0j
+
+hV0(t) − Vj(t)i , (11) which has the same normalized form as the dendritic dynamics in Eq. 10, but without synaptic or VGCC terms. A neuron emits a spike when the somatic membrane potential, V0(t), crosses the threshold VTH from below. After a spike, V0(t) is reset to VRT and clamped at that value for the duration of the refractory period, τR.
+
+Dendritic architecture (morphology). In our framework, dendritic architecture is specified by the passive coupling matrix gC 
+
+> ij
+
+, which is zero for uncoupled compartments and equal to gC for dendrite-to-soma connections and gC 
+
+> d
+
+for dendrite-to-dendrite connections. For simplicity, we model passive current flow only from leaf dendrites towards the soma and neglect back-propagation. 
+
+Single dendrite and two dendrites. For simulations with a single dendritic compartment, we neglect passive current flow from the soma to the dendrite, reflecting the assumption that the total dendritic membrane area is much larger than the somatic area, ∆Adend ≫ ∆Asoma .The passive coupling is therefore 
+
+gC01 = gC (12) and 
+
+gC10 = gC00 = gC11 = 0. (13) For simulations with two dendritic compartments, we make the same approximation and set 
+
+gC01 = gC02 = gC, (14) and 
+
+gC10 = gC20 = gC12 = gC21 = gC00 = gC11 = gC22 = 0. (15) 
+
+Multiple dendrites. For neurons with multiple dendritic compartments, we consider a full binary dendritic tree with NS = 2L−1 leaf dendrites (with L representing the number of layers) and a total of ND = 2NS − 1 dendritic compartments. The first layer contains the 
+
+NS leaf dendrites, the next layer contains NS/2 dendrites, and so on until the final root compartment. Leaf dendrites are indexed by 
+
+i = 1, . . . , NS, the next layer by i = NS + 1, . . . , 3NS/2, and so on. With this indexing convention, passive coupling between dendritic compartments is defined as 
+
+gC 
+
+> ij
+
+=
+
+(gC 
+
+> d
+
+, if 2( i − NS) − 1 ⩽ j ⩽ 2( i − NS) and NS + 1 ⩽ i ⩽ ND,
+
+0, otherwise , (16) for i, j = 1, . . . , ND. The soma is then connected to the final dendritic compartment, 
+
+gC0ND = gC, gC 
+
+> ND0
+
+= gC00 = gC 
+
+> NDND
+
+= 0. (17) 
+
+External input – single neuron. In single-neuron simulations, we consider two types of external Poisson input: constant firing rate and fluctuating firing rate following a modified Ornstein-Uhlenbeck process. A dendritic compartment receives external synaptic input from presynaptic neurons modelled as point processes, which we refer to as external neurons . A total of N external neurons connect onto a dendrite, with NE excitatory and NI inhibitory. The probability that external neuron k emits a spike at time t is denoted by ps
+
+> k
+
+(t). Here, excitatory neurons are defined as 1 ⩽ k ⩽ NE and inhibitory as NE + 1 ⩽ k ⩽ N. Each spike updates the corresponding synaptic  
+
+> Berger & Agnes (2026)
+
+11 Dendritic balance and memory gating 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint
+
+conductance according to Eq. 5. We also impose a refractory period on external neurons in these simulations, such that ps
+
+> k
+
+(t) = 0 during the refractory interval. 
+
+Constant firing rate (blanket inhibition). In this condition, excitatory external neurons always follow the fluctuating Ornstein-Uhlenbeck-based firing-rate process described below. Only inhibitory external neurons fire with a constant rate outside the refractory period. Specifically, for inhibitory neurons, 
+
+ps
+
+> k
+
+(t) = rI∆t, NE + 1 ⩽ k ⩽ N, (18) where rI is the constant inhibitory firing rate and ∆t is the simulation time step. 
+
+Fluctuating firing rate (matched inhibition). In this condition, excitatory external neurons follow a fluctuating firing-rate process, and inhibitory external neurons follow the same fluctuations up to a population-specific scaling factor. The spike probability of external neuron k is 
+
+ps
+
+> k
+
+(t) = rk(t)∆t, (19) where rk(t) is its instantaneous firing rate. We separate the inputs into NOU groups with correlated spike patterns. For excitatory inputs, this means NE/NOU neurons per group, and for inhibitory inputs, NI/NOU . Each group follows an independent fluctuating firing rate. The instantaneous firing rate is taken as the positive part of an auxiliary variable rOU  
+
+> g
+
+(t) ( g = 1, . . . , NOU ) evolving according to 
+
+τOU drOU  
+
+> g
+
+(t)dt = −rOU  
+
+> g
+
+(t) + σOU χ(t), (20) where τOU is the correlation time constant, σOU is the noise amplitude, and χ(t) is white noise. We then set 
+
+rk(t) = rE max 0, rOU  
+
+> g
+
+(t) , for 1 ⩽ k ⩽ NE and k ∈ g, (21) for excitatory inputs, and 
+
+rk(t) = rI max 0, rOU  
+
+> g
+
+(t) , for NE + 1 ⩽ k ⩽ N and k ∈ g, (22) for inhibitory inputs. As in the blanket-inhibition condition, all external neurons obey a refractory period. 
+
+External input – recurrent network. In recurrent-network simulations, external input is used either to activate a memory from a silent initial condition, to switch recall between memories, or to gate dendrites through targeted inhibitory input. In all cases, spikes follow a homogeneous Poisson process without a refractory period, reflecting the approximation that many external neurons contribute simultaneously and thereby reducing computational cost. The probability that an external spike arrives onto dendrite k of neuron i is 
+
+ps 
+
+> ik
+
+(t) = NXrX∆t, (23) where NX is the assumed number of external neurons of type X and rX is their average firing rate. 
+
+Short burst for memory activation. To activate a memory in the recurrent network, we apply a brief burst of external excitatory input after an initialisation period. In single-dendrite networks, no dendritic index is required. In multiple-dendrite networks, the externally activated dendrite is specified explicitly. The set of externally activated neurons, and dendrites when applicable, is denoted by E. For all 
+
+ik ∈ E , the probability that dendrite k of neuron i receives an external spike is given by ps 
+
+> ik
+
+(t), as defined above. 
+
+Constant firing rate for inhibitory gating. In simulations with two-dendrite neurons and external inhibitory gating, each neuron has two dendrites connected to the soma. To gate one memory set, we select one dendrite index, k ∈ { 1, 2}, across the entire network. For the selected dendrite of each neuron, external inhibitory spikes drive the α5-GABA A conductance with probability ps 
+
+> ik
+
+(t), as defined above. 
+
+Connectivity – single neuron. In the single-neuron simulations, the ratio of excitatory to inhibitory external neurons is fixed at 4 : 1. All external neurons connect to the postsynaptic neuron with uniform synaptic weights, wext E for excitatory input and wext I for inhibitory input. 
+
+Connectivity – recurrent network. In all recurrent-network simulations, synaptic connectivity is first generated in the binary model using the modified perceptron learning rule and then mapped onto the biophysical model, as described below. The di ff erent recurrent-network configurations considered here di ff er only in how the mapped connectivity is distributed across dendrites and in how external stimulation or gating is applied. 
+
+Single memory matrix. For networks with one dendrite per neuron, the mapped connectivity matrix is assigned to that dendrite. A subset of neurons receives external excitatory input during a brief stimulation period, with synaptic weight wext E .
+
+Two memory sets with optional external gating. For networks with two dendrites per neuron and two memory sets, we generate two connectivity matrices from two independently generated sets of memory patterns and assign one matrix to each dendrite. External excitatory input is then applied during a brief stimulation period to a selected set of neurons, targeting one or both dendrites, with synaptic weight wext E . When external inhibitory gating is included, the selected dendrite on each neuron additionally receives inhibitory input during the gating period, with synaptic weight wext  
+
+> α5
+
+.
+
+Autonomous readout-gating architecture. For the autonomous configuration, we simulate three interconnected networks: a memory network, a readout network, and a gating network. In the memory network, neurons have multiple dendrites, and each dendrite is assigned a connectivity matrix encoding a di ff erent memory set. In the readout network, neurons have a single dendrite; excitatory readout neurons receive input from excitatory neurons in the memory network with connections generated using the modified perceptron  
+
+> Berger & Agnes (2026)
+
+12 Dendritic balance and memory gating 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint
+
+learning rule. Recurrent readout connectivity is generated using the modified perceptron learning rule as well. The gating network consists of inhibitory neurons that receive input from excitatory readout neurons and project back to the dendrites of the memory network. 
+
+Simplified fluorescence signals ( ∆F/F). To relate our results to standard experimental measurements, we implement a simplified normalized fluorescence signal as a slow and noisy proxy for large dendritic depolarizations in calcium imaging 32 . For simplicity, we use the NMDA voltage-dependent nonlinearity, HN(Vi(t)), as the nonlinear activation term driving the fluorescence signal. We model these dynamics as a nonlinear voltage-dependent signal followed by low-pass filtering and additive noise, d ( ∆F/F)i (t)dt = 1
+
+τF
+
+h− (∆F/F)i (t) + HN(Vi(t)) i + σϵϵ(t), (24) where ( ∆F/F)i(t) is the normalized fluorescence of compartment i at time t, τF is the e ff ective fluorescence time constant and ϵ(t) is a white noise term with amplitude σϵ.
+
+Analyses of the biophysical model 
+
+Dendritic compartment fixed points. To analyse the fixed points of the dendritic membrane-potential dynamics, we approximate the synaptic conductances using average presynaptic firing rates. For simplicity, we suppress the dendritic-compartment index whenever no ambiguity arises, for example gA 
+
+> i
+
+(t) = gA(t) and wik = wk. The temporally averaged conductance of channel X is then 
+
+DgX(t)E 
+
+> T
+
+= τX X
+
+> k∈X
+
+wk ⟨sk(t)⟩T = τX X
+
+> k∈X
+
+wkνk(t; T) ≈ τXNX ⟨wk⟩k∈X ⟨νk(t; T)⟩k∈X = τXNXwXνX(t; T), (25) where the temporal average over a window of duration T is defined as 
+
+⟨x(t)⟩T = 1
+
+T
+
+Z T
+
+> 0
+
+x(t − s)d s, (26) and νk(t; T) = ⟨sk(t)⟩T denotes the temporally averaged firing rate of presynaptic neuron k. Here, NX is the number of presynaptic neurons whose transmitter activates channel X. The corresponding population averages are 
+
+wX = ⟨wk⟩k∈X = 1
+
+NX
+
+X
+
+> k∈X
+
+wk, νX(t; T) = ⟨νk(t; T)⟩k∈X = 1
+
+NX
+
+X
+
+> k∈X
+
+νk(t; T). (27) Taking the temporal average of the membrane-potential dynamics (Eq. 10) and considering an isolated dendritic compartment, we approximate the nonlinear current terms by evaluating them at the temporally averaged membrane potential. This yields 
+
+τM
+
+* dV(t)dt
+
++
+
+> T
+
+≈ − h⟨V(t)⟩T − VRi −
+
+X
+
+> X
+
+DgX(t)E
+
+> T
+
+h⟨V(t)⟩T − EXi HX  ⟨V(t)⟩T
+
+
+
+= − h⟨V(t)⟩T − VRi −
+
+X
+
+> X
+
+τXNXwXνX(t; T) h⟨V(t)⟩T − EXi HX  ⟨V(t)⟩T
+
+
+
+= − h⟨V(t)⟩T − VRi − NEwEνE nτA h⟨V(t)⟩T − EAi + RN/AτNHN  ⟨V(t)⟩T
+
+ h⟨V(t)⟩T − ENio 
+
+− NIwIνI nτGA
+
+h⟨V(t)⟩T − EGA
+
+i + RGB/GA τK/GB HK/GB  ⟨V(t)⟩T
+
+ h⟨V(t)⟩T − EK/GB
+
+io 
+
+− NIα wIα νIα τGα HGα  ⟨V(t)⟩T
+
+ h⟨V(t)⟩T − EGα
+
+i . (28) Setting Eq. 28 to zero allows us to evaluate numerically the fixed-point voltages, V∗, as a function of excitatory and inhibitory input, thereby defining a state space. Without α5-GABA A gating inhibition—i.e., with NIα wIα νIα = 0 in Eq. 28—we obtain 
+
+V∗ − VR + NEwEνE nτA hV∗ − EAi + RN/AτNHN (V∗) hV∗ − ENio + NIwIνI nτGA
+
+hV∗ − EGA
+
+i + RGB/GA τK/GB HK/GB (V∗) hV∗ − EK/GB
+
+io = 0, (29) which can be rewritten as 
+
+NEwEνE − α (V∗) NIwIνI = β (V∗) , (30) where 
+
+α (V∗) = − τGA
+
+hV∗ − EGA
+
+i + RGB/GA τK/GB HK/GB (V∗) hV∗ − EK/GB
+
+i
+
+τA [V∗ − EA] + RN/AτNHN (V∗) [ V∗ − EN] (31) and 
+
+β (V∗) = − V∗ − VR
+
+τA [V∗ − EA] + RN/AτNHN (V∗) [ V∗ − EN] . (32) Eq. 30 defines the relationship between excitatory input, NEwEνE, and inhibitory input, NIwIνI, required for a fixed point at voltage V∗.In this expression, α(V∗) is dimensionless and sets the relative weighting of inhibition with respect to excitation, whereas β(V∗) has units of frequency, like νE and νI, because synaptic weights are dimensionless. The resulting phase diagram contains three regions: one with 
+
+Berger & Agnes (2026) 13 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint a single stable hyperpolarised fixed point, one with a single stable depolarised fixed point, and one in which stable hyperpolarised and depolarised fixed points coexist with an unstable fixed point. For the associative memory network, we are particularly interested in the line corresponding to the fixed point V∗ = Vmin , where Vmin 
+
+is the least depolarised dendritic membrane potential that still elicits somatic spiking. This line is described by 
+
+αmin = α Vmin  , βmin = β Vmin  , (33) where Vmin is calculated below. 
+
+Postsynaptic neuron’s firing rate. We first calculate the least depolarised dendritic membrane potential required to elicit a somatic spike, denoted by Vmin . For a soma coupled to a single dendrite with passive coupling gC, this corresponds to the minimum dendritic membrane potential for which the somatic membrane potential reaches the spike threshold at steady state, yielding 
+
+Vmin = VTH + VTH − VR
+
+gC . (34) To estimate the postsynaptic firing rate, we calculate the inter-spike interval, tISI , assuming that the soma receives constant input from a single dendrite held at the depolarised fixed point, V∗. Dropping the somatic index for simplicity, such that V0(t) = V(t), the postsynaptic firing rate is 
+
+νpost = 1
+
+tISI =
+
+τM
+
+Z VTH 
+
+> VRT
+
+dVVR + gCV∗ − (1 + gC)V + τR
+
+
+
+> −1
+
+=
+
+" τM
+
+1 + gC ln VRT (1 + gC) − gCV∗ − VR
+
+VTH (1 + gC) − gCV∗ − VR
+
+!
+
++ τR
+
+#−1
+
+≡ ν0
+
+gC, V∗ , (35) where ν0(gC, V∗) denotes the firing rate of a neuron with a single dendrite connected to the soma by passive coupling gC and held at a constant dendritic membrane potential V∗.
+
+Minimum GABA A conductance. Excitatory and inhibitory currents balance most e ff ectively when GABA A conductance remains continuously above zero. To quantify this, we define a practical lower-bound estimate of the GABA A conductance as the temporal mean minus half a standard deviation, evaluated for Poisson input. For a Poisson process, the variance of the conductance is 
+
+σ2 gGA
+
+ =
+
+gGA
+
+2
+
+> t
+
+− DgGA
+
+E2 
+
+> t
+
+= τGA NI wI2
+
+νI
+
+2 . (36) Using the temporal mean conductance from Eq. 25, we then define 
+
+gGA 
+
+> min
+
+= DgGA
+
+E 
+
+> t
+
+− 12 σ gGA
+
+ = wI
+
+τGA NIνI − 12
+
+r
+
+τGA NIνI
+
+2
+
+ . (37) 
+
+Interspike interval distribution. We estimate the distribution of network interspike intervals (ISIs) from the firing rate of active neurons and the timing of memory transitions. For externally driven recall, memories are activated periodically with period T. Assuming that neurons active during recall fire at rate ν0 (Eq. 35), the ISI distribution, tISI , is 
+
+P (tISI ) = ν0T − 1
+
+ν0T δ
+
+
+
+tISI − 1
+
+ν0
+
+
+
++ 1
+
+ν0T
+
+> ∞
+
+X
+
+> k=1
+
+a(1 − a)k−1δ (tISI − kT ) , (38) where a is the activity level of a memory pattern. The first term corresponds to successive spikes emitted while the neuron remains active within a recalled memory, whereas the second term accounts for intervals spanning one or more memory periods between successive recall events. In Fig. 2G, the theoretical prediction is converted to spike counts using the same binning as in the simulations. The mean of the distribution is 
+
+E (tISI ) =
+
+ ν0T − 1
+
+ν0T
+
+ 1
+
+ν0
+
++ 1
+
+ν0T
+
+ Ta
+
+
+
+, (39) and the second moment is 
+
+E t2ISI 
+
+ =
+
+ ν0T − 1
+
+ν0T
+
+ 1
+
+ν20
+
++ 1
+
+ν0T
+
+" (2 − a)T2
+
+a2
+
+#
+
+, (40) which together yield the coe ffi cient of variation, CV ISI =
+
+q
+
+E t2ISI 
+
+ − E2 (tISI )
+
+E (tISI ) . (41) 
+
+Binary model 
+
+Network dynamics. For clarity, we refer to binary neurons as units , which take values of zero or one. The state of unit i evolves in  
+
+> Berger & Agnes (2026)
+
+14 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint discrete time according to 
+
+Si(t + 1) = H
+
+
+
+> N
+
+X
+
+> j=1
+
+Jij Sj(t) − θ
+
+ = H
+
+
+
+> NE
+
+X
+
+> j=1
+
+Jij Sj(t) +
+
+> N
+
+X
+
+> j=NE+1
+
+Jij Sj(t) − θ
+
+ , (42) where Si(t) is the state of unit i at discrete time t, and Jij is the connection strength from presynaptic unit j to postsynaptic unit i. The variables NE and NI denote the numbers of excitatory and inhibitory units, respectively, such that N = NE + NI is the total number of units. The threshold θ is positive ( θ ⩾ 0), and H(x) is the Heaviside step function, with H(x) = 1 for x ⩾ 0 and H(x) = 0 otherwise (note the repeated definition for clarity). In Eq. 42, the input is separated into excitatory and inhibitory components according to the sign of the outgoing connections, (Jij ⩾ 0, ∀i and 1 ⩽ j ⩽ NE,
+
+Jij ⩽ 0, ∀i and NE + 1 ⩽ j ⩽ N. (43) 
+
+Memory patterns. We denote memory patterns by ξμ 
+
+> i
+
+, where ξμ 
+
+> i
+
+= 1 indicates that unit i is active in memory μ, and ξμ 
+
+> i
+
+= 0 indicates that it is inactive. Thus, ξμ 
+
+> i
+
+= 1 means that unit i belongs to the assembly, or engram, representing memory μ. We consider both independent and correlated sets of memory patterns. 
+
+Independent memory patterns. Independent memory patterns are generated as 
+
+
+
+P ξμ 
+
+> i
+
+= 1 = aE, P ξμ 
+
+> i
+
+= 0 = 1 − aE, for 1 ⩽ i ⩽ NE,
+
+P ξμ 
+
+> i
+
+= 1 = aI, P ξμ 
+
+> i
+
+= 0 = 1 − aI, for NE + 1 ⩽ i ⩽ N, (44) where aE and aI are the probabilities that excitatory and inhibitory units, respectively, are active in a given memory pattern. 
+
+Correlated memory sets. We also consider correlated memory sets. To do so, we generate one set of independent memory patterns, as described above, and additional sets whose patterns are correlated with those in the reference set. For two patterns ξμ 
+
+> i
+
+and ξν 
+
+> i
+
+with μ , ν,their correlation is 
+
+C ξμ 
+
+> i
+
+, ξ ν
+
+> i
+
+ = E[ξμ 
+
+> i
+
+ξν 
+
+> i
+
+] − E[ξμ 
+
+> i
+
+]E[ξν 
+
+> i
+
+]
+
+q
+
+var ξμ
+
+> i
+
+ var ξν
+
+> i
+
+ , (45) where E[ξμ 
+
+> i
+
+] = a is the activity level and var( ξμ 
+
+> i
+
+) = a(1 − a) is the corresponding variance. For notational simplicity, we omit the excitatory and inhibitory superscripts here, although the implementation still uses distinct activity levels aE and aI. Because the activity level is fixed, E[ξμ 
+
+> i
+
+] = E[ξν 
+
+> i
+
+] = a and var( ξμ 
+
+> i
+
+) = var( ξν 
+
+> i
+
+) = a(1 − a). Moreover, E[ξμ 
+
+> i
+
+ξν 
+
+> i
+
+] = P(ξμ 
+
+> i
+
+= 1, ξ ν 
+
+> i
+
+= 1) = a P (ξν 
+
+> i
+
+= 1 | ξμ 
+
+> i
+
+= 1). Substituting these expressions into Eq. 45 gives 
+
+P ξν 
+
+> i
+
+= 1 | ξμ 
+
+> i
+
+= 1 = C ξμ 
+
+> i
+
+, ξ ν
+
+> i
+
+ (1 − a) + a. (46) Using the symmetry P(ξν 
+
+> i
+
+= 0, ξ μ 
+
+> i
+
+= 1) = P(ξν 
+
+> i
+
+= 1, ξ μ 
+
+> i
+
+= 0) together with the complement relation P(ξν 
+
+> i
+
+= 0 | ξμ 
+
+> i
+
+= 1) = 1 − P(ξν 
+
+> i
+
+= 1 | ξμ 
+
+> i
+
+= 1) yields 
+
+P ξν 
+
+> i
+
+= 1 | ξμ 
+
+> i
+
+= 0 = a h1 − C ξμ 
+
+> i
+
+, ξ ν
+
+> i
+
+i . (47) We use these conditional probabilities to generate correlated patterns. Starting from a random pattern ξμ 
+
+> i
+
+sampled according to Eq. 44, we set ξν 
+
+> i
+
+= 1 with probability P(ξν 
+
+> i
+
+= 1 | ξμ 
+
+> i
+
+= 1) if ξμ 
+
+> i
+
+= 1, and with probability P(ξν 
+
+> i
+
+= 1 | ξμ 
+
+> i
+
+= 0) if ξμ 
+
+> i
+
+= 0; otherwise, we set ξν 
+
+> i
+
+= 0. In the implementation, Eqs. 46 and 47 are applied separately to excitatory and inhibitory units using aE and aI, respectively. 
+
+Readout. For simplicity, we denote the memory patterns of the readout network by ημ 
+
+> i
+
+. The readout network represents all memories stored in the memory network, indexed by μ = 1, . . . , NSp, where NS is the number of memory sets (and dendritic leaves) in the memory network and p is the number of memory patterns per set. Excitatory readout units encode these memories without overlap, 
+
+ημ 
+
+> i
+
+=
+
+
+
+1, if 
+
+
+
+1 + (μ−1) NE
+
+> R
+> NSp
+
+
+
+⩽ i ⩽ μNE 
+
+> R
+> NSp
+
+,
+
+0, otherwise ,
+
+(48) where NE 
+
+> R
+
+is the number of excitatory readout units. Inhibitory readout units encode memories randomly according to 
+
+P ημ 
+
+> i
+
+= 1 = aI
+
+> R
+
+, P ημ 
+
+> i
+
+= 0 = 1 − aI
+
+> R
+
+, for NE 
+
+> R
+
++ 1 ⩽ i ⩽ NR, (49) where NR = NE 
+
+> R
+
++ NI 
+
+> R
+
+is the total number of readout units and NI 
+
+> R
+
+is the number of inhibitory readout units. 
+
+Gating. For simplicity, we denote the activity patterns of the gating network by ζμ 
+
+> i
+
+. The gating network contains NG inhibitory units that target dendrites in the memory network. We assume a binary dendritic tree, so that the number of memory sets (equivalently, leaf dendrites) satisfies NS = 2L for some integer L. Under this architecture, each neuron has 2 NS − 2 dendrites that require inhibitory gating (excluding the root compartment directly connected to the soma) corresponding to the number of gating patterns, μ = 1, . . . , 2NS − 2.  
+
+> Berger & Agnes (2026)
+
+15 Dendritic balance and memory gating 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint
+
+These patterns are non-overlapping and are defined as 
+
+ζμ 
+
+> i
+
+=
+
+
+
+1, if h1 + (μ−1) NG
+
+> 2NS−2
+
+i ⩽ i ⩽ μNG 
+
+> 2NS−2
+
+,
+
+0, otherwise . (50) 
+
+Connectivity and connection weights. Connections in the recurrent-network simulations are generated from memory patterns in two ways. Some weights are optimized using a modified Perceptron Learning Rule (modPLR), whereas others are assigned directly from the structure and overlap of the corresponding coding patterns. We describe these two constructions below. 
+
+Recurrent memory-encoding weights. We choose the network weights of excitatory and inhibitory units such that the memory patterns ξμ
+
+> i
+
+of a memory set, μ = 1, . . . , p, are fixed points of the binary dynamics (Eq. 42). To quantify this, we use the stability parameter 97 , κμ 
+
+> i
+
+,which for unit i and memory μ is defined as 
+
+κμ 
+
+> i
+
+=
+
+(2 ξμ 
+
+> i
+
+− 1) P Nj=1 Jij ξμ 
+
+> j
+
+− θ
+
+∥Ji∥2
+
+= Kμ
+
+> i
+
+∥Ji∥2
+
+, (51) where ∥Ji∥2 =
+
+qPNj=1 J2 
+
+> ij
+
+is the ℓ2 norm of the incoming weight vector to unit i. If κμ 
+
+> i
+
+⩾ 0 for all i in a given memory pattern ξμ 
+
+> i
+
+, then that pattern is a fixed point of the network dynamics, as follows directly from Eq. 42. For all patterns in a memory set to be fixed points of the dynamics, we focus first on the numerator of Eq. 51, because the denominator aff ects the magnitude of the stability parameter but not whether a pattern is itself a fixed point. To do so, we use a modified Perceptron Learning Rule (modPLR), adapted from Brunel 17 . The modPLR reformulates the numerator of Eq. 51 into two state-dependent constraints, Activation condition: 
+
+> N
+
+X
+
+> j=1
+
+Jij ξμ 
+
+> j
+
+− θ > K, if ξμ 
+
+> i
+
+= 1; (52) Quiescence condition: 
+
+> N
+
+X
+
+> j=1
+
+Jij ξμ 
+
+> j
+
+− θ < −K, if ξμ 
+
+> i
+
+= 0. (53) For a given memory pattern μ and unit i, the modPLR then applies the following update rules: 
+
+Step 1. Increase the unmasked input connections (for which mask ij = 0) by λ if the activation condition (Eq. 52) is violated. 
+
+Step 2. Decrease the unmasked input connections (for which mask ij = 0) by λ if the quiescence condition (Eq. 53) is violated. 
+
+Step 3. Enforce Dale’s law for excitatory units: if 1 ⩽ j ⩽ NE and Jij < 0, set Jij = 0. 
+
+Step 4. Enforce Dale’s law for inhibitory units: if NE < j ⩽ N and Jij > 0, set Jij = 0. Initially, we set mask ij = 0 for all i, j. A single optimisation iteration consists of repeated passes through all units and memory patterns until the update conditions above are satisfied. After each such iteration, connections that have been eliminated are permanently masked by setting mask ij = 1 whenever Jij = 0. Importantly, a connection may temporarily reach zero within an iteration as long as it remains unmasked, i.e., as long as mask ij = 0. Because the stability parameter in Eq. 51 is normalised by ∥Ji∥2, stability can be improved by reducing the ℓ2 norm of the incoming weight vector. However, biological connectivity, for example in hippocampal CA3, is also sparse 22 , which motivates reducing the ℓ1
+
+norm, ∥Ji∥1 = PNj=1 |Jij |, as well. To promote both e ff ects, after convergence of the modPLR update rules we apply the shrinkage step 
+
+Jij ← Jij − h 1 − ρ Jij + ρ sign Jij 
+
+i , (54) where ρ ∈ [0 , 1] controls the relative contributions of the ℓ2- and ℓ1-norm penalties (see Supplementary Text for the derivation). This shrinkage step generally renders some memories unstable and therefore initiates a new optimisation iteration. The procedure is repeated until κμ 
+
+> i
+
+converges (Fig. S3). The optimisation is initialized with weights drawn independently from a uniform distribution, Jij ∼ U (−J∗, J∗), where J∗ is a free parameter. 
+
+Readout weights. Readout-network weights are generated using the same modified perceptron learning rule (modPLR) used for the memory network, with the addition that excitatory readout units also receive input from the memory network. Accordingly, the  
+
+> Berger & Agnes (2026)
+
+16 Dendritic balance and memory gating 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint
+
+activation and quiescence conditions are rewritten as Activation condition for excitatory units (1 ⩽ i ⩽ NE
+
+> R
+
+) : 
+
+> NE
+
+X
+
+> j=1
+
+JRM ij ξσ,μ  
+
+> j
+
++
+
+> NE
+> R+NI
+> R
+
+X
+
+> j=NE
+> R+1
+
+JRR ij η(σ−1) p+μ 
+
+> j
+
+− θ > K, if η(σ−1) p+μ 
+
+> i
+
+= 1; (55) Quiescence condition for excitatory units (1 ⩽ i ⩽ NE
+
+> R
+
+) : 
+
+> NE
+
+X
+
+> j=1
+
+JRM ij ξσ,μ  
+
+> j
+
++
+
+> NE
+> R+NI
+> R
+
+X
+
+> j=NE
+> R+1
+
+JRR ij η(σ−1) p+μ 
+
+> j
+
+− θ < −K, if η(σ−1) p+μ 
+
+> i
+
+= 0; (56) Activation condition for inhibitory units ( NE 
+
+> R
+
++ 1 ⩽ i ⩽ NE 
+
+> R
+
++ NI
+
+> R
+
+) : 
+
+> NE
+> R+NI
+> R
+
+X
+
+> j=1
+
+JRR ij η(σ−1) p+μ 
+
+> j
+
+− θ > K, if η(σ−1) p+μ 
+
+> i
+
+= 1; (57) Quiescence condition for inhibitory units ( NE 
+
+> R
+
++ 1 ⩽ i ⩽ NE 
+
+> R
+
++ NI
+
+> R
+
+) : 
+
+> NE
+> R+NI
+> R
+
+X
+
+> j=1
+
+JRR ij η(σ−1) p+μ 
+
+> j
+
+− θ < −K, if η(σ−1) p+μ 
+
+> i
+
+= 0, (58) where ξσ,μ  
+
+> j
+
+denotes the activity of memory-network unit j in memory μ of memory set σ, JRM ij is the connection from memory-network unit j to readout-network unit i, and JRR ij is a recurrent connection within the readout network. We then optimize both JRM ij and JRR ij using the same modPLR procedure described above for the memory network. 
+
+Readout-to-gating network weights. Because excitatory readout units encode individual memories and inhibitory gating units encode dendritic branches, we connect these two populations so that readout activity associated with memory set σ activates the gating units corresponding to the same set. We define these weights as 
+
+JGR ij =
+
+> NSp
+
+X
+
+> μ=1
+> NS
+
+X
+
+> σ=12NS−2
+
+X
+
+> ν=1
+
+ζν 
+
+> i
+
+AG
+
+> σν
+
+AR
+
+> σμ
+
+ημ 
+
+> j
+
+, (59) where JGR ij = {0, 1} is the connection from presynaptic readout unit j to postsynaptic gating unit i. To specify the correct readout-to-gating connectivity, we introduce two auxiliary matrices, AR 
+
+> σμ
+
+and AG
+
+> σν
+
+. Here, AR 
+
+> σμ
+
+= 1 if readout memory μ belongs to memory set σ, and AG 
+
+> σν
+
+= 1if gating pattern, and thus dendrite, ν belongs to memory set σ. Because the readout memories are ordered as non-overlapping blocks (Eq. 48), the auxiliary matrix AR 
+
+> σμ
+
+is given by 
+
+AR 
+
+> σμ
+
+=
+
+(1, if 1 + (σ − 1) p ⩽ μ ⩽ σp,
+
+0, otherwise . (60) The auxiliary matrix AG 
+
+> σν
+
+depends on the dendritic-tree architecture and indexing convention defined above (Eq. 16). In the memory network, each neuron has 2 NS − 2 gated dendrites, indexed by ν = 1, . . . , 2NS − 2, where the NS leaf dendrites occupy the first layer and each subsequent layer contains half as many dendrites. The matrix AG 
+
+> σν
+
+specifies whether dendrite ν belongs to the path associated with memory set σ. It is given by 
+
+AG 
+
+> σν
+
+=
+
+> log 2(NS)
+
+X
+
+> k=1
+
+xk
+
+> σν
+
+, (61) where 
+
+xk 
+
+> σν
+
+=
+
+(1, if Bk + 1 ⩽ ν ⩽ Bk+1 and ( ν − Bk − 1)2 k−1 + 1 ⩽ σ ⩽ (ν − Bk)2 k−1,
+
+0, otherwise , (62) with 
+
+Bk = NS(2 − 22−k), (63) which denotes the total number of dendrites in all layers below layer k. The sum in Eq. 61 runs over dendritic layers and evaluates to one only when the conditions in Eq. 62 are satisfied. The first condition identifies the layer containing dendrite ν, and the second identifies the memory sets σ associated with that dendrite. 
+
+Gating weights. Following the dendritic-tree architecture and indexing defined above, we denote d = 1, . . . , 2NS − 2 as the index of a gated dendrite across all layers. The weight matrix connecting gating unit j to dendrite d is then defined as 
+
+JDG dj =
+
+
+
+1, if h1 + (d−1) NG
+
+> 2NS−2
+
+i ⩽ j ⩽ dN G 
+
+> 2NS−2
+
+,
+
+0, otherwise . (64) 
+
+Binary to biophysical mapping 
+
+To map the binary network onto the biophysical network, we match the thresholded input of a binary unit to the thresholded input of a biophysical neuron evaluated at the minimum active fixed point (Eqs. 30 and 33). We assume that both excitatory and inhibitory neurons fire at a common rate ν∗ when their dendrites are in the active depolarised state. Under this approximation, the firing-rate dynamics of 
+
+Berger & Agnes (2026) 17 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint the biophysical network can be written as 
+
+νi(t + ∆ t) = ν∗H
+
+
+
+> NE
+
+X
+
+> j=1
+
+wij νj(t) − αmin 
+
+> N
+
+X
+
+> j=NE+1
+
+wij νj(t) − βmin 
+
+ , (65) where αmin and βmin are defined in Eqs. 30–33, and ν∗ is the postsynaptic firing rate given by Eq. 35. Here, wij denotes a non-negative biophysical synaptic strength, with inhibitory contributions represented by the explicit prefactor αmin in Eq. 65. For a memory pattern μ, and dropping the time index as well as the superscript “min” for readability, Eq. 65 becomes 
+
+Sμ 
+
+> i
+
+= νμ
+
+> i
+
+ν∗ = H
+
+ν∗
+
+> NE
+
+X
+
+> j=1
+
+wij ξμ 
+
+> j
+
+− αν ∗
+
+> N
+
+X
+
+> j=NE+1
+
+wij ξμ 
+
+> j
+
+− β
+
+
+
+= H
+
+
+
+βθ
+
+
+
+θν ∗
+
+β
+
+> NE
+
+X
+
+> j=1
+
+wij ξμ 
+
+> j
+
+− θν ∗αβ
+
+> N
+
+X
+
+> j=NE+1
+
+wij ξμ 
+
+> j
+
+− θ
+
+
+
+= H
+
+
+
+θν ∗
+
+β
+
+> NE
+
+X
+
+> j=1
+
+wij ξμ 
+
+> j
+
+− θν ∗αβ
+
+> N
+
+X
+
+> j=NE+1
+
+wij ξμ 
+
+> j
+
+− θ
+
+ , (66) where νμ 
+
+> i
+
+is the firing rate of neuron i when all neurons belonging to memory pattern μ fire at rate ν∗ and all other neurons are silent, so that Sμ 
+
+> i
+
+∈ { 0, 1} as in the binary model. Because θ > 0 and β > 0 in the regime considered here, the identity H(gx ) = H(x) for g > 0 is valid in the second equality of Eq. 66. Matching the arguments of the Heaviside functions in Eqs. 42 and 66 yields 
+
+θν ∗
+
+β
+
+> NE
+
+X
+
+> j=1
+
+wij ξμ 
+
+> j
+
+− θν ∗αβ
+
+> N
+
+X
+
+> j=NE+1
+
+wij ξμ 
+
+> j
+
+− θ =
+
+> NE
+
+X
+
+> j=1
+
+Jij ξμ 
+
+> j
+
++
+
+> N
+
+X
+
+> j=NE+1
+
+Jij ξμ 
+
+> j
+
+− θ. (67) This gives the mapping from binary to biophysical connection weights, 
+
+wij = βJij 
+
+ν∗θ ≡ Jij 
+
+JE , ∀i, 1 ⩽ j ⩽ NE, (68) and 
+
+wij = − βJij 
+
+ν∗θα ≡ Jij 
+
+JI , ∀i, NE + 1 ⩽ j ⩽ N, (69) where 
+
+JE = ν∗θβ , JI = − ν∗θα β . (70) For the memory-to-readout connections, we used the same mapping as above. For the readout-to-readout connections we used the same mapping as above, but scaling the weights to protect memory sets from interference, 
+
+wRR ij = wRR 
+
+> 0
+
+JRR ij 
+
+JE , NE 
+
+> R
+
++ 1 ⩽ i ⩽ NR, 1 ⩽ j ⩽ NE
+
+> R
+
+, (71) and 
+
+wRR ij = wRR 
+
+> 0
+
+JRR ij 
+
+JI , 1 ⩽ i ⩽ NR, NE 
+
+> R
+
++ 1 ⩽ j ⩽ NR, (72) where wRR ij is the weight between neurons j and i in the readout network, and wRR  
+
+> 0
+
+is a scaling parameter. For the readout-to-gating connections, we used 
+
+wGR ij = wGR E JGR ij ϵij , 1 ⩽ i ⩽ NG, 1 ⩽ j ⩽ NE
+
+> R
+
+, (73) and 
+
+P wGR ij = wGR I ϵij 
+
+ = cI 
+
+> GR
+
+and P wGR ij = 0 = 1 − cI
+
+> GR
+
+, 1 ⩽ i ⩽ NG, NE 
+
+> R
+
++ 1 ⩽ j ⩽ NR, (74) where cI 
+
+> GR
+
+is the probability of a connection from a readout inhibitory neuron to a gating neuron, wGR ij is the weight between neurons 
+
+j from the readout network and i from the gating network, wGR E and wGR I are weight mappings, and ϵij is a random factor drawn uniformly between ϵ∗ and ϵ∗ + 1. Note that excitatory and inhibitory connections use di ff erent noise levels, ϵ∗ 
+
+> E
+
+and ϵ∗ 
+
+> I
+
+, respectively. For gating-to-memory connections, we used 
+
+wDG id j = wDG  
+
+> l/t
+
+JDG dj , ∀i, (75) where wid j is the connection from gating neuron j to dendrite d of memory neuron i and wDG  
+
+> l/t
+
+is the weight mapping (l corresponds to a leaf branch and t to a trunk branch). 
+
+Berger & Agnes (2026) 18 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint Quantifications 
+
+Correlation measures. We quantify the temporal correlation, C(x, y), between two variables x and y using the Pearson correlation coe ffi cient, 
+
+C(x, y) =
+
+Dx(t) − ⟨ x(t)⟩t
+
+ hy(t) − y(t) t
+
+iE 
+
+> t
+
+rDx(t) − ⟨ x(t)⟩t
+
+2E
+
+> t
+
+hy(t) − y(t) t
+
+i2
+
+> t
+
+, (76) where ⟨·⟩ t denotes the temporal average. 
+
+Excitatory-inhibitory correlation. For the excitatory-inhibitory correlation, we compute dendrite-specific correlations using Eq. 76 with 
+
+xi(t) = IE 
+
+> i
+
+(t) = gA 
+
+> i
+
+(t) hVi(t) − EAi + gN 
+
+> i
+
+(t) hVi(t) − ENi HN (Vi(t)) , (77) and 
+
+yi(t) = II 
+
+> i
+
+(t) = gGA 
+
+> i
+
+(t) hVi(t) − EGA
+
+i + gK/GB 
+
+> i
+
+(t) hVi(t) − EK/GB
+
+i HK/GB (Vi(t)) . (78) Because excitatory and inhibitory currents have opposite signs, EI balance is reflected by a negative correlation between IE 
+
+> i
+
+(t) and II 
+
+> i
+
+(t). 
+
+Voltage and ∆F/F correlations. For voltage and fluorescence correlations, we compare di ff erent dendrites of the same neuron. In these comparisons, x(t) denotes the ungated leaf dendrite through which memories are accessible (the recall leaf dendrite), whereas y(t) denotes either the gated leaf dendrite or the isolated leaf dendrite, which is ungated but lacks somatic access. 
+
+Memory overlap. To assess whether a given memory is being recalled, we compute its overlap with the network activity using the Pearson correlation coe ffi cient. This metric indicates whether the network activity is correlated ( mμ ≈ 1), anti-correlated ( mμ ≈ − 1), or uncorrelated ( mμ ≈ 0) with a target memory pattern μ.
+
+Time-varying overlap. For simulations involving multiple stimulated memories, the overlap between network activity and memory pattern 
+
+μ at time t, denoted by mμ(t), is defined as 
+
+mμ(t) =
+
+D ξμ 
+
+> i
+
+− Dξμ
+
+> i
+
+E
+
+> i
+
+ νi(t) − ⟨ νi(t)⟩i
+
+E
+
+> i
+
+rξμ 
+
+> i
+
+− Dξμ
+
+> i
+
+E
+
+> i
+
+2
+
+> i
+
+Dνi(t) − ⟨ νi(t)⟩i
+
+2E 
+
+> i
+
++ ϵ, (79) where ϵ = 10 −8 is a small constant used to ensure that the overlap remains zero for inactive networks. Here, ⟨·⟩ i denotes the average over neurons in the population and νi(t) denotes the number of spikes emitted by neuron i within a temporal window of duration Tbin centred at time t,
+
+νi(t) =
+
+> Tbin 2∆t
+
+X 
+
+> k=−Tbin 2∆t
+
+si (t + k∆t) , (80) where si(t) is one if neuron i spiked in discrete time t (and zero otherwise) given a time-step ∆t. A value of mμ(t) = 1 indicates that the network activity is perfectly correlated with memory pattern μ, whereas mμ(t) = 0 indicates that they are uncorrelated at time t.
+
+Fixed-point overlap. For simulations estimating the basin of attraction, the overlap is computed after a transient period t∗. We use the same Pearson-based definition as above, but omit the explicit time dependence, 
+
+mμ( f ) =
+
+D ξμ 
+
+> i
+
+− Dξμ
+
+> i
+
+E
+
+> i
+
+ h νi( f ) − νi( f ) i
+
+iE 
+
+> i
+
+rξμ 
+
+> i
+
+− Dξμ
+
+> i
+
+E
+
+> i
+
+2
+
+> i
+
+hνi( f ) − νi( f ) i
+
+i2
+
+> i
+
++ ϵ, (81) where νi( f ) is the number of spikes emitted by neuron i in the interval ( t∗, t∗ + Tm) when a fraction f of memory neurons is externally activated at the start of recall. The time t∗ accounts for transient dynamics, whereas Tm defines the integration window used to compute the average fixed-point activity. 
+
+Reliability. We summarize recall performance, or equivalently the basin of attraction, by the reliability 
+
+R = 1 − min 
+
+> f
+
+ f : 1
+
+p
+
+> p
+
+X
+
+> μ=1
+
+mμ( f ) > 0.9
+
+ , (82) where mμ( f ) is the fixed-point overlap (Eq. 81) and f is the fraction of externally activated memory neurons, which we refer to as the initial condition size. Reliability is thus one minus the smallest initial condition size for which the average overlap exceeds 0 .9: R = 1indicates that recall succeeds without any external activation, whereas R = 0 indicates that all memory neurons must be activated. 
+
+Parameters 
+
+All parameter values used in the simulations and analyses are listed in Tables S1, S2, S3, and S4. For single dendrite simulations (Figs. 1E–  
+
+> Berger & Agnes (2026)
+
+19 Dendritic balance and memory gating 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint
+
+I and S1) we did a parameter sweep over excitatory and inhibitory weights, as well as inhibitory firing-rates to find combinations of parameters for which the postsynaptic neuron fired at approximately a target single-neuron firing rate, denoted by νsingle .
+
+Methods References  
+
+> [97] L. F. Abbott, Learning in neural network memories, Network: Computation in Neural Systems 1, 105 (1990)
+
+Berger & Agnes (2026) 20 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint Supplementary figures BA             
+
+> Time (s) Time (s) Input neuron Firing rate (norm. and cent.) 10  Excitatory  Inhibitory
+> Exc.
+> C(νE,νI) = 0.0122 C(νE,νI) = 0.8981
+> Inh.
+> -1 -0.5 00.5 10246802468
+
+C D                         
+
+> Count (1) Count (1)
+> gGABAA (nS) gGABAA (nS) gGABAA (nS) gGABAA (nS) 00.05 0.1 0.15 0100 200 00.02 0.04 050 100 00.01 0.02 050 100 00.01 0.02 0.03 050 100 Theory Simulation Mean Minimum
+> NI= 4
+> Constant-rate ( blanket ) inhibition
+> NI= 64 NI= 4 NI= 64
+> Rate-modulated ( matched ) inhibition
+
+FIG. S1. Input statistics and inhibitory conductance for the single-neuron simulations. A, Raster plot of excitatory and inhibitory spikes received by the dendrite of a single neuron (top) and the corresponding normalised firing rates centred at zero (bottom). Excitatory spikes follow a modified Ornstein-Uhlenbeck process that is independent across four neuron groups (see Methods). Inhibitory spikes fire at a constant rate, corresponding to blanket inhibition (see Methods). The correlation between excitatory and inhibitory firing rates is denoted by C(νE, ν I). B, Same as panel A, but inhibitory spikes follow the same spike probabilities as the excitatory spikes, corresponding to matched inhibition (see Methods). C, Distribution of GABA A
+
+conductance for simulations with NI = 4 (left) and NI = 64 (right) inhibitory inputs under blanket inhibition (cf. Fig. 1Ei, bottom). Vertical lines with arrowheads indicate the mean conductance and the estimated minimum GABA A conductance from theory and simulation. D, Same as panel C, but for matched inhibition (cf. Fig. 1Eii, bottom). BAInhibition (mS Hz) Excitation (mS Hz)                       
+
+> gC= 0.5 gC= 1.0 gC= 2.0
+> V(mV) 01200.5 11.5
+> -80 -40 0Inhibition (mS Hz) Excitation (mS Hz) 01200.5 11.5
+> Excitation (mS Hz) 00.5 11.5
+> Excitation (mS Hz) 00.5 11.5
+> 025 50 75 100
+> ν0(Hz)
+
+FIG. S2. Postsynaptic firing rate derived from membrane-potential fixed points. A, Membrane-potential fixed points (colour) as a function of excitatory and inhibitory input (same as Fig. 1D, left). B, Postsynaptic firing rate (colour) as a function of excitatory and inhibitory input for three values of gC.Firing rates are computed from the membrane-potential fixed points shown in panel A. Berger & Agnes (2026) 21 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint Iteration Iteration weight  ℓ 2Iteration 10 1 10 3 10 5weight  ℓ 110 1 10 3 10 5Stability (1) 10 1 10 3 10 5Exc. conn. (1) 10 1 10 3 10 5Inh. conn. (1) 10 1 10 3 10 5Iteration Iteration Memories (p) 21 42 91 202 470 02.4 4.8 0510 01.5 30.01 0.1 10.01 0.1 1FIG. S3. Evolution of binary-network connectivity, weight norms, and stability under the modified perceptron learning rule. Binary-network quantities as a function of iteration number under the modified perceptron learning rule. From left to right: weight ℓ2 norm, weight ℓ1 norm, memory-pattern stability, excitatory connectivity, and inhibitory connectivity. Each line corresponds to a di ff erent number of stored memories (see legend). Circles indicate initial condition values. Overlap (1) Overlap (1) Presentation time = 0.05 s Initial condition (1) 00.5 100.5 100.5 100.5 100.5 100.5 100.5 10 0.5 1Presentation time = 0.1 s Initial condition (1) 0 0.5 1Presentation time = 0.2 s Initial condition (1) 0 0.5 1Presentation time = 0.5 s Initial condition (1) 0 0.5 1
+
+BA
+
+> Presentation time = 1 s
+
+Initial condition (1) 0 0.5 1Presentation time = 2 s Initial condition (1) 0 0.5 1Binary Binary - clamped input Initial condition (1) Initial condition (1) 0 0.5 1Count (1) Excitatory-to-excitatory Excitatory-to-inhibitory Inhibitory-to-excitatory Inhibitory-to-inhibitory Synaptic weight (nS) 00.005 0.01 0 6 12 0.9 0.905 Synaptic weight (nS) 00.005 0.01 0 10 20 0.865 0.87 Synaptic weight (nS) 00.008 0.016 0 5 10 0.795 0.8 Synaptic weight (nS) 00.009 0.018 0 10 20 0.77 0.775 00.5 10 0.5 1
+
+FIG. S4. Weight distributions and recall performance in the memory network of Fig. 2. A, Distributions of excitatory-to-excitatory, excitatory-to-inhibitory, inhibitory-to-excitatory, and inhibitory-to-inhibitory synaptic weights. Weights are shown in nS, corresponding to the biophysical implement-ation wij (Eq. 5) multiplied by the leak conductance. B, Overlap between the final network state and the target memory pattern as a function of initial condition size, defined as the fraction of the memory pattern that is externally activated. Individual points correspond to di ff erent memory patterns and distinct groups of activated neurons. The solid line denotes the average (also shown in Fig. 2J). Berger & Agnes (2026) 22 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint Presentation time (s): 0.05 0.1 0.5 1 Binary Initial condition (1) 0 0.5 1 0 0.5 1 0 0.5 10 0.5 1 0 0.5 1 0 0.5 1 0 0.5 1 0 0.5 1
+
+A                                 
+
+> aE= 0.1
+> aI= 0.4
+> 𝜌 = 0
+> aE= 0.1
+> aI= 0.4
+> 𝜌 = 0.1
+> aE= 0.1
+> aI= 0.4
+> 𝜌 = 1
+> aE= 0.2
+> aI= 0.4
+> 𝜌 = 0
+> aE= 0.2
+> aI= 0.4
+> 𝜌 = 0.1
+> aE= 0.2
+> aI= 0.4
+> 𝜌 = 1
+> aE= 0.5
+> aI= 0.5
+> 𝜌 = 0
+> aE= 0.5
+> aI= 0.5
+> 𝜌 = 0.1
+> aE= 0.5
+> aI= 0.5
+> 𝜌 = 1
+> K= 0.5 𝜃
+> K=𝜃
+> K= 2 𝜃
+
+Initial condition (1) 0 0.5 1 0 0.5 10 0.5 10 0.5 10 0.5 1 0 0.5 1 0 0.5 1 0 0.5 1
+
+BCDE            
+
+> K= 0.5 𝜃
+> K=𝜃
+> K= 2 𝜃
+> K= 0.5 𝜃
+> K=𝜃
+> K= 2 𝜃
+> K= 0.5 𝜃
+> K=𝜃
+> K= 2 𝜃
+
+Initial condition (1) 0 0.5 1 0 0.5 10 0.5 1 0 0.5 1 0 0.5 1 0 0.5 1 0 0.5 1 0 0.5 1Overlap (1) Overlap (1) Overlap (1) Overlap (1) Reliability, bio (1) Reliability, binary (1) Initial condition (1) 0 0.5 10 0.5 1 0 0.5 1 0 0.5 1 0 0.5 1 0 0.5 1 0 0.5 1 0 0.5 100.5 100.5 100.5 10 0.5 100.5 100.5 100.5 10 0.5 100.5 10 0.5 100.5 100.5 100.5 10 0.5 100.5 100.5 1Memory load, α  
+
+> 0.1 0.2 0.4 0.5 Activity level excitatory, aE
+> ; inhibitory, aI
+> 0.1; 0.4 Diagonal 0.2; 0.4 0.5; 0.5
+
+GReliability, bio (1) Memory load, α                   
+
+> 00.4 0.8 00.2 0.4 0.6 00.2 0.4 0.6 00.2 0.4 0.6
+> aE= 0.1
+> aI= 0.4
+> aE= 0.2
+> aI= 0.4
+> aE= 0.5
+> aI= 0.5
+
+FReliability, bio (1) Stability, κ (1) 00.5 10 0.5 1 1.5 00.5 10.1 0.2 0.3 0.4 0.5 FIG. S5. Robustness of biophysical recall across network parameters. Memory-pattern reconstruction, quantified by reliability, is shown for di ff erent activity levels aE and aI, regularisation strengths ρ (Eq. 54), robustness thresholds K, and numbers of stored memory patterns p, for networks of size 
+
+N = 100 with NE = 80 and NI = 20. A, Overlap (cf. Fig. 2J) as a function of initial condition size, defined as the fraction of externally activated memory neurons, for networks trained to store p = 10 memories ( α = p/N = 0.1). B, Same as panel A for networks trained to store p = 20 memories ( α = 0.2). 
+
+C, Same as panel A for networks trained to store p = 40 memories ( α = 0.4). D, Same as panel A for networks trained to store p = 50 memories ( α = 0.5). Empty panels indicate parameter combinations for which no solution was found. E, Reliability (cf. Fig. 2K) of the biophysical model versus the reliability of the corresponding binary model (from panels A–D). F, Reliability of the biophysical model (same as panel E) as a function of memory-pattern stability in the binary network. A minimum binary-network stability is required for successful recall in the biophysical model. G, Reliability of the biophysical model (same as panel E) as a function of memory load, α = p/N, for di ff erent activity levels. Berger & Agnes (2026) 23 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint A B                                        
+
+> Memory load,  α
+> Memory load, αEffective connectivity, ceff (1)
+> K
+> 00.5 100.25 0.5 01200.4 0.8 00.5 1Reliability, bio (1)  aE= 0.2; aI= 0.4; N= 100
+> aE= 0.2; aI= 0.4; N= 1000
+> aE= 0.5; aI= 0.5; N= 100
+> aE= 0.5; aI= 0.5; N= 1000
+> aE= 0.1
+> aI= 0.4
+> aE= 0.2
+> aI= 0.4
+> aE= 0.5
+> aI= 0.5
+> 00.25 0.5 00.25 0.5
+
+FIG. S6. Approximate memory capacity for di ff erent parameters. A, Memory load, α = p/N, in binary-network simulations (circles) as a function of eff ective connectivity, ceff = (NEcE + NIcI)/N, shown for di ff erent activity levels ( aE, aI). Circle colour denotes the modPLR stability parameter, K, used in Eqs. 52 and 53. Network size is N = 100. The shaded region indicates the interval between the lower and upper zero-stability capacity references obtained from the analytical approximation in the Supplementary Text. These references are first defined in terms of the separate excitatory and inhibitory connectivities, ( cE, cI), and then projected onto the one-dimensional plotting variable ceff . B, Reliability of recall in the biophysical model as a function of memory load, shown for di ff erent activity levels and network sizes. Reliability decreases with increasing memory load, but this decrease is less abrupt in larger networks. A DE    
+
+> Neuron 100  Excitatory  Inhibitory Overlap (1)
+> V (mV) ⟨V⟩ (mV) Time (s) 00.5 100.9 1.8
+> Freq. (Hz) Time (s) Memories, p
+> 1/ f⟨V⟩
+
+BC Count (1) Count (1) Count (1) ISI (ms) CV ISI Rate (Hz) 10 -4 10 -2 10 000.06 0.12 00.1 0.2 Theory 10 1 10 2 10 3 10 4 -80 -40 0                  
+
+> C(IE,II)(1) Exc. Inh. -1 0100.6 1.2 -61 -57 -53 10 12 14 16 18 20
+> 1/ fV
+> 20 40
+> fVf⟨V⟩
+> 10 30 0246020 40
+
+FIG. S7. Autonomous sequential recall in biophysical memory networks. A, Spike times of excitatory (red) and inhibitory (blue) neurons (top) and memory overlap (bottom) as a function of time. The shaded area indicates the period of external stimulation. B, Histograms of interspike intervals (ISIs; top) and of the coe ffi cient of variation of the ISIs (CV ISI ; bottom). C, Histograms of average neuronal firing rates (left) and of the Pearson correlation between excitatory and inhibitory currents, C(IE, II) (right). D, Temporal evolution of the dendritic membrane potential for four selected neurons (top) and of the average membrane potential across all excitatory neurons (bottom). The indicated quantities correspond to the oscillation periods, 1 / fV and 1/ f⟨V⟩, for the individual and average membrane potentials, respectively. E, Oscillation frequencies of the individual and average membrane potentials as a function of the number of stored memories, p.BA C D                        
+
+> Memory sets, NS
+> Mem. stab./total load,  κ/αtot
+> 11.5 22.5 124816 Memory sets, NS
+> Memory stability,  κ (1) 00.25 0.5 0.75 1124816 Total memory load,  α tot
+> Memory sets, NS
+> 00.1 0.2 0.3 0.4 0.5 124816 Connectivity (1) Memory sets, NS
+> 00.1 0.2 0.3 0.4 0.5 124816 E-to-E (constant) E-to-I I-to-E I-to-I Total
+
+FIG. S8. Subdividing memories into sets improves memory stability at fixed overall connection density. A, Connectivity of excitatory-to-excitatory (E-to-E), excitatory-to-inhibitory (E-to-I), inhibitory-to-excitatory (I-to-E), inhibitory-to-inhibitory (I-to-I), and total connectivity as a function of the number of memory sets. The modified perceptron learning rule was used to keep overall E-to-E connectivity constant. B, Total memory load of the network, αtot ,as a function of the number of memory sets, using the same simulations as in panel A. The total memory load is the number of memories stored per set, p,multiplied by the number of memory sets, NS, and normalised by network size, N: αtot = pN S/N. Increasing the number of memory sets leads to a small decrease in total memory load. C, Average stability per memory as a function of the number of memory sets, using the same simulations as in panel A. 
+
+D, Average stability per memory divided by total memory load as a function of the number of memory sets, using the same simulations as in panel A. Berger & Agnes (2026) 24 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint Bi VGCC      
+
+> V2V1
+> V3
+> V2V1
+> V3
+> V2 (mV) Conductance (nS)
+> V3(mV) -80 -40 0012 24
+> -80 -40 0
+
+Bii NMDA    
+
+> V2 (mV)  V3(mV) -80 -40 0-80 -40 000.5 1
+> Excitation (mS Hz)
+
+Ai ND-S 1 2 3        
+
+> gCMax.  N D-S
+> Coupling, gC(nS) 110 100 1000
+> Vdend
+> (mV) 0.0 -10 -20 -30 123456
+> V1
+> V2
+> V3
+> With VGCC
+> V (mV) Time (ms) -80 -40 00500 1000
+
+Ci Cii Ciii   
+
+> V1V0
+> V2Without VGCC
+> V (mV) Time (ms) -80 -40 00500 1000
+
+Aii          
+
+> 134ND
+> VSOMA  (mV)
+> ND
+> gC(nS) 0.1 110 100 -60 -40 -20 0110 100 1000 (× ND)
+
+FIG. S9. Active amplification in intermediate dendrites is required to store multiple memory sets. A, Ai, left: Schematics of ND−S dendrites connected to the soma in parallel. Passive dendrite–soma coupling is denoted by gC. Ai, right: Maximum number of parallel dendrites, ND−S, for which the neuron still spikes when only one dendrite is depolarised, while all others remain hyperpolarised, as a function of passive dendrite–soma coupling, gC, for di ff erent dendritic depolarisation levels. Aii, left: Schematics of ND dendrites connected to the soma in series. Aii, right: Steady-state somatic membrane potential as a function of the number of dendrites connected in series, ND, when the leaf branch is held at V1 = 0 mV, for di ff erent values of passive compartment–compartment coupling, gC (coloured solid lines; see legend). Dashed lines show the corresponding somatic membrane potentials when the compartment–compartment coupling is multiplied by the number of dendrites. B, Bi, left: Schematic of a neuron with three dendritic branches. Bi, right: 
+
+Steady-state membrane potential of the trunk dendritic branch ( V3; colour) as a function of VGCC conductance (x-axis) and membrane potential of the depolarised dendrite ( V2; y-axis), with V1 held at rest. The black line indicates V = −50 mV, the spiking threshold used here. Bii, Same as panel Bi, but for NMDA conductance on the trunk dendritic branch. The x-axis denotes NMDA excitation (cf. Fig. 1D). C, Temporal evolution of the membrane potentials of the three dendritic compartments highlighted in the schematics (Ci), without VGCC channels (only passive propagation; Cii) and with VGCC channels in the trunk dendritic branch (Ciii). Mem. corr. (c) 00.5 0.8 0.9 0.95 0.98 0.99 
+
+CD                
+
+> CA3 Pairwise Sequential Memory sets 01224816 Ratio double/single Memory sets Ratio double/single 01224816 Memory sets Ratio triple/single 00.04 0.08 4816 Ratio quadruple/single Memory sets 00.04 0.08 4816 Memory sets Ratio quintuple/single 00.002 0.004 816 Memory sets 00.3 0.6 4816 Ratio triple/single Memory sets Ratio quadruple/single 00.5 14816 Memory sets Ratio quintuple/single 00.2 0.4 816
+
+A Pairwise overlap Sequential overlap 
+
+Bi Multiple synapses per connected pair 
+
+Bii Mouse Rat Human CA3 L2/3 L2/3 L2/3 L4 Synapses/pair  Cortex Hipp. L5 147Memory set overlap, o
+
+> 00.5 0.8 0.9 0.95 0.98 0.99 1
+
+Biii      
+
+> Memory sets Pairwise Synapses per pair 12124816 16Sequential
+
+FIG. S10. Overlap architecture predicts multi-synapse connectivity. A, Overlap architectures for dendritic memory sets. In the pairwise architecture (top), adjacent leaf dendrites share correlated memory patterns. In the sequential architecture (bottom), each memory set overlaps with the next one in the sequence. B, Multi-synapse connectivity. Bi, Schematic of a presynaptic neuron connecting to two postsynaptic dendrites. Bii, Number of synapses per connected pair of excitatory neurons in rat CA3 21 and cortex: mouse and human L2 /398 , rat L2 /399 , rat L4 100 , and rat L5 101 . Biii, Predicted number of synapses per connected pair of excitatory neurons for di ff erent numbers of memory sets, overlap architectures, and overlap levels. Dashed horizontal lines denote the empirical reference values from panel Bii. C, Ratio of multiple to single synapses (double, triple, quadruple, quintuple) for di ff erent numbers of memory sets and overlap levels in the pairwise architecture (panel A, top). The dashed line indicates the CA3 reference value from ref. 21. 
+
+D, Same as panel C, but for the sequential architecture (panel A, bottom). The dashed line indicates the CA3 reference value from ref. 21. Berger & Agnes (2026) 25 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint A B C D E F
+
+> s1s2s3s4V1V2V3V4V5V6V7Partial activation Dendritic membrane potential,  V (mV)  Input 150 150 150 150 -80 10
+> -80 10
+> -80 10
+> -80 10
+> -80 10
+> -80 10
+> -80 10
+
+Time (s) 0 20 40 60 Full activation 
+
+Time (s) 0 20 40 60 Partial activation 
+
+Time (s) 0 20 40 60 Time (s) Partial activation (0.75) Facilitated switch    
+
+> 020 40 60
+
+Time (s) Full activation (1.0) Correlated patterns (s 1 & s 4 )   
+
+> 020 40 60
+
+Time (s) Partial activation (0.75) Facilitated switch & mult. activ.    
+
+> 020 40 60
+
+FIG. S11. Dendritic membrane potentials of an example neuron in the autonomous system. A, Input to the memory network (top) and membrane potentials of the six dendrites of an example memory-network neuron (bottom), corresponding to Fig. 5C. B, Same as panel A, corresponding to Fig. 5D. 
+
+C, Same as panel A, corresponding to Fig. 5E. D, Same as panel A, corresponding to Fig. 5F. E, Same as panel A, corresponding to Fig. 5G. F, Same as panel A, corresponding to Fig. 5H. Berger & Agnes (2026) 26 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint Supplementary tables 
+
+Parameter Symbol Value Figs. 
+
+Membrane time constant τM 30 ms 1–5; S1, S2, S3–S7, S9–S11 Leak conductance per area ˆgL 10 nS /cm 2 1–3; S1, S2, S4, S9 Membrane capacitance per area C 300 pF /cm 2 not explicitly used Resting potential VR −60 mV 1–5; S1, S2, S3–S7, S9–S11 AMPA reversal potential EA 0 mV 1–5; S1, S2, S3–S7, S9–S11 NMDA reversal potential EN 0 mV 1–5; S1, S2, S3–S7, S9–S11 GABA A reversal potential EGA −80 mV 1–5; S1, S2, S3–S7, S9–S11 GABA B/KiR reversal potential EK/GB −90 mV 1–5; S1, S2, S3–S7, S9–S11 
+
+α5-GABA A reversal potential EGα −80 mV 3–5; S11 AMPA time constant τA 5 ms 1–5; S1, S2, S3–S7, S9–S11 NMDA time constant τN 150 ms 1–5; S1, S2, S3–S7, S9–S11 GABA A time constant τGA 10 ms 1–5; S1, S2, S3–S7, S9–S11 GABA B/KiR time constant τK/GB 150 ms 1–5; S1, S2, S3–S7, S9–S11 
+
+α5-GABA A time constant τGα 30 ms 3–5; S11 NMDA nonlinearity parameter 1 aN 0.15 1–5; S1, S2, S3–S7, S9–S11 NMDA nonlinearity parameter 2 bN −12 .5 mV 1–5; S1, S2, S3–S7, S9–S11 GABA B/KiR nonlinearity parameter 1 aK/GB e10 1–5; S1, S2, S3–S7, S9–S11 GABA B/KiR nonlinearity parameter 2 bK/GB 10 mV 1–5; S1, S2, S3–S7, S9–S11 
+
+α5-GABA A nonlinearity parameter 1 aGα 1.57 × 10 −7 3–5; S10 
+
+α5-GABA A nonlinearity parameter 2 bGα −3 mV 3–5; S11 Ratio NMDA to AMPA RN/A 1 1; S1 0.5 2–5; S1, S2, S3–S7, S9–S11 Ratio GABA B/KiR to GABA A RGB/GA 1 1; S1 0.5 2–5; S1, S2, S3–S7, S9–S11 VGCC conductance gCa 60 5; S9, S11 VGCC reversal potential ECa 40 mV 5; S9, S11 VGCC nonlinearity parameter 1 aCa 0.15 5; S9, S11 VGCC nonlinearity parameter 2 bCa −12 .5 mV 5; S9, S11 Spiking threshold VTH −50 mV 1–5; S1, S2, S3–S7, S9–S11 Somatic reset potential VRT −60 mV 1–5; S1, S2, S3–S7, S9–S11 Somatic refractory period τR 5 ms 1–5; S1, S2, S3–S7, S9–S11 Coupling soma-dendrite gC 0.5 2; S4, S9C 1 S7 1.5 3; S5, S6 0.41 5; S11 5 S5, S6 Coupling dendrite-dendrite gC 
+
+> d
+
+50 5; S11 5 S9 Fluorescence signal time constant τF 150 ms 4Fluorescence signal noise standard deviation σϵ 0.001 4
+
+TABLE S1. Simulation parameters for the neuron model. Berger & Agnes (2026) 27 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint Parameter Symbol Value Figs. 
+
+Number of excitatory external neurons NE 160 1; S1 Number of inhibitory external neurons NI {1, 2, 4, 8, 16 , 32 , 64 } 1; S1 Ornstein-Uhlenbeck process time constant τOU 25 ms 1; S1 Ornstein-Uhlenbeck noise standard deviation σOU 18 Hz 1; S1 Number of independent Ornstein-Uhlenbeck groups NOU 4 1; S1 Input refractory period τR 5 ms 1; S1 External excitatory synaptic weight wext  
+
+> E
+
+(0 .01 , 0.1) 1; S1 External inhibitory synaptic weight wext  
+
+> I
+
+(0 .01 , 5) 1; S1 External excitatory firing rate ratio (for OU) rE 1 1; S1 External inhibitory firing rate ratio (for OU) rI (0 .06 , 18) 1; S1 Constant inhibitory firing rate rI (0 .2, 60) Hz 1; S1 Output firing-rate νsingle 10 Hz 1; S1 
+
+TABLE S2. Simulation parameters for the single neuron. Berger & Agnes (2026) 28 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint Parameter Symbol Value Figs. 
+
+Number of excitatory neurons (memory network) NE 800 2–5; S3, S4, S7–S11 80 S5, S6 Number of inhibitory neurons (memory network) NI 200 2–5; S3, S4, S7–S11 20 S5, S6 Number of excitatory neurons (readout network) NE 
+
+> R
+
+1600 5Number of inhibitory neurons (readout network) NI 
+
+> R
+
+200 5Number of inhibitory neurons (gating) NG 204 5Expected postsynaptic firing rate ν∗ 30 Hz 2, 5; S11 40 Hz 480 Hz 360 Hz S5 120 Hz S5 22 Hz S7 Time-varying overlap calculation time-bin Tbin 150 ms 2, 3, 5 Fixed-point overlap calculation time-bin Tm 500 ms 2; S4, S5 
+
+t∗ 10 s 2; S4 1 s S5 Total excitatory firing rate onto X ∈ { AMPA , NMDA } NX rX 200 Hz 2; S4 100 Hz 3–5; S5, S7, S11 Total gating firing rate onto α5-GABA A NGα rGα 200 Hz 3, 4 Synaptic weight onto X ∈ { AMPA , NMDA } wext  
+
+> X
+
+1 2–4 4 5Synaptic weight onto α5-GABA A wext  
+
+> α5
+
+1 440 5Duration of external stimulation (presentation time) Tcue 200 ms 2–4 500 ms 5; S11 
+
+{0.05 , 0.1, 0.2, 0.5, 1, 2} s 2; S4 
+
+{0.05 , 0.1, 0.5, 1} s S5 Period between start of two consecutive presentations T 800 ms 2–4 10 s 5; S11 Readout-to-readout weight scaling wRR  
+
+> 0
+
+2.5 5C–D,G; S11A–C,E 0.5 5F,H; S11D,F Readout-to-gating excitatory connection wGR E 1.875 5; S11 Readout-to-gating excitatory connection noise term ϵ∗ 
+
+> E
+
+0.5 5; S11 Readout-to-gating inhibitory connection wGR I 20 5; S11 Readout-to-gating inhibitory connection noise term ϵ∗ 
+
+> I
+
+1 5; S11 Probability of readout-to-gating inhibitory connection cI 
+
+> GR
+
+0.2 5; S11 Connection gating to dendrite (leaf) wDG  
+
+> l
+
+0.04 5; S11 Connection gating to dendrite (trunk) wDG  
+
+> t
+
+0.1 5; S11 
+
+TABLE S3. Simulation parameters for the recurrent network. Berger & Agnes (2026) 29 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint Parameter Symbol Value Figs. 
+
+Number of memory sets NS 1 2; S3–S7 2 33 44 5; S11 
+
+{1, 2, 4, 8, 16 } S8, S10 Number of stored patterns per memory set p 202 2; S4 50 3–5 
+
+{21 , 42 , 91 , 202 , 470 } S3 
+
+{10 , 20 , 40 , 50 } S5 
+
+{10 , 20 , 30 , 40 } S7 variable S8, S10 Excitatory activity level per memory aE 0.2 2–5; S3, S4, S8–S11 
+
+{0.1, 0.2, 0.5} S5 
+
+{0.2, 0.5} S6 Inhibitory activity level per memory aI 0.4 2–5; S3, S4, S8–S11 
+
+{0.4, 0.5} S5, S6 Inhibitory activity level per readout memory aI 
+
+> R
+
+0.5 5; S11 Memory set overlap o 0.4 3variable 40.9 (sets s1 and s4) 5G; S11E Ratio between ℓ1 and ℓ2 norm regularization ρ 1 2–5, S3, S4, S6, S8–S11 0.05 40.5 S7 variable S5 Active threshold θ 0.03 2–5; S3–S11 Initial noise weight matrix J∗ 0.01 θ 2–5; S3–S11 Learning rate λ θ/ N 2–5; S3–S11 Stability K θ 2–5; S3, S4, S6, S8–S11 2θ S7 variable S5 
+
+TABLE S4. Simulation parameters for memories. Berger & Agnes (2026) 30 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint Supplementary text Attractor landscape and pseudo-energy 
+
+The landscapes shown schematically in Fig. 3F are intended as an intuitive representation of the attractor structure induced by the e ff ective connectivity, rather than as a rigorous Lyapunov function. In symmetric associative-memory networks, stored memories correspond to minima of a true energy landscape. In our framework, however, the connectivity does not need to be symmetric, so a global scalar energy function is not generally defined. We therefore use the term pseudo-energy only as a visual proxy for the e ff ective attractor landscape: stable recalled memories correspond to basins of attraction, whereas inhibitory gating changes the e ff ective connectivity and thereby switches which set of attractors is accessible at a given time. 
+
+Additional analyses of dendritic integration 
+
+Maximum number of dendrites and minimum dendritic coupling for passive dendritic integration. In our simplified biophysical neuron model, a spike is generated when the somatic membrane potential crosses the spike threshold, VTH , from below. For this to occur, the current arriving from the immediately connected trunk dendrite must be su ffi cient to depolarise the soma above threshold. Di ff erent dendritic architectures are possible, including parallel and serial configurations, both of which attenuate depolarisation from leaf dendrites in the absence of active ion channels such as VGCCs. 
+
+Parallel dendrites connected directly to the soma. For multiple dendrites connected directly to the soma in parallel, at least one dendritic compartment must be depolarised, noting that the soma itself does not receive excitatory synaptic input. Following our inhibitory-gating scheme, if ND−S dendritic compartments are connected directly to the soma in parallel, only one is depolarised at a given time, while the remaining ND−S − 1 dendritic compartments are hyperpolarised. The somatic membrane potential then obeys 
+
+τM dV0(t)dt = − hV0(t) − VRi − gC
+
+> ND−S
+
+X
+
+> j=1
+
+hV0(t) − Vj(t)i
+
+= −V0(t) 1 + ND−S gC + VR + gCVD + ND−S − 1 gCVH, (S1) where VD and VH are the membrane potentials of the depolarised and hyperpolarised dendritic compartments, respectively. To determine the maximum number of dendrites that can be connected in parallel while still allowing the soma to emit at least one spike, we set Eq. S1 to zero and V0 = VTH , yielding 
+
+ND−Smax = VR − VTH + gC VD − VH
+
+gC (VTH − VH) . (S2) The maximum number of dendritic compartments connected directly to the soma depends on the dendrite–soma coupling. In the limit of infinite coupling, the upper bound becomes lim 
+
+> gC→∞
+
+ND−Smax = VD − VH
+
+VTH − VH . (S3) Similarly, the minimum dendrite–soma coupling required for the soma to spike when only one dendritic compartment is depolarised is 
+
+gCmin = VR − VTH 
+
+ND−S (VTH − VH) + VH − VD . (S4) 
+
+Serially connected dendrites. For multiple dendrites connected unidirectionally in series, the membrane potential of dendrite i obeys 
+
+τM dVi(t)dt = − hVi(t) − VRi − gC [Vi(t) − Vi−1(t)] , for i > 2, (S5) where Vi(t) is the membrane potential of dendrite i, which receives passive current from dendrite i − 1. We are interested in the steady state and therefore take the leaf dendrite, indexed by i = 1, to be fully depolarised, V∗ 
+
+> 0
+
+= 0 mV. Under this condition, Eq. S5 has the solution 
+
+V∗ 
+
+> i
+
+= VR + gC
+
+1 + gC
+
+!i−1 V∗ 
+
+> 1
+
+− VR , for i > 1 (S6) With ND dendrites, the steady-state somatic membrane potential becomes 
+
+V0 = VR + gC
+
+1 + gC
+
+!ND
+
+V∗ 
+
+> 1
+
+− VR . (S7) 
+
+Additional analyses of the binary model 
+
+Recurrent memory-encoding weights for sequences. To store autonomous recall of memory sequences, we modify the conditions  
+
+> Berger & Agnes (2026)
+
+31 Dendritic balance and memory gating 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint
+
+(Eqs. 52 and 53) as Activation condition: 
+
+> N
+
+X
+
+> j=1
+
+Jij ξμ+1 
+
+> j
+
+− θ > K, if ξμ 
+
+> i
+
+= 1, and for μ = 1, . . . , p − 1; and 
+
+> N
+
+X
+
+> j=1
+
+Jij ξ1 
+
+> j
+
+− θ > K, if ξpi = 1; (S8) Quiescence condition: 
+
+> N
+
+X
+
+> j=1
+
+Jij ξμ+1 
+
+> j
+
+− θ < −K, if ξμ 
+
+> i
+
+= 0, and for μ = 1, . . . , p − 1; and 
+
+> N
+
+X
+
+> j=1
+
+Jij ξ1 
+
+> j
+
+− θ < −K, if ξpi = 0. (S9) All other modPLR steps remain the same as described in the Methods section. 
+
+Increase in memory stability and sparsity. Our modified Perceptron Learning Rule (modPLR) increases memory stability while reducing connectivity. These two objectives are promoted by decreasing the ℓ2 and ℓ1 norms of the input vectors of all units, respectively. We therefore define the loss function 
+
+L = 1 − ρ
+
+2
+
+> N
+
+X
+
+> i=1
+
+∥Ji∥22 + ρ
+
+> N
+
+X
+
+> i=1
+
+∥Ji∥1, (S10) where 
+
+∥Ji∥2 =
+
+vut NX
+
+> j=1
+
+J2 
+
+> ij
+
+(S11) and 
+
+∥Ji∥1 =
+
+> N
+
+X
+
+> j=1
+
+|Jij | (S12) are the ℓ2 and ℓ1 norms of the input connectivity vector of unit i, respectively. The gradient of this loss function is dL
+
+dJij 
+
+= (1 − ρ)Jij + ρ sign Jij 
+
+ , (S13) which yields the shrinkage update 
+
+Jij ← Jij − λ dL
+
+dJij 
+
+. (S14) In the implementation used here, this shrinkage step is applied after convergence of the modPLR update rules and initiates a new optimisation iteration. 
+
+Multiple synaptic contacts. Networks encoding multiple memory sets across complex dendritic trees can exhibit distinct overlap architectures, such as pairwise or sequential organisation. In the pairwise case, overlap is restricted to specific partners, for example leaf dendrites sharing the same branching point, while all other pairs remain independent (Fig. S10A, top). In the sequential case, memory sets are arranged in a linear chain such that each set overlaps with the next (Fig. S10A, bottom). Although membrane potential and calcium fluorescence depend primarily on the degree of overlap in both architectures (cf. Fig. 4F), the corresponding structural connectivity di ff ers. In particular, the prevalence of multiple synaptic contacts between connected neuron pairs depends on the overlap architecture (Fig. S10Bi), enabling comparison with experimental measurements (Fig. S10Bii) 2198–101 . Accordingly, the number of synapses per connected pair depends on the degree of overlap, the number of dendritic leaves, and the overall overlap architecture (Fig. S10Biii). Under these assumptions, pairwise overlap reproduces the average number of synaptic contacts observed in CA3 21 , whereas sequential overlap is additionally consistent with reported cortical connectivity values 98–101 (Fig. S10Biii). Because pairwise architectures link only specific pairs of dendritic leaves, three or more contacts per connected pair remain rare even as additional memory sets are added (Fig. S10C). By contrast, sequential architectures can generate a substantial probability of three or more contacts per connected pair (Fig. S10D). 
+
+Approximate memory capacity 
+
+Definitions. Here we construct a zero-stability approximation for the memory capacity of the binary network defined in the Methods section. The approximation is based on the sign-constrained perceptron theory of Chapeton et al. 16 . For clarity, we repeat below the definitions needed for this construction. For our calculations, we consider one postsynaptic unit—which represents a randomly selected excitatory or inhibitory unit from the network—and denote its incoming weight vector by J, where Jj is the weight from presynaptic unit j. The first NE presynaptic units are excitatory and the remaining NI are inhibitory, with 
+
+N = NE + NI, rE = NE
+
+N , rI = NI
+
+N , and rE + rI = 1. (S15) The network stores p binary memory patterns, denoted by ξμ 
+
+> j
+
+∈ { 0, 1} for μ = 1, . . . , p. Their activity levels are given by Eq. 44, 
+
+
+
+P ξμ 
+
+> j
+
+= 1 = aE, P ξμ 
+
+> j
+
+= 0 = 1 − aE, for 1 ⩽ j ⩽ NE,
+
+P ξμ 
+
+> j
+
+= 1 = aI, P ξμ 
+
+> j
+
+= 0 = 1 − aI, for NE + 1 ⩽ j ⩽ N. (S16)  
+
+> Berger & Agnes (2026)
+
+32 Dendritic balance and memory gating 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint
+
+In the corresponding single-unit classification problem, the output activity is denoted by ao. For an excitatory postsynaptic unit, ao = aE,whereas for an inhibitory postsynaptic unit, ao = aI. We characterize structural sparsity by the excitatory and inhibitory connection densities, cE and cI, respectively. We define the structural e ff ective connectivity as 
+
+ceff = cENE + cINI
+
+N = rEcE + rIcI. (S17) Thus, Nc eff is the expected total number of incoming synapses per postsynaptic unit. 
+
+Zero-stability single-population slope. We focus on the zero-stability case ( K = 0 in Eqs. 52 and 53) and quantify memory load by 
+
+α = p/N. Rather than repeating the full statistical-mechanics derivation of Chapeton et al. 16 , we start directly from their final zero-stability system of equations. In that framework, the output activity enters through the scalar equation 
+
+aoF(−y) − (1 − ao)F(y) = 0, (S18) where 
+
+F(x) = e−x2
+
+√π + x [1 + erf( x)] . (S19) For each activity level ao, Eq. S18 defines a unique value of y. Excitatory and inhibitory populations enter through the additional condition 
+
+rE
+
+r
+
+aE
+
+1 − aE F
+
+−
+
+r
+
+aE
+
+1 − aE z
+
+ − rI
+
+r
+
+aI
+
+1 − aI F
+
+r
+
+aI
+
+1 − aI z
+
+ = 0, (S20) which defines the corresponding value of z for the chosen population statistics ( rE, rI, aE, aI). The associated zero-stability critical capacity is then 16 
+
+αc =
+
+1 + rI erf 
+
+ q aI 
+
+> 1−aI
+
+z
+
+
+
+− rE erf 
+
+ q aE 
+
+> 1−aE
+
+z
+
+
+
+1 + (1 − 2ao) erf( y) . (S21) Note that connectivity is not a parameter in the calculations of Chapeton et al. 16 , but a resulting property of a network with parameters 
+
+aE, aI, rE, rI, and a given memory stability. This constrains the space of solutions. For example, for aE = aI = 0.5, and rE = 0.8 and rI = 0.2, excitatory and inhibitory connectivity densities are 0 ⩽ cE ⩽ 0.5 and 0 .5 ⩽ cI ⩽ 1. Our modPLR allows for sparse connectivity for both excitatory and inhibitory connections, which requires additional assumptions expanded below. 
+
+Approximate capacity. To isolate the dependence of the zero-stability capacity on the output activity, we now simplify the numerator of Eq. S21. Because erf( x) ∈ [−1, 1] and rE + rI = 1, the numerator is bounded above by 1 + rI erf 
+
+r
+
+aI
+
+1 − aI z
+
+ − rE erf 
+
+r
+
+aE
+
+1 − aE z
+
+ ⩽ 1 + rI + rE = 2. (S22) We denote this maximal value by 
+
+α∗ ≡ 2. (S23) Using this bound, Eq. S21 implies the output-activity upper envelope 
+
+αc ⩽ α∗s(ao), (S24) where we define 
+
+s(ao) = 11 + (1 − 2ao) erf( y) . (S25) We use s(ao) as an activity-dependent capacity factor for a single postsynaptic population. For the two populations in the network, we therefore define 
+
+sE ≡ s(aE), sI ≡ s(aI). (S26) This step isolates the dependence of the zero-stability branch on the output activity, but discards the explicit z-dependent asymmetry between excitatory and inhibitory populations. We now reintroduce the two-population structure of the network by approximating the capacity factor as the sum of separate excitatory and inhibitory contributions. Specifically, we assume that the retained excitatory and inhibitory synapses contribute additively, with weights determined by their relative abundances in the network, rE and rI, and by the corresponding activity-dependent capacity factors, 
+
+sE and sI. This gives the aggregate two-population approximation 
+
+αupper ≈ α∗ rEsEcE + rIsIcI . (S27) For the purpose of the one-dimensional representation in Fig. S6, we further approximate this expression by replacing the connectivity-dependent slope with the weighted average 
+
+s = rEsE + rIsI, (S28) so that 
+
+αupper ≈ α∗s c eff . (S29)  
+
+> Berger & Agnes (2026)
+
+33 Dendritic balance and memory gating 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint
+
+As a lower reference, we consider instead the case in which the retained non-zero synapses are placed at random. Within the present zero-stability approximation, we assume that the activity-dependent capacity factors remain the same as in the upper reference, but that random placement reduces the overall capacity by a factor of two relative to the optimistic prefactor α∗. This choice recovers the sign-constrained unbiased case when aE = aI = 0.5, for which sE = sI = 1 and the lower reference reduces to ceff . We therefore write 
+
+αlower ≈ α∗
+
+2
+
+rEsEcE + rIsIcI . (S30) Using the same one-dimensional projection as above, this becomes 
+
+αlower ≈ α∗
+
+2 s c eff . (S31) Thus, after projection onto ceff , the one-dimensional upper slope is a connectivity-weighted average of the excitatory and inhibitory single-population slopes. A stricter bottleneck approximation would instead replace this weighted average by the more restrictive population, for example through min( sE, sI). In the present simulations, however, the modified perceptron learning rule changes not only the capacity factors sE and sI, but also the learned connectivities cE and cI themselves. As a result, di ff erences in coding a ff ect both the predicted slope and the position of simulation points along the ceff axis. For this reason, we use the weighted approximation above when comparing simulation points in the ( ceff , α ) plane. The underlying approximation nevertheless remains two-dimensional in ( cE, cI), and the projection onto ceff is used only for visualization. 
+
+Supplementary References     
+
+> [98] S. Hunt, Y. Leibner, E. J. Mertens, N. Barros-Zulaica, L. Kanari, T. S. Heistek, M. M. Karnani, R. Aardse, R. Wilbers, D. B. Heyer, N. A. Goriounova, M. B. Verhoog, G. Testa-Silva, J. Obermayer, T. Versluis, R. Benavides-Piccione, P. de Witt-Hamer, S. Idema, D. P. Noske, J. C. Baayen, E. S. Lein, J. DeFelipe, H. Markram, H. D. Mansvelder, F. Schürmann, I. Segev, and C. P. J. de Kock, Strong and reliable synaptic communication between pyramidal neurons in adult human cerebral cortex, Cerebral Cortex 33 ,2857 (2023). [99] D. Feldmeyer, J. Lübke, and B. Sakmann, E ffi cacy and connectivity of intracolumnar pairs of layer 2 /3 pyramidal cells in the barrel cortex of juvenile rats, Journal of Physiology 575 , 583 (2006). [100] D. Feldmeyer, V. Egger, J. Lübke, and B. Sakmann, Reliable synaptic connections between pairs of excitatory layer 4 neurones within a single ‘barrel’ of developing rat somatosensory cortex, Journal of Physiology 521 , 169 (1999). [101] H. Markram, J. Lübke, M. Frotscher, A. Roth, and B. Sakmann, Physiology and anatomy of synaptic connections between thick tufted pyramidal neurones in the developing rat neocortex, Journal of Physiology 500 , 409 (1997)
+
+Berger & Agnes (2026) 34 Dendritic balance and memory gating 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted March 31, 2026. ;https://doi.org/10.64898/2026.03.27.714865 doi: bioRxiv preprint

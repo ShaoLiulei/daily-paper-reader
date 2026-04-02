@@ -1,0 +1,150 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-001.webp",
+      "caption": "Figure 4: Example of an LLM concealing decision-relevant factors from CoT. The highlighted spans indicate the reasoning behind the final prediction. Under standard cue injection (middle), the model explicitly incorporates the cue into its decision-making process; under stress testing (right), it suppresses this reasoning in the CoT while still relying on the cue to arrive at the final answer. The example is drawn from Gemini-3-Flash on the health task.",
+      "page": 11,
+      "index": 1,
+      "width": 826,
+      "height": 375
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-002.webp",
+      "caption": "Table 7: Monitorability score difference (%) in all-messages monitor scope under stress tests relative to the standard setting. Direct Concealment and Monitor-aware Evasion are denoted as DC and ME, respectively. – denotes not applicable due to refusal triggered by the safety alignment. ∗ indicates that the task requires multi-round interactions with the environment.",
+      "page": 25,
+      "index": 2,
+      "width": 830,
+      "height": 439
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-003.webp",
+      "caption": "Table 8: Monitorability score difference (%) in action-only monitor scope under stress tests relative to the standard setting. Direct Concealment and Monitor-aware Evasion are denoted as DC and ME, respectively. – denotes not applicable due to refusal triggered by the safety alignment. ∗ indicates that the task requires multi-round interactions with the environment.",
+      "page": 25,
+      "index": 3,
+      "width": 830,
+      "height": 427
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-004.webp",
+      "caption": "Figure 8: Example that LLMs fail to hide the decision-critical factors under the stress-test setting, due to the concealment leakage. Under the stress-test, the CoT contains information regarding the concealment of the side objective showcases and how they should not be mentioned in the final response. The example is drawn from the steganography task for Qwen3-14B.",
+      "page": 26,
+      "index": 4,
+      "width": 826,
+      "height": 523
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-005.webp",
+      "caption": "Figure 7: Example that LLMs fail to hide the decision-critical factors under the stress-test setting, due to the explicit factor leakage. Qwen3-14B explicitly leaks information regarding the side objective within its CoT when dealing with the steganography task.",
+      "page": 26,
+      "index": 5,
+      "width": 829,
+      "height": 465
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-006.webp",
+      "caption": "Figure 1: Monitorability score (%) (details in Sec. 3.3) averaged over 19 tasks for each evaluated LLM (left), and averaged over 7 evaluated LLMs across tasks within each category (right), under different monitor scopes in both standard and two stress-test settings. Results show that CoT monitorability is higher when producing the final target response requires structural reasoning through the decision-critical factor (i.e., Goal (Sandbag), Cue (Condition), Dual Objectives, Impossible Tasks), and for open-source LLMs. While both open- and closed-source LLMs can intentionally reduce monitorability to some extent under the stresstests, the monitorability degradation mostly comes from the tasks whose decision-critical factors do not shape the reasoning process (e.g., Cue (Answer)).",
+      "page": 2,
+      "index": 6,
+      "width": 826,
+      "height": 736
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-007.webp",
+      "caption": "Table 4: Failure-mode breakdown explaining why tasks involving weaving decision-critical factors into reasoning remain monitorable under stress tests. We select the Coding in Dual Objectives under the CoT-only monitor scope for the in-depth analysis. I: explicit factor leakage, II: concealment leakage, III: implicit planning leakage, and IV: other cases. We allow multi-label annotations and report the ratio of trajectories exhibiting each failure mode.",
+      "page": 10,
+      "index": 7,
+      "width": 577,
+      "height": 224
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-008.webp",
+      "caption": "Figure 2: Example of an LLM not mentioning the decision-critical factor in its CoT under standard setting. The decision-critical factor in the steganography task is the side objective to encode the first letter of each sentence into the specified string. Gemini-3-Flash does not explicitly plan for the side objective in its CoT, yet still achieves it in the final response.",
+      "page": 3,
+      "index": 8,
+      "width": 826,
+      "height": 419
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-009.webp",
+      "caption": "Figure 5: Relationship between monitorability score and LLM capability under the CoTonly monitor scope. Each point corresponds to one evaluated LLM. We measure the monitorability score average across all tasks, and approximate capability by the average pass rate on the original task questions. The fitted regression line shows a moderate negative Pearson correlation (r), suggesting that more capable LLMs tend to exhibit lower monitorability.",
+      "page": 23,
+      "index": 9,
+      "width": 826,
+      "height": 297
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-010.webp",
+      "caption": "Figure 6: Relationship between monitorability and LLM capability under the action-only monitor scope. Each point corresponds to one evaluated LLM. We measure the monitorability score average across all tasks, and approximate capability by the average pass rate on the original task questions. The fitted regression line shows a moderate negative Pearson correlation (r), suggesting that more capable LLMs tend to exhibit lower monitorability.",
+      "page": 23,
+      "index": 10,
+      "width": 826,
+      "height": 296
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-011.webp",
+      "caption": "Figure 10: Example of an LLM concealing decision-relevant factors from CoT. The highlighted spans indicate the reasoning behind the final prediction. When only the question is given to the model (left), there is no emphasis on trying to attract customers and attempt to sell the software. However, when the goal is introduced (middle), the model’s CoT strongly hints at the idea of ensuring that the deception exists and that it is trying to account for it. Additionally, as the stress-test Instruction is added (right), the model is then aware of how to hide this instruction and what the plausible response should be as the end result. The example is drawn from Gemini-3-Flash in the goal (deception) – real-world cases.",
+      "page": 28,
+      "index": 11,
+      "width": 826,
+      "height": 471
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-012.webp",
+      "caption": "Table 2: Monitorability score (%), under CoT-only monitor scope in the standard setting. – denotes not applicable due to refusal triggered by the safety alignment. ∗ indicates that the task requires multi-round interactions with the environment.",
+      "page": 8,
+      "index": 12,
+      "width": 830,
+      "height": 545
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-013.webp",
+      "caption": "Figure 3: Relationship between monitorability score and LLM capability under the allmessages monitor scope. Each point corresponds to one evaluated LLM. We measure the monitorability score average across all tasks, and approximate LLM capability by the average pass rate on the original task questions. The fitted regression line shows a moderate negative Pearson correlation (r), suggesting that more capable LLMs tend to exhibit lower monitorability scores.",
+      "page": 8,
+      "index": 13,
+      "width": 826,
+      "height": 296
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-014.webp",
+      "caption": "Figure 9: Example that LLMs fail to hide the decision-critical factors under the stress-test setting. The explicit factor leakage (left) showcases how the model directly names the side objective factor in its reasoning trace. The concealment leakage (middle) shows that the CoT explicitly plans to hide its planning from any external monitor, then constructs a surface-normal response to mask compliance. The act of naming the concealment strategy makes the side objective factor visible. The implicit planning leakage (right) showcases how even without explicit naming, the step-by-step operational plan renders the side objective structurally inferable – constituting implicit leakage through planning detail alone. The example comes from Dual Objectives - Coding for Qwen3-235B-A22B.",
+      "page": 27,
+      "index": 14,
+      "width": 829,
+      "height": 517
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-015.webp",
+      "caption": "Table 5: Monitorability score (%), under all-messages monitor scope in the standard setting. – denotes not applicable due to refusal triggered by the safety alignment. ∗ indicates that the task requires multi-round interactions with the environment.",
+      "page": 24,
+      "index": 15,
+      "width": 830,
+      "height": 545
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-016.webp",
+      "caption": "Table 6: Monitorability score (%), under action-only monitor scope in the standard setting. – denotes not applicable due to refusal triggered by the safety alignment. ∗ indicates that the task requires multi-round interactions with the environment.",
+      "page": 24,
+      "index": 16,
+      "width": 830,
+      "height": 544
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-017.webp",
+      "caption": "Table 3: Monitorability score difference (%) in CoT-only monitor scope under stress tests relative to the standard setting. Direct Concealment and Monitor-aware Evasion are denoted as DC and ME, respectively. – denotes not applicable due to refusal triggered by the safety alignment. ∗ indicates that the task requires multi-round interactions with the environment.",
+      "page": 9,
+      "index": 17,
+      "width": 830,
+      "height": 440
+    },
+    {
+      "url": "assets/figures/arxiv/2603.28590v1/fig-018.webp",
+      "caption": "Table 1: Statistics of 1,514 instances across 19 tasks spanning 7 categories in MonitorBench. Detailed design for each task and examples can be found in Appendix A.1.",
+      "page": 5,
+      "index": 18,
+      "width": 830,
+      "height": 226
+    }
+  ]
+}
