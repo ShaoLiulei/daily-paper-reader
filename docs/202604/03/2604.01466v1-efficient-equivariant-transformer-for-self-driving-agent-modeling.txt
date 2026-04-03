@@ -1,0 +1,1835 @@
+Title: Efficient Equivariant Transformer for Self-Driving Agent Modeling
+
+URL Source: https://arxiv.org/pdf/2604.01466v1
+
+Published Time: Fri, 03 Apr 2026 00:23:34 GMT
+
+Number of Pages: 21
+
+Markdown Content:
+# Efficient Equivariant Transformer for Self-Driving Agent Modeling 
+
+## Scott Xu 1,2, Dian Chen †, Kelvin Wong 1,2, Chris Zhang 1,2, Kion Fallah †, Raquel Urtasun 1,2
+
+## Waabi 1, University of Toronto 2
+
+## {sxu, kwong, czhang, urtasun }@waabi.ai 
+
+## Abstract 
+
+Accurately modeling agent behaviors is an important task in self-driving. It is also a task with many symmetries, such as equivariance to the order of agents and objects in the scene or equivariance to arbitrary roto-translations of the entire scene as a whole; i.e ., SE (2) -equivariance. The trans-former architecture is a ubiquitous tool for modeling these symmetries. While standard self-attention is inherently per-mutation equivariant, explicit pairwise relative positional encodings have been the standard for introducing SE (2) -equivariance. However, this approach introduces an addi-tional cost that is quadratic in the number of agents, limiting its scalability to larger scenes and batch sizes. In this work, we propose DriveGATr, a novel transformer-based architec-ture for agent modeling that achieves SE (2) -equivariance without the computational cost of existing methods. Inspired by recent advances in geometric deep learning, DriveGATr encodes scene elements as multivectors in the 2D projective geometric algebra R∗ 
+
+> 2,0,1
+
+and processes them with a stack of equivariant transformer blocks. Crucially, DriveGATr models geometric relationships using standard attention be-tween multivectors, eliminating the need for costly explicit pairwise relative positional encodings. Experiments on the Waymo Open Motion Dataset demonstrate that DriveGATr is comparable to the state-of-the-art in traffic simulation and establishes a superior Pareto front for performance vs .computational cost. 
+
+## 1. Introduction 
+
+Understanding how traffic agents behave has many important applications in self-driving, from online motion forecasting for autonomy to offline traffic modeling for simulation. In these applications, a traffic scene typically consists of a set of geometric objects representing traffic agents, like vehicles and pedestrians, and contextual elements, like the map lane graph and traffic signals [ 9 , 11 , 13 ]. Our goal is to learn an agent model that accurately predicts the actions of each agent in the scene from this context. This task has many  
+
+> †Work done while at Waabi.
+
+symmetries, chief among which is equivariance to arbitrary 2D roto-translations of the scene; i.e ., SE (2) -equivariance. That is, if we apply a rigid transformation T ∈ SE (2) to the input scene, the outputs of the model should also transform by that same rigid transformation, preserving their relative geometric relationships. A natural question arises: how can we imbue our agent models with this equivariance? A common approach is to rely on data diversity. The hope is that with enough training examples, the model naturally learns a roughly equivariant function. While conceptually simple, this approach can be sample and compute inefficient and yet still struggle to gen-eralize to new scenes as it is not truly equivariant. Alterna-tively, one can directly encode this property as an inductive bias into the model, designing the network architecture such that it is equivariant by construction. Approaches in this category typically explicitly model pairwise relationships between agents. For instance, one can transform the context around each agent into its own respective coordinate frame and process each agent’s context independently [ 5, 15 ] or use pairwise relative positional encoding to process all agents si-multaneously [ 4, 21 ]. Unfortunately, all of these approaches introduce an additional cost that scales quadratically with the number of agents, limiting its suitability to scale to ever larger scenes, models, datasets, etc .In this paper, we propose DriveGATr , a novel architec-ture for modeling agents that achieves SE (2) -equivariance without the computational cost of existing methods. Our ap-proach builds on recent advances in geometric deep learning. In particular, we develop a novel extension of the Geomet-ric Algebra Transformer (GATr) [ 2] to SE (2) -equivariance and new architectural primitives that improve its efficacy for agent modeling. First, we propose an efficient encoding of scene elements into the 2D projective geometric alge-bra R∗
+
+> 2,0,1
+
+, which allows for a native representation of 2D objects ( e.g ., points, lines) and operators ( e.g ., translations, rotations) as 8-dimensional multivectors. Next, we develop SE (2) -equivariant neural network primitives, such as linear / bilinear layers, nonlinearities, normalization and scaled dot product attention. In addition, we design a new primi-tive to transform equivariant geometric representations into invariant features, since an agent’s actions are ultimately 
+
+> arXiv:2604.01466v1 [cs.RO] 1 Apr 2026
+
+invariant. These primitives form the basis of DriveGATr ’s transformer-based architecture. Our approach has two key advantages. First, compared to non-equivariant models, DriveGATr is equipped with a geo-metric inductive bias that improves its expressivity, sample efficiency, and robustness to nuissance transformations. Sec-ond, unlike prior equivariant methods, DriveGATr achieves this without explicit pairwise relative positional encodings. Instead, it models geometric relationships between agents and scene elements using standard scaled dot product atten-tion between multivectors, which have been heavily opti-mized [ 6 ]. This gives us flexibility to improve the model’s performance by growing each agent’s context ( e.g ., to all agents or the entire lane graph) or scale to larger scenes, mod-els, and datasets efficiently. Our experiments on the Waymo Open Motion Dataset [ 8] confirm these attributes, showing that DriveGATr achieves comparable results to the state-of-the-art in traffic simulation while establishing a superior Pareto front in performance vs . computation cost compared to the baselines. To summarize, we introduce DriveGATr , a tailoring of GATr to acheive efficient SE (2) -equivariance with internal geometric algebra representations. We provide theoretical analysis showing it is provably equivariant by construction. We develop novel components targeted for agent modeling in self-driving, and empirically validate the effectiveness through extensive large scale experiments. 
+
+## 2. Related work 
+
+2.1. SE(2) equivariance in traffic modeling 
+
+A natural symmetry in traffic modeling is equivariance to 2D roto-translations of the scene; i.e ., SE (2) equivariance. This symmetry gives rise to a powerful inductive bias for improving our traffic models’ expressivity, efficiency, and generalization [ 16 ]. Indeed, equivariant models tend to out-perform their non-equivariant baselines at any compute or data budget [ 3 ]. While the advantage of this inductive bias diminishes at scale, the scale required far exceeds that of any public self-driving datasets today, where equivariant mod-els still top the leaderboards [ 18 , 19 ]. Moreover, at a fixed compute budget, the optimal equivariant models are smaller, providing an additional inference time advantage. To achieve SE (2) equivariance, existing models explicitly compute relative poses between each pair of actors and map elements in the scene [ 4, 18 , 19 , 21 ]. In particular, state-of-the-art models like SMART [ 18 , 19 ] use a transformer-based architecture that extends the attention dot product with Relative Positional Embeddings (RPE), 
+
+αij = ⟨Qi, K j + RPE( pos i→j )⟩√dk
+
+(1) where RPE( pos i→j ) featurizes the relative pose from i to 
+
+j. Explicitly computing pairwise RPEs scales quadratically with the number of scene elements, limiting the suitabil-ity of these models to scale to larger scenes, models, and datasets. Moreover, because they do not use standard scaled dot product attention, these models cannot use highly opti-mized attention kernels like FlashAttention [6]. To address this limitation, recent work have explored ways to avoid explicit RPEs. For example, DRoPE [ 20 ]extends 1D rotary positional embeddings (RoPE) [ 17 ] to 2D, modifying the attention dot product so that query and key embeddings are first transformed by blockwise rotation matrices Ri and Rj encoding poses of i and jαij = ⟨RiQi, Rj Kj ⟩√dk
+
+(2) While DRoPE bypasses the scalability issue, it lacks expressivity as it does not encode explicit geometric in-formation about the scene elements. It is also translation-equivariant but not rotation-equivariant. Alternatively, VN-Transformer [ 1] encodes poses as Vector-Neurons [ 7] and processes them with a transformer with SO(3) equivariant layers. However, for numerical stability, VN-Transformer requires modifications that sacrifice true equivariance. 
+
+2.2. Geometric Algebra Transformer 
+
+Recently, a novel method from geometric deep learning, called the Geometric Algebra Transformer (GATr) [ 2], pro-poses an E(3)-equivariant transformer-based architecture which represents geometric objects as elements of a projec-tive geometric algebra. This projective geometric algebra provides a single, unified 16-dimensional algebraic structure to represent all types of geometric data, including points, lines, planes, rotations, and translations. GATr consists of E(3)-equivariant network primitives, including equivariant attention, MLP, and normalization layers, which operate directly on these geometric algebra elements. Because it is built on the standard transformer framework, GATr is scalable, versatile, and efficient. However, applying GATr directly to traffic agent mod-eling not only results in redundancy, but also inaccuracy. Notably, the original GATr architecture is E(3) -equivariant, whereas a driving scene is only SE (2)-equivariant due to gravity and right-hand traffic rules. In this work, we derive and implement efficient 2D geometric encodings and equiv-ariant layers which operate on an algebraic structure using 8 dimensions instead of 16. 
+
+## 3. DriveGATr 
+
+This work is motivated by the goal of designing an efficient and expressive approach to equivariant traffic modelling. As we will see later, a key idea in our proposed method will be to extend the attention dot product with more invariant x, y, θ 
+
+> features
+
+MLP 
+
+Map 
+
+Cross 
+
+Attention 
+
+Actor 
+
+Cross 
+
+Attention 
+
+Nactor × T
+
+Nmap × T
+
+> Equivariant
+> MLP
+
+Invariant 
+
+Adapter 
+
+> encodings
+
+ℝ*2,0,1 
+
+x N blocks 
+
+MLP  
+
+> controls
+> x
+
+Nactor
+
+Causal 
+
+Actor Self 
+
+Attention (a) Overview of the architecture. Equivariant  
+
+> Norm
+> Q
+> scalars
+> Q
+> multi-
+> vectors
+> KV
+> scalars
+> KV
+> multi-
+> vectors
+> Equivariant
+> Linear
+> Equivariant
+> Linear
+> Multivector
+> dot-
+> product
+> Attention
+> +
+> Equivariant
+> Norm
+> (b) Multivector attention block. scalars
+> multi-
+> vectors
+> Equi-
+> variant
+> Linear
+> Equi-
+> variant
+> Norm
+> Geo-
+> metric
+> Bilinear
+> Equi-
+> variant
+> Linear
+> Gated
+> ReLU
+> Equi-
+> variant
+> Linear
+
++
+
++ (c) Equivariant MLP block. 
+
+Figure 1. The DriveGATr architecture. Figure 1a provides an overview. The poses and features of Nactor agents and Nmap nodes in each scene are encoded as multivectors in R∗ 
+
+> 2,0,1
+
+and scalars. These tensors are processed by N transformer blocks, each consisting of agent and map cross attention, temporal causal self-attention, equivariant MLPs and invariant adapters. Each of these modules contain skip connections, closely mimicking a standard transformer. Figure 1b describes the attention block. For all attention blocks, the query inputs are agent of interests. The key and value inputs are agents and map nodes for the cross attentions, attending across elements per-timestep. For self-attention, attention spans the temporal axis per-agent. Figure 1c describes the equivariant MLP block. Table 1 provides details on R∗
+
+> 2,0,1
+
+encodings. Section 3.4 provides details on each of the equivariant primitive layers. Section 3.5 describes the invariant adapter block. 
+
+dot products. For example, if hQi and hKj are 2D heading vectors, one could compute SE(2)-invariant attention logits via 
+
+αij = ⟨Qi, K j ⟩ + ⟨hQi , h Kj ⟩√dk + 2 (3) so that query tokens attend more strongly to key tokens with similar heading. However, this naive example has several limitations: (i) hQi and hKj are not learnable features, so this approach is not expressive; (ii) this only reasons about headings, and not positions; and (iii) in this example, the token features do not contain any explicit pose information. Using geometric algebra encodings will allow us to address all of these limitations. The geometric algebra R∗ 
+
+> 2,0,1
+
+gives us a unified and effi-cient way to represent 2D geometries, including points, lines, translations, and rotations. We will show how to encode 2D poses as elements of this algebra, called multivectors ;in particular, the multivector representing the pose (x, y, θ )
+
+will have components corresponding to x, y, cos θ, and sin θ.To make our geometric features learnable, we will derive SE (2)-equivariant layers L : R∗ 
+
+> 2,0,1
+
+→ R∗
+
+> 2,0,1
+
+, including linear layers, normalization, and nonlinearities. The geomet-ric algebra is also equipped with an invariant inner product 
+
+⟨· , ·⟩ : R∗ 
+
+> 2,0,12
+
+→ R, which allows us to compute SE(2)-invariant attention logits via 
+
+αij = ⟨Qi, K j ⟩ + ⟨QM V i , K M V j ⟩
+
+pdk + dM V (4) where QM V i and KM V j are multivector geometric features and dM V is the dimension of the invariant inner product. No-tably, Equation 4 can be computed as standard dot-product attention via efficient kernels by concatenating Q, K with (certain components of) QM V , K KV .In the next sections, we first provide an overview of DriveGATr . We then provide a brief preliminary on generic geometric algebra and describe the details of DriveGATr ,which is an efficient 2D extension of GATr [ 2] with mod-ifications for agent modeling. We refer the readers to the supplementary material for additional preliminaries. 
+
+3.1. DriveGATr Architecture 
+
+Given a history of agent states At = {a1: t 
+
+> 1
+
+, . . . , a 1: tN } and map nodes M = {m1, . . . , m M }, DriveGATr predicts an action for each agent: μ = DriveGATr (A, M) at the current timestep. A dynamics model f advances the agent states: 
+
+at+1  
+
+> i
+
+= f (ati, μ i). We repeat this process to unroll the traffic scene in T timesteps. By construction, the trajectories un-rolled by the dynamics model are equivariant relative to the scene. Figure 1 provides an overview of the architecture. For every token in A and M, we encode its 2D global 1
+
+position (x, y ) with heading θ into a single multivector, using the bivector components to encode the point (x, y ), and the vector components to encode the line passing through (x, y )
+
+with direction angle θ.We also encode invariant features in auxiliary scalars using a MLP. For agent states, we encode their speed and bounding box dimensions in the auxiliary scalars. For map segments, we encode their length, width, curvature, speed limit, and boundary types. Our transformer consists of a sequence of factorized at-tention blocks, where each block consists of (i) multi-head cross attention between the agent states and map tokens, per timestep; (ii) multi-head self attention between the agent states, per timestep; (iii) multi-head causal self-attention be-tween agent states, per agent; (iv) an equivariant MLP; and (v) an invariant adapter described in Section 3.5. We use a final MLP on the auxiliary scalars to decode invariant action logits for each agent. We find it beneficial to attend agent states to the entire map in our cross-attention layer, rather than the nearest few map tokens. 
+
+3.2. Geometric algebra 
+
+Geometric product. The geometric product xy of x, y ∈
+
+Rn is a way of multiplying vectors together. The geometric product is defined to be bilinear and associative, and is char-acterized by the fundamental equation v2 = ⟨v, v ⟩ where 
+
+⟨· , ·⟩ is the standard inner product. This induces an algebra, called a Euclidean geometric algebra , whose elements are called multivectors . From the fundamental equation one can deduce that the geometric product is anticommutative on orthogonal basis vectors, i.e. eiej = −ej ei for i̸ = j. Conse-quently, for n = 2 the Euclidean geometric algebra consists of multivectors of the form x = x′ + x1e1 + x2e2 + x12 e12 ,where x′, x 1, x 2, x 12 are real coefficients and e12 := e1e2.This structure is useful because it provides a unified framework for representing and manipulating geometric ob-jects. For example, in 2D, we can rotate a vector v = ( x, y )
+
+by an angle θ using the geometric product: 
+
+Rθ v = (cos θ − (sin θ)e12 )( xe 1 + ye 2) (5) 
+
+= ( x cos θ − y sin θ)e1 + ( x sin θ + y cos θ)e2 (6) where we have used that e21 = e22 = 1 and e2e1 = −e1e2.
+
+Projective geometric algebra. Euclidean geometric al-gebra is only able to represent linear transformations. A translation is not a linear operation, but we can solve this by adding an extra, special dimension, similar to how homoge-neous coordinates are used in computer graphics. 
+
+> 1Theoretically, the choice of coordinate frame can be arbitrary due to SE(2) equivariance, but for numerical stability we use the ego’s initial pose.
+
+A projective geometric algebra is obtained by first ad-joining an orthogonal basis vector e0 to Rn with norm zero, that is, e20 = 0 . For n = 2 , the resulting algebra, denoted by R∗
+
+> 2,0,1
+
+, is 8-dimensional, spanned by the scalar 1, three vectors e0, e 1, e 2, three bivectors e01 , e 20 , e 12 , and one pseu-doscalar e012 .
+
+Geometric algebra primitives. We define additional geo-metric algebra primitives that will be useful later. The wedge product is another way of multiplying vectors together, defined by x ∧ y = ( xy − yx )/2. It is bilinear and associative, and has the property that v ∧ v = 0 for any vector v. Also, for distinct basis vectors ei, e j , from 
+
+ej ei = −eiej one can derive that ei ∧ ej = eiej concides with the geometric product. The wedge product also extends to general multivectors. The multivector dual x 7 → x∗ is a linear operator, defined for a basis multivector x as the multivector such that x ∧ x∗
+
+equals the pseudoscalar. The join operator of two multivectors is defined as Join (x, y ) = ( x∗ ∧ y∗)∗.The k-blade projection ⟨x⟩k is defined to select specific components of a multivector x ∈ R∗
+
+> 2,0,1
+
+⟨x⟩0 := x′ (7) 
+
+⟨x⟩1 := x0e0 + x1e1 + x2e2 (8) 
+
+⟨x⟩2 := x01 e01 + x20 e20 + x12 e12 (9) 
+
+⟨x⟩3 := x012 e012 (10) We define the invariant inner product ⟨· , ·⟩ between two multivectors in R∗ 
+
+> 2,0,1
+
+as 
+
+⟨x, y ⟩ := x′y′ + x1y1 + x2y2 + x12 y12 ∈ R (11) which ignores components containing e0.
+
+3.3. Encodings 
+
+We encode 2D objects and transformations into R∗ 
+
+> 2,0,1
+
+us-ing Table 1 so that geometric features can be computed using the operations defined above. Following Brehmer et al. [2] ,we encode 2D geometries and transforms such that the result of applying a transform to a geometry is given by a sandwich product. For example, if t is a multivector representing a translation by (a, b ) and p is a multivector representing the point (x, y ), then tpt −1 is a multivector representing the point (x + a, y + b). Given this property, we can state that a mapping L : R∗ 
+
+> 2,0,1
+
+→ R∗ 
+
+> 2,0,1
+
+is SE (2) equivariant if for any roto-translation u ∈ R∗ 
+
+> 2,0,1
+
+and input x ∈ R∗
+
+> 2,0,1
+
+, we have 
+
+L(uxu −1) = uL(x)u−1 (12) The encodings in Table 1 additionally satisfy the proper-ties that (i) the intersection point of two lines ℓ1, ℓ 2 ∈ R∗
+
+> 2,0,1
+
+Geometry / transform Representation Transform inverse Line ax + by + c = 0 ae 1 + be 2 + ce 0 -Point (x, y ) xe 20 + ye 01 + e12 -Translation by (a, b ) 1 − a 
+
+> 2
+
+e01 + b 
+
+> 2
+
+e20 1 + a 
+
+> 2
+
+e01 − b 
+
+> 2
+
+e20 
+
+Counterclockwise rotation of angle θ cos θ 
+
+> 2
+
+− sin θ 
+
+> 2
+
+e12 cos θ 
+
+> 2
+
++ sin θ 
+
+> 2
+
+e12 
+
+Table 1. 2D encodings of geometries and transforms. 
+
+is given by their wedge product p := ℓ1 ∧ ℓ2; and (ii) the line joining two points p1, p 2 ∈ R∗ 
+
+> 2,0,1
+
+is given by a join operator 
+
+ℓ := Join (p1, p 2). For a complete proof of the properties discussed above, please refer to the supplemental material. 
+
+3.4. Equivariant layers 
+
+In this section we define the primitive equivariant layers of our model. For the full proofs that each of our layers satisfy Equation 12, please refer to the supplemental material. 
+
+Linear layers. We define SE (2) -equivariant linear maps ϕ : R∗ 
+
+> 2,0,1
+
+→ R∗ 
+
+> 2,0,1
+
+by the form 
+
+ϕ(x) = 
+
+> 3
+
+X
+
+> k=0
+
+wk⟨x⟩k +
+
+> 2
+
+X
+
+> k=0
+
+vke0⟨x⟩k +
+
+> 2
+
+X
+
+> k=0
+
+uke012 ⟨x⟩k (13) where wk, v k, u k are parameters and ⟨·⟩ k denotes blade pro-jection. Since ϕ is linear and the map x 7 → uxu −1 is linear for any fixed operator u, to show that ϕ is equivariant it suffices to verify that ϕ(uxu −1) = uϕ (x)u−1 for any basis 
+
+multivector x and rotation or translation u; please refer to the supplement for details. We then define affine layers between multivector arrays 
+
+Φ : R∗ 
+
+> 2,0,1c
+
+→ R∗
+
+> 2,0,1c′
+
+via 
+
+Φ( x)i =
+
+> c
+
+X
+
+> j=1
+
+ϕ(i,j )(xj ) + bi ∀i = 1 , . . . , c ′ (14) where ϕ(i,j ) are equivariant linear layers and bi are learnable scalar bias terms. 
+
+Geometric bilinears. To increase expressivity, we include the geometric product which is equivariant as (uxu −1)( uyu −1) = u(xy )u−1 for any x, y and operator u, and we include the join operator which is also equivariant Brehmer et al. [2] . These are combined to form the equivariant geometric layer Geometric (w, x, y, z ) = Concatenate (wx, Join (y, z )) .
+
+Nonlinearities and normalization. We define the equivariant scalar-gated activation GatedRELU (x) =
+
+RELU (⟨x⟩0)x. We define equivariant normalization over channels by LayerNorm (x) = x/ pE⟨x, x ⟩ + ε where ⟨· , ·⟩ 
+
+is the invariant inner product. 
+
+Scaled dot-product attention. For multivector query and key tokens q, k ∈ R∗ 
+
+> 2,0,1C
+
+, the corresponding invariant attention logit may be computed as 
+
+PCc=1 ⟨qc, k c⟩√4C (15) where ⟨· , ·⟩ is the invariant inner product. We find it crucial to follow Brehmer et al. [2] and extend the query and key multivectors with “distance awareness” features 
+
+ϕ(q) = q12 
+
+q212 + ε
+
+
+
+q212 
+
+q201 + q220 
+
+q01 q12 
+
+q20 q12 
+
+ (16) 
+
+ψ(k) = k12 
+
+k212 + ε
+
+
+
+−k201 − k220 
+
+−k212 
+
+2k01 k12 
+
+2k20 k12 
+
+ (17) which have the property that ϕ(q) · ψ(k) is invariant, and moreover if the bivector components of q and k repre-sent points with q12 = k12 = 1 then ϕ(q) · ψ(k) =
+
+− 1(1+ ε)2 [( k01 − q01 )2 + ( k20 − q20 )2] which is proportional to the negative squared distance between the two points. Combining the multivector features, extended features, and auxiliary scalar features qs, k s ∈ RC′
+
+, the invariant attention logits are computed as 
+
+PCc=1 ⟨qc, k c⟩ + PCc=1 ϕ(qc) · ψ(kc) + PC′ 
+
+> c=1
+
+qsc ksc
+
+√4C + 4 C + C′ . (18) As in a standard transformer, the attention logits are soft-maxed and used to take a linear combination of the value tokens. Notably, Equation 18 can be computed as one dot-product by concatenating the three terms for both query and key, allowing drop-in usage of efficient attention kernels. 
+
+3.5. Invariant adapter 
+
+The output of our model is an invariant action which can be decoded from the auxiliary scalar features. However, the multivector features contain important geometric informa-tion that should be used as well. To this end, we introduce a novel transform which converts each agent’s equivariant geometric features into invariant features by transforming the multivectors into a local coordinate frame. Specifically, given equivariant multivector features v ∈
+
+R∗  
+
+> 2,0,1N×d
+
+and auxiliary scalar features s ∈ RN ×d′
+
+, for each agent n = 1 , . . . , N we compute 
+
+sn ← MLP (flatten components (unvnu−1 
+
+> n
+
+)) + sn (19) where un ∈ R∗ 
+
+> 2,0,1
+
+is the roto-translation transforming global poses into the coordinate frame of agent n. Similar to all other layers, Equation 19 is batched across scenes and agent. For each n, unvnu−1 
+
+> n
+
+is invariant because it converts global equivariant features vn into agent-centric features. Therefore, this transform preserves the invariance of the auxiliary scalars. 
+
+## 4. Experiments 
+
+We evaluate DriveGATr in traffic simulation — a representa-tive task for modeling traffic agents. Our experiments demon-strate two key properties: (1) comparable performance to the state-of-the-art; and (2) a superior Pareto front in perfor-mance vs . computational costs compared to prior work. 
+
+4.1. Comparison to state-of-the-art 
+
+In traffic simulation, equivariant models top the leaderboard but sacrifice computational efficiency due to their explicit relative positional encodings. We propose DriveGATr as an alternative that achieves SE (2)-equivariance without the high computational costs of existing methods. Our first experiment seeks to answer the question: Does DriveGATr match the state-of-the-art? 
+
+Dataset & metrics. We evaluate our method on the Waymo Open Motion Dataset (WOMD) [ 8 ] using the pro-tocol proposed by the Waymo Open Sim Agents Challenge (WOSAC) [ 12 ]. Given 1s of context in a traffic scenario, the task is to generate 32 rollouts of 8s closed-loop simulations at 10 Hz, each containing the trajectories of every agent in the scenario. The rollouts are evaluated using distribution matching metrics along three dimensions— kinematic, inter-active, and map-based metrics—which are then summarized into a single Realism Meta-Metric (RMM) score. We also report the lowest displacement error, averaged over time, across rollouts (minADE). 
+
+Baselines. We compare against the state-of-the-art on WOSAC: BehaviorGPT [21 ], SMART [18 ], and CAT-K [19 ]. BehaviorGPT and SMART use explicit relative positional encodings (RPEs). CAT-K further trains SMART with closed-loop fine-tuning. We also compare against four baselines representative of how state-of-the-art methods achieve SE (2)-equivariance. These baselines share the same base architecture and learning algorithm as DriveGATr , differing only in how they intro-duce equivariance. Transformer is a scene-centric model that uses roto-translation data augmentation to approximate equivariance and is based on Trajeglish [ 14 ]. Transformer + DRoPE [ 20 ] uses rotary positional encodings (RoPE) to achieve translation (but not rotation) equivariance. We faith-fully reproduce DRoPE using publicly available information. 
+
+Transformer + RPE [ 4] uses explicit RPEs to achieve equiv-ariance. Like other methods that use RPEs, we limit each agent’s context to a neighbourhood (eight agents and four map tokens) so that it fits in GPU memory during training. 
+
+Implementation details. We use a clustered discretized action space. Starting with a large number of state-to-state transitions, we use a k-disk procedure [ 14 ] to select a vocab-ulary of 2048 actions for each agent class (vehicle, cyclist, pedestrian). We then use this vocabulary to discretize the trajectories in our training dataset, and use a cross entropy loss to train our model to predict the next action for each agent. We use 16 multivector channels, and six factorized attention blocks. Our 3M variant uses auxilliary dimension 128 for a total of 2.7 million parameters, and our 30M variant uses auxilliary dimension 512 for 29.4 million parameters. Similar to prior methods [ 18 , 19 ], we embed each query to-ken with its prediction at the last timestep as well as its actor class. For all models and baselines, we train for 250,000 steps with learning rate 10 −3 and cosine annealing. We con-duct analysis on the 3M variant, except for the comparison in Table 2, for efficiency purposes. 
+
+Results. Table 2 reports results on the WOSAC 2024 vali-dation set. DriveGATr achieves comparable realism scores to the state-of-the-art despite its relatively small model size. In fact, DriveGATr achieves a 2% improvement in RMM over BehaviorGPT—a state-of-the-art model of similar size. The 30M variant of DriveGATr achieves comparable RMM with SMART [ 18 ], the top method on the WOSAC leaderboard. For simplicity, we did not explore closed-loop fine-tuning, top-k sampling, and nucleus sampling in our experiments, but we expect that these techniques will improve perfor-mance if tuned properly. DriveGATr marks a significant improvement over our baselines, despite sharing largely the same base architecture. From a modeling perspective, DriveGATr has two important advantages over the baselines: in contrast to Transformer and Transformer + DRoPE, DriveGATr is SE (2)-equivariant by construction; and in contrast to Transformer + RPE, DriveGATr can grow each agent’s context to encompass all agents and map tokens in the scene whereas the base-line is limited to a small neighbourhood due to the memory footprint of its explicit RPEs. Method # Params Finetuned RMM ↑ Kinematic ↑ Interactive ↑ Map-based ↑ minADE ↓
+
+BehaviorGPT 3M - 0.7438 0.4254 0.7233 0.7976 1.3804 SMART-7M 7M - 0.7678 0.4894 0.7306 0.8163 1.3532 SMART-7M + CAT-K 7M ✓ 0.7709 0.4937 0.7333 0.8185 1.2953 Transformer 3M - 0.7257 0.4759 0.7058 0.7654 1.6720 Transformer + RPE 3M - 0.7251 0.4708 0.6953 0.7808 1.7486 Transformer + DRoPE 3M - 0.7206 0.4629 0.7017 0.7604 1.9193 DriveGATr-3M (ours) 3M - 0.7620 0.4859 0.7264 0.8103 1.4192 DriveGATr-30M (ours) 30M - 0.7636 0.4890 0.7272 0.8120 1.3682 Table 2. Results on WOSAC 2024 validation set. RMM is the Realism Meta Metric used for ranking. DriveGATr achieves the best RMM among its baselines. Compared to publicly available state-of-the-art methods, DriveGATr achieves comparable realism without top-k
+
+sampling and closed-loop fine-tuning. 10 13 10 14 10 15 10 16       
+
+> FLOPs
+> 1.0
+> 1.2
+> 1.4
+> 1.6
+> 1.8
+> 2.0
+> 2.2
+> 2.4
+> Training Loss
+> Transformer
+> Transformer + RPE
+> Transformer + DRoPE
+> DriveGATr (ours) 050 100 150 200 250
+> Number of Agents
+> 10 8
+> 10 9
+> 10 10
+> 10 11
+> FLOPs
+> Transformer
+> Transformer + RPE
+> Transformer + DRoPE
+> DriveGATr (ours) 10 410 5
+> Number of Training Scenarios
+> 0.58
+> 0.60
+> 0.62
+> 0.64
+> 0.66
+> 0.68
+> 0.70
+> 0.72
+> 0.74
+> RMM
+> Transformer
+> Transformer + DRoPE
+> DriveGATr (ours)
+
+Figure 2. Training curves. We compare the envelope of minimal training loss per FLOP ( left ), compute efficiency as the number of agents scale ( middle ), and sample efficiency as the training dataset grows ( right ). Compared to the baselines, DriveGATr establishes a superior Pareto front in performance and computation cost thanks to its compute and sample efficiency. 
+
+4.2. Scaling analysis 
+
+Our next set of experiments evaluate DriveGATr ’s scalability with respect to training compute and data. 
+
+Experiment setup. For each of our baselines, we train two models with varying training FLOP profiles on the full WOMD training dataset. In our experiments, we vary batch size since we found that varying model size, learning rates, 
+
+etc . was inconsequential. Then, for each training run, we smooth its training loss curve with Gaussian smoothing. Fi-nally, from these training loss curves, we extract the envelope of minimal training loss per FLOP. This training loss enve-lope gives us an estimate of how each baseline’s performance improves as we scale the available training compute. 
+
+Results. Figure 2 (left) shows that DriveGATr ’s train-ing loss envelope is significantly lower than those of the baselines. For any number of training FLOPs, DriveGATr achieves the lowest training loss, demonstrating its supe-rior scalability with training compute. This comes down to DriveGATr ’s two key advantages: (1) higher sample effi-ciency due to SE (2)-equivariance; and (2) higher compute efficiency due to how it achieves SE(2)-equivariance. To demonstrate DriveGATr ’s compute efficiency, we ana-lyze how each model’s number of FLOPs scale with number of agents during inference. From Figure 2 (middle), we see that DriveGATr has significantly lower computational over-head than Transformer + RPE. The latter requires computing explicit RPE, which introduces an additional overhead that is quadratic in the number of agents. DriveGATr avoids this overhead by modeling geometric relationships using standard attention between multivectors. To demonstrate DriveGATr ’s sample efficiency, for each model family, we train on a range of dataset sizes: 1%, 10%, 50%, and 100%. Next, we plot each model’s RMM on the validation split against the number of scenarios seen during training. Following Zhang et al. [19] , we evaluate on 2% of the validation set due to the high cost of evaluation. In Figure 2 (right), we see an intuitive ordering—models with more inductive bias built in tend to have higher sample efficiency. 
+
+4.3. Additional analysis 
+
+Robustness to roto-translations. SE (2)-equivariance not only improves sample efficiency but also robustness to nuissance transformations. In Figure 4, we compare DriveGATr ’s robustness to roto-translations against Trans-former and Transformer + DRoPE. In each figure, we overlay rollouts from when the model is given inputs in its origi-nal coordinate frame vs . one rotated by 90°and translated 139508 139508 139508 Figure 3. Robustness to roto-translations. We compare Transformer ( left ), Transformer + DRoPE ( middle ), and DriveGATr (right )’s robustness to roto-translations. In each figure, we overlay rollouts from the original coordinate frame vs one rotated by 90°and translated by 100m forward. Blue trajectories visualize model predictions in the original input, and red visualize predictions in the transformed scene. DriveGATr produces consistent trajectories despite closed-loop execution, demonstrating its robustness to roto-translations.                         
+
+> IA DA RMM ↑minADE ↓
+> ✓0.7408 1.6176
+> ✓0.7483 1.6053
+> ✓✓0.7478 1.5798 Map Attn. RMM ↑minADE ↓
+> k= 4 0.7478 1.5798
+> k= 8 0.7528 1.5293 All 0.7617 1.4174
+
+Table 3. Ablation studies on the WOSAC 2% validation split. 
+
+On the top , we ablate the importance of the invariant adapter (IA) and distance-awareness (DA). On the bottom , we ablate the number of map tokens each agent attends to in agent-to-map attention. 
+
+by 100m forward. Note that for each rollout, instead of sampling, the model at each timestep executes its highest scored action. As expected, Transformer is not robust to roto-translations—its rollouts change significantly when given the same inputs from different coordinate frames. Likewise, Transformer + DRoPE is not robust because it is not rotation equivariant. In contrast, DriveGATr is robust because it has a mathematical guarantee for SE(2)-equivariance. 
+
+Ablation studies. In Table 3, we ablate two of DriveGATr ’s key architectural choices on the 2% valida-tion set, namely (i) whether we use the invariant adapter after each factorized attention block (including the last one) and (ii) whether we use distance-awareness in DriveGATr ’s attention layers. From the left side of Table 3, we observe that both architectural choices improve DriveGATr ’s realism. For the invariant adapter, we see improvements in minADE only whereas for distance-awareness, we see improvements across both metrics. This matches our intuitions that there is important geometric information in the multivector fea-tures that should be mixed into the auxiliary scalars, and that agents should attend to nearby agents and map tokens. 
+
+Latency. We provide memory footprint and latency com-parisons in the supplementary material. We note that DriveGATr is faster and more memory efficient than the fully invariant baseline Transformer + RPE. 
+
+## 5. Conclusion 
+
+SE(2) equivariance is an inherent symmetry in agents mod-eling problems. It is a ubiqutous inductive bias in state-of-the-art agent traffic simulation models, improving their expressivity, sample efficiency, and robustness to nuissance transformations. However, existing approaches achieve this with high computational costs. We propose DriveGATr , a novel architecture for modeling traffic agents that guarantees SE(2) equivariance yet avoids the high computational costs of existing approaches. By leveraging efficient 2D geomet-ric algebra encodings and the equivariant layer primitives, DriveGATr is expressive, efficient and provably equivariant. 
+
+Limitations and broader impact. Although SE (2) is a useful equivariance property for agent modeling, self-driving is ultimately a 3D problem. DriveGATr models equivariance in 2D but, like prior work [ 5 ], it can be easily extended to 2.5D by adding the height dimension to the auxiliary scalar features. Another possibility is combining our method of acheiving SE (2) equivariance in the xy -plane, with trans-lational invariance in the z-axis. While we only evaluate DriveGATr in traffic simulation, we believe it is extensible to similar tasks like motion forecasting and ML-based plan-ning. We also highlight that DriveGATr is capable of making not just invariant but equivariant predictions in the global coordinate frame, making it a suitable architectural choice for more challenging problems such as traffic scenario gen-eration. We leave this direction for future work. References 
+
+[1] Serge Assaad, Carlton Downey, Rami Al-Rfou, Nigamaa Nayakanti, and Benjamin Sapp. Vn-transformer: Rotation-equivariant attention for vector neurons. TMLR , 2023. 2 [2] Johann Brehmer, Pim De Haan, S ¨onke Behrends, and Taco S Cohen. Geometric algebra transformer. In NeurIPS , 2023. 1, 2, 3, 4, 5, 13, 15 [3] Johann Brehmer, S ¨onke Behrends, Pim De Haan, and Taco Cohen. Does equivariance matter at scale? arXiv , 2024. 2 [4] Alexander Cui, Sergio Casas, Kelvin Wong, Simon Suo, and Raquel Urtasun. GoRela: Go relative for viewpoint-invariant motion forecasting. In ICRA , 2023. 1, 2, 6, 20 [5] Marco Cusumano-Towner, David Hafner, Alex Hertzberg, Brody Huval, Aleksei Petrenko, Eugene Vinitsky, Erik Wij-mans, Taylor Killian, Stuart Bowers, Ozan Sener, et al. Robust autonomy emerges from self-play. arXiv , 2025. 1, 8 [6] Tri Dao, Daniel Y. Fu, Stefano Ermon, Atri Rudra, and Christopher R ´e. Flashattention: Fast and memory-efficient exact attention with io-awareness. In NeurIPS , 2022. 2 [7] Congyue Deng, Or Litany, Yueqi Duan, Adrien Poulenard, Andrea Tagliasacchi, and Leonidas J. Guibas. Vector neurons: A general framework for so(3)-equivariant networks. arXiv .2[8] Scott Ettinger, Shuyang Cheng, Benjamin Caine, Chenxi Liu, Hang Zhao, Sabeek Pradhan, Yuning Chai, Ben Sapp, Charles R. Qi, Yin Zhou, Zoey Yang, Aurelien Chouard, Pei Sun, Jiquan Ngiam, Vijay Vasudevan, Alexander McCauley, Jonathon Shlens, and Dragomir Anguelov. Large scale in-teractive motion forecasting for autonomous driving : The waymo open motion dataset. In ICCV , 2021. 2, 6 [9] Jiyang Gao, Chen Sun, Hang Zhao, Yi Shen, Dragomir Anguelov, Congcong Li, and Cordelia Schmid. Vectornet: Encoding hd maps and agent dynamics from vectorized rep-resentation. In CVPR , 2020. 1 [10] Byeongho Heo, Song Park, Dongyoon Han, and Sangdoo Yun. Rotary position embedding for vision transformer. In 
+
+ECCV , 2024. 20 [11] Ming Liang, Bin Yang, Rui Hu, Yun Chen, Renjie Liao, Song Feng, and Raquel Urtasun. Learning lane graph representa-tions for motion forecasting. In ECCV , 2020. 1 [12] Nico Montali, John Lambert, Paul Mougin, Alex Kuefler, Nick Rhinehart, Michelle Li, Cole Gulino, Tristan Emrich, Zoey Yang, Shimon Whiteson, Brandyn White, and Dragomir Anguelov. The waymo open sim agents challenge. arXiv ,2023. 6 [13] Nigamaa Nayakanti, Rami Al-Rfou, Aurick Zhou, Kratarth Goel, Khaled S Refaat, and Benjamin Sapp. Wayformer: Motion forecasting via simple & efficient attention networks. In ICRA , 2023. 1 [14] Jonah Philion, Xue Bin Peng, and Sanja Fidler. Trajeglish: Traffic modeling as next-token prediction. In ICLR , 2024. 6 [15] Ari Seff, Brian Cera, Dian Chen, Mason Ng, Aurick Zhou, Nigamaa Nayakanti, Khaled S Refaat, Rami Al-Rfou, and Benjamin Sapp. Motionlm: Multi-agent motion forecasting as language modeling. In ICCV , 2023. 1 [16] DiJia Andy Su, Bertrand Douillard, Rami Al-Rfou, Cheol Park, and Benjamin Sapp. Narrowing the coordinate-frame gap in behavior prediction models: Distillation for efficient and accurate scene-centric motion forecasting. In 2022 In-ternational Conference on Robotics and Automation, ICRA 2022, Philadelphia, PA, USA, May 23-27, 2022 , pages 653– 659. IEEE, 2022. 2 [17] Jianlin Su, Murtadha Ahmed, Yu Lu, Shengfeng Pan, Wen Bo, and Yunfeng Liu. Roformer: Enhanced transformer with rotary position embedding. Neurocomputing , 2024. 2 [18] Wei Wu, Xiaoxin Feng, Ziyan Gao, and Yuheng Kan. Smart: Scalable multi-agent real-time motion generation via next-token prediction. In NeurIPS , 2024. 2, 6 [19] Zhejun Zhang, Peter Karkus, Maximilian Igl, Wenhao Ding, Yuxiao Chen, Boris Ivanovic, and Marco Pavone. Closed-loop supervised fine-tuning of tokenized traffic models. In 
+
+CVPR , 2025. 2, 6, 7 [20] Jianbo Zhao, Taiyu Ban, Zhihao Liu, Hangning Zhou, Xiyang Wang, Qibin Zhou, Hailong Qin, Mu Yang, Lei Liu, and Bin Li. Drope: Directional rotary position embedding for efficient agent interaction modeling. arXiv , 2025. 2, 6, 20 [21] Zikang Zhou, HU Haibo, Xinhong Chen, Jianping Wang, Nan Guan, Kui Wu, Yung-Hui Li, Yu-Kai Huang, and Chun Jason Xue. Behaviorgpt: Smart agent simulation for autonomous driving with next-patch prediction. In NeurIPS , 2024. 1, 2, 6 Supplemental Materials for Efficient Equivariant Transformer for Self-Driving Agent Modeling 
+
+## 6. Theoretical analysis 
+
+We provide additional theoretical analysis in the following sections. Section 6.1 provides additional preliminaries for 2D projective geometric algebra R∗
+
+> 2,0,1
+
+. Section 6.2 provides proofs of the satisfied properties of our derived R∗ 
+
+> 2,0,1
+
+encodings. Section 6.3 provides proofs for SE (2) equivariance for each DriveGATr layer. 
+
+6.1. Additional geometric algebra preliminaries 
+
+In the Euclidean space Rn, one may define a bilinear product of two vectors x and y, called the geometric product xy ,characterized by the fundamental equation v2 = ⟨v, v ⟩ where ⟨· , ·⟩ is the standard inner product. From the fundamental equation one can deduce that the geometric product is anticommutative on orthogonal basis vectors: for i̸ = j, (ei + ej )2 =
+
+⟨ei + ej , e i + ej ⟩ =⇒ e2 
+
+> i
+
++ eiej + ej ei + e2 
+
+> j
+
+= e2 
+
+> i
+
++ 2 ⟨ei, e j ⟩ + e2 
+
+> j
+
+=⇒ eiej = −ej ei. Multiplying vectors together give us 
+
+multivectors ; for n = 2 , the Euclidean geometric algebra consists of multivectors of the form x = x′ + x1e1 + x2e2 + x12 e12 ,where x′, x 1, x 2, x 12 are real coefficients and e12 := e1e2.To get a projective geometric algebra, we adjoin to Rn an orthogonal basis vector e0 with norm zero, that is, e20 = 0 . For 
+
+n = 2 , the resulting algebra, denoted by R∗
+
+> 2,0,1
+
+, is 8-dimensional, spanned by the scalar 1, three vectors e0, e 1, e 2, three 
+
+bivectors e01 , e 20 , e 12 , and one pseudoscalar e012 . Using the properties that e20 = 0 , e 21 = e22 = 1 , e ij = −eji for i̸ = j, one can compute a table of geometric products xy :
+
+x\y 1 e0 e1 e2 e01 e20 e12 e012 
+
+1 1 e0 e1 e2 e01 e20 e12 e012 
+
+e0 e0 0 e01 −e20 0 0 e012 0
+
+e1 e1 −e01 1 e12 −e0 e012 e2 e20 
+
+e2 e2 e20 −e12 1 e012 e0 −e1 e01 
+
+e01 e01 0 e0 e012 0 0 −e20 0
+
+e20 e20 0 e012 −e0 0 0 e01 0
+
+e12 e12 e012 −e2 e1 e20 −e01 −1 −e0
+
+e012 e012 0 e20 e01 0 0 −e0 0
+
+A sandwich product is an expression of the form uxu −1, where u, x are multivectors and u has a multiplicative inverse with respect to the geometric product. We also define the wedge product x ∧ y, which is another bilinear product, but is defined by the fundamental equation 
+
+v ∧ v = 0 . One can derive that ei ∧ ej = −ej ∧ ei for orthogonal basis vectors and compute a table of wedge products x ∧ y:
+
+x\y 1 e0 e1 e2 e01 e20 e12 e012 
+
+1 1 e0 e1 e2 e01 e20 e12 e012 
+
+e0 e0 0 e01 −e20 0 0 e012 0
+
+e1 e1 −e01 0 e12 0 e012 0 0
+
+e2 e2 e20 −e12 0 e012 0 0 0
+
+e01 e01 0 0 e012 0 0 0 0
+
+e20 e20 0 e012 0 0 0 0 0
+
+e12 e12 e012 0 0 0 0 0 0
+
+e012 e012 0 0 0 0 0 0 0
+
+The multivector dual x 7 → x∗ is a linear operator, defined for a basis multivector x as the basis multivector such that 
+
+x ∧ x∗ = e012 . For a general R∗ 
+
+> 2,0,1
+
+multivector 
+
+x = x′ + x0e0 + x1e1 + x2e2 + x01 e01 + x20 e20 + x12 e12 + x012 e012 
+
+we have 
+
+x∗ := x012 + x12 e0 + x20 e1 + x01 e2 + x2e01 + x1e20 + x0e12 + x′e012 
+
+which has the same coefficients as x, in reverse order. The join operator of two multivectors is defined as Join (x, y ) = ( x∗ ∧ y∗)∗.Finally, we define k-grade projection ⟨·⟩ k for k = 0 , 1, 2, 3, which selects specific components of x:
+
+⟨x⟩0 := x′
+
+⟨x⟩1 := x0e0 + x1e1 + x2e2
+
+⟨x⟩2 := x01 e01 + x20 e20 + x12 e12 
+
+⟨x⟩3 := x012 e012 
+
+and we define the invariant inner product ⟨· , ·⟩ between two multivectors: 
+
+⟨x, y ⟩ := x′y′ + x1y1 + x2y2 + x12 y12 ∈ R
+
+which ignores components containing e0.
+
+6.2. Encodings 
+
+We encode 2D objects and transformations into R∗ 
+
+> 2,0,1
+
+using Table 1. These encodings satisfy many nice properties described in subsequent propositions. 
+
+Proposition 1. The result of applying an operator u to an object x is given by a sandwich product u[x] := uxu −1.
+
+Remark. Note that for SE (2)-equivariance, we have only considered when u is a non-mirroring transformation. If u is a mirroring transformation (e.g. a reflection), one must instead use u[x] := uˆxu −1 where ˆx denotes grade involution, which flips the sign of the odd-grade components of x.Proof. Since geometric product is bilinear, then u[·] is linear for any fixed u. As such, it is helpful to first compute sandwich products u[x] for basis multivectors x. When u = t is a translation by (a, b ),
+
+t[1] = 1 
+
+t[e0] = (1 − a 
+
+> 2
+
+e01 + b 
+
+> 2
+
+e20 )e0(1 + a 
+
+> 2
+
+e01 − b 
+
+> 2
+
+e20 )= e0
+
+t[e1] = (1 − a 
+
+> 2
+
+e01 + b 
+
+> 2
+
+e20 )e1(1 + a 
+
+> 2
+
+e01 − b 
+
+> 2
+
+e20 )= e1 + a 
+
+> 2
+
+e1e01 − b 
+
+> 2
+
+e1e20 − a 
+
+> 2
+
+e01 e1 + b 
+
+> 2
+
+e20 e1
+
+= e1 − ae 0
+
+t[e2] = (1 − a 
+
+> 2
+
+e01 + b 
+
+> 2
+
+e20 )e2(1 + a 
+
+> 2
+
+e01 − b 
+
+> 2
+
+e20 )= e2 + a 
+
+> 2
+
+e2e01 − b 
+
+> 2
+
+e2e20 − a 
+
+> 2
+
+e01 e2 + b 
+
+> 2
+
+e20 e2
+
+= e2 − be 0
+
+t[e01 ] = (1 − a 
+
+> 2
+
+e01 + b 
+
+> 2
+
+e20 )e01 (1 + a 
+
+> 2
+
+e01 − b 
+
+> 2
+
+e20 )= e01 
+
+t[e20 ] = (1 − a 
+
+> 2
+
+e01 + b 
+
+> 2
+
+e20 )e20 (1 + a 
+
+> 2
+
+e01 − b 
+
+> 2
+
+e20 )= e20 
+
+t[e12 ] = (1 − a 
+
+> 2
+
+e01 + b 
+
+> 2
+
+e20 )e12 (1 + a 
+
+> 2
+
+e01 − b 
+
+> 2
+
+e20 )= e12 + a 
+
+> 2
+
+e12 e01 − b 
+
+> 2
+
+e12 e20 − a 
+
+> 2
+
+e01 e12 + b 
+
+> 2
+
+e20 e12 
+
+= e12 + be 01 + ae 20 
+
+t[e012 ] = (1 − a 
+
+> 2
+
+e01 + b 
+
+> 2
+
+e20 )e012 (1 + a 
+
+> 2
+
+e01 − b 
+
+> 2
+
+e20 )= e012 
+
+When u = r is a rotation by θ,
+
+r[1] = 1 
+
+r[e0] = (cos θ 
+
+> 2
+
+− sin θ 
+
+> 2
+
+e12 )e0(cos θ 
+
+> 2
+
++ sin θ 
+
+> 2
+
+e12 )= cos 2 θ 
+
+> 2
+
+e0 + cos θ 
+
+> 2
+
+sin θ 
+
+> 2
+
+e0e12 − sin θ 
+
+> 2
+
+cos θ 
+
+> 2
+
+e12 e0 − sin 2 θ 
+
+> 2
+
+e12 e0e12 
+
+= e0
+
+r[e1] = (cos θ 
+
+> 2
+
+− sin θ 
+
+> 2
+
+e12 )e1(cos θ 
+
+> 2
+
++ sin θ 
+
+> 2
+
+e12 )= cos 2 θ 
+
+> 2
+
+e1 + cos θ 
+
+> 2
+
+sin θ 
+
+> 2
+
+e1e12 − sin θ 
+
+> 2
+
+cos θ 
+
+> 2
+
+e12 e1 − sin 2 θ 
+
+> 2
+
+e12 e1e12 
+
+= cos θe 1 + sin θe 2
+
+r[e2] = (cos θ 
+
+> 2
+
+− sin θ 
+
+> 2
+
+e12 )e2(cos θ 
+
+> 2
+
++ sin θ 
+
+> 2
+
+e12 )= cos 2 θ 
+
+> 2
+
+e2 + cos θ 
+
+> 2
+
+sin θ 
+
+> 2
+
+e2e12 − sin θ 
+
+> 2
+
+cos θ 
+
+> 2
+
+e12 e2 − sin 2 θ 
+
+> 2
+
+e12 e2e12 
+
+= cos θe 2 − sin θe 1
+
+r[e01 ] = (cos θ 
+
+> 2
+
+− sin θ 
+
+> 2
+
+e12 )e01 (cos θ 
+
+> 2
+
++ sin θ 
+
+> 2
+
+e12 )= cos 2 θ 
+
+> 2
+
+e01 + cos θ 
+
+> 2
+
+sin θ 
+
+> 2
+
+e01 e12 − sin θ 
+
+> 2
+
+cos θ 
+
+> 2
+
+e12 e01 − sin 2 θ 
+
+> 2
+
+e12 e01 e12 
+
+= cos θe 01 − sin θe 20 
+
+r[e20 ] = (cos θ 
+
+> 2
+
+− sin θ 
+
+> 2
+
+e12 )e20 (cos θ 
+
+> 2
+
++ sin θ 
+
+> 2
+
+e12 )= cos 2 θ 
+
+> 2
+
+e20 + cos θ 
+
+> 2
+
+sin θ 
+
+> 2
+
+e20 e12 − sin θ 
+
+> 2
+
+cos θ 
+
+> 2
+
+e12 e20 − sin 2 θ 
+
+> 2
+
+e12 e20 e12 
+
+= sin θe 01 + cos θe 20 
+
+r[e12 ] = (cos θ 
+
+> 2
+
+− sin θ 
+
+> 2
+
+e12 )e12 (cos θ 
+
+> 2
+
++ sin θ 
+
+> 2
+
+e12 )= cos 2 θ 
+
+> 2
+
+e12 + cos θ 
+
+> 2
+
+sin θ 
+
+> 2
+
+e12 e12 − sin θ 
+
+> 2
+
+cos θ 
+
+> 2
+
+e12 e12 − sin 2 θ 
+
+> 2
+
+e12 e12 e12 
+
+= e12 
+
+r[e012 ] = (cos θ 
+
+> 2
+
+− sin θ 
+
+> 2
+
+e12 )e012 (cos θ 
+
+> 2
+
++ sin θ 
+
+> 2
+
+e12 )= cos 2 θ 
+
+> 2
+
+e012 + cos θ 
+
+> 2
+
+sin θ 
+
+> 2
+
+e012 e12 − sin θ 
+
+> 2
+
+cos θ 
+
+> 2
+
+e12 e012 − sin 2 θ 
+
+> 2
+
+e12 e012 e12 
+
+= e012 
+
+Using the above, we can now verify that 1. A translation by (a, b ) ∈ R2 of the point p = ( x, y ) yields the point (x′, y ′) = ( x + a, y + b):
+
+t[p] = t[xe 20 + ye 01 + e12 ]= x · t[e20 ] + y · t[e01 ] + t[e12 ]= xe 20 + ye 01 + ( e12 + be 01 + ae 20 )= x′e20 + y′e01 + e12 
+
+2. A translation by (a, b ) ∈ R2 of the line ℓ : Ax + By + C = 0 yields the line Ax + By + C′ = 0 , where C′ = C − Aa − Bb :
+
+t[ℓ] = t[Ae 1 + Be 2 + Ce 0]= A · t[e1] + B · t[e2] + C · t[e0]= A(e1 − ae 0) + B(e2 − be 0) + Ce 0
+
+= Ae 1 + Be 2 + C′e0
+
+3. A rotation by angle θ ∈ R of the point p = ( x, y ) yields the point (x′, y ′) = ( x cos θ − y sin θ, x sin θ + y cos θ):
+
+r[p] = r[xe 20 + ye 01 + e12 ]= x · r[e20 ] + y · r[e01 ] + r[e12 ]= x(sin θe 01 + cos θe 20 ) + y(cos θe 01 − sin θe 20 ) + e12 
+
+= x′e20 + y′e01 + e12 
+
+4. A rotation by angle θ ∈ R of the line ℓ : Ax + By + C = 0 yields the line A′x + B′y + C = 0 , where (A′, B ′) = (A cos θ − B sin θ, A sin θ + B cos θ):
+
+r[ℓ] = r[Ae 1 + Be 2 + Ce 0]= A · r[e1] + B · r[e2] + C · r[e0]= A(cos θe 1 + sin θe 2) + B(cos θe 2 − sin θe 1) + Ce 0
+
+= A′e1 + B′e2 + Ce 0
+
+This concludes the proof. 
+
+Proposition 2. The intersection of two lines is given by a wedge product. Proof. For lines a1x + b1y + c1 = 0 and a2x + b2y + c2 = 0 , their intersection point x0 = b1c2 − b2c1
+
+a1b2 − a2b1
+
+, y0 = a2c1 − a1c2
+
+a1b2 − a2b1
+
+can be computed via 
+
+ℓ1 ∧ ℓ2 = ( a1e1 + b1e2 + c1e0) ∧ (a2e1 + b2e2 + c2e0)= ( a2c1 − a1c2)e01 + ( b1c2 − b2c1)e20 + ( a1b2 − a2b1)e12 
+
+= ( a1b2 − a2b1)( x0e20 + y0e01 + e12 )
+
+Proposition 3. The line joining two points is given by a join operator. Proof. If we join the points (a, b ) and (c, d ), we obtain 
+
+(( ae 20 + be 01 + e12 )∗ ∧ (ce 20 + de 01 + e12 )∗)∗
+
+= (( ae 1 + be 2 + e0) ∧ (ce 1 + de 2 + e0)) ∗
+
+= (( c − a)e01 + ( b − d)e20 + ( ad − bc )e12 )∗
+
+= ( c − a)e2 + ( b − d)e1 + ( ad − bc )e0
+
+which is the encoding of the line (b − d)x + ( c − a)y + ( ad − bc ) = 0 passing through both points. 
+
+Proposition 4. The distance from a point to a line is given by a join operator. Proof. If we join the point (x0, y 0) and the line ax + by + c = 0 where √a2 + b2 = 1 , we obtain 
+
+(( x0e20 + y0e01 + e12 )∗ ∧ (ae 1 + be 2 + ce 0)∗)∗
+
+= (( x0e1 + y0e2 + e0) ∧ (ae 20 + be 01 + ce 12 )) ∗
+
+= (( ax 0 + by 0 + c)e012 )∗
+
+= ax 0 + by 0 + c
+
+which is the signed distance between them. 
+
+6.3. Equivariant layers 
+
+To show that a function f : R∗ 
+
+> 2,0,1
+
+→ R∗ 
+
+> 2,0,1
+
+is SE (2)-equivariant, one can verify that for any rotation or translation operator u
+
+and input multivector x, we have f (u[x]) = u[f (x)] .We define linear maps ϕ : R∗ 
+
+> 2,0,1
+
+→ R∗ 
+
+> 2,0,1
+
+in the form 
+
+ϕ(x) = 
+
+> 3
+
+X
+
+> k=0
+
+wk⟨x⟩k +
+
+> 2
+
+X
+
+> k=0
+
+vke0⟨x⟩k +
+
+> 2
+
+X
+
+> k=0
+
+uke012 ⟨x⟩k (20) Note that this differs from the linear layer defined in [ 2] as we have introduced additional parameters uk. With these extra terms, ϕ is not equivariant to reflections. This is how ϕ acts on the basis multivectors: 
+
+ϕ(1) = w0 + v0e0 + u0e012 
+
+ϕ(e0) = w1e0ϕ(e1) = w1e1 + v1e01 + u1e20 
+
+ϕ(e2) = w1e2 − v1e20 + u1e01 
+
+ϕ(e01 ) = w2e01 
+
+ϕ(e20 ) = w2e20 
+
+ϕ(e12 ) = w2e12 + v2e012 − u2e0
+
+ϕ(e012 ) = w3e012 
+
+Proposition 5. The linear map defined in equation (20) is SE(2)-equivariant. Proof. Let t = 1 − a 
+
+> 2
+
+e01 + b 
+
+> 2
+
+e20 be a translation operator and r = cos θ 
+
+> 2
+
+− sin θ 
+
+> 2
+
+e12 be a rotation operator. Since 
+
+ϕ and u[·] are linear, it suffices to show that t[ϕ(x)] = ϕ(t[x]) and r[ϕ(x)] = ϕ(r[x]) for the basis multivectors 
+
+x ∈ { 1, e 0, e 1, e 2, e 01 , e 20 , e 12 , e 012 }.Referring to the proof of Proposition 1 for values of t[x] and r[x], we can verify these equations hold for translations: 
+
+ϕ(t[1]) = ϕ(1) = w0 + v0e0 + u0e012 
+
+t[ϕ(1)] = t[w0 + v0e0 + u0e012 ] = w0 + v0e0 + u0e012 
+
+ϕ(t[e0]) = ϕ(e0) = w1e0
+
+t[ϕ(e0)] = t[w1e0] = w1e0
+
+ϕ(t[e1]) = ϕ(e1 − ae 0) = ( w1e1 + v1e01 + u1e20 ) − aw 1e0
+
+t[ϕ(e1)] = t[w1e1 + v1e01 + u1e20 ] = w1(e1 − ae 0) + v1e01 + u1e20 
+
+ϕ(t[e2]) = ϕ(e2 − be 0) = ( w1e2 − v1e20 + u1e01 ) − bw 1e0
+
+t[ϕ(e2)] = t[w1e2 − v1e20 + u1e01 ] = w1(e2 − be 0) − v1e20 + u1e01 
+
+ϕ(t[e01 ]) = ϕ(e01 ) = w2e01 
+
+t[ϕ(e01 )] = t[w2e01 ] = w2e01 
+
+ϕ(t[e20 ]) = ϕ(e20 ) = w2e20 
+
+t[ϕ(e20 )] = t[w2e20 ] = w2e20 
+
+ϕ(t[e12 ]) = ϕ(e12 + be 01 + ae 20 ) = ( w2e12 + v2e012 − u2e0) + bw 2e01 + aw 2e20 
+
+t[ϕ(e12 )] = t[w2e12 + v2e012 − u2e0] = w2(e12 + be 01 + ae 20 ) + v2e012 − u2e0
+
+ϕ(t[e012 ]) = ϕ(e012 ) = w3e012 
+
+t[ϕ(e012 )] = t[w3e012 ] = w3e012 
+
+and rotations: 
+
+ϕ(r[1]) = ϕ(1) = w0 + v0e0 + u0e012 
+
+r[ϕ(1)] = r[w0 + v0e0 + u0e012 ] = w0 + v0e0 + u0e012 
+
+ϕ(r[e0]) = ϕ(e0) = w1e0
+
+r[ϕ(e0)] = r[w1e0] = w1e0
+
+ϕ(r[e1]) = ϕ(cos θe 1 + sin θe 2) = cos θ(w1e1 + v1e01 + u1e20 ) + sin θ(w1e2 − v1e20 + u1e01 )
+
+r[ϕ(e1)] = r[w1e1 + v1e01 + u1e20 ]= w1(cos θe 1 + sin θe 2) + v1(cos θe 01 − sin θe 20 ) + u1(sin θe 01 + cos θe 20 )
+
+ϕ(r[e2]) = ϕ(cos θe 2 − sin θe 1) = cos θ(w1e2 − v1e20 + u1e01 ) − sin θ(w1e1 + v1e01 + u1e20 )
+
+r[ϕ(e2)] = r[w1e2 − v1e20 + u1e01 ]= w1(cos θe 2 − sin θe 1) − v1(sin θe 01 + cos θe 20 ) + u1(cos θe 01 − sin θe 20 )ϕ(r[e01 ]) = ϕ(cos θe 01 − sin θe 20 ) = w2 cos θe 01 − w2 sin θe 20 
+
+r[ϕ(e01 )] = r[w2e01 ] = w2(cos θe 01 − sin θe 20 )
+
+ϕ(r[e20 ]) = ϕ(sin θe 01 + cos θe 20 ) = w2 sin θe 01 + w2 cos θe 20 
+
+r[ϕ(e20 )] = r[w2e20 ] = w2(sin θe 01 + cos θe 20 )
+
+ϕ(r[e12 ]) = ϕ(e12 ) = w2e12 + v2e012 − u2e0
+
+r[ϕ(e12 )] = r[w2e12 + v2e012 − u2e0] = w2e12 + v2e012 − u2e0
+
+ϕ(r[e012 ]) = ϕ(e012 ) = w3e012 
+
+r[ϕ(e012 )] = r[w3e012 ] = w3e012 
+
+Proposition 6. The geometric bilinear layer Geometric (w, x, y, z ) = Concatenate (wx, Join (y, z )) is SE(2)-equivariant. Proof. Geometric product is equivariant as (uwu −1)( uxu −1) = u(wx )u−1 for any w, x and operator u. That join is equivariant is proven in [ 2]. Alternatively, one can use linearity and check that Join (uyu −1, uzu −1) = u · Join (y, z ) · u−1 for any operator u and basis multivectors y, z .
+
+Lemma 1. If f : R∗ 
+
+> 2,0,1
+
+→ R∗ 
+
+> 2,0,1
+
+is equivariant and ρ : R∗ 
+
+> 2,0,1
+
+→ R is invariant, then g(x) := ρ(x)f (x) is equivariant. Proof. For any operator u and multivector x,
+
+g(uxu −1) = ρ(uxu −1)f (uxu −1)= ρ(x) · uf (x)u−1
+
+= ug (x)u−1
+
+Proposition 7. The scalar-gated activation GatedRELU (x) = RELU (⟨x⟩0)x is SE(2)-equivariant. Proof. By Lemma 1 it suffices to show that ⟨x⟩0 is SE(2)-invariant. Write 
+
+x = x′ + x0e0 + x1e1 + x2e2 + x01 e01 + x20 e20 + x12 e12 + x012 e012 
+
+If u = 1 − a 
+
+> 2
+
+e01 + b 
+
+> 2
+
+e20 is a translation, we can compute 
+
+u[x] = x′ + ( x0 − ax 1 − bx 2)e0 + x1e1 + x2e2
+
++ ( x01 + bx 12 )e01 + ( x20 + ax 12 )e20 + x12 e12 + x012 e012 (21) hence ⟨u[x]⟩0 = x′ = ⟨x⟩0 so ⟨x⟩0 is translation-invariant. Similarly, if u = cos θ 
+
+> 2
+
+− sin θ 
+
+> 2
+
+e12 is a rotation, 
+
+u[x] = x′ + x0e0 + ( x1 cos θ − x2 sin θ)e1 + ( x1 sin θ + x2 cos θ)e2
+
++ ( x01 cos θ + x20 sin θ)e01 + ( x20 cos θ − x01 sin θ)e20 + x12 e12 + x012 e012 (22) hence ⟨x⟩0 is rotation-invariant. 
+
+Lemma 2. The inner product ⟨x, y ⟩ := x′y′ + x1y1 + x2y2 + x12 y12 is SE(2)-invariant. Proof. If u is a translation, by equation (21) 
+
+⟨u[x], u [y]⟩ = x′y′ + x1y1 + x2y2 + x12 y12 = ⟨x, y ⟩
+
+If u is a rotation, by equation (22) 
+
+⟨u[x], u [y]⟩ = x′y′ + ( x1 cos θ − x2 sin θ)( y1 cos θ − y2 sin θ)+ ( x1 sin θ + x2 cos θ)( y1 sin θ + y2 cos θ) + x12 y12 
+
+= x′y′ + x1y1 + x2y2 + x12 y12 
+
+= ⟨x, y ⟩
+
+Proposition 8. The normalization layer LayerNorm (x) = x/ pE⟨x, x ⟩ + ε is SE(2)-equivariant. Proof. This follows from Lemma 1 and Lemma 2. 
+
+Proposition 9. Multivector attention is SE(2)-equivariant. Proof. By Lemma 2, attention logits PCc=1 ⟨qc, k c⟩√4C
+
+(and hence attention scores) are invariant. The result follows from applying Lemma 1 and observing that a sum of equivariant multivector features is equivariant. 
+
+## 7. Additional qualitative results 
+
+Figure 4 provides additional comparisons on models’ robustness to roto-translations. Figure 5 shows the overlayed multi-modal trajectories of DriveGATr’s rollouts. 94233 108238 151153 232479 94233 108238 151153 232479 94233 108238 151153 232479 
+
+Figure 4. Robustness to roto-translations. Additional visualizations showing Transformer ( left ), Transformer + DRoPE ( middle ), and DriveGATr (right )’s robustness to roto-translations. In each figure, we overlay rollouts from the original coordinate frame vs one rotated by 90°and translated by 100m forward. Blue trajectories visualize model predictions in the original input, and red visualize predictions in the transformed scene. 33770 58791 103869 175243 44746 65186 123324 338358 435423 Figure 5. Visualizations of multi-modal DriveGATr rollouts. In each figure, we overlay trajectories from multiple ( k = 8 ) rollouts. Different actors of the same color corresponds to the same rollout. 8. Additional details 
+
+8.1. Architecture details 
+
+In this section, we provide algorithmic details of the DriveGATr architecture. Multivector features are assumed to have shape 
+
+[batch × num tokens × mv channels × 8] where the last axis corresponds to the 8 components of each multivector. Scalar features have shape [batch × num tokens × channels ].
+
+Equivariant MLP. Throughout the model, when multivector features pass through an equivariant layer, scalar features pass through the standard version of that layer. Our equivariant MLP is analagous to a standard MLP, with the addition of the geometric bilinears.  
+
+> 1:
+
+function GEOMETRIC BILINEAR (w, x, y, z)  
+
+> 2:
+
+gp ← batch geometric product(w, x)  
+
+> 3:
+
+join ← dual(batch wedge product(dual(y), dual(z)))  
+
+> 4: 5:
+
+// [batch × num tokens × (2 ∗ mv channels ) × 8]  
+
+> 6:
+
+return concatenate channels(gp, join)  
+
+> 7:
+
+end function  
+
+> 8: 9:
+
+function EQUIVARIANT MLP(multivector features, scalar features)  
+
+> 10:
+
+// normalization  
+
+> 11:
+
+mv features ← EquivariantLayerNorm(multivector features)  
+
+> 12:
+
+features ← LayerNorm(scalar features)  
+
+> 13: 14:
+
+// geometric bilinears  
+
+> 15:
+
+mv features ← EquivariantLinear(mv features)  
+
+> 16:
+
+w, x, y, z ← mv features.split(num chunks = 4, dim = -2)  
+
+> 17:
+
+mv features ← GeometricBilinear(w, x, y, z)  
+
+> 18: 19:
+
+// standard MLP  
+
+> 20:
+
+mv features ← EquivariantLinear(mv features)  
+
+> 21:
+
+features ← Linear(features)  
+
+> 22:
+
+mv features ← GatedRELU(mv features)  
+
+> 23:
+
+features ← RELU(features)  
+
+> 24:
+
+mv features ← EquivariantLinear(mv features)  
+
+> 25:
+
+features ← Linear(features)  
+
+> 26: 27:
+
+// residual connection  
+
+> 28:
+
+return mv features + multivector features, features + scalar features  
+
+> 29:
+
+end function Attention. We show how to compute multivector attention, where the logits are 
+
+PCc=1 ⟨qc, k c⟩ + PC′ 
+
+> c=1
+
+qsc ksc
+
+√4C + C′ .
+
+Observe that a sum of dot products can be equivalently expressed as a longer dot product, e.g. for u1, v 1, u 2, v 2 ∈ Rn,
+
+u1 · v1 + u2 · v2 = u · v where u = u1|u2, v = v1|v2 ∈ R2n are concatenations. Therefore, we can use standard dot-product attention after concatenating the appropriate multivector components with the invariant scalars along the embedding dimension. To incorporate distance awareness, one just needs to further concatenate the components of the distance awareness maps ϕ(·)
+
+and ψ(·) to the queries and keys, respectively.  
+
+> 1:
+
+function EQUIVARIANT ATTENTION (mv query, mv key, mv value, query, key, value, mask)  
+
+> 2:
+
+// extract components for invariant inner product ⟨x, y ⟩ = xsys + x1y1 + x2y2 + x12 y12  
+
+> 3:
+
+qs, , q 1, q 2, , , q 12 , ← mv query.split(dim = -1) 4: ks, , k 1, k 2, , , k 12 , ← mv key.split(dim = -1)  
+
+> 5: 6:
+
+// [batch × num queries × (4 ∗ mv channels + channels )]  
+
+> 7:
+
+flattened q ← concatenate channels( qs, q 1, q 2, q 12 , query)  
+
+> 8: 9:
+
+// [batch × num keys × (4 ∗ mv channels + channels )]  
+
+> 10:
+
+flattened k ← concatenate channels( ks, k 1, k 2, k 12 , key)  
+
+> 11: 12:
+
+// [batch × num keys × (8 ∗ mv channels + channels )]  
+
+> 13:
+
+flattened v ← concatenate mv components and scalars(mv value, value)  
+
+> 14: 15:
+
+// [batch × num queries × (8 ∗ mv channels + channels )]  
+
+> 16:
+
+flattened output ← scaled dot product attention(flattened q, flattened k, flattened v, mask)  
+
+> 17: 18:
+
+// [batch × num queries × mv channels × 8] , [batch × num queries × channels ] 
+
+> 19:
+
+return unconcatenate mv components and scalars(flattened output)  
+
+> 20:
+
+end function  
+
+> 21: 22:
+
+function ATTENTION (mv q features, q features, mv kv features, kv features, mask)  
+
+> 23:
+
+// normalization  
+
+> 24:
+
+mv q features ← EquivariantLayerNorm(mv q features)  
+
+> 25:
+
+mv kv features ← EquivariantLayerNorm(mv kv features)  
+
+> 26:
+
+q features ← LayerNorm(q features)  
+
+> 27:
+
+kv features ← LayerNorm(kv features)  
+
+> 28: 29:
+
+// compute query, key, value tensors  
+
+> 30:
+
+mv query ← EquivariantLinear(mv q features)  
+
+> 31:
+
+mv key ← EquivariantLinear(mv kv features)  
+
+> 32:
+
+mv value ← EquivariantLinear(mv kv features)  
+
+> 33:
+
+query ← Linear(q features)  
+
+> 34:
+
+key ← Linear(kv features)  
+
+> 35:
+
+value ← Linear(kv features)  
+
+> 36: 37:
+
+mv features, features ← EquivariantAttention(mv query, mv key, mv value, query, key, value, mask)  
+
+> 38: 39:
+
+// residual connection  
+
+> 40:
+
+return mv features + mv q features, features + q features  
+
+> 41:
+
+end function DriveGATr . Each DriveGATr block consists of three factorized attention layers followed by an equivariant MLP and an invariant adapter. In the invariant adapter, we compute an operator for each actor which converts global poses into that agent’s coordinate frame. Specifically, if an actor has position (x, y ) and heading θ, then the operator for that actor consists of a translation by (−x, −y) followed by a rotation of angle −θ. 
+
+> 1:
+
+function DRIVE GAT R(mv features, features, mv map features, map features)  
+
+> 2:
+
+for i ← 1 . . . N do  
+
+> 3:
+
+// actor-to-map cross-attention  
+
+> 4:
+
+mv features, features ← Attention(mv features, features, mv map features, map features)  
+
+> 5: 6:
+
+// actor-to-actor self-attention (batched across timesteps)  
+
+> 7:
+
+mv features, features ← Attention(mv features, features, mv features, features)  
+
+> 8: 9:
+
+// actor-to-time causal self-attention (batched across actors)  
+
+> 10:
+
+mv features, features ← Attention(mv features, features, mv features, features, CAUSAL MASK) 11: 12: // MLP  
+
+> 13:
+
+mv features, features ← EquivariantMLP(mv features, features)  
+
+> 14: 15:
+
+// invariant adapter  
+
+> 16:
+
+u ← operator for each actor // [batch × num actors × 8] , duplicated across channels  
+
+> 17:
+
+features ← MLP(flatten components( u ∗ mv features ∗ u−1)) + features  
+
+> 18:
+
+end for  
+
+> 19: 20:
+
+// output invariant features only  
+
+> 21:
+
+return features  
+
+> 22:
+
+end function 
+
+8.2. Baselines 
+
+We provide implementation details for the Transformer, Transformer + DRoPE, and Transformer + RPE baselines. All three baselines are edited from the original DriveGATr architecture to minimalize differences other than the ablated module. In particular, we first set the multi-vector dimension to 0, effectively make DriveGATr a standard transformer without positional encodings. We next add in changes specific to each baseline, detailed below. 
+
+8.3. Transformer 
+
+In addition the invariant features of each agent, we additonally include agent poses ( x, y, θ ) in the global coordinate frame to the inputs of the initial MLP that encodes the auxiliary scalars. 
+
+8.4. Transformer + DRoPE 
+
+At the time of submission, there is no publicly released codes nor implementation details of DRoPE Zhao et al. [20] . We hence faithfully reproduce it in our setup. In particular, we use the “intra-head” formulation, splitting the positional encodings of x, y 
+
+and rotational θ separately by attention heads. For the 2D translational part of the rotary encodings, we use a learnable, mixed frequency setup Heo et al. [10] . Notably, we found it neccessary to uplift the dimention of query and key by a factor of 4
+
+before attention – otherwise, each head only has 4 dimensions to be rotary-encoded which is too small. 
+
+8.5. Transformer + RPE 
+
+At each attention block, we additionally use an MLP to model the pairwise differences. We use the GoRELA Cui et al. [4] encoder to encode the pairwise pose features, and broad-cast add them to the keys and values before applying attention: 
+
+kij rpe , v ij rpe = GoRELA (xi, y i, θ i, x j , y j , θ j ) (23) 
+
+k ← k + krpe (24) 
+
+v ← v + vrpe (25) 
+
+## 9. Latency 
+
+Method Training latency Training peak memory Inference latency SE(2) equivariant? Transformer 196.86 ms 3.28 GB 42.64 ms ×
+
+Transformer + RPE 328.70 ms 15.19 GB 82.48 ms ✓
+
+Transformer + DRoPE 195.51 ms 5.08 GB 46.03 ms ×
+
+DriveGATr-3M 264.34 ms 6.35 GB 58.01 ms ✓ 
+
+> Table 4. Peak memory and latency comparisons of the baselines and DriveGATr . All methods in the same group use the same context length. The training latency times the combined forward and backward passes. The inference latency are averaged over the entire 8s rollout. Both training and inference use batch size = 8. All entries are evaluated a single A5000 with fixed random seed.
+
+We use FLOPs as the main compute measurement since FLOPs are hardware agnostic, but provide additional memory footprint and latency comparisons in Table 4. Compared to a fully invariant baseline (Transformer + RPE), DriveGATr is faster and more memory efficient. For a fixed batch size, DriveGATr has lower throughput than the non- SE (2) equivariant baselines. However, we demonstrate that DriveGATr achieves the superior Pareto front in Figure 2 of the main manuscript by fixing the resources, training each model on the same device and maxing out the batch size for each model, which we believe makes a fair and sufficient comparison of Pareto fronts.

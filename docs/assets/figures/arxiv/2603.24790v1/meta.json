@@ -1,0 +1,62 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.24790v1/fig-001.webp",
+      "caption": "Figure 7. (a) Schematic of FFzero training applied to a two-layer (emulated) photonic neural network. (b) Test accuracy on MNIST using BP+AD, BP+DD, FF+AD, and FF+DD (FFzero).",
+      "page": 15,
+      "index": 1,
+      "width": 1044,
+      "height": 404
+    },
+    {
+      "url": "assets/figures/arxiv/2603.24790v1/fig-002.webp",
+      "caption": "Figure 3. Schematic of directional derivative optimization in FFzero. (a) Illustration of directional derivative (DD) estimation on a representative goodness landscape. (b) Gradient estimation by averaging directional derivatives over multiple random directions. (c) Comparison of optimization trajectories obtained using DD-based updates and standard gradient ascent. While gradient ascent follows the true gradient direction, the expectation of the DD-based update matches the true gradient update (Supplementary Information 2). (d) Schematic illustration of the goodness-based DD update for a linear layer.",
+      "page": 10,
+      "index": 2,
+      "width": 1044,
+      "height": 618
+    },
+    {
+      "url": "assets/figures/arxiv/2603.24790v1/fig-003.webp",
+      "caption": "Figure 6. Regression accuracy of MLP and CNN models. (a,b) Results are shown for regression on synthetic functions in (15) using MLPs across varying hidden-layer widths, with all hidden layers constrained to equal size. (c,d) Results are shown for regression on MNIST using MLP and CNN of varying hidden-layer widths and number of channels per convolution layer, respectively. For all cases, the comparison is made between backpropagation (BP) and forward–forward (FF) training paradigms, each combined with either automatic differentiation (AD) or directional-derivative (DD) optimization. The numbers above each plot indicate the total number of parameters for the corresponding model.",
+      "page": 14,
+      "index": 3,
+      "width": 1044,
+      "height": 331
+    },
+    {
+      "url": "assets/figures/arxiv/2603.24790v1/fig-004.webp",
+      "caption": "Figure 5. Classification accuracy of CNN models across varying number of channels per convolution layer. Results are shown for MNIST and FashionMNIST datasets using backpropagation (BP) and forward–forward (FF) training paradigms, each combined with either automatic differentiation (AD) or directional-derivative (DD) optimization. The numbers above each plot indicate the total number of parameters for the corresponding model.",
+      "page": 13,
+      "index": 4,
+      "width": 1044,
+      "height": 454
+    },
+    {
+      "url": "assets/figures/arxiv/2603.24790v1/fig-005.webp",
+      "caption": "Figure 1. Schematic comparison of FFzero and backpropagation performance when trained with directional derivatives. FFzero employs a local learning strategy in which each layer is updated independently, preventing gradient-estimation errors from compounding across layers. In contrast, backpropagation propagates directional-derivative estimation errors globally across layers, causing performance to degrade with increasing model size. FFzero maintains stable performance at scale while remaining compatible with in-situ physical implementation.",
+      "page": 4,
+      "index": 5,
+      "width": 1044,
+      "height": 552
+    },
+    {
+      "url": "assets/figures/arxiv/2603.24790v1/fig-006.webp",
+      "caption": "Figure 4. Classification accuracy of MLP models across varying hidden-layer widths, with all hidden layers constrained to equal size. Results are shown for (a) MNIST and (b) FashionMNIST datasets using backpropagation (BP) and forward–forward (FF) training paradigms, each combined with either automatic differentiation (AD) or directional-derivative (DD) optimization. The numbers above each plot indicate the total number of parameters for the corresponding model.",
+      "page": 12,
+      "index": 6,
+      "width": 1044,
+      "height": 894
+    },
+    {
+      "url": "assets/figures/arxiv/2603.24790v1/fig-007.webp",
+      "caption": "Figure 2. Schematic of FFzero algorithm, illustrated for a (a) 3-class classification problem and (b) regression problem. (a) Each linear layer is trained locally and independently by maximizing layer-wise goodness. The cosine similarities of the layer output w.r.t. the fixed prototype vectors (denoted by ξ [·]) are used to compute the goodness. Directional derivatives are used to perform gradient-based optimization for each layer locally. (b) In regression tasks, the antipodal prototypes represent the upper (y = 1) and lower (y =−1) prediction bounds, with intermediate ground-truth values encoded as interpolations between them. Each layer’s output is normalized onto a unit sphere and compared against the fixed antipodal vectors via cosine similarity, yielding layer-wise goodness for weights optimization via directional derivatives.",
+      "page": 5,
+      "index": 7,
+      "width": 1044,
+      "height": 1035
+    }
+  ]
+}

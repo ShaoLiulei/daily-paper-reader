@@ -1,0 +1,476 @@
+Title: Parallelized Hierarchical Connectome: A Spatiotemporal Recurrent Framework for Spiking State-Space Models
+
+URL Source: https://arxiv.org/pdf/2604.01295v1
+
+Published Time: Fri, 03 Apr 2026 00:02:43 GMT
+
+Number of Pages: 36
+
+Markdown Content:
+# Parallelized Hierarchical Connectome: A Spatiotemporal Recurrent Framework for Spiking State-Space Models 
+
+Po-Han Chiang a,b,c, ∗
+
+> a
+
+Institute of Bioelectrical Engineering, College of Electrical and Computer Engineering, National Yang Ming Chiao Tung University, Taiwan (R.O.C.), 
+
+> b
+
+Department of Electronics and Electrical Engineering, College of Electrical and Computer Engineering, National Yang Ming Chiao Tung University, Taiwan (R.O.C.), 
+
+> c
+
+School of Medicine, College of Medicine, National Yang Ming Chiao Tung University, Taiwan (R.O.C.), 
+
+Abstract 
+
+This work presents the Parallelized Hierarchical Connectome (PHC), a gen-eral architectural framework that upgrades temporal-only State-Space Mod-els (SSMs) into spatiotemporal recurrent networks. Conventional SSMs achieve high-speed sequence processing through parallel scans, yet they are funda-mentally limited to temporal recurrence and lack the capacity for lateral or feedback interactions within a single timestep. PHC addresses this by structurally mapping the diagonal SSM core to a shared Neuron Layer and inter-neuronal communication to a shared Synapse Layer, where neurons are partitioned into hierarchical regions and connectivity is governed by the connectome topology. A Multi-Transmission Loop enables intra-slice spatial recurrence, allowing signals to propagate recurrently across the hierarchical connectome within each temporal window while preserving O(logT) temporal parallelism. This spatiotemporal framework enables the seamless integration of neuro-physical priors typically intractable for standard SSMs, including adaptive leaky integrate-and-fire dynamics, Dale’s Law, short-term plastic-ity, and reward-modulated spike-timing-dependent plasticity. The framework is instantiated as PHCSSM, the first model to unify recurrent spiking neural network dynamics with diagonal SSM parallelism while simultaneously en-
+
+> ∗
+
+Corresponding author 
+
+Email address: phc@nycu.edu.tw (Po-Han Chiang) 
+
+> arXiv:2604.01295v1 [q-bio.NC] 1 Apr 2026
+
+forcing all five biological constraints and learnable lateral connections within a fully parallelizable training pipeline. Empirical results on physiological benchmarks from the UEA multivariate time-series archive demonstrate that PHCSSM achieves performance competitive with state-of-the-art SSMs while reducing parameter complexity from Θ( D2L) for L-layer stacked architec-tures to Θ( D2). These findings suggest that biologically grounded inductive biases offer a principled route to parameter-efficient sequence modeling, si-multaneously opening diagonal SSMs to spatiotemporal recurrence and en-abling fully parallelizable recurrent spiking neural network training. 
+
+Keywords: Parallel scan, Connectome, Lateral connection, Short-term plasticity, Excitatory-inhibitory balance, Spiking state-space model 
+
+1. Introduction 
+
+The advent of linear State-Space Models (SSMs), such as S4 and Mamba, has advanced sequence modeling by bridging the gap between the expressive power of Recurrent Neural Networks (RNNs) and the parallelizable training efficiency of Transformers (Gu et al., 2022a; Hasani et al., 2022; Smith et al., 2023; Orvieto et al., 2023; Rusch and Rus, 2025). By formulating sequence processing through a linear time-invariant (LTI) lens, these models leverage associative parallel scans to achieve O(log L) training complexity, effectively overcoming the vanishing gradient and sequential dependency bottlenecks inherent in traditional Backpropagation Through Time (BPTT) (Gu et al., 2022a). However, this computational leap has come at the cost of structural biological realism. To maintain parallel efficiency, modern SSMs mathemat-ically constrain their state transition matrices to be diagonal (Gupta et al., 2022; Gu et al., 2022b; Orvieto et al., 2023; Gonzalez et al., 2024; Farsang et al., 2025). While this diagonal Jacobian approximation enables scalability, it obfuscates the physical reality of neural networks by compressing intrinsic cellular decay and inter-neuronal communication into a single operator (Gu et al., 2022a,b; Farsang et al., 2025). Consequently, neurons at the same timestep remain mutually decoupled, precluding the complex spatial feed-back, lateral inhibition, and hierarchical interactions observed in biological cortical circuits. While biologically-inspired Spiking Neural Networks (SNNs) and RNNs possess these rich spatiotemporal dynamics (Yu et al., 2022; Bellec et al., 2020; Lei et al., 2018), their inherent non-linearity and dense recursive dependencies force a strictly sequential execution. This creates a prohibitive 2training bottleneck where each timestep must wait for the completion of all synaptic transmissions from the previous state, rendering them incompatible with modern parallel hardware for long-duration sequences. Historically, modeling long-range dependencies via recurrent networks has been computationally bottlenecked by BPTT, where the network’s logical depth is inherently entangled with the sequence length (Bengio et al., 1994; Pascanu et al., 2013). While modern SSMs resolve temporal dependencies via parallel associative scans, they fail to decouple this depth. To compensate for the lack of intra-step spatial expressivity, current state-of-the-art frame-works resort to "layer stacking", the deep concatenation of L independent SSM blocks interleaved with Multi-Layer Perceptrons (MLPs) (Figure 1A) (Gonzalez et al., 2024; Farsang et al., 2025). While effective at increasing model capacity, this strategy incurs a significant linear growth in param-eter complexity, Θ( D2L), creating a massive memory footprint unsuitable for resource-constrained deployment. More importantly, it deviates from the fundamental principles of the brain, which achieves immense functional depth by re-routing signals through a fixed, recurrent physical connectome (Khalil et al., 2017; Schmutz et al., 2020) rather than expanding through a linear sequence of distinct, non-communicating layers. In contrast to the prevailing trend of scaling up dense, structureless ma-trices to capture sequence dependencies, it is argued here that the phys-ical constraints governing biological microcircuits offer powerful inductive biases for parameter-efficient and robust sequence modeling. Traditionally, strict neuro-physical priors, such as Dale’s Law (the segregation of excitatory and inhibitory neurons), macro-scale regional connectomes, and Short-Term Plasticity (STP), were viewed as computational burdens that might hamper the gradient-based optimization of artificial models (Cornford et al., 2021; Balwani et al., 2025). However, these constraints actually function as sta-bilizing mechanisms that regulate internal dynamics and information flow (Haber and Schneidman, 2022; Schmutz et al., 2020). For instance, the in-corporation of Adaptive Leaky Integrate-and-Fire (ALIF) dynamics allows a network to maintain "memory" of past activations through intrinsic cellular mechanisms, rather than relying solely on dense external recurrent weights (Teeter et al., 2018; Bellec et al., 2018). Similarly, STP transforms static structural connections into time-varying, state-dependent effective weights, enabling the network to adapt to temporal statistics on the fly (Mongillo et al., 2008; Tsodyks and Markram, 1997). This paradigm structurally aligns with biological cortical microcircuits, which reuse their synaptic connectiv-3Figure 1: Comparison of conventional stacked SSMs and the Parallelized Hierarchi-cal Connectome (PHC) framework. (A) Conventional SSMs process sequences through stacked layers connected via unidirectional feedforward MLPs, corresponding to L in-dependent diagonal state-transition matrices and L dense inter-layer weight matrices, supporting only temporal recurrence with no lateral or feedback interactions. (B) The PHC framework partitions neurons into hierarchical regions (R0, R1) with biologically constrained E/I populations. Within each region, neurons interact via full local microcir-cuits; across regions, both feedforward (R0 →R1) and feedback (R1 →R0) projections are supported through the Hierarchical Connectome Matrix ( Wsyn ⊙ Mtopo ), illustrated here under the bidirectional configuration. 
+
+ity across processing cycles rather than replicating it. By hardwiring these biological constraints directly into the network architecture, a model can substitute spatial parameter scale with temporal dynamic expressivity, ef-fectively demonstrating that competitive sequence modeling capabilities can be maintained under strict biological constraints using only a fraction of the parameters required by generic deep networks. This architectural landscape reveals a fundamental trade-off in modern sequence modeling: learnable lateral spatial connections (inter-neuron state-to-state weights within recurrence) and temporal parallel scan efficiency have been mutually exclusive. Models that preserve O(L) or O(log L) parallel scan (including S4, S4D, S5, Mamba, LRU, and the recent PD-SSM (Terzić et al., 2025)) universally restrict the state transition matrix to diagonal (or permutation-diagonal) form, precluding weighted inter-dimension interac-tion. Conversely, models that support lateral connections (such as classical RNNs and the sLSTM component of xLSTM (Beck et al., 2024)) sacrifice parallelizability entirely. To reconcile this fundamental dichotomy, the Paral-lelized Hierarchical Connectome (PHC) framework is proposed, which is, to 4the best of the author’s knowledge, the first SSM framework that introduces learnable lateral connection weights within the SSM recurrence structure while preserving temporal parallel scan efficiency. PHC fundamentally re-constructs the recurrent formulation through Intra-Step Spatiotemporal De-coupling (Figure 1B), identifying a precise structural isomorphism between modern SSM building blocks and neural operators: the diagonal SSM core maps to PHC’s spike module in neuron layer (NL) and presynapse mod-ule in synapse layer (SL), while the inter-layer mixing matrix maps to the postsynapse module in SL. Unlike conventional stacked architectures that replicate independent parameters across depth (Gu et al., 2022b; Gonzalez et al., 2024; Farsang et al., 2025), PHC collapses this depth into a single spa-tial dimension by partitioning the neurons of a shared NL into R hierarchical regions. Communication is then routed through a shared, sparsely-masked SL. To overcome the mutual decoupling imposed by diagonal Jacobian con-straints, PHC introduces the Multi-transmission Loop (Figure 2). Within a single timestep, sensory signals and hidden states recurrently circulate across the separated NL and SL. Rather than executing a static feedforward pass, this recursive routing allows the non-linear network to dynamically settle into a sequence-level fixed point (a stable dynamic attractor) prior to tem-poral progression. This intra-slice spatial recurrence effectively substitutes the depth of L independent layers with an M-step spatial circulation, achiev-ing deep logical processing across a physical connectome with only Θ( D2)
+
+parameters. This parallelizability rests on a key observation: from dendritic integration through spike generation to synaptic release, each neuron’s pro-cessing pipeline is entirely cell-autonomous and does not depend on any other neuron’s concurrent state. Cross-neuron interaction occurs only at the trans-mission boundary, where the SL’s matrix multiplication fans out spikes and aggregates inputs, an operation that is independent across timesteps. The M transmission steps therefore track spatial interaction depth rather than temporal history, yielding a total computational depth of O(M log T) with the two axes fully orthogonal (see Section 5 for a detailed analysis). The PHC framework is built on a single architectural principle: Intra-Step Spatiotemporal Decoupling, separating temporal and spatial dynamics into distinct components while coupling them bidirectionally within each recur-rence step via the Multi-Transmission Loop. This principle can upgrade any temporal-only diagonal SSM into a spatiotemporal recurrent network by de-coupling the temporal parallel scan from the spatial hierarchical connectome and connecting them via the Multi-Transmission Loop. To demonstrate the 5Figure 2: Structural isomorphism between stacked SSMs and the PHC framework. Left: A conventional L-layer stacked SSM, where L independent diagonal state-transition ma-trices (Layer 0, Layer 1) are interleaved with L independent dense MLPs (MLP1, MLP2), each with non-shared parameters, forming a one-direction forward connection. Right: The PHC framework collapses this vertical stack into a single spatial plane. Each diagonal layer maps to a region (R0, R1) within a shared Neuron Layer whose parameters are reused across all regions (Parallelized State Update). Each inter-layer MLP maps to a sub-block of the Hierarchical Connectome Matrix, which consolidates all inter-neuronal communica-tion into a single shared Synapse Layer with biologically constrained connectivity (Dale’s Law, topology mask). 
+
+practical utility of this framework, this work instantiates PHCSSM (Figure 3), a biologically grounded spiking state-space model that strictly integrates a comprehensive suite of neuro-physical priors into a unified architecture. Un-like continuous-valued SSMs that approximate synaptic dynamics through weight modulation, PHCSSM operates on genuine binary spike events. This discrete nature enables the incorporation of ALIF dynamics within the NL. Concurrently, the SL’s Post-synapse Module rigorously enforces Dale’s Law, segregating excitatory and inhibitory populations, alongside structured spar-sity. Rather than employing random dropout, this structured sparsity com-poses macro-scale regional constraints with distance-dependent and excita-tory/inhibitory (E/I) asymmetric patterns. A zero-diagonal constraint is used to avoid non-physical autaptic self-excitation. Furthermore, the gen-uine spike representation allows for a faithful implementation of the discrete Tsodyks-Markram formalism for STP (Tsodyks and Markram, 1997; Mongillo 6et al., 2008) without sacrificing O(log L) training efficiency, alongside a native Reward-Modulated Spike-Timing-Dependent Plasticity (R-STDP) (Frémaux and Gerstner, 2015) online learning module. Crucially, by reformulating these non-linear biological dynamics into affine recurrences solvable via log-domain parallel prefix sums, PHCSSM bypasses the computational bottlenecks of BPTT, preserving both the event-driven energy efficiency of SNNs and the O(log L) training efficiency characteristic of modern linear models. 
+
+Figure 3: Detailed signal flow of the PHCSSM forward pass. The input sequence is projected via a linear encoder and gated by an input mask restricting sensory drive to designated populations. Within the Multi-Transmission Loop, the NL performs three sequential diagonal parallel scans (membrane potential, adaptive threshold, and refractory suppression) followed by pointwise spike generation (ALIF). The SL applies a synaptic delay buffer, modulates spikes via Tsodyks–Markram STP (two additional parallel scans), and transmits the result through the biologically constrained weight matrix Wstruct (=
+
+Wsyn ⊙ Mtopo ). Convergence is assessed via the Cauchy criterion after each transmission; upon exit, R-STDP updates synaptic weights using genuine binary spike timing. The output membrane voltage is projected to logits via a linear readout. 
+
+Empirical evaluation on six physiological benchmarks from the UEA Mul-tivariate Time-Series Classification Archive (Walker et al., 2024; Rusch and 7Rus, 2025; Farsang et al., 2025) demonstrates that PHCSSM maintains highly competitive sequence modeling capabilities even under these severe neuro-physical constraints. Notably, PHCSSM achieves 59.3% on SCP2 (the high-est reported SSM accuracy on this benchmark, surpassing LinOSS-IMEX (58.9%)) and outperforms Mamba on the long-horizon MotorImagery task by 6.0 percentage points (53.7%). These results establish that biologically grounded spatiotemporal recurrence and structured sparsity serve as highly effective, stabilizing inductive biases for deep sequence modeling, rather than performance bottlenecks. In summary, the main contributions are as follows:. 
+
+• Intra-Step Spatiotemporal Decoupling: The First Parallelizable SSM with Lateral Connections: The PHC framework is proposed to resolve the fundamental trade-off between learnable lateral connections and parallel scan efficiency by decoupling the recurrence into a Tempo-ral Parallel Scan (diagonal, O(log L) parallelizable) and a Spatial Hi-erarchical Connectome (off-diagonal, weighted many-to-many lateral connections), connected via a Multi-Transmission Loop with Cauchy convergence. Unlike PD-SSM’s permutation routing (one-to-one copy without learnable weights) and xLSTM’s sLSTM (lateral connections but not parallelizable), PHC uniquely provides weighted spatiotempo-ral recurrence within the SSM framework while preserving O(log L)training efficiency. 
+
+• Parameter Efficiency: By substituting sequential layer-stacking with the Multi-transmission Loop over a shared hierarchical connectome, PHCSSM achieves a 1/L reduction in parameter count relative to stacked architectures, maintaining a complexity of Θ( D2).
+
+• Parallelized Neuro-physical Dynamics: Mathematical formulations are derived that translate saturating STP and adaptive membrane dynam-ics into log-domain parallel scans, enabling dynamic synaptic efficacy without sacrificing scalability. 
+
+• Native Online Learning: A reward-modulated STDP module is intro-duced that utilizes genuine binary spikes to provide locally causal learn-ing signals, complementing gradient-based optimization. This capabil-ity is structurally unavailable to continuous-valued SSMs, which lack discrete spike events required for timing-dependent plasticity. 82. Related Work 
+
+2.1. State-Space Models and the Diagonal Jacobian Constraint 
+
+Modern sequence modeling has been transformed by structured State-Space Models (SSMs) that recast temporal dependencies as linear dynamical systems solvable via parallel associative scans in O(log L) sequential depth. The architectural lineage from S4 (Gu et al., 2022a) through S4D (Gu et al., 2022b), S5 (Smith et al., 2023), and LRU (Orvieto et al., 2023) progressively demonstrated that restricting state-transition matrices to diagonal form pre-serves modeling capacity while enabling efficient parallelization. A critical limitation of these time-invariant models is their inability to adaptively filter input content. Mamba (Gu and Dao, 2023) addresses this by making its state-transition parameters input-dependent, enabling selective content filtering, while S7 (Soydan et al., 2024) applies input dependence to the purely recur-rent S5 and introduces a stable reparameterization of the transition matrix with formal guarantees on forward state boundedness and gradient stabil-ity, a property absent in Mamba and Liquid-S4. LinOSS (Rusch and Rus, 2025) departs from the purely diagonal paradigm by employing second-order harmonic oscillator dynamics with block-diagonal state transitions ( 2 × 2
+
+blocks per oscillatory mode), capturing richer temporal features while still precluding cross-neuron interaction within a timestep. For genuinely non-linear recurrences, the DEER framework (Lim et al., 2024) formulates state updates as fixed-point problems solvable via Newton’s method with parallel scans at O(T D 3) cost; ELK (Gonzalez et al., 2024) reduces this to O(TD) via diagonal Jacobian approximations. LrcSSM (Farsang et al., 2025) takes a more principled route by redesigning the underlying liquid-resistance, liquid-capacitance neural network so that its Jacobian is inherently diagonal, retain-ing only self-loop synaptic parameters, yielding exact parallel updates with state-and-input-dependent dynamics, and empirical ablations confirm no per-formance loss from this structural simplification. Across this entire family, however, no model introduces within-timestep spatial interaction among neu-rons: representational depth is universally recovered through stacking inde-pendent blocks, each maintaining its own parameter set. This structural limitation is revisited in Section 2.4, where recent attempts are surveyed to introduce lateral connections or spatial structure into SSMs (including PD-SSM, xLSTM, GraphS4mer, and GraphMamba) and identify the gap that the PHC framework fills. 92.2. Spiking State-Space Models 
+
+Spiking Neural Networks (SNNs) offer energy-efficient computation through binary spike communication, but the sequential dependence of membrane potential on spiking history creates a fundamental barrier to parallel train-ing on long sequences. Binary-S4D (Stan and Rhodes, 2024) applies binary activation directly to S4D hidden states, enabling parallel training but en-tirely neglecting neuronal dynamics such as reset and refractory mechanisms. S6-based SNN (Bal and Sengupta, 2024) introduces stochastic spiking neu-rons to enhance sparsity at the cost of accuracy. SpikingSSM (Shen et al., 2025) pre-trains a Surrogate Dynamic Network to approximate LIF dynam-ics, accelerating inference but constraining applicability to neuron models amenable to such approximation. SPikE-SSM (Zhong et al., 2024) offers a more principled solution by decomposing membrane potential into parallel-computable components, achieving substantial training speedup on long se-quences. Nonetheless, all existing Spiking SSMs treat inter-neuronal con-nections as unconstrained dense matrices without Dale’s Law enforcement, employ static synaptic weights without Short-Term Plasticity, and rely ex-clusively on surrogate gradients for weight updates without any spike-timing-based online learning rule. 
+
+2.3. Biologically Grounded Dynamics in Recurrent Models 
+
+A growing body of work incorporates neuroscience-inspired priors into recurrent sequence models. At the single-neuron level, the liquid neural net-work family, from LTCs (Hasani et al., 2021) with state-and-input-dependent time constants, through STCs (Farsang et al., 2024a) with sigmoidal gat-ing, to LRCs (Farsang et al., 2024b) incorporating state-and-input-dependent membrane capacitance, progressively integrates richer biophysical phenom-ena into trainable dynamics. LrcSSM scales LRCs to long sequences and demonstrates that liquid capacitance consistently outperforms constant-capa-citance models; its discussion also highlights a complementarity between bi-ological inspirations, noting that LinOSS models cortical harmonic oscilla-tions while LRCs model chemical synapse transmission; these are distinct neurophysiological phenomena that both yield competitive performance. At the synaptic level, the Tsodyks–Markram formalism models STP through coupled facilitation and depression variables, but the non-linear coupling be-tween these variables creates sequential dependencies that have resisted inte-gration into parallel training pipelines. At the network level, Dale’s Law and 10 STDP provide fundamental structural and learning priors explored in clas-sical SNN literature but rarely in conjunction with parallelizable SSMs. To date, these biophysical mechanisms (ALIF adaptive spiking dynamics, STP, Dale’s Law, topology-constrained hierarchical connectivity, and R-STDP) have each been studied in isolation; no existing framework unifies them within a single architecture that supports O(log L) parallel training. 
+
+2.4. Lateral Connections and Spatial Interaction in Sequence Models 
+
+A central architectural question for SSMs is whether inter-dimension (lat-eral) interaction can be introduced within the recurrence without forfeiting parallel scan efficiency. The most relevant attempts are surveyed below, de-lineating how each differs from the PHC framework proposed in this work. PD-SSM. The Permutation-and-Diagonal SSM (Terzić et al., 2025) fac-torizes the state transition matrix as A(u) = P (u) · D(u), preserving O(LN )
+
+parallel scan complexity via PD monoid closure. However, the permutation 
+
+P performs one-to-one position routing rather than weighted many-to-many aggregation, and all learnable parameters reside on the input-to-parameter pathway; PD-SSM contains no learnable state-to-state lateral connection weights. xLSTM. Extended Long Short-Term Memory (Beck et al., 2024) intro-duces two complementary cell designs: sLSTM, with genuine learnable lateral connections via recurrence matrices R, and mLSTM, which achieves paral-lelizability via an outer-product matrix memory. Critically, sLSTM’s lateral connections render it non-parallelizable, while mLSTM sacrifices lateral con-nections entirely; xLSTM thus does not resolve the trade-off. GraphS4mer. For multivariate biosignal modeling, GraphS4mer (Tang et al., 2023) constructs a serial pipeline: S4 (temporal) → Graph Structure Learning → GNN (spatial), confining spatial interaction to a post-hoc ag-gregation step entirely outside the SSM recurrence. Similarly, GraphMamba (Behrouz and Hashemi, 2024) encodes graph structure in input preprocess-ing, leaving the diagonal Mamba backbone devoid of lateral connections. Taken together, these prior works share a common limitation: spatial and temporal processing either occur in sequential stages external to the recur-rence (GraphS4mer, GraphMamba), or are resolved by forfeiting one of the two properties (xLSTM). PD-SSM approximates spatial interaction within a single recurrence step, but restricts routing to a one-to-one permutation without iterated weighted aggregation. No existing model achieves within-timestep iterated lateral interaction within a parallelizable recurrence. This 11 is the gap that PHCSSM fills through Intra-Step Spatiotemporal Decoupling and the Multi-Transmission Loop. 
+
+3. Methodology 
+
+3.1. Architecture Overview 
+
+PHCSSM is built on a single architectural principle: Intra-Step Spa-tiotemporal Decoupling. Conventional SSMs and their spiking variants ag-gregate intrinsic membrane dynamics and extrinsic synaptic interactions into a single dense state-transition operator. PHCSSM explicitly bifurcates this operator into two complementary structural components: a NL that encap-sulates the intrinsic temporal dynamics of individual neurons as a strictly diagonal recurrence, and a SL that mediates all inter-neuronal communica-tion through two functionally distinct sub-modules: the Pre-synapse Module (diagonal parallel scans for STP dynamics) and the Post-synapse Module (spatial lateral communication via the biologically constrained weight matrix 
+
+Wstruct ) (Figure 3). This separation is not merely a notational convenience; it is the structural prerequisite that enables parallelized training and faithful biological grounding simultaneously. To aid intuition, Figure 2 provides an explicit operator-level mapping between a conventional L-layer stacked SSM and the PHC framework. In the stacked design, each of the L diagonal state-transition layers maintains an independent parameter set, and inter-layer communication is mediated by L separate dense MLPs with non-shared weights, forming a strictly uni-directional forward path. PHC collapses this vertical hierarchy into a sin-gle horizontal plane: the L independent diagonal layers become R regions within a shared Neuron Layer, and the L independent MLPs become sub-blocks of a single Hierarchical Connectome Matrix within a shared Synapse Layer. This consolidation has two consequences. First, parameter sharing across regions and transmission steps reduces the total parameter count from 
+
+Θ( D2L) to Θ( D2). Second, the block-structured Connectome Matrix natu-rally accommodates bidirectional inter-region projections (feedforward and feedback) as well as intra-region lateral connections, connectivity patterns that are structurally impossible in the unidirectional stacked pipeline. The Multi-Transmission Loop then recovers the logical processing depth lost by collapsing layers: M iterative circulations between the shared NL and SL achieve depth-M spatial recurrence, functionally equivalent to an M-layer 12 stacked network but with shared weights and dynamic early exit via the Cauchy convergence criterion (Eq. 14). The raw input sequence x ∈ RB×T ×Din is first projected into the neuron dimension via a linear encoder with layer normalization, then gated by a binary input mask min ∈ { 0, 1}D that restricts sensory drive to designated input populations (e.g., excitatory neurons in region R0): 
+
+xsensory = LayerNorm (Wenc x + benc ) ⊙ min (1) During training, the entire forward pass operates in the time domain. Because all NL dynamics (ALIF membrane decay, adaptive threshold) and SL dynamics (Short-Term Plasticity) have been reformulated as affine recur-rences, the full sequence of length T is processed via log-domain parallel pre-fix sums (logcumsumexp) in O(log T ) sequential depth, completely bypassing the O(T ) bottleneck of Backpropagation Through Time. During inference, the parallel scan is replaced by step-by-step spatial-domain propagation. 
+
+3.2. Neuron Layer: Intrinsic Membrane Dynamics 
+
+The NL encapsulates the internal temporal dynamics of individual neu-rons using an ALIF formulation (Bellec et al., 2018; Teeter et al., 2018). Because a neuron’s current state depends only on its own history and direct external input, the NL operator is strictly diagonal: no lateral interaction occurs within this layer. The NL internal computation is organized as the Spike Module, comprising three sequential diagonal parallel scans followed by pointwise spike generation. Input/Output interface. The NL receives an input current I ∈ RB×T ×D
+
+and produces an output spike train sout ∈ { 0, 1}B×T ×D. Within the Multi-Transmission Loop (Section 3.4), I corresponds to x(k−1) : in the first trans-mission ( k = 1 ), I = xsensory from Eq. (1); in subsequent transmissions (k > 1), I is the recirculated signal I(k−1)  
+
+> syn
+
++ αdrive · xsensory from Eq. (13). The NL internal computation is organized as the Spike Module, comprising three sequential diagonal parallel scans followed by pointwise spike generation. Log-Domain Parallel Scan. All temporal recurrences in the NL share a common computational primitive. Given a decay factor α ∈ (0 , 1) and positive input ft > 0, the leaky integration recurrence yt = α · yt−1 + ft is solved in closed form via (see Supporting Information Section A.2.1 for the full five-step derivation): 13 yt = exp (logcumsumexp (log f − S)[ t] + St) + h0 · exp (St) (2) where St = Ptk=1 log αk is the cumulative log-decay and h0 is the optional initial hidden state. The logcumsumexp operator is evaluated in O(log T )
+
+via the Hillis-Steele inclusive prefix scan algorithm (Supporting Information Section A.8.1). Strict positivity of ft is ensured by a softplus transformation (Supporting Information Section A.8.9). Scan 1: Membrane Potential ( Vf ). The first scan integrates the synaptic input current I through a learnable excitatory decay: 
+
+αexc = σ(τexc ) × 0.99 , Vf,t = αexc · Vf,t −1 + ft(It) (3) where σ(·) is the sigmoid function, τexc ∈ RD is a learnable parameter, and the factor 0.99 ensures strict contractivity ( αexc < 1). Scan 2: Adaptive Threshold ( θadapt ). The second scan computes an adap-tive firing threshold driven by the membrane-to-threshold proximity: 
+
+αadapt = exp (−1/τ adapt ), θadapt ,t = αadapt · θadapt ,t −1 + ft(σ(Vf,t − vth )) (4) Scan 3: Refractory Suppression ( Vres ). The third scan models post-spike refractory decay: 
+
+αinh = σ(τinh ) × 0.99 , Vres ,t = αinh · Vres ,t −1 + ft(spre ,t · wreset ) (5) where spre ,t = Θ( Vf,t − vth − θadapt ,t · βadapt ) is the preliminary spike. The final membrane potential and output spike are: 
+
+Vfinal ,t = Vf,t − Vres ,t − θadapt ,t · βadapt , sout ,t = Θ( Vfinal ,t − vth ) (6) where Θ( ·) is the Heaviside step function with fast sigmoid surrogate gradient ∂Θ/∂x ≈ (4 |x| + 1) −2 for backpropagation (Zenke and Ganguli, 2018). 14 3.3. Synapse Layer: Constrained Inter-Neuronal Connectivity 
+
+All communication between neurons is strictly delegated to the SL, which comprises the Pre-synapse Module (synaptic delay and STP dynamics) and the Post-synapse Module (biologically constrained spatial transmission). The SL receives sout ,t from the NL (Eq. 6) and produces a synaptic current Isyn ,t .A synaptic delay d shifts the spike train: bst = sout ,t −d.PHCSSM implements the Tsodyks-Markram STP model (Tsodyks and Markram, 1997) via two per-neuron state variables: a facilitation variable 
+
+ut ∈ [0 , 1] and a recovery variable Rt ∈ [0 , 1] . The discrete update equations are: 
+
+ut+1 = ut · exp (−∆t/τ f ) + U · (1 − ut) · St+1 (7) 
+
+Rt+1 = Rt · e−∆t/τ d + (1 − exp (−∆t/τ d)) − ut+1 · Rt · St+1 (8) where St ≡ bst is the delayed pre-synaptic spike, U is the baseline release probability, τf and τd are the facilitation and recovery time constants. Both equations are recast into the time-varying affine recurrence ht = at · ht−1 +
+
+bt and solved via two sequential parallel scans in O(log T ) (see Supporting Information Section A.4 for full parallelization details). The facilitation scan is computed first; its output then determines the recovery scan coefficients, enabling the two-pass structure. The post-synaptic weight matrix Wsyn ∈ RD×D is subject to three biolog-ical constraints: (i) Zero-Diagonal: Wii = 0 , preventing autaptic self-excitation; (ii) Dale’s Law: columns are sign-constrained to enforce neurotransmitter consistency: 
+
+W (E) 
+
+> ·,j
+
+← max (W (E) 
+
+> ·,j
+
+, 0) , W (I) 
+
+> ·,j
+
+← min (W (I) 
+
+> ·,j
+
+, 0) (9) (iii) Hierarchical Masking: a topology mask Mtopo ∈ { 0, 1}D×D governs permissible E-E, E-I, I-E, and I-I projections across R macro-regions. The effective weight matrix and synaptic current are: 
+
+Wstruct = Wsyn ⊙ Mtopo , Isyn ,t = Wstruct · (bst ⊙ ut ⊙ Rt) (10) By scaling the spike train with ut ⊙ Rt prior to the matrix multiplication, the SL acts as a time-varying dynamic weight matrix Weff ,t = Wstruct ·diag (ut⊙
+
+Rt), transforming static structural connectivity into state-dependent effective weights. 15 3.4. Multi-Transmission Loop and Spatial Recurrence 
+
+The diagonal constraint of the NL ensures that neurons within the same timestep remain mutually decoupled during temporal processing. To recover spatial interaction without sacrificing parallelizability, PHCSSM introduces the Multi-Transmission Loop: at each physical timestep, the input signal and hidden state circulate repeatedly between the NL and SL. For transmission step k = 1 , . . . , M :
+
+s(k), V (k), state (k) 
+
+> NL
+
+= NL (x(k−1) , state (k−1)  
+
+> NL
+
+) (11) 
+
+I(k)
+
+> syn
+
+, state (k) 
+
+> SL
+
+= SL (s(k), state (k−1)  
+
+> SL
+
+) (12) 
+
+x(k) = I(k) 
+
+> syn
+
++ αdrive · xsensory (13) where x(0) = xsensory (Eq. 1) and αdrive controls the persistent sensory drive strength. The loop terminates via a dynamic Early Exit governed by the Cauchy convergence criterion: 
+
+∆(k) = ∥ I(k) 
+
+> syn
+
+− I(k−1)  
+
+> syn
+
+∥∥ I(k) 
+
+> syn
+
+∥ +ε < θ conv (14) or when k = Nmax . This adaptive routing ensures that deep spatial processing is applied only when the input induces high dynamic uncertainty. 
+
+3.5. Reward-Modulated STDP 
+
+PHCSSM incorporates STDP as an online synaptic learning rule comple-mentary to gradient-based backpropagation. Exponentially decaying eligi-bility traces track pre- and post-synaptic activity: 
+
+xpre ,t = α+ · xpre ,t −1 + st, xpost ,t = α− · xpost ,t −1 + st (15) where α+ = exp (−1/τ +) and α− = exp (−1/τ −) are the LTP and LTD trace decay rates, and st ≡ sout ,t is the NL output spike vector. Both traces are solved in O(log T ) via the same parallel scan primitive (Eq. 2). The accumulated weight update over a sequence of length T is: 
+
+∆W = A+
+
+P 
+
+> t
+
+st · x⊤ 
+
+> pre ,t −1
+
+− A−
+
+P 
+
+> t
+
+xpost ,t · s⊤
+
+> t
+
+B · T (16) 16 where A+ = 1 .0 and A− = 1 .05 (with A− > A + to prevent runaway potentiation). In all experiments, the R-STDP is employed, where the update is gated by a scalar reward signal r = 2¯ a − 1 ∈ [−1, +1] derived from batch-level classification accuracy ¯a:
+
+Wsyn ← Wsyn + ηhebb · r · ∆W ⊙ Mtopo ⊙ Mtype (17) After each R-STDP step, Dale’s Law (Eq. 9) is re-enforced. 
+
+3.6. Readout and Training Objectives 
+
+For sequence classification, PHCSSM computes the temporal mean of the readout population’s membrane voltage across the full sequence, normalized and projected through a linear decoder: 
+
+by = Wdec · RMSNorm ( 1
+
+T
+
+> T
+
+X
+
+> t=1
+
+Vfinal ,t [readout ]) + bdec (18) where RMSNorm (Zhang and Sennrich, 2019) is used in place of standard LayerNorm to preserve the biologically meaningful zero resting potential. The total training loss combines cross-entropy with auxiliary biologically motivated regularizers: 
+
+Ltotal = CE (by, y ) + λrate 
+
+X
+
+> l
+
+(¯ sl − starget )2 + λvolt 
+
+X
+
+> l
+
+V 2 
+
+> l
+
+(19) where ¯sl is the mean spike rate of layer l, starget is the target firing rate, and label smoothing (0.1) is applied to the cross-entropy term. The details of methodology can be found in Supporting Information file. 17 Algorithm 1: PHCSSM Forward Pass Input: X ∈ RB×T ×Din , parameters Θ
+
+Output: membrane voltage v ∈ RB×T ×D, spike train s ∈ { 0, 1}B×T ×D
+
+1: x sen ← Encode(X) ▷ Linear + LayerNorm + input mask 
+
+2: I ← x_sen 3: for k = 1 to Nmax do ▷ Multi-Transmission Loop 
+
+4: v, s ← ALIF(I) ▷ Parallel scan over T timesteps 
+
+5: s d ← Delay(s, d) ▷ Synaptic delay buffer 
+
+6: s eff ← STP(s d) ▷ Tsodyks–Markram modulated spikes 
+
+7: I syn ← Wstruct · seff ▷ Bio-constrained propagation (Eq. 10) 
+
+8: if Converged(I syn , k) then break ▷ Cauchy criterion 
+
+9: I ← Isyn + αdrive · xsen ▷ Recirculate with sensory drive 
+
+10: end for 
+
+11: if training then 
+
+12: W struct ← R-STDP(W struct , s, r) ▷ Reward-gated Hebbian update 
+
+13: end if 
+
+14: return v, s 
+
+4. Experiments 
+
+4.1. Experimental Setup 
+
+PHCSSM is evaluated on six datasets from the UEA Multivariate Time Series Classification Archive (UEA-MTSCA), following the benchmark proto-col established by Walker et al. (2024) and adopted by Rusch and Rus (2025) and Farsang et al. (2025): Heartbeat (405 timesteps, 61 channels, 2 classes), SelfRegulationSCP1 (896 timesteps, 6 channels, 2 classes), SelfRegulation-SCP2 (1,152 timesteps, 7 channels, 2 classes), EthanolConcentration (1,751 timesteps, 3 channels, 4 classes), MotorImagery (3,000 timesteps, 64 chan-nels, 2 classes), and EigenWorms (17,984 timesteps, 6 channels, 5 classes). To the best of the author’s knowledge, PHCSSM is the first spiking model evaluated across the full six-dataset UEA-MTSCA benchmark under five simultaneous neuro-physical constraints (ALIF dynamics, synaptic delay, Tsodyks–Markram short-term plasticity, Dale’s Law with E/I-asymmetric topology, and R-STDP online learning). Situating PHCSSM within this standard SSM evaluation ecosystem directly substantiates the central claim that PHC constitutes a general spatiotemporal framework rather than a neuromorphic-niche model: competitive performance on benchmarks shared 18 with LrcSSM, LinOSS, and Mamba demonstrates that strict biological con-straints need not preclude participation in mainstream sequence modeling evaluation. The Walker et al. (2024) protocol is followed: a 70/15/15 train/validation/test split, hyperparameter selection via grid search on validation accuracy over the same search grid (learning rate ∈ { 10 −4, 10 −3}, neuron dimension ∈{16 , 32 , 64 }, readout strategy ∈ {voltage, spike}) (Table 1), and final test accuracy averaged over five fixed random seeds identical to those used by Walker et al. (2024), Rusch and Rus (2025), and Farsang et al. (2025). This ensures direct comparability with all reported baselines.  
+
+> Table 1: Hyperparameter grid. *Only EigenWorms dataset did not use neuron dim = 64 in grid search.
+
+Parameter Name Value 
+
+Learning Rate 10 −3, 10 −4
+
+Neuron Dim 16, 32, 64* 
+
+Readout Type Voltage, Spike Each of the five biological constraints is briefly motivated, together with synaptic delay, following the signal flow through the network. (a) ALIF dy-namics endow each neuron with intrinsic temporal memory via an adaptive threshold that mimics cortical spike-frequency adaptation (Benda and Herz, 2003), distinguishing burst from sparse firing patterns. (b) Synaptic delay models axonal propagation latency via a FIFO buffer shifting spikes by d
+
+steps, ensuring that downstream STP operates on past rather than current activity and increasing temporal diversity. (c) Short-Term Plasticity, based on the Tsodyks–Markram model (Tsodyks and Markram, 1997), converts static structural weights into time-varying effective weights through two op-posing mechanisms: facilitation (presynaptic Ca 2+ accumulation raising re-lease probability across consecutive spikes) and recovery (vesicle depletion followed by gradual replenishment). (d) Dale’s Law enforces neurotransmit-ter sign consistency: each neuron releases only one major neurotransmitter type, with sign re-enforced after every parameter update (Strata and Har-vey, 1999); the E/I ratio of 0.8 approximates the mammalian cortical ~80/20 excitatory-to-inhibitory proportion (Markram et al., 2004). (e) Connectome Topology (Table 2) organizes D neurons into R = 2 hierarchical regions: topology matrix M topo 0 (feedforward) permits only R0 →R1 excitatory-to-19 excitatory and excitatory-to-inhibitory projections, while M topo 1 (bidirec-tional) additionally enables R1 →R0 feedback projections mimicking cortical feedback connectivity (Felleman and Van Essen, 1991); the per-dataset opti-mal topology is selected via validation (Table 3). (f) R-STDP provides online Hebbian learning: pre-before-post spike timing induces long-term potentia-tion and post-before-pre induces long-term depression (Bi and Poo, 1998), with updates gated by a reward signal derived from batch accuracy. PHC-SSM is naturally suited to STDP because it produces genuine binary spikes with well-defined timing, requiring no surrogate approximation. R-STDP operates only during training as a complementary learning signal, modifying synaptic weights additively outside the autograd computation graph while gradient descent handles global optimization; at inference, weights are fixed and R-STDP is inactive, paralleling the biological distinction between online learning and consolidated memory.                          
+
+> Table 2: Topology Matrix Setting
+> Mtopo 0Mtopo 1Number of Regions 22
+> Partition Region Ratio [R0, R1] [0.5, 0.5] [0.5, 0.5]
+> Region E/I Ratio [R0, R1] [0.8, 0.8] [0.8, 0.8]
+> R0 →R0 Connection E→I, I →E, I →IE→E, E →I, I →E, I →I
+> R0 →R1 Connection E→E, E →IE→E, E →I
+> R1 →R1 Connection E→E, E →I, I →E, I →IE→E, E →I, I →E, I →I
+> R1 →R0 Connection None E→E, E →I
+> Input Neurons R0, E neurons R0, E neurons
+> Output Neurons R1, E neurons R1, E neurons
+> STDP Rule E→EE→E
+> Table 3: Optimized hyperparameters used for training.
+
+Learning Rate Neuron Dim Readout Type Mtopo 
+
+Heartbeat 10 −4 32 Voltage Mtopo 0
+
+SCP1 10 −4 64 Voltage Mtopo 0
+
+SCP2 10 −3 64 Spike Mtopo 1
+
+EthanolConc. 10 −3 64 Spike Mtopo 1
+
+MotorImagery 10 −3 16 Voltage Mtopo 1
+
+EigenWorms 10 −3 32 Voltage Mtopo 1
+
+20 All experiments use a 2-region architecture with per-dataset neuron di-mension: D = 64 for SCP1, SCP2, and EthanolConcentration; D = 32 for Heartbeat and EigenWorms; D = 16 for MotorImagery. Per-dataset topology selection: Heartbeat uses M topo 0 (feedforward); SCP2 and MotorImagery use Mtopo 1 (bidirectional) (Table 2, 3). All configurations share E/I ratio = 0.8 and R-STDP parameters ( τ+ = 10 , τ− = 20 , A+ = 1 .0, A− = 1 .05 , lr_hebb 
+
+= 0 .01 ). Comparisons are made against NRDE, NCDE, Log-NCDE, LRU, S5, S6, Mamba, LinOSS-IMEX, LinOSS-IM, Transformer, and RFormer (results from Rusch and Rus 2025) and LrcSSM (results from Farsang et al. 2025). All baselines are unconstrained models without Dale’s Law, STP, or STDP; PHCSSM is the only entry satisfying all five biological constraints simulta-neously. 
+
+4.2. Classification Accuracy 
+
+Across six UEA physiological benchmarks (Table 4), PHCSSM achieves the highest reported result on SCP2 (59.3 ± 6.0%), exceeding all SSM base-lines including LinOSS-IMEX (58.9%) on a dataset where most models clus-ter near chance level (47–55%). On MotorImagery, the model scores 53.7%, surpassing six baselines: Mamba (47.7%, +6.0pp), Transformer (50.5%), NCDE (51.6%), LRU (51.9%), S6 (51.3%), and S5 (53.0%), consistent with the hypothesis that sustained motor cortical dynamics benefit from biologi-cally grounded lateral recurrence. The hyperparameter configuration of the best result is provided in Table 3. Scalability and stability are further demonstrated at both extremes of se-quence length. On EigenWorms, PHCSSM attains 83.9% with only 2,701 pa-rameters, surpassing five baselines including LinOSS-IMEX (80.0%), Mamba (70.9%), Log-NCDE (82.8%), NCDE (62.2%), and NRDE (77.2%). On Heartbeat, 74.2% accuracy exceeds LrcSSM (72.7%), NRDE (73.9%), and NCDE (68.1%), with a cross-seed standard deviation of ±4.1, among the lowest in the comparison, suggesting that the biological constraints function as structural regularizers that stabilize the optimization landscape across both short and ultra-long sequences. On SCP1 (80.0%) and EthanolConcentration (32.7%), PHCSSM does not reach the top-performing unconstrained models, yet it still surpasses the ma-jority of SSM baselines on EthanolConcentration, including LinOSS-IMEX (29.9%), LinOSS-IM (29.9%), Mamba (27.9%), S5 (25.6%), S6 (26.4%), and 21 Table 4: Test accuracy (mean ± std over 5 seeds) on UEA physiological benchmarks. 
+
+† Results from Rusch and Rus (2025). ‡ Results from Farsang et al. (2025). *Results from Terzić et al. (2025). Best per column in bold. PHCSSM is reported under two topology matrix configurations ( Mtopo 0 and Mtopo 1); the best result per dataset across both configurations is underlined and used in all per-dataset comparisons. 
+
+Model Heart SCP1 SCP2 Ethanol Motor Worms 
+
+Seq. length 405 896 1,152 1,751 3,000 17,984 Channels 61 6 7 2 64 6Classes 2 2 2 4 2 5
+
+NRDE † 73.9 ±2.6 76.7 ±5.6 48.1 ±11.4 31.4 ±4.5 54.0 ±7.8 77.2 ±7.1 
+
+NCDE † 68.1 ±5.8 80.0 ±2.0 49.1 ±6.2 22.0 ±1.0 51.6 ±6.2 62.2 ±2.2 
+
+Log-NCDE † 74.2 ±2.0 82.1 ±1.4 54.0 ±2.6 35.9 ±6.1 57.2 ±5.6 82.8 ±2.7 
+
+LRU † 78.1 ±7.6 84.5 ±4.6 47.4 ±4.0 23.8 ±2.8 51.9 ±8.6 85.0 ±6.2 
+
+S5 † 73.9 ±3.1 87.1 ±2.1 55.1 ±3.3 25.6 ±3.5 53.0 ±3.9 83.9 ±4.1 
+
+S6 † 76.5 ±8.3 82.8 ±2.7 49.9 ±9.4 26.4 ±6.4 51.3 ±4.7 85.0 ±16.1 
+
+Mamba † 76.2 ±3.8 80.7 ±1.4 48.2 ±3.9 27.9 ±4.5 47.7 ±4.5 70.9 ±15.8 
+
+LinOSS-IMEX † 75.5 ±4.3 87.5 ±4.0 58.9 ±8.1 29.9 ±1.0 57.9 ±5.3 80.0 ±2.7 
+
+LinOSS-IM † 75.8 ±3.7 87.8 ±2.6 58.2 ±6.9 29.9 ±0.6 60.0 ±7.5 95.0 ±4.4 Transformer ‡ 70.5 ±0.1 84.3 ±6.3 49.1 ±2.5 40.5 ±6.3 50.5 ±3.0 OOM 
+
+RFormer ‡ 72.5 ±0.1 81.2 ±2.8 52.3 ±3.7 34.7 ±4.1 55.8 ±6.6 90.3 ±0.1 
+
+LrcSSM ‡ 72.7 ±5.7 85.2 ±2.1 53.9 ±7.2 36.9 ±5.3 58.6 ±3.1 90.6 ±1.4 
+
+PD-SSM* 80.0 ±2.6 80.9 ±2.0 56.1 ±8.6 34.7 ±4.0 60.0 ±3.7 90.0 ±5.7 
+
+PHCSSM M topo 0 74.2 ±4.1 80.0 ±3.7 55.4 ±3.2 32.2 ±4.8 53.3 ±7.0 80.6 ±6.5 
+
+PHCSSM M topo 1 72.9 ±5.3 79.3 ±4.0 59.3 ±6.0 32.7 ±5.3 53.7 ±5.2 83.9 ±7.2 
+
+LRU (23.8%), despite using only 9,281 parameters compared to their 6,728– 448,072 (Table 5). The models that exceed PHCSSM on this dataset (Trans-former, LrcSSM, Log-NCDE, RFormer, PD-SSM) either employ non-SSM architectures or operate at substantially higher parameter budgets. Ethanol-Concentration’s low channel count (3 channels, 4 classes) may further limit the benefit of the hierarchical connectome, whose spatial routing mechanism relies on inter-channel signal diversity. On SCP1, models such as LinOSS-IM (6 blocks, 256 hidden dimension) exploit substantially richer input-dependent gating and higher state dimensions. These representational gaps are a struc-tural consequence of the topology-constrained connectivity and fixed E/I ra-tio, not a methodological deficiency; relaxing the biological constraints would yield higher capacity at the cost of abandoning the very priors that constitute PHCSSM’s central contribution. 22 Table 5: Number of parameters for every considered model on all long-range datasets. GPU memory reflects peak activation during backpropagation. All measurements were performed on an NVIDIA RTX4090 GPU using JAX. Values for all baseline models are from † Rusch and Rus (2025).                                                                  
+
+> Heart SCP1 SCP2 Ethanol Motor Worms NRDE 15,657,742 117,187 200,707 93,212 1,134,395 105,110
+> NCDE 1,098,114 166,274 182,914 133,252 186,962 166,789
+> Log-NCDE 168,320 91,557 36,379 31,452 81,391 37,977
+> LRU 338,820 25,892 26,020 76,522 107,544 101,129
+> S5 158,310 226,328 5,652 76,214 17,496 22,007
+> Mamba 1,034,242 184,194 356,290 1,032,772 228,226 27,381
+> S6 6,674 24,898 26,018 5,780 52,802 15,045
+> LinOSS-IMEX 29,444 447,944 448,072 70,088 106,024 26,119
+> LinOSS-IM 10,936 991,240 399,112 6,728 91,844 134,279
+> PHCSSM 4,422 9,421 9,485 9,281 1,748 2,701
+
+4.3. Computational Efficiency 
+
+PHCSSM’s weight-sharing architecture differs fundamentally from con-ventional stacked designs (Figures 1 and 2). In standard SSMs, L copies of a diagonal state-space core and an MLP are arranged sequentially in depth, yielding Θ( D2L) total parameters (Table 6). The Multi-Transmission Loop reuses a single NL–SL pair across all M transmission steps, reducing parame-ter scaling to Θ( D2), achieving depth-M spatial recurrence at a fraction of the parameter cost. Concretely, PHCSSM’s parameter counts (1,748–9,485) are one to two orders of magnitude smaller than those of comparably performing SSMs: S5 requires 67,554–205,826 parameters, Mamba uses 66,818–400,642, and even the relatively compact LrcSSM employs 6,674–38,282 (Table 6). The intra-step spatiotemporal decoupling further contributes to train-ing efficiency. Because all biological dynamics, including ALIF membrane evolution, STP-mediated synaptic modulation, and spike generation, are re-formulated as affine recurrences solvable via log-domain parallel prefix sums, the temporal dimension is processed at O(log T) sequential depth rather than the O(T) cost of conventional BPTT. This logarithmic scaling is what makes training on ultra-long sequences such as EigenWorms (17,984 timesteps) tractable; a sequential spiking network of equivalent depth would face pro-hibitive wall-clock time under standard backpropagation. Importantly, the five biological constraints introduce no asymptotic overhead to the parallel 23 Table 6: Architectural complexity comparison of SSM variants. PHCSSM’s NL is anal-ogous to the diagonal SSM core in LRU, S5, Mamba, LinOSS, and LrcSSM, while the SL is analogous to the inter-layer MLP. Because NL and SL are shared across all M trans-mission steps, total parameter count is Θ( D2) rather than Θ( D2L) for L-layer stacked architectures. 
+
+Model Recurrence Params Train time Memory Bio. LRU Temporal (linear) Θ( D2L) O(T D 2L) O(T D ) None 
+
+S5 Temporal (linear) Θ( D2L) O(T D 2L) O(T D ) None 
+
+Mamba Temporal (selective) Θ( D2L) O(T D 2L) O(T D ) None 
+
+LinOSS Temporal (oscillatory) Θ( D2L) O(T D 2L) O(T D ) None 
+
+LrcSSM Temporal (nonlinear) Θ( D2L) O(T D 2L) O(T D ) Partial 
+
+PHCSSM Spatiotemporal Θ( D2) O(T D 2M ) O(T D ) Full (5) 
+
+scan itself; they reshape the per-step affine coefficients but do not alter the scan’s O(T log T) work complexity. In practice, training runtime over 1,000 steps with R-STDP ranges from 27 to 129 seconds across datasets (Table 7), and peak GPU memory remains between 10 and 48 MB, comparable to unconstrained baselines (e.g., 10–205 MB for S5) despite the additional biological modules. The combination of extreme parameter parsimony, logarithmic-depth training, and modest mem-ory footprint indicates that the PHC framework’s biological constraints do not impose a meaningful computational penalty relative to standard diagonal SSMs. 24 Table 7: Run time in seconds for the considered models for 1000 training steps. All measurements were performed on an NVIDIA RTX4090 GPU using JAX. Values for all baseline models are from † Rusch and Rus (2025) and ‡ Farsang et al. (2025). Only LrcSSM value from Farsang et al. (2025) was performed on the NVIDIA A100. 
+
+Heart SCP1 SCP2 Ethanol Motor Worms NRDE † 9539 1014 1404 2256 7616 5386 
+
+NCDE † 1177 973 1251 2217 3778 24595 
+
+Log-NCDE † 826 635 583 2056 730 1956 
+
+LRU † 8 9 9 16 51 94 
+
+S5 † 11 17 9 9 16 31 
+
+Mamba † 34 7 32 255 35 122 
+
+S6 † 4 3 7 4 34 68 
+
+LinOSS-IMEX † 4 42 55 48 128 37 
+
+LinOSS-IM † 7 38 22 8 11 90 
+
+LrcSSM ‡ 23 12 15 15 31 33 
+
+PHCSSM w/ STDP 27 33 37 46 34 129 PHCSSM w/o STDP 21 23 29 40 27 117 
+
+4.4. Ablation Study 
+
+A systematic ablation examines the individual contribution of each bio-logical constraint (Table 8). All four ablated constraints yield net positive contributions. 
+
+Table 8: Ablation study. Test accuracy (mean ± std over 5 seeds) on Heartbeat, SCP2, and MotorImagery under systematic removal of individual bio constraints. “LIF only” replaces ALIF with a standard non-adaptive LIF neuron; “no Dale’s Law” removes E/I sign-clamping from the Synapse Layer; “no STP” sets synaptic efficacy to static weights by disabling the Tsodyks–Markram mechanism; “no STDP” disables the R-STDP dual-update, retaining gradient-only training. Each ablation variant uses the best-performing Topology Matrix configuration per dataset (Heartbeat: Mtopo 0; SCP2 and MotorImagery: 
+
+Mtopo 1). 
+
+Heartbeat SCP2 MotorImagery Mtopo Mtopo 0 Mtopo 1 Mtopo 1
+
+PHCSSM (Full) 74.2 ±4.1 59.3 ±6.0 53.7 ±5.2 
+
+No Dale’s Law 72.3 ±4.0 53.3 ±10.6 50.5 ±5.5 
+
+LIF only 71.9 ±4.2 47.0 ±6.3 52.6 ±4.3 
+
+No STP 74.5 ±5.3 49.1 ±6.3 53.3 ±5.6 
+
+No STDP 70.3 ±2.7 54.0 ±9.8 49.8 ±4.0 
+
+25 ALIF dynamics produce the largest mean accuracy drop (–5.23pp), with the most pronounced degradation on SCP2 (–12.3pp), indicating that the adaptive threshold is critical for high-difficulty long-sequence tasks. Dale’s Law removal causes a mean drop of –3.70pp accompanied by a sharp increase in training variance (SCP2 std: 6.0 → 10.6), corroborating its role as a structural regularizer. STP removal yields –3.43pp mean, with the dominant effect on SCP2 (–10.2pp); the marginal gain on Heartbeat (+0.3pp) likely reflects its short sequence length limiting dynamic modulation benefit. R-STDP removal produces the most uniform accuracy penalty across datasets (mean –4.37pp), suggesting a task-agnostic complementary learning signal. No single constraint is redundant. Analysis of per-seed training logs further reveals that R-STDP acts as a generalization regularizer: without R-STDP, the mean validation-test ac-curacy gap is 7.72pp on SCP2 and 14.74pp on MotorImagery, compared to 1.05pp and 8.77pp respectively with R-STDP active. With R-STDP, test accuracy improves in 4 out of 5 seeds on both datasets, yielding mean gains of 5.27pp (SCP2) and 3.86pp (MotorImagery). This mechanism is uniquely available to PHCSSM because the network produces genuine bi-nary spikes; continuous-valued SSMs cannot apply spike-timing-dependent plasticity without approximation. Taken together, the ablation results confirm that all five biological con-straints contribute positively and non-redundantly. ALIF dynamics and R-STDP produce the largest accuracy contributions (–5.23pp and –4.37pp re-spectively), while Dale’s Law and STP serve complementary roles as struc-tural and temporal regularizers. Notably, the two constraints with the strongest regularization signatures, specifically Dale’s Law and R-STDP, are precisely those whose removal most increases cross-seed variance (SCP2 std rising from 6.0 to 10.6 without Dale’s Law), consistent with the hypothesis that biolog-ical plausibility constraints reduce the effective degrees of freedom of the optimization landscape. These findings support a design principle for bio-logically constrained SSMs: each constraint addresses a distinct failure mode (temporal sensitivity, sign consistency, synaptic dynamics, generalization), and their joint application yields benefits exceeding the sum of individual contributions. 26 5. Discussion 
+
+A central finding of this work is that strict biological constraints need not impose a performance penalty and may instead serve as beneficial induc-tive biases. The ablation analysis (Section 4.4) reveals that each biological constraint contributes a distinct and non-redundant accuracy improvement: removing Dale’s Law causes a mean accuracy drop of –3.70pp across the three ablated benchmarks, indicating that the E/I sign constraint serves as a struc-tural prior guiding optimization. The R-STDP mechanism is uniquely en-abled by PHCSSM’s genuine binary spike representation: unlike continuous-valued SSMs, the model can apply the biologically grounded STDP rule without surrogate approximation, providing a local Hebbian learning signal orthogonal to the global backpropagation gradient. Together, these results suggest that bio-constrained SSMs constitute an underexplored yet promising class of structured priors for sequence modeling. Beyond the spiking instantiation presented here, the PHC framework’s core principle, Intra-Step Spatiotemporal Decoupling, is applicable to any diagonal SSM. All existing parallelizable SSMs (S4D, S5, LRU, Mamba, LinOSS, LrcSSM) restrict the state-transition matrix to diagonal form, achiev-ing O(log T) temporal parallelism but precluding weighted lateral interac-tion; RSNNs support such interaction but couple it to each temporal step, requiring sequential propagation across T and precluding temporal paral-lelism.PHC’s Multi-Transmission Loop resolves this trade-off by confining cross-neuron interaction to discrete transmission boundaries: within each step k, every neuron’s input is fixed across all T (determined by step k – 1), so the neuron-internal scan and the per-timestep W struct matrix mul-tiplication remain parallelizable. Spatial depth thus accumulates along M transmission steps rather than T, yielding O(M log T) total depth and intro-ducing a new axis of architectural diversity, namely spatial recurrence depth, currently absent from the diagonal SSM family. The fixed M simultaneously acts as implicit regularization against runaway excitation (Rongala et al., 2021; Dehghani et al., 2016), bounding propagation depth regardless of se-quence length, complemented by the SL’s short-term depression; analogous to Deep Equilibrium Models (Bai et al., 2019), this finite-step iteration ap-proximates an infinite recurrent equilibrium, and the Early Exit mechanism (Section 3.6) adaptively truncates when convergence is reached. Notably, PHCSSM achieves competitive accuracy with 1,748–9,485 parameters, one to two orders of magnitude fewer than S5 (67K–206K) and Mamba (67K– 27 401K) (Table 5), suggesting that lateral connections with weight sharing across transmission steps serve as a more parameter-efficient alternative to layer stacking. Because every trainable component, such as structural weights, ALIF time constants, STP parameters, and synaptic delays, satisfies its respec-tive biological constraint by construction throughout training, the resulting model can be directly unrolled as a standard recurrent spiking neural net-work (RSNN) at inference time without post-hoc ANN-to-SNN conversion. While other spiking SSMs (e.g., SPikE-SSM, P-SpikeSSM) can in principle also be executed sequentially, their resulting networks lack the full suite of biological constraints, including Dale’s Law, short-term plasticity, and hier-archical topology, that PHCSSM preserves end-to-end; PHCSSM is therefore the only spiking SSM whose sequential form constitutes a biologically con-strained RSNN. The parallel-to-sequential transition introduces a numerical divergence analogous to the accuracy gap documented in the ANN-to-SNN conversion literature (Deng and Gu, 2021; Bu et al., 2023), but arising from a different mechanism: the multi-transmission loop computes a sequence-level fixed point via Jacobi-style parallel iteration, whereas step-by-step RSNN execution follows a Gauss–Seidel causal trajectory that may converge to a distinct attractor due to the discontinuous spike threshold. Quantitative characterization of this divergence and bridging strategies (e.g., post-training sequential fine-tuning) are deferred to future work. 
+
+Limitations 
+
+Several limitations should be noted. The current evaluation is restricted to binary and multi-class classification at modest state dimensions (D = 16–64) with a two-region hierarchy; scaling behavior under larger configura-tions (4R128, 6R64) remains unknown. The topology mask is hand-designed rather than derived from empirical neuroanatomy. The ablation study (Ta-ble 8) covers three of the six benchmarks, selected to span the range of se-quence lengths and task difficulties (Heartbeat: 405 steps, short; SCP2: 1,152 steps, highest difficulty; MotorImagery: 3,000 steps, long with high channel count). Furthermore, because ALIF and STP are not natively supported on current commercial neuromorphic processors, reliable energy-efficiency esti-mates cannot be provided at this time. 
+
+Future Directions 
+
+The most immediate extension is to validate PHCSSM’s scalability and generality: evaluating larger configurations (4R128, 6R64), regression and generation tasks, and mainstream SSM benchmarks such as the Long Range 28 Arena and Speech Commands would test whether biological constraints con-fer inductive-bias advantages beyond physiological signals. At the architectural level, two directions follow naturally from PHCSSM’s design. First, because the parallel scan can process the full temporal sequence in O(log T), the architecture naturally supports a Liquid State Machine (LSM) operating mode in which the recurrent reservoir weights are frozen and only the readout decoder is trained, substantially reducing the compu-tational cost of reservoir evaluation for long sequences. Second, the hand-crafted topology mask can be replaced with empirical laminar connectivity derived from tract-tracing atlases (e.g., the Allen Mouse Brain Connectivity Atlas) or whole-brain connectomes (e.g., the FlyWire Drosophila connec-tome), advancing PHCSSM toward data-driven functional digital twins of specific neural circuits, where the O(log L) parallel training offers an effi-ciency advantage over traditional sequential SNN simulators at connectome scale. Looking further ahead, the success of Dale’s Law and E/I-balanced con-nectivity as structural regularizers invites exploration of analogous biological priors in domains where SSMs are already established, including language modeling, audio synthesis, and genomics, positioning bio-constrained SSMs as a systematic design methodology rather than a domain-specific curios-ity. The enforced separation of excitatory and inhibitory pathways, together with the fixed projection topology, also provides inherent structural inter-pretability that may be leveraged by mechanistic-interpretability tools to trace information flow through the network. 
+
+6. Conclusion 
+
+This work has presented PHCSSM, a spiking state-space model that integrates five biological constraints: ALIF dynamics, Short-Term Plastic-ity, Dale’s Law, hierarchical connectome topology, and Reward-Modulated STDP, within a fully parallelizable O(log L) framework. By decoupling tem-poral parallel scans from spatial lateral interactions via the Multi-Transmission Loop, PHCSSM achieves competitive accuracy on six UEA physiological benchmarks, including a new state-of-the-art on SCP2 (59.3%), while re-quiring one to two orders of magnitude fewer parameters than comparably performing SSMs. The ablation analysis confirms that each biological con-straint contributes positively and non-redundantly, functioning as stabilizing inductive biases rather than performance bottlenecks. These results estab-29 lish that biologically grounded spatiotemporal recurrence offers a viable and parameter-efficient alternative to conventional layer-stacked SSM architec-tures. 
+
+Acknowledgements 
+
+This work was supported by the National Science and Technology Coun-cil (NSTC), Taiwan (NSTC 114-2320-B-A49-027-; NSTC 114-2634-F-A49-006-; NSTC 114-2321-B-A49-003-; NSTC 114-2321-B-A49-014-). During the preparation of this work, the author used Claude (Anthropic) and Gemini for assistance with manuscript editing and code development. The author reviewed and edited the content as necessary and verified all outputs and takes full responsibility for the content of this work. 30 References 
+
+Bai, S., Kolter, J.Z., Koltun, V., 2019. Deep equilibrium models, in: Ad-vances in Neural Information Processing Systems, pp. 688–699. Bal, M., Sengupta, A., 2024. P-SpikeSSM: Harnessing probabilistic spik-ing state space models for long-range dependency tasks. arXiv preprint arXiv:2406.02923 doi: 10.48550/arXiv.2406.02923 .Balwani, A.H., Wang, A.Q., Najafi, F., Choi, H., 2025. Constructing bi-ologically constrained recurrent neural networks via Dale’s backpropaga-tion and topologically informed pruning. Science Advances 11, eadw4970. doi: 10.1126/sciadv.adw4970 .Beck, M., Pöppel, K., Spanring, M., Auer, A., Prudnikova, O., Kopp, M., Klambauer, G., Brandstetter, J., Hochreiter, S., 2024. xLSTM: Extended long short-term memory, in: Ad-vances in Neural Information Processing Systems. URL: 
+
+https://proceedings.neurips.cc/paper_files/paper/2024/hash/ c2ce2f2701c10a2b2f2ea0bfa43cfaa3-Abstract-Conference.html .Behrouz, A., Hashemi, F., 2024. Graph Mamba: Towards learning on graphs with state space models, in: Proceedings of the 30th ACM SIGKDD Con-ference on Knowledge Discovery and Data Mining. doi: 10.1145/3637528. 3672044 .Bellec, G., Salaj, D., Subramoney, A., Legenstein, R., Maass, W., 2018. Long short-term memory and learning-to-learn in networks of spiking neurons, in: Advances in Neural Information Processing Systems, pp. 795–805. Bellec, G., Scherr, F., Subramoney, A., Hajek, E., Salaj, D., Legenstein, R., Maass, W., 2020. A solution to the learning dilemma for recurrent networks of spiking neurons. Nature Communications 11, 3625. doi: 10. 1038/s41467-020-17236-y .Benda, J., Herz, A.V.M., 2003. A universal model for spike-frequency adaptation. Neural Computation 15, 2523–2564. doi: 10.1162/ 089976603322385063 .Bengio, Y., Simard, P., Frasconi, P., 1994. Learning long-term dependencies with gradient descent is difficult. IEEE Transactions on Neural Networks 5, 157–166. doi: 10.1109/72.279181 .31 Bi, G.q., Poo, M.m., 1998. Synaptic modifications in cultured hippocampal neurons: Dependence on spike timing, synaptic strength, and postsynap-tic cell type. Journal of Neuroscience 18, 10464–10472. doi: 10.1523/ JNEUROSCI.18-24-10464.1998 .Bu, T., Fang, W., Ding, J., Dai, P., Yu, Z., Huang, T., 2023. Optimal ANN-SNN conversion for high-accuracy and ultra-low-latency spiking neural net-works, in: Proceedings of the AAAI Conference on Artificial Intelligence. ArXiv:2303.04347. Cornford, J., Kalajdzievski, D., Leite, M., Lamarquette, A., Kullmann, D.M., Richards, B.A., 2021. Learning to live with Dale’s principle: ANNs with separate excitatory and inhibitory units, in: International Confer-ence on Learning Representations (ICLR). URL: https://openreview. net/forum?id=eU776ZYxEpz .Dehghani, N., Peyrache, A., Telenczuk, B., Le Van Quyen, M., Halgren, E., Cash, S.S., Hatsopoulos, N.G., Destexhe, A., 2016. Dynamic balance of excitation and inhibition in human and monkey neocortex. Scientific Reports 6, 23176. doi: 10.1038/srep23176 .Deng, S., Gu, S., 2021. Optimal conversion of conventional artificial neu-ral networks to spiking neural networks, in: International Conference on Learning Representations (ICLR). URL: https://openreview.net/ forum?id=FZ1oTwcXchK .Farsang, M., Hasani, R., Rus, D., Grosu, R., 2025. Parallelization of non-linear state-space models: Scaling up liquid-resistance liquid-capacitance networks for efficient sequence modeling. arXiv preprint arXiv:2505.21717 doi: 10.48550/arXiv.2505.21717 .Farsang, M., Lechner, M., Lung, D., Hasani, R., Rus, D., Grosu, R., 2024a. Learning with chemical versus electrical synapses: Does it make a differ-ence?, in: 2024 IEEE International Conference on Robotics and Automa-tion (ICRA), pp. 15106–15112. doi: 10.1109/ICRA57147.2024.10611016 .Farsang, M., Neubauer, S.A., Grosu, R., 2024b. Liquid resistance liquid capacitance networks, in: NeuroAI Workshop, NeurIPS 2024. ArXiv:2403.08791. 32 Felleman, D.J., Van Essen, D.C., 1991. Distributed hierarchical processing in the primate cerebral cortex. Cerebral Cortex 1, 1–47. doi: 10.1093/ cercor/1.1.1-a .Frémaux, N., Gerstner, W., 2015. Neuromodulated spike-timing-dependent plasticity, and theory of three-factor learning rules. Frontiers in Neural Circuits 9, 85. doi: 10.3389/fncir.2015.00085 .Gonzalez, X., Warrington, A., Smith, J.T.H., Linderman, S.W., 2024. Towards scalable and stable parallelization of nonlinear RNNs, in: Advances in Neural Information Processing Systems. URL: 
+
+https://proceedings.neurips.cc/paper_files/paper/2024/hash/ 0b2b199fdd52089b31d3a0120e400b2a-Abstract-Conference.html .Gu, A., Dao, T., 2023. Mamba: Linear-time sequence modeling with selective state spaces. arXiv preprint arXiv:2312.00752 doi: 10.48550/arXiv.2312. 00752 .Gu, A., Goel, K., Ré, C., 2022a. Efficiently modeling long sequences with structured state spaces, in: International Conference on Learn-ing Representations (ICLR). URL: https://openreview.net/forum?id= uYLFoz1vlAC .Gu, A., Gupta, A., Ré, C., 2022b. On the parameteriza-tion and initialization of diagonal state space models, in: Ad-vances in Neural Information Processing Systems. URL: 
+
+https://proceedings.neurips.cc/paper_files/paper/2022/hash/ e9a32fade47b906de908431991440f7c-Abstract-Conference.html .Gupta, A., Gu, A., Berant, J., 2022. Diagonal state spaces are as effective as structured state spaces, in: Advances in Neural Information Processing Systems, pp. 22982–22994. Haber, A., Schneidman, E., 2022. The computational and learning benefits of Daleian neural networks, in: Advances in Neural Information Processing Systems, pp. 5194–5206. Hasani, R., Lechner, M., Amini, A., Rus, D., Grosu, R., 2021. Liquid time-constant networks, in: Proceedings of the AAAI Conference on Artificial Intelligence, pp. 7657–7666. doi: 10.1609/aaai.v35i9.16936 .33 Hasani, R., Lechner, M., Wang, T.H., Chahine, M., Amini, A., Rus, D., 2022. Liquid structural state-space models, in: Advances in Neural Infor-mation Processing Systems. URL: https://openreview.net/forum?id= g4OTKRKfS7R .Khalil, R., Moftah, M.Z., Moustafa, A.A., 2017. The effects of dynamical synapses on firing rate activity: A spiking neural network model. European Journal of Neuroscience 46, 2445–2470. doi: 10.1111/ejn.13691 .Lei, T., Zhang, Y., Wang, S.I., Dai, H., Artzi, Y., 2018. Simple recurrent units for highly parallelizable recurrence, in: Proceedings of the Confer-ence on Empirical Methods in Natural Language Processing (EMNLP), pp. 4470–4481. doi: 10.18653/v1/D18-1477 .Lim, Y.H., Zhu, Q., Selfridge, J., Kasim, M.F., 2024. Parallelizing non-linear sequential models over the sequence length, in: International Conference on Learning Representations (ICLR). URL: https://openreview.net/ forum?id=E34AlVLN0v .Markram, H., Toledo-Rodriguez, M., Wang, Y., Gupta, A., Silberberg, G., Wu, C., 2004. Interneurons of the neocortical inhibitory system. Nature Reviews Neuroscience 5, 793–807. doi: 10.1038/nrn1519 .Mongillo, G., Barak, O., Tsodyks, M., 2008. Synaptic theory of working memory. Science 319, 1543–1546. doi: 10.1126/science.1150769 .Orvieto, A., Smith, S.L., Gu, A., Fernando, A., Gulcehre, C., Pascanu, R., De, S., 2023. Resurrecting recurrent neural networks for long sequences, in: Proceedings of the 40th International Conference on Machine Learning (ICML), PMLR 202, pp. 26670–26698. URL: https://proceedings.mlr. press/v202/orvieto23a.html .Pascanu, R., Mikolov, T., Bengio, Y., 2013. On the difficulty of training recurrent neural networks, in: Proceedings of the 30th International Con-ference on Machine Learning (ICML), PMLR 28, pp. 1310–1318. URL: 
+
+https://proceedings.mlr.press/v28/pascanu13.html .Rongala, U.B., Enander, J.M.D., Kohler, M., Loeb, G.E., Jörntell, H., 2021. A non-spiking neuron model with dynamic leak to avoid instability in recurrent networks. Frontiers in Computational Neuroscience 15, 656401. doi: 10.3389/fncom.2021.656401 .34 Rusch, T.K., Rus, D., 2025. LinOSS: Oscillatory state-space models for long sequence modeling, in: International Conference on Learning Representa-tions (ICLR). URL: https://openreview.net/forum?id=GRMfXcAAFh .Schmutz, V., Gerstner, W., Schwalger, T., 2020. Mesoscopic population equations for spiking neural networks with synaptic short-term plastic-ity. Journal of Mathematical Neuroscience 10, Article 5. doi: 10.1186/ s13408-020-00082-z .Shen, S., Wang, C., Huang, R., Zhong, Y., Guo, Q., Lu, Z., Zhang, J., Leng, L., 2025. SpikingSSMs: Learning long sequences with sparse and parallel spiking state space models, in: Proceedings of the 39th AAAI Conference on Artificial Intelligence (AAAI). doi: 10.1609/aaai.v39i19.34245 .Smith, J.T.H., Warrington, A., Linderman, S., 2023. Simplified state space layers for sequence modeling, in: International Conference on Learn-ing Representations (ICLR). URL: https://openreview.net/forum?id= Ai8Hw3AXqks .Soydan, T., Zubić, N., Messikommer, N., Mishra, S., Scaramuzza, D., 2024. S7: Selective and simplified state space layers for sequence modeling. arXiv preprint arXiv:2410.03464 doi: 10.48550/arXiv.2410.03464 .Stan, M.C., Rhodes, O., 2024. Learning long sequences in spiking neural net-works. Scientific Reports 14, 21957. doi: 10.1038/s41598-024-71678-8 .Strata, P., Harvey, R., 1999. Dale’s principle. Brain Research Bulletin 50, 349–350. doi: 10.1016/S0361-9230(99)00100-8 .Tang, S., Dunnmon, J.A., Liangqiong, Q., Saab, K.K., Baykaner, T., Lee-Messer, C., Rubin, D.L., 2023. Modeling multivariate biosignals with graph neural networks and structured state space models, in: Proceedings of the Conference on Health, Inference, and Learning (CHIL), PMLR 209, pp. 50–71. URL: https://proceedings.mlr.press/v209/tang23a.html .Teeter, C., Iyer, R., Menon, V., Gouwens, N., Feng, D., Berg, J., Szafer, A., Cain, N., Zeng, H., Hawrylycz, M., Koch, C., Mihalas, S., 2018. General-ized leaky integrate-and-fire models classify multiple neuron types. Nature Communications 9, 709. doi: 10.1038/s41467-017-02717-4 .35 Terzić, A., Menet, N., Hersche, M., Hofmann, T., Rahimi, A., 2025. Structured sparse transition matrices to enable state tracking in state-space models, in: Advances in Neural Information Processing Systems. ArXiv:2509.22284. Tsodyks, M., Markram, H., 1997. The neural code between neocorti-cal pyramidal neurons depends on neurotransmitter release probability. Proceedings of the National Academy of Sciences USA 94, 719–723. doi: 10.1073/pnas.94.2.719 .Walker, B., McLeod, A.D., Qin, T., Cheng, Y., Li, H., Lyons, T., 2024. Log neural controlled differential equations: The Lie brackets make a difference, in: Proceedings of the 41st International Conference on Machine Learning (ICML), PMLR 235, pp. 49822–49844. URL: https://proceedings.mlr. press/v235/walker24a.html .Yu, Q., Wang, A., Du, Y., Chen, M., Wang, G., Li, E., 2022. MAP-SNN: Mapping spike activities with multiplicity, adaptability, and plas-ticity into bio-plausible spiking neural networks. Frontiers in Neuroscience 16, 945037. doi: 10.3389/fnins.2022.945037 .Zenke, F., Ganguli, S., 2018. SuperSpike: Supervised learning in multilayer spiking neural networks. Neural Computation 30, 1514–1541. doi: 10. 1162/neco_a_01086 .Zhang, B., Sennrich, R., 2019. Root mean square layer normalization, in: Advances in Neural Information Processing Systems, pp. 12360–12371. Zhong, Y., Zhao, R., Wang, C., Guo, Q., Zhang, J., Lu, Z., Leng, L., 2024. SPiKE-SSM: A sparse, precise, and efficient spiking state space model for long sequences learning. arXiv preprint arXiv:2410.17268 doi: 10.48550/ arXiv.2410.17268 .36

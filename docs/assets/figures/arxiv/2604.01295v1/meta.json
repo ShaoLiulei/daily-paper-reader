@@ -1,0 +1,86 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2604.01295v1/fig-001.webp",
+      "caption": "Figure 2: Structural isomorphism between stacked SSMs and the PHC framework. Left: A conventional L-layer stacked SSM, where L independent diagonal state-transition matrices (Layer 0, Layer 1) are interleaved with L independent dense MLPs (MLP1, MLP2), each with non-shared parameters, forming a one-direction forward connection. Right: The PHC framework collapses this vertical stack into a single spatial plane. Each diagonal layer maps to a region (R0, R1) within a shared Neuron Layer whose parameters are reused across all regions (Parallelized State Update). Each inter-layer MLP maps to a sub-block of the Hierarchical Connectome Matrix, which consolidates all inter-neuronal communication into a single shared Synapse Layer with biologically constrained connectivity (Dale’s Law, topology mask).",
+      "page": 6,
+      "index": 1,
+      "width": 814,
+      "height": 394
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01295v1/fig-002.webp",
+      "caption": "Table 7: Run time in seconds for the considered models for 1000 training steps. All measurements were performed on an NVIDIA RTX4090 GPU using JAX. Values for all baseline models are from † Rusch and Rus (2025) and ‡ Farsang et al. (2025). Only LrcSSM value from Farsang et al. (2025) was performed on the NVIDIA A100.",
+      "page": 25,
+      "index": 2,
+      "width": 800,
+      "height": 382
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01295v1/fig-003.webp",
+      "caption": "Table 8: Ablation study. Test accuracy (mean ± std over 5 seeds) on Heartbeat, SCP2, and MotorImagery under systematic removal of individual bio constraints. “LIF only” replaces ALIF with a standard non-adaptive LIF neuron; “no Dale’s Law” removes E/I sign-clamping from the Synapse Layer; “no STP” sets synaptic efficacy to static weights by disabling the Tsodyks–Markram mechanism; “no STDP” disables the R-STDP dualupdate, retaining gradient-only training. Each ablation variant uses the best-performing Topology Matrix configuration per dataset (Heartbeat: Mtopo 0; SCP2 and MotorImagery: Mtopo 1).",
+      "page": 25,
+      "index": 3,
+      "width": 664,
+      "height": 226
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01295v1/fig-004.webp",
+      "caption": "Figure 3: Detailed signal flow of the PHCSSM forward pass. The input sequence is projected via a linear encoder and gated by an input mask restricting sensory drive to designated populations. Within the Multi-Transmission Loop, the NL performs three sequential diagonal parallel scans (membrane potential, adaptive threshold, and refractory suppression) followed by pointwise spike generation (ALIF). The SL applies a synaptic delay buffer, modulates spikes via Tsodyks–Markram STP (two additional parallel scans), and transmits the result through the biologically constrained weight matrix Wstruct (= Wsyn ⊙Mtopo). Convergence is assessed via the Cauchy criterion after each transmission; upon exit, R-STDP updates synaptic weights using genuine binary spike timing. The output membrane voltage is projected to logits via a linear readout.",
+      "page": 7,
+      "index": 4,
+      "width": 814,
+      "height": 561
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01295v1/fig-005.webp",
+      "caption": "Table 4: Test accuracy (mean ± std over 5 seeds) on UEA physiological benchmarks. † Results from Rusch and Rus (2025). ‡ Results from Farsang et al. (2025). *Results from Terzić et al. (2025). Best per column in bold. PHCSSM is reported under two topology matrix configurations (Mtopo 0 and Mtopo 1); the best result per dataset across both configurations is underlined and used in all per-dataset comparisons.",
+      "page": 22,
+      "index": 5,
+      "width": 802,
+      "height": 493
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01295v1/fig-006.webp",
+      "caption": "Table 5: Number of parameters for every considered model on all long-range datasets. GPU memory reflects peak activation during backpropagation. All measurements were performed on an NVIDIA RTX4090 GPU using JAX. Values for all baseline models are from † Rusch and Rus (2025).",
+      "page": 23,
+      "index": 6,
+      "width": 800,
+      "height": 328
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01295v1/fig-007.webp",
+      "caption": "Figure 1: Comparison of conventional stacked SSMs and the Parallelized Hierarchical Connectome (PHC) framework. (A) Conventional SSMs process sequences through stacked layers connected via unidirectional feedforward MLPs, corresponding to L independent diagonal state-transition matrices and L dense inter-layer weight matrices, supporting only temporal recurrence with no lateral or feedback interactions. (B) The PHC framework partitions neurons into hierarchical regions (R0, R1) with biologically constrained E/I populations. Within each region, neurons interact via full local microcircuits; across regions, both feedforward (R0→R1) and feedback (R1→R0) projections are supported through the Hierarchical Connectome Matrix (Wsyn ⊙Mtopo), illustrated here under the bidirectional configuration.",
+      "page": 4,
+      "index": 7,
+      "width": 814,
+      "height": 302
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01295v1/fig-008.webp",
+      "caption": "Table 6: Architectural complexity comparison of SSM variants. PHCSSM’s NL is analogous to the diagonal SSM core in LRU, S5, Mamba, LinOSS, and LrcSSM, while the SL is analogous to the inter-layer MLP. Because NL and SL are shared across all M transmission steps, total parameter count is Θ(D2) rather than Θ(D2L) for L-layer stacked architectures.",
+      "page": 24,
+      "index": 8,
+      "width": 800,
+      "height": 210
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01295v1/fig-009.webp",
+      "caption": "Table 3: Optimized hyperparameters used for training.",
+      "page": 20,
+      "index": 9,
+      "width": 798,
+      "height": 216
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01295v1/fig-010.webp",
+      "caption": "Table 2: Topology Matrix Setting",
+      "page": 20,
+      "index": 10,
+      "width": 800,
+      "height": 301
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.25009v1/fig-001.webp",
+      "caption": "Table 2: Grokking results by depth. ∆T = grokking delay (steps). DNF = did not grok within budget. Mean excludes DNF seeds.",
+      "page": 6,
+      "index": 1,
+      "width": 498,
+      "height": 416
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25009v1/fig-002.webp",
+      "caption": "Figure 2: H1: Depth-8 residual MLP grokking delay across 5 seeds. Seeds 3 and 4 (orange) did not grok within the 400,000-step budget (shown as 0); seeds 0–2 grokked with a mean ∆T = 33,333± 12,858 steps (dashed line).",
+      "page": 6,
+      "index": 2,
+      "width": 736,
+      "height": 417
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25009v1/fig-003.webp",
+      "caption": "Figure 5: H4: Weight decay sweeps for MLP (SGD) and Transformer (AdamW), plus fair comparison at optimal λ each (5 seeds). (a) MLP λ sweep: optimal at λ = 10−3; λ ≥ 2 × 10−3 prevents memorization entirely. (b) Transformer λ sweep: optimal at λ = 5.0, requiring 5,000× stronger regularization than the MLP. (c) Fair comparison at optimal λ each (5 seeds): MLP achieves 26.8k± 6.4k vs. Transformer 50.8k± 38.7k, a 1.90× gap—the definitive architecture comparison superseding H2’s 1.11×.",
+      "page": 11,
+      "index": 3,
+      "width": 979,
+      "height": 273
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25009v1/fig-004.webp",
+      "caption": "Table 7: Weight norm at grokking step across six configurations. RMS norm is computed over all parameters. Depth-2 uses width 256; all others use width 512.",
+      "page": 11,
+      "index": 4,
+      "width": 984,
+      "height": 619
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25009v1/fig-005.webp",
+      "caption": "Figure 8: Modular multiplication (a×b) mod 97 results. (a) Per-seed grokking delays for MLP vs. Transformer; ratio = 1.42× (vs. 1.90× on addition). (b) Activation comparison: GELU dominates at 3.82× faster than ReLU; Tanh grokks in 3/5 seeds. (c) Direct comparison of addition vs. multiplication for each condition. Both architectures and GELU grokk faster on multiplication; the ReLU gap is preserved.",
+      "page": 15,
+      "index": 5,
+      "width": 979,
+      "height": 290
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25009v1/fig-006.webp",
+      "caption": "Table 3: H2 Architecture comparison over 5 seeds (corrected configs). Transformer uses AdamW (λ = 1.0, lr = 10−3); MLP uses SGD (λ = 5× 10−4, lr = 3× 10−2).",
+      "page": 7,
+      "index": 6,
+      "width": 982,
+      "height": 598
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25009v1/fig-007.webp",
+      "caption": "Table 9: H2-mul: Architecture comparison on (a × b) mod 97. Both architectures use optimal λ from H4 (MLP: λ = 10−3; Transformer: λ = 5.0).",
+      "page": 14,
+      "index": 7,
+      "width": 536,
+      "height": 380
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25009v1/fig-008.webp",
+      "caption": "Figure 3: H2: Transformer vs. MLP grokking comparison over 5 seeds (corrected hyperparameter configs). (a) Per-seed grokking delays ∆T = Ttest − Ttrain; dashed lines are per-architecture means. (b) Mean delay ± std: MLP achieves 45.6k± 5.6k vs. Transformer 50.8k± 22.6k, a 1.11× difference with 4.1× higher variance. (c) Ttrain vs. Ttest scatter: both architectures memorize rapidly but diverge in generalization onset.",
+      "page": 8,
+      "index": 8,
+      "width": 979,
+      "height": 309
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25009v1/fig-009.webp",
+      "caption": "Table 1: Default training hyperparameters.",
+      "page": 4,
+      "index": 9,
+      "width": 594,
+      "height": 275
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25009v1/fig-010.webp",
+      "caption": "Figure 6: Weight norm dynamics and training curves across six configurations. (a) Test accuracy over training; vertical dotted lines mark grokking steps. (b) RMS weight norm over training; dots mark the weight norm at each grokking step. All width-512 models converge to ∥W∥ ≈ 0.022 at grokking, regardless of architecture or activation. (c) Weight norm at grokking step: the depth-2 baseline (width 256) is an outlier; the five width-512 models cluster tightly (CV = 14.5%). (d–f) Individual train/test accuracy curves for the three MLP configurations, showing the characteristic memorization plateau followed by abrupt generalization.",
+      "page": 12,
+      "index": 10,
+      "width": 979,
+      "height": 542
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25009v1/fig-011.webp",
+      "caption": "Figure 4: H3: Activation function comparison at two hyperparameter configurations. Left (Sweep A): original H3 config (lr = 10−2, λ = 2× 10−3, width 256). GELU fails entirely (0/5 seeds); ReLU and Tanh grok in 2/5 and 3/5 seeds with large delays. Right (Sweep B): H2 MLP baseline config (lr = 3× 10−2, λ = 5 × 10−4, width 512). GELU dominates with 5/5 seeds at 45.6k steps—4.32× faster than ReLU. The reversal between sweeps demonstrates an activation–weight decay interaction: GELU’s advantage only emerges when regularization is light enough to permit memorization.",
+      "page": 9,
+      "index": 11,
+      "width": 976,
+      "height": 352
+    },
+    {
+      "url": "assets/figures/arxiv/2603.25009v1/fig-012.webp",
+      "caption": "Figure 1: Canonical grokking on modular addition mod 97 (direct experiment output). Train accuracy (blue) reaches 100% at step Ttrain = 1,000, while test accuracy (orange) remains near chance until a sharp transition at step Tgrok = 33,000 (grokking delay = 32,000 steps). Test accuracy stabilizes at ≈99.35% and continues to slowly improve through step 400,000. The dashed line marks the 99% threshold.",
+      "page": 5,
+      "index": 12,
+      "width": 832,
+      "height": 521
+    }
+  ]
+}

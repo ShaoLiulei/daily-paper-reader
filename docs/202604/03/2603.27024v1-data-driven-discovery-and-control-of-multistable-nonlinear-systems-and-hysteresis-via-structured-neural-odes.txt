@@ -1,0 +1,681 @@
+Title: Data-driven discovery and control of multistable nonlinear systems and hysteresis via structured Neural ODEs
+
+URL Source: https://arxiv.org/pdf/2603.27024v1
+
+Published Time: Tue, 31 Mar 2026 00:28:06 GMT
+
+Number of Pages: 30
+
+Markdown Content:
+# Data-driven discovery and control of multistable nonlinear systems and hysteresis via structured Neural ODEs 
+
+Ike Griss Salas ∗1 and Ethan King 21Department of Applied Mathematics, University of Washington, Seattle, WA, USA 
+
+> 2
+
+Pacific Northwest National Laboratory, Richland, WA, USA 
+
+Abstract 
+
+Many engineered physical processes exhibit nonlinear but asymptotically stable dynamics that converge to a finite set of equilibria determined by control inputs. Identifying such systems from data is challenging: stable dynamics provide limited excitation and model discovery is often non-unique. We propose a minimally structured Neural Ordinary Differential Equation (NODE) architecture that enforces trajectory stability and provides a tractable parameterization for multistable systems, by learning a vector field in the form F (x, u ) = f (x) ( x − g(x, u )), where 
+
+f (x) < 0 elementwise ensures contraction and g(x, u ) determines the multi-attractor locations. Across several nonlinear benchmarks, the proposed structure is efficient on short time horizon training, captures multiple basins of attraction, and enables efficient gradient-based feedback control through the implicit equilibrium map g.
+
+# 1 Introduction 
+
+System identification and control of dynamical systems from observables remain ubiquitous chal-lenges across physics and engineering. Data-driven modeling as an approach has gained popularity but fundamental questions regarding the limits of learnability persist. Recent discoveries, notably Shumaylov et al. [1], have established that chaos is a necessary condition for the unique discovery of dynamical systems from a single observed trajectory. This poses a significant constraint on the class of engineering and biological systems that operate in non-chaotic regimes, implying the “true” underlying model may be formally unidentifiable from trajectory data alone. The lack of uniqueness motivates a critical pivot in perspective: if the unique recovery of governing equations is ill-posed for non-chaotic systems, can we instead leverage this non-uniqueness to learn representations that are useful ?The concept of learning favorable representations is not new; indeed, it is fundamental to classical mechanics and astronomy. The evolution from Cartesian coordinates to angular dynamics for the pendulum, or the development of the heliocentric model, demonstrates that the choice of state representation dictates the tractability and interpretability of the problem [2]. In both cases, the “useful” representation preceded the full derivation of the governing laws, suggesting that finding the right geometry is often a prerequisite for understanding the dynamics. However, in the context of data-driven approaches, there remains a significant gap in discovering representations explicitly constructed for downstream tasks such as interpretability, stability, and control. 
+
+> ∗Corresponding author: grisal@uw.edu
+
+1
+
+> arXiv:2603.27024v1 [eess.SY] 27 Mar 2026
+
+I. Griss Salas, E. King In this work, we investigate the discovery of useful representations within the specific domain of 
+
+asymptotically stable dynamical systems . These systems, characterized by bounded trajectories that converge to unique steady states determined by control input, are pervasive in engineering systems, e.g. chemical, biological, and manufacturing processes. We introduce a data-driven methodology that infers these dynamics solely from observable trajectories, demonstrating success with sparse temporal data (time horizons significantly shorter than full system evolution). Specifically, our framework enables: 1. Trajectory Stability: The enforcement of bounded trajectory learning consistent with the observation of asymptotic stability. 2. Interpretability: The identification of salient dynamical features, such as bifurcation points, e.g. “tipping points”, and decoupling of multivariate dynamics into univariate representations when appropriate. 3. Multistability: The ability to capture multiple steady states, the number of which need not be known a priori. 
+
+4. Control: The ability to construct feedback control policies capable of traversing non-trivial bifurcations, such as hysteresis loops, while easily adhering to user provided control con-straints. We demonstrate the effectiveness of this method on multiple nonlinear systems. 
+
+# 2 Background and related work 
+
+Model discovery, or more specifically the discovery of continuous-time dynamical systems from time-series observations, has been a long-standing problem [3–5], with seminal works using symbolic regression [6, 7] to obtain analytical solutions. The works in [8–11] further popularized the use of sparsity priors, extending ideas from compressive sensing literature [12–14]. The use of deep learning architectures has also gained popularity for system identification [15, 16], with implicit neural models gaining particular traction. The work in [17] introduced the Neural Ordinary Differential Equation (NODE) framework, a learning paradigm for governing dy-namical systems by integrating neural network–parameterized dynamics and comparing simulated trajectories against time-series observations. The associated loss is minimized by tuning the mod-els by backpropagating through a selected numerical integrator. NODEs have since been used for latent variable modeling and continuous normalizing flows and have shown considerable success in a variety of engineering tasks, e.g., [18–21]. Despite their versatility, NODEs can be difficult to train. The associated loss landscape aris-ing from training is often extremely non-convex. For example, [22] illustrated that even training on a simple one-dimensional linear ODE can suffer from severe instabilities when optimized us-ing gradient descent. Continuous-time dynamics make the loss landscape highly ill-conditioned, necessitating careful architecture design, regularization, or additional constraints on the learning objective. To mitigate these challenges, a popular extension of NODEs is to incorporate Lyapunov sta-bility. The work in [23] jointly learns both the dynamics and a Lyapunov candidate function, guaranteeing provable stability over the entire state space. Extensions such as [24–26] impose Lyapunov conditions directly in the training objective. Additional efforts focus on designing intrinsically stable NODE architectures. The work [25] proposes a class of stable latent dynamical systems compatible with NODE-style training, imposing 2Discovery and control of multistable systems via structured Neural ODEs a Lyapunov-like structure to obtain provably stable dynamics with multiple attractors. The work in [26] addresses stability from the perspective of adversarial robustness, building on the observation that NODEs are more resilient to perturbations than standard deep networks [27] and accordingly impose a Lyapunov-stable learning criterion. Other works incorporate dissipativity constraints by enforcing a dissipative structure in learned models, projecting arbitrary neural-network dynamics onto a dissipative class using a generalized Kalman–Yakubovic–Popov (KYP) lemma [28]. An emerging alternative to continuous ODE flow models are deep equilibrium models (DEQs), which observe that many deep networks converge to fixed points [29]. DEQs are solved directly for equilibrium points using implicit differentiation. The connection to classical system identification arises through the shared emphasis on fixed-point structure and implicit dynamics. Although DEQs do not explicitly model continuous-time dynamics, their fixed-point formulation provides useful parallels to implicit ODE solvers and stable attractor learning. In contrast to these methods, we propose an alternative approach. We develop a stability-constrained NODE framework for learning asymptotically stable systems that exhibit multi-attractor and hysteretic dynamics. The learned model guarantees trajectory stability throughout the state space and additionally enables tractable control policies that can navigate nontrivial bifurcations, such as tipping points in hysteresis loops. 
+
+# 3 Preliminaries 
+
+NODEs provide a learning framework for modeling continuous-time dynamical systems by param-eterizing the governing dynamics with a neural network. A NODE models the state evolution as dx
+
+dt = Fθ(x, t ), (1) where x(t) ∈ Rd is the time-dependent state vector and Fθ : Rd × R+ → Rd is a neural network parameterized by θ ∈ Rp. Given an initial condition x(0), system trajectories over the interval 
+
+t ∈ [0 , T ] are obtained by solving the initial value problem 
+
+bx(T ) = x(0) + 
+
+Z T
+
+> 0
+
+Fθ(x(t), t ) d t. (2) The original formulation in [17] uses the torchdiffeq package to numerically integrate eq. (2). However, in this work, we instead use the more recent torchode library [30], which provides a modern, performance-optimized framework to solve batched NODE systems. The model parameters θ are learned by minimizing the discrepancy between the predicted trajectories and the observed states at the measurement times ti, for i = 1 , . . . , N :
+
+L(θ) = 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+x(ti) − bx(ti) 22. (3) Gradients of this loss with respect to θ are obtained by backpropagating through the torchode 
+
+ODE solver using PyTorch’s autograd. The solver employs reversible integrators and internal checkpointing, enabling accurate gradients while remaining memory efficient. Unlike the classical adjoint sensitivity method, this approach avoids numerical instabilities in the backward ODE solve and is well suited for large batched problems, making it preferable for our setting. In addition to the use of the loss eq. (3), we also test a gradient matching technique for learning with the intent to avoid instabilities that can arise with NODE training objectives as in [22]. We describe both training objectives in Section 6. 3I. Griss Salas, E. King 
+
+# 4 Methodology 
+
+We consider modeling a controlled autonomous ODE system of the form dx
+
+dt = F (x, u), (4) where x ∈ D ⊂ Rd denotes the system observables, assumed to be in a closed and convex bounded set D, and u ∈ U ⊂ Rq denotes control parameters, for some bounded subset U. We focus on systems whose trajectories remain bounded under bounded inputs and that exhibit only a small number of asymptotically stable equilibria; in particular, for constant inputs we do not expect limit cycles or chaotic attractors. 
+
+4.1 System identification 
+
+We propose that the true dynamics can identically be written as, or closely approximated by, 
+
+F (x, u) ≈ fθ(x) x − gθ(x, u), (5) where 
+
+fθ : D → Rd, fθ(x) < 0 elementwise for all x ∈ D, gθ : D × Rq → D, (6) are neural networks parameterized by θ ∈ Rp and the product in eq. (5) is taken elementwise, so that each component of fθ(x) acts as a state-dependent decay rate pulling x toward the target 
+
+gθ(x, u). For brevity, we write θ to refer collectively to the distinct parameters of fθ and gθ;however, they are not necessarily shared. In particular, the formulation eq. (5) does not impose significant limits on the systems that can be represented. Equality of eq. (5) can be achieved whenever defining gθ(x, u ) = x + F (x, u )satisfies the condition eq. (6) on appropriate D, with the choice fθ ≡ − 1. Of course, there is no uniqueness to a splitting of the form eq. (5) and in practice we find many such splittings can be learned as demonstrated in later numerical examples. The construction in eqs. (5) and (6) guarantees trajectory stability across the entire state space 
+
+D. Previous works obtain stability by constraining a general NODE, of the form eq. (1), through a jointly learned Lyapunov function [23]. However, these approaches are limited to learning a single basin of attraction. In contrast, our formulation is able to represent nontrivial multistable systems, such as hysteresis loops, from limited information and can be naturally extended to feedback control policies. 
+
+4.2 Control 
+
+If a system can be represented in the form eq. (6) then steady states, denoted x∗, satisfy 
+
+x∗ = gθ(x∗, u)for some u. Thus, if a steady state x∗ is achievable, stable or unstable, determining an appropriate control amounts to finding a solution to arg min 
+
+> u∈Rq
+
+12 x∗ − gθ(x∗, u) 22. (7) For a learned linear control structure, i.e., when gθ does not depend on x and depends linearly on 
+
+u, gradient descent applied to eq. (7) converges exponentially to the minimum-norm solution (see Section 5.2). 4Discovery and control of multistable systems via structured Neural ODEs 
+
+4.3 Continuous feedback control 
+
+The formulation above admits a natural extension to a continuous-time feedback control policy. For example, given a current state x, we may continuously update u to drive the system toward a desired target x∗ with du
+
+dt = −η ∇u
+
+12 g◦kθ (x, u) − x∗ 22, (8) where η > 0 modulates the update strength, and g◦kθ denotes the k-fold iteration 
+
+g◦k(x, u) ≜ g(xk, u) where xi = g(xi−1, u) for i = 1 , . . . , k. (9) Increasing k acts as an inexpensive approximate forecaster of the dynamics. There is a trade-off between larger k and computational efficiency when solving eq. (8), which can be mitigated by leveraging automatic differentiation. In the scalar case we show that increasing k can improve stability under the additional assumption | ∂∂x gθ(x∗, u)| < 1 (see Section 5.1). We illustrate the effects of varying k and η on numerical examples in Section 6. 
+
+4.4 Constrained feedback control 
+
+The control policy in eq. (8) can easily be extended to enforce boundary constraints on the control inputs. Namely, by using the form du
+
+dt = −η ∇u
+
+12 g◦kθ (x, u) − x∗ 22 ⊙ ϕ(u) (10) where ⊙ is the Hadamard product and ϕ(u) ∈ Rq is a vector composed of a linear combination of smooth Heaviside functions 
+
+ϕ(ui) = X
+
+> j
+
+αj H(ui − δj , ℓ j ) (11) where H(x, ℓ ) = 1 /(1 + exp ( −ℓx )), αj = ±1, δj are the boundary limits for ui, and ℓj are the rates of decay in control. 
+
+# 5 Theoretical analysis of gradient-based control 
+
+We analyze the stability properties of the equilibrium map gθ and the convergence of the gradient-based feedback control policy introduced in eqs. (8) and (10). We first establish local stability and contraction results for the one-dimensional case, then examine the gradient flow for a tractable linear simplification of the control objective eq. (7) to build intuition for the numerical experiments in Section 6. 
+
+5.1 One dimensional systems 
+
+For scalar dynamical systems of the form eq. (5) we provide criteria for exponential stability of equilibria, and stability of the iteration in eq. (9) for control. 
+
+Lemma 1 (Linear stability condition) . Let x∗ ∈ R be a fixed point of the scalar system 
+
+dx
+
+dt = f (x) x − g(x, u ),
+
+5I. Griss Salas, E. King 
+
+for a given constant input u ∈ U (i.e. x∗ = g(x∗, u )). Suppose f ∈ C1(R) with f (x∗) < 0, and the partial map g(·, u ) ∈ C1(R). Then x∗ is a locally exponentially stable equilibrium if and only if 
+
+∂∂x g(x∗, u ) < 1.
+
+Proof. Define F (x, u ) := f (x) x − g(x, u ) then we have 
+
+∂∂x F (x, u ) = f ′(x) x − g(x, u ) + f (x) 1 − ∂∂x g(x, u ).
+
+At x = x∗ the first term vanishes because x∗ = g(x∗, u ); therefore 
+
+∂∂x F (x, u ) x=x∗ = f (x∗) 1 − ∂∂x g(x∗, u ).
+
+Exponential stability is given by ∂∂x F (x∗, u ) < 0. Since f (x∗) < 0, this is equivalent to 1 − 
+
+> ∂∂x
+
+g(x∗, u ) > 0, i.e. ∂∂x g(x∗, u ) < 1. 
+
+Theorem 1 (Local contraction of g). Under the hypotheses of lemma 1, assume in addition that 
+
+∂∂x g(x∗, u ) < 1.
+
+Then there exist constants L ∈ (0 , 1) and r > 0 such that g(·, u ) is a contraction on the closed ball 
+
+Br(x∗) with Lipschitz constant L, i.e. 
+
+|g(x, u ) − g(y, u )| ≤ L|x − y|, for x, y ∈ Br(x∗),
+
+and moreover g(Br(x∗)) ⊂ Br(x∗).Proof. Because g is C1 in x and | ∂∂x g(x∗, u )| < 1, continuity of ∂∂x g(·, u ) gives r > 0 and L ∈ (0 , 1) such that sup  
+
+> x∈Br(x∗)
+
+∂∂x g(x, u ) ≤ L. 
+
+For any x, y ∈ Br(x∗) the mean-value (integral) form yields 
+
+|g(x, u ) − g(y, u )| =
+
+Z xy
+
+∂∂x g(s, u ) d s ≤ L|x − y|,
+
+so g is Lipschitz on Br(x∗) with constant L < 1. Taking y = x∗ we obtain 
+
+|g(x, u ) − x∗| ≤ L|x − x∗| < Lr < r, 
+
+hence g(Br(x∗)) ⊂ Br(x∗). 
+
+Corollary 1 (Geometric convergence of the iteration eq. (9)) . Under the conditions of theorem 1, for any x0 ∈ Br(x∗) the sequence 
+
+xk+1 = g(xk, u )
+
+converges to x∗ and satisfies the geometric bound 
+
+|xk − x∗| ≤ Lk|x0 − x∗|.
+
+6Discovery and control of multistable systems via structured Neural ODEs 
+
+Proof. By theorem 1 the map g(·, u ) is a contraction on the complete metric space Br(x∗) with unique fixed point x∗. The Banach fixed-point theorem yields the stated convergence and bound. 
+
+Remark 1 (Pointwise derivative vs. uniform contraction) . The condition ∥ ∂∂x g(x∗, u )∥ < 1 is a 
+
+pointwise requirement ensuring that the linearization of g at the fixed point is locally stable. This guarantees that the ODE dx
+
+dt = f (x) x − g(x, u )
+
+has a stable equilibrium at x∗.However, this condition alone does not imply that g is a contraction on any neighborhood of 
+
+x∗. The Banach fixed-point theorem requires a uniform bound: there must exist a ball Br(x∗) and a constant L < 1 such that sup  
+
+> x∈Br(x∗)
+
+∂∂x g(x, u ) ≤ L < 1.
+
+This ensures the global Lipschitz inequality 
+
+∥g(x, u ) − g(y, u )∥ ≤ L∥x − y∥, for x, y ∈ Br(x∗),
+
+which is strictly stronger than the pointwise condition at x∗.Thus, while ∥ ∂∂x g(x∗, u )∥ < 1 guarantees linear stability of the ODE equilibrium, it may still happen that sup  
+
+> x∈Br(x∗)
+
+∂∂x g(x, u ) ≥ 1 for every r > 0,
+
+in which case g fails to be a contraction on any neighborhood, and the discrete iteration xk+1 =
+
+g(xk, u ) need not converge. Thus, an increased number of iterations does not necessarily improve stability automatically when solving for control. 
+
+5.2 Gradient descent 
+
+Having established local stability and contraction of gθ in Section 5.1, we now analyze the control objective introduced in eq. (7). To build intuition for the use of continuous-time feedback policies in the later numerical examples, Section 6, we examine an analytically tractable simplification where 
+
+g is constant with respect to x, and linear with respect to u, i.e., g(x, u) = Gu for a matrix G.The objective eq. (7) becomes 
+
+L(u) = 12 ∥Gu − x∗∥22, (12) where x∗ is the desired state. If G is full rank, the minimizer is 
+
+u⋆ = ( G⊺G)−1G⊺x∗. (13) If G is rank-deficient, standard approaches include using the Moore-Penrose pseudoinverse, 
+
+G† = V Σ†U ⊺, (14) where Σ † contains the reciprocals of the nonzero singular values, or adding a small “nugget” λ to handle singularity: 
+
+u⋆ = ( G⊺G + λI )−1G⊺x∗. (15) 7I. Griss Salas, E. King A minimizer of (12) over u ∈ U can be solved via gradient descent: 
+
+uk+1 = uk − η∇L (uk) = uk − ηG ⊺(Guk − x∗), (16) which is a linear iteration for the quadratic objective 
+
+L(u) = 12 u⊺Hu + b⊺u + 12 (x∗)⊺x∗, H = G⊺G, b = −G⊺x∗. (17) Let σmax (G) and σmin (G) denote the largest and smallest nonzero singular values of G. Then the gradient is L-Lipschitz with 
+
+L = σmax (G)2, (18) and if G is full rank, the objective is strongly convex with 
+
+μ = σmin (G)2 > 0, (19) giving condition number κ(H) = L/μ = κ(G)2.For gradient descent with step size η⋆ = 2 /(L + μ), 
+
+∥uk − u⋆∥ ≤ ρ(η⋆)k∥u0 − u⋆∥, ρ(η⋆) = κ(G)2 − 1
+
+κ(G)2 + 1 . (20) Thus, if κ(G) ∼ 1, ρ ∼ 0 yielding rapid convergence. To achieve a tolerance ϵ,
+
+k = log 1/ρ 
+
+∥u0 − u⋆∥
+
+ϵ . (21) 
+
+5.3 Continuous-time gradient flow 
+
+Assuming G is full rank, feedback control can be updated in continuous time: du
+
+dt = − η
+
+2 ∇∥ Gu − x∗∥22 = −ηG ⊺(Gu − x∗)= −ηH (u − u⋆),
+
+(22) with error e(t) = u(t) − u⋆ evolving as de
+
+dt = −ηH e ⇒ e(t) = e−ηHt e(0) , (23) giving 
+
+∥u(t) − u⋆∥2 = ∥e−ηHt (u(0) − u⋆)∥ ≤ e−ησ min (G)2t∥u(0) − u⋆∥, (24) i.e., exponential convergence. Gradient descent is simply an explicit discretization of this continuous-time flow. 
+
+5.4 Rank-deficient case 
+
+If G is rank-deficient, adding a regularization term λ 
+
+> 2
+
+∥u∥22 ensures a non-singular Hessian: 
+
+∇L (u) = G⊺(Gu − x∗) + λu, ∇2L(u) = G⊺G + λI. (25) This is equivalent to Tikhonov (ridge) regularization. 8Discovery and control of multistable systems via structured Neural ODEs 
+
+# 6 Numerical results 
+
+We test our method on several nonlinear examples, demonstrating reliable short-horizon learning and accurate, noise-robust feedback control across systems that exhibit nontrivial bifurcations, and demonstrating the ease of control constraint implementation. All experiments and code are made publicly available at [31]. 
+
+Metrics 
+
+We report a normalized root mean square error (nRMSE) for feedback control experiments where nRMSE = 
+
+q 1
+
+> n
+
+Pni=1 
+
+ x(ti) − x∗2
+
+system magnitude , (26) is evaluated at the end of an allotted time to reach a randomized target. Systems are formulated as stochastic differential equations (SDEs) and are solved using a Euler–Maruyama solver with randomized, pregenerated, noise. The system magnitude is defined as the range of trajectory outputs when these values are easily known, and otherwise is defined as the interquartile range (IQR), defined as the difference between the 75th and 25th percentiles of all observed trajectories. For multidimensional systems, nRMSE is computed and reported independently for each dimension. 
+
+Model architecture and cross validation 
+
+For all examples, we use multi-layer perceptrons (MLPs) for both fθ and gθ, equipped with Sigmoid-weighted Linear Unit ( SiLU ) activation functions and sigmoidal output layers. The specific bounds and layer widths are specified for each example. We perform a 10-fold cross validation across various model architectures to select a candidate model for learning based on the best average validation score. Due to the inherent nature of the problem, specifically dynamics learning with delicate bifurcation information, we do a final training on all available data, and select the best performing model. This is standard in scientific and medical contexts where scarce data are present [32, 33]. We note that we avoid the typical pitfall of highly oscillatory overfitting due to asymptotically enforced stability of trajectories in the model design. 
+
+Training 
+
+We use an Adam optimizer [34] equipped with a ReduceLROnPlateau scheduler, with specific hy-perparameters, such as the number of training epochs, batch size, and initial learning rate specified per example. We use two training objectives given in eq. (29) that we will refer to as Trajectory matching 
+
+and Gradient matching . Trajectory matching falls within the standard context of NODE training: using backpropagation to obtain simulated trajectories from a model to compare against true ob-served trajectories. For gradient matching, we instead compare the learned model against gradient information from the observed trajectory, computed using centered finite difference with forward and backward Euler at the respective boundaries. That is, given a set of observables, {xi}ni=1 , we define our tunable model as 9I. Griss Salas, E. King 
+
+Fθ(x, u) = fθ(x)( x − gθ(x, u)) 
+
+bxθ(t) = ODESolve (Fθ, x0, u0, t ) (27) and the finite difference scheme as 
+
+D(xi) = 
+
+ 
+
+> xi+1 −xi−1
+> ti+1 −ti−1
+
+, i = 2 , · · · , n − 1 
+
+> x2−x1
+> t2−t1
+
+, i = 1  
+
+> xn−xn−1
+> tn−tn−1
+
+, i = n, 
+
+(28) where we note that our observations ti are uniform. We define our two training objectives as 
+
+LTraj (θ) ≜ 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+∥xi − bxθ(ti)∥22
+
+LGrad (θ) ≜ 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+∥D(xi) − Fθ(xi, ui)∥22
+
+(29) where the appropriate training objective is determined through preliminary empirical evaluation. 
+
+6.1 Mixing tanks 
+
+We consider a pair of connected tanks controlled by a single pump p and a two-way valve v, which allocates the inflow between the two tanks. This setup provides a simplified model of pumped-storage hydroelectricity used for load balancing [35]. The system dynamics are given by dx1
+
+dt = cin 1 (1 − v)p − cout 1
+
+√x1,
+
+dx2
+
+dt = cin 2 vp + cout 1
+
+√x1 − cout 2
+
+√x2,
+
+(30) where x1 and x2 denote the tank levels. The flow-rate coefficients are defined as 
+
+cin 1 ≜ a1
+
+ 1 − σℓ(x1 − 1) ,cout 1 ≜ a2
+
+ 1 − σℓ(x2 − 1) ,cin 2 ≜ a3
+
+ 1 − σℓ(x2 − 1) ,cout 2 ≜ a4,
+
+(31) with σℓ(x) = 1 /(1 + exp( −ℓx )) to maintain physically meaningful dynamics. We let a1 = a3 = 0 .08, 
+
+a2 = a4 = 0 .02 for the flow rate coefficients and ℓ = 50 be the boundary rate decay. The parameters 
+
+a1, a2, and a3 correspond to the unconstrained flow coefficients, while cout 2 remains constant—this can be interpreted as tank 2 draining into an unconstrained reservoir. For model training, we simulate trajectories of eq. (30) up to a fixed t = 200 with initial conditions x(0) = ( x0, x 0) where x0 = 0 .05 ·i for i = 0 , . . . , 20 and control configurations p, v = 0 .1·i
+
+for i = 1 , . . . , 9. The experimental setup can be seen in Figure 1. 10 Discovery and control of multistable systems via structured Neural ODEs 
+
+Figure 1: Top: Simulated steady states at t = 1000 for control settings v, p ∈ [0 , 1] . Red triangles indicate training configurations v, p = 0 .1 + 0 .1i for i = 0 , . . . , 8. Bottom: 21 training trajectories for the configuration p = 0 .5 and v = 0 .25 . Vertical line denotes training cutoff, t = 200 .
+
+System identification 
+
+Using gradient matching LGrad eq. (29), we perform a 10-fold cross validation for 1000 epochs, batch size of 50, and an initial learning rate η = 0 .01. The selected model was a 2-20-20-20-2 and 4-20-20-20-2 fully connected MLP with SiLU activation functions for fθ and gθ, respectively, achieving an average best validation loss of 2 .457 × 10 −6 across all folds. The model is then tuned on all the data with the same training configuration with the best model achieving a loss of 4 .247 × 10 −7. Model outputs are ( −1, 0) and (0 , 1) for fθ and gθ, respectively. The inputs to gθ are the concatenated states x = ( x1, x 2) and controls u = ( p, v ). Model-simulated trajectories using fθ(x) x−gθ(x, u) are shown in Figure 2 while the predicted steady states obtained directly from gθ by solving the root-finding problem r(x) = x − gθ(x, u) are shown in Figure 3. 
+
+Feedback control 
+
+We conducted 100 trials in which the system was steered toward 10 randomized targets, perturbed by state-dependent multiplicative noise, using the constrained feedback control policy given in eq. (10). The targets were generated by simulating the true dynamics under randomly sampled 11 I. Griss Salas, E. King 
+
+Figure 2: Six trajectories with initial conditions x(0) = ( 0.1, 0.1), ( 0.9, 0.2), ( 0.2, 0.9), ( 0.1, 0.6), (0.6, 0.1), and ( 0.8, 0.8) for 25 control configurations plotted on true phase portraits generated from eq. (30) (black line) compared against model simulated trajectories from fθ(x)( x − gθ(x, u)) (blue dashed line). True and model steady states are denoted by black and red crosses, respectively. 
+
+control configurations. Noise is added only to the tank states with covariance given by 
+
+G(x) = diag 
+
+
+
+σp|x1|, σ p|x2|
+
+
+
+,
+
+so that the noise amplitude scales with the water level, while the control dynamics remain noise-free. The control constraint, for u = ( p, v ), is given by 
+
+ϕ(ui) = H(ui − δ1, ℓ ) − H(ui − δ2, ℓ ) ∈ R2, ui = p, v (32) where δ1 = .05, δ2 = 0 .95, and ℓ = 50, enforcing p, v ∈ (0 , 1) maintaining meaningful physical interpretation. We report the average nRMSE computed over the final 20% of the allotted time for reaching each target, namely t = 500. The average nRMSE across all steady states was 1 .54 × 10 −2 with standard deviation 1 .38 × 10 −2 for Tank 1 and 1 .82 × 10 −2 with a standard deviation 1 .33 × 10 −2 for Tank 2. Additionally, 97% and 98% of steady-state values fell within 5% of their target for Tanks 1 and 2, respectively, while 78% and 70% fell within 2%. An example feedback control experiment is shown in Figure 4. 12 Discovery and control of multistable systems via structured Neural ODEs 
+
+Figure 3: Absolute error, for tanks 1 and 2, between model and true steady states for control values 
+
+p, v ∈ [0 , 1] . Model steady states are obtained from solving associated root finding problem, x =
+
+gθ(x, u). True steady states obtained from solving system numerically at t = 1000 .
+
+Figure 4: Stochastic feedback control experiments with 10 randomized targets reassigned every t = 500 .
+
+Top: Itˆ o simulations with state-proportional noise of scale σ = 0 .01 . gθ for both tanks 1 and 2 plotted, where control iteration and strength are k = 10 and η = 0 .1, respectively. Bottom: Constrained continuous feedback control solving eq. (10) jointly with the stochastic system where control constraint is given by eq. (32). 
+
+13 I. Griss Salas, E. King 
+
+6.2 Symmetric hysteresis 
+
+We consider two examples of systems with multiple steady states that exhibit hysteresis, Sections 6.2 and 6.3, a bifurcation characterized by irreversible changes, in the sense they cannot be immediately undone, when control parameters cross critical thresholds, often referred to as tipping points. Our goal is to learn a simple representation of the form in eq. (5) that captures these bifurcations and learns a tractable feedback control policy that can navigate the hysteresis loop. We consider the ODE dx
+
+dt = λ + x − x3, (33) where λ serves as the control parameter. Bistability occurs for λ ∈ [−2/√27 , 2/√27], which correspond to the system’s tipping points. This system can be written in a splitting as in eq. (5), with 
+
+f (x) = −x2, x̸ = 0 ,g(x, λ ) = 1
+
+x2 (x + λ). (34) Although this decomposition satisfies f (x) < 0 and ensures that x − g(x, λ ) identifies fixed points, it does not satisfy eq. (5): g(x, λ ) exhibits a finite–time blow-up as x approaches 0, ( which is then exactly canceled by f (x) = −x2 ). However, we find that an approximation of this splitting can be learned with gθ ≈ g that captures the asymptotic structure, locates the bistable regime, and reproduces the resulting hysteretic dynamics. For training, we simulate trajectories using 51 uniformly sampled initial conditions x ∈ [−2, 2] paired with 51 uniformly sampled control values λ ∈ [−1, 1]. Training is restricted to a short time horizon of t = 0 .25, where full temporal evolution occurs on a much higher order of magnitude, providing only extremely limited transient information. 
+
+System identification 
+
+Using a trajectory matching loss, LTraj eq. (29), we perform a 10-fold cross validation over 200 epochs, with batch size of 50, and an initial learning rate η = 0 .01. To aid learning on the scarce transient dynamics, we featurize the observed state using the orthogonal state transformations, 
+
+x =  x, cos(1 2π(x − a)/(b − a)) , . . . , cos(4 2π(x − a)/(b − a))  ∈ R5, (35) with a = −1.5 and b = 1 .5. These five features form the input to the first five channels of gθ,and the sixth input is reserved for the control parameter λ. The selected models for fθ and gθ
+
+were fully connected 1-20-20-1 and 6-20-20-1 MLPs equipped with SiLU activation functions, and output bounds ( −4, −0.1) and ( −2, 2). The model was selected by a 10-fold cross validation search achieving an average best validation loss of 6 .237 × 10 −8. The final model was then tuned on all available data, achieving a best loss of 7 .188 × 10 −8.The learned model produces accurate simulated trajectories, with an average nRMSE of 1 .210 ×
+
+10 −3 across all training trajectories up to t = 100, and reliably identifies regions of the state–control space containing multiple steady states; see Figure 5. The model learns a smooth and bounded gθ and fθ that captures the correct fixed points of the system, which can be seen in Figure 6. Additionally, using just gθ we correctly identify the zero-level sets of r(x) = x − gθ(x, u ), or in other words, the fixed points of the system in eq. (33); see Figure 7. This gives rise to a simple loss landscape when solving for control. In fact, this corresponds directly to the bifurcation diagram and is recovered identically in Figure 8. 14 Discovery and control of multistable systems via structured Neural ODEs 
+
+Figure 5: Simulated trajectories (with t on a logscale) for model fθ(x)( x − gθ(x, λ )) (blue dashed line) trained on data up to t = 0 .25 (red dashed line) and true dynamics given by eq. (33) (black solid lines) for control values λ = [ −1, −0.55 , −0.45 , −0.4, −0.35 , 0.35 , 0.4, 0.45 , 0.55 , 1] up to t = 100 with bistable cases highlighted in red. 
+
+Feedback control 
+
+We evaluate the learned gθ as an unconstrained feedback control policy, using eq. (8), for 10 randomized targets uniformly drawn from [ −1.5, 1.5], over 100 trials, with multiplicative noise added to the states. The average nRMSE over the final 20% of the allotted time, t = 10, is 5 .298 × 10 −3 with standard deviation of 2 .449 × 10 −3. 100% of all steady states fell within 2% of their target, with 94% falling within 1% of the target. We highlight the ability of the control policy to identify and counteract tipping point behaviors in an example experiment shown in Figure 9. Controlling the dynamics toward an unstable steady state is inherently challenging and requires careful tuning of the update strength η. We demonstrate the consequences of using an underdamped controller, i.e. η too small, which fails to counteract the tipping behavior of the system in Figure 10. 
+
+6.3 Budworm population 
+
+We analyze the spruce budworm population model, a classic insect outbreak system originally established in [36]. For mathematical convenience, we adopt the dimensionless form presented in [37], which reduces the system to two parameters, r and κ:dx
+
+dt = rx 
+
+
+
+1 − xκ
+
+
+
+− x2
+
+1 + x2 . (36) By fixing r = 0 .56 and treating the carrying capacity, κ, as the control parameter, the system exhibits tipping points at κ ≈ 6.45 and κ ≈ 9.93, with bistability arising for intermediate values. The additional challenge of this system is that the large number of steady states along the upper branch often causes models to favor learning only a single branch. Similar to the example in Section 6.2, this system exhibits hysteresis but presents the addi-tional challenge of asymmetric steady-state branches surrounding the tipping points, as shown in Figure 12. This asymmetry can bias the learning process to favor the larger branch while neglecting the smaller one, thereby failing to capture the full hysteretic dynamics. However, we demonstrate the ability to capture the full dynamics on limited transient data. 15 I. Griss Salas, E. King 
+
+Figure 6: Left: Learned fθ compared against f from eq. (34) across training regime x ∈ [−2, 2] . Right: 
+
+Learned gθ compared against g in eq. (34) for various control values λ. Red highlighted control indicates bistable regime, λ ∈ [−2/√27 , 2/√27] , that is 3 steady states occur, 2 stable and 1 unstable–denoted by the intersections with the diagonal gray dashed line x = x.
+
+Figure 7: Comparison of the true and learned function outputs across the state and control space. 
+
+Left: Output of x − g(x, λ ) (from eq. (34)). Right: Output of the learned approximation x − gθ(x, λ ).In both panels, the zero-level set is denoted by a solid black line, and the black dashed lines indicate the system tipping points at λ = ±2/√27 .
+
+16 Discovery and control of multistable systems via structured Neural ODEs 
+
+Figure 8: All steady states learned from solving root finding problem r(x) = x−gθ(x, λ ) for λ ∈ [−1, 1] .Gray vertical lines indicate system tipping points. 
+
+Figure 9: Top: Continuous feedback control for 10 randomized targets uniformly chosen from 
+
+[−1.5, 1.5] where implicit equilibria function gθ(x, λ ) included to show the behavior around tipping point. The states were perturbed by noise with scale σ = 0 .03 . Bottom: Continuous control with control iteration and strength given by k = 1 and η = 5 , as defined in eq. (8). Grey dashed horizontal lines denote tipping points of system. 
+
+17 I. Griss Salas, E. King 
+
+Figure 10: Comparison of effect of η for continuous control from eq. (8) for unstable target, x = 0 .2,traversing tipping points, λ = ±2/√27 , of symmetric hysteresis loop. The effect of control strength, η,from an underdamped control to sufficiently strong control to mitigate the effects of tipping point (left to right). 
+
+The system can be written in the decoupled form of eq. (5): 
+
+f (x) = − x
+
+1 + x2 , x > 0,g(x, κ ) = rκ (1 + x2)( κ − x).
+
+(37) where we emphasize this decoupling is not unique and may not be the optimal form for learning a practical approximation. For training, we simulate trajectories up to t = 10 from 51 uniformly sampled initial conditions 
+
+x ∈ [0 .1, 10] and 51 control values κ ∈ [4 .45 , 11 .99], slightly beyond the tipping point range. 
+
+System identification 
+
+We use a gradient matching approach, namely LGrad from eq. (29), and perform a cross validation search over 10 folds for 200 epochs, batch size 50, and an initial learning rate of η = 0 .1. The selected architecture was a fully connected 1-20-20-1 and 6-20-20-1 MLP, with bounds ( −4, −0.1) and ( −5, 2) for fθ and gθ, respectively. The state features are constructed as in eq. (35), for the first five inputs to gθ, with a = −1 and b = 1 .5 and the last input reserved for the control parameter κ.The selected architecture achieved an average best validation loss of 1 .285 × 10 −2. The model was then trained on the full dataset for 500 epochs achieving a best loss of 1 .444 × 10 −6.The resulting zero level sets of r(x) = x − gθ(x, κ ) are shown in Figure 11, and the identified bifurcation diagram is shown in Figure 12. 
+
+Feedback control 
+
+We validate the feedback control performance by selecting 10 randomized targets uniformly from the range [0 .1, 10] across 100 trials. The average nRMSE is 2 .209 · 10 −2 with standard deviation 3.302 × 10 −2. 90% of targets are reached with 5% relative error of the system magnitude, while 77% reach the target within 2%. An example feedback control experiment is shown in Figure 13. 18 Discovery and control of multistable systems via structured Neural ODEs 
+
+Figure 11: Comparison of the true and learned zero-level sets across x ∈ [0 , 10] and κ ∈ [4 .44 , 11 .93] .
+
+Left: The true zero-level set (black solid line) of x − g(x, κ ). Right: The zero-level set (black solid line) of the learned dynamics x − gθ(x, κ ). Black dashed lines denote the system tipping points at κ = 6 .446 
+
+and 9.934 .
+
+Figure 12: Learned bifurcation diagram from solving associated root finding problem r(x) = x −
+
+gθ(x, κ ) for κ ∈ [4 .44 , 11 .93] . Stability of each steady state is determined by evaluating ∂∂x [f (x)( x −
+
+g(x, κ ))] x=x∗ . Stable states are denoted in blue, unstable in red. Dashed lines denote learned model, black solid lines denote true, numerically simulated results. Gray dashed vertical lines denote system tipping points. 
+
+19 I. Griss Salas, E. King 
+
+Figure 13: Top: Continuous feedback control for the Budworm ODE given 10 randomized targets perturbed by noise with scale σ = 0 .02 . Bottom: Continuous control with control iteration and strength are given by k = 1 and η = 20 , respectively, as defined in eq. (8). Grey dashed horizontal lines denote tipping points of system, κ = 6 .45 , 9.93 .
+
+6.4 Genetic toggle switch 
+
+We consider the synthetic, bistable gene-regulatory network originally proposed in the work in [38] to model Escherichia coli . This system is comprised of two promoters that are inhibited by two repressors transcribed by the opposing promoter; an overview can be seen in Figure 14. The dimensionless system is given by dx1
+
+dt = −x1 + α1
+
+1 + xβ
+
+> 2
+
+dx2
+
+dt = −x2 + α2
+
+1 + xγ
+
+> 1
+
+(38) where x1 and x2 are the concentrations of two active repressor/promoters, α1 and α2 are the effective synthesis rates of each repressor, and β, γ are the cooperativity (Hill Coefficients) of each repressor, respectively. The model is flexible in modeling various biological toggle switch systems and gives rise to a non-trivial set of bifurcations and hysteresis [39, 40]. This can be seen explicitly in Figure 15 where, as an example, confining control of the system to changing only one parameter, e.g. α1, and fixing all other parameters, α2, β, γ , illustrates coupled hysteretic bifurcation diagrams for the steady state of both x1 and x2. Increasing the control dimension immediately exacerbates the challenging nature of this problem from a system id and control perspective. For model training, variable transient times (time to steady state) were determined via reverse gradient accumulation on trajectories simulated up to t = 100. The training set was generated using a full combinatorial design of 81 initial conditions (9 × 9 grid over [0 , 6] 2) and all permutations of the control parameters: 
+
+α1, α 2, β, γ ∈ { 0.1, 1.25 , 2.5, 3.75 , 5}.
+
+System identification 
+
+Using the gradient matching approach, LGrad in eq. (29), we performed a 10-fold cross validation across multiple architectures and random seeds. All models were initialized with the same training setup: training for 500 epochs, batch size of 200, and an initial learning rate of η = 0 .01. 20 Discovery and control of multistable systems via structured Neural ODEs We observed a disconnect between average validation scores and full-dataset performance. While shallower networks achieved higher average cross validation scores, they consistently plateaued and failed to capture the dynamics when trained on the full dataset. Conversely, deeper MLPs generally outperformed all other models across the majority of individual folds, but their average validation scores were often drastically penalized by typically a single fold that failed to learn. We attribute this single-fold failure to the system’s high number of bifurcations; omitting a single fold of training data can easily exclude critical topological features, such as an entire hysteresis lobe, rendering the network unable to generalize to that validation set. Recognizing this artifact of the data partitioning, and consistent with preliminary investigations across all our experiments that generally favored deeper models, we opted for the deeper MLP architectures: 2-20-20-20-2 for fθ and 6-20-20-20-2 for gθ. When trained on the complete dataset, this configuration far outperformed all other candidates, achieving a best loss of 7 .570 × 10 −4.From an analytical perspective we note the system given by eq. (38) can be written cleanly in the form 
+
+f (x1, x 2) = ( −1, −1) ⊤ and g(x1, x 2, α 1, α 2, β, γ ) = α1
+
+1 + xβ
+
+> 2
+
+, α2
+
+1 + xγ
+
+> 1
+
+!⊤
+
+where g is sigmoid-like and univariate across both dimensions. When learning a candidate fθ
+
+and gθ solely from trajectory observations with no additional information a priori, other than the proposed learning structure, it would be ideal to learn a constant f = −1, and a g that is dominantly univariate. In fact, this is recovered nearly identically; shown in Figure 16. The learned structure correctly captures the dynamics and multistable regimes of the system as shown in Figure 15, where we can identify hysteretic bifurcations across various control values using only gθ, as well as simulated non-trivial trajectories as seen in Figure 17. 
+
+Feedback control 
+
+Employing gθ as a feedback controller in this context is notably more challenging due to the in-creased number of control parameters and the coupled hysteretic dynamics. We utilize a constrained control policy, eq. (10), to enforce positivity and restrict the cooperativity coefficients to be strictly greater than 1. This constraint serves two purposes: 1. It encourages the system to operate within the more dynamically interesting multistable regions. 2. It demonstrates the ability to steer dynamics toward targets generated by control values dis-tinct from those available to the controller (i.e., targets generated by parameters the controller is forbidden from using). This mimics real-world experimental constraints and highlights the robustness of the approach. Specifically, for controls u = ( α1, α 2, β, γ ), we define the element-wise control constraint ϕ(ui)as: 
+
+ϕ(ui) = 
+
+(
+
+H(ui − δ1, ℓ ), ui ∈ { α1, α 2}
+
+H(ui − δ2, ℓ ), ui ∈ { β, γ } (39) where δ1 = 0 .1, δ2 = 1 .1, and the decay parameter ℓ = 200 is applied to our feedback policy as in eq. (10). We visualize the loss landscape of gθ in Figure 18, demonstrating the model correctly captures both the location and number of steady states. We also present constrained control experiments 21 I. Griss Salas, E. King 
+
+Repressor 2 Promoter 1 Promoter 2 Repressor 1 
+
+# x1
+
+# x2
+
+Figure 14: Toggle switch design. Repressor 1 inhibits transcription from Promoter 1 and is induced by 
+
+x1. Repressor 2 inhibits transcription from Promoter 2 and is induced by x2.
+
+over 100 trials, steering the restricted dynamics toward 10 randomized targets. The targets were generated using initial conditions and control values drawn uniformly from [0 , 6] 2 and [0 , 5] 4, re-spectively. Despite the complex coupled hysteretic dynamics and the constrained control policy, the learned feedback controller successfully steered the system to the designated targets with high accuracy. Specifically, the average nRMSE, over all 100 trials, was 5 .746 × 10 −2 (with a standard deviation of 4 .770 × 10 −2) for x1, and 5 .275 × 10 −2 (with a standard deviation of 4 .379 × 10 −2) for x2.Demonstrating the robustness of the controller, 99% of the achieved steady states fell within a 5% error margin relative to the system magnitude, with 85% and 91% of the trials for x1 and 
+
+x2, respectively, achieving sub-2% error. An example feedback control experiment is shown in Figure 19. 
+
+# 7 Discussion and future work 
+
+While the proposed stability-constrained framework demonstrates robust performance on learning multistable systems and feedback control over several bifurcations, there remain practical chal-lenges and theoretical extensions. We highlight key limitations of the current approach and outline promising directions for ongoing research. 
+
+Density of state-space observations and trajectory frequency 
+
+The effects of data scarcity and the density of control observations require further investigation. While an exhaustive study was outside the scope of this work, our preliminary results suggest that a dense set of trajectory observations covering the control space is necessary for the current implementation. We leave a detailed analysis of data efficiency to future work. 
+
+Noisy dynamics and future architectures 
+
+Although not explicitly investigated here, standard denoising techniques could be applied prior to model learning, integrated into the cross validation and model selection pipeline. Furthermore, in scenarios involving data scarcity or significant noise—in either state trajectories or control inputs—we are particularly interested in an All-at-once approach, similar to the method proposed in [41], where system identification and state estimation are solved jointly. Adapting this framework by substituting the system identification component with our proposed architecture (augmented with a state interpolator) remains a promising direction for future research. Finally, we are interested in exploring the learning and rigorous comparison of optimal control policies. While we have demonstrated the potential effectiveness of our proposed strategy for 22 Discovery and control of multistable systems via structured Neural ODEs 
+
+Figure 15: Comparison of true and modeled bistability landscapes across varying cooperativity levels. 
+
+Left: Overlay of bistability regions (“Arnold tongues”) in the (α1, α 2) parameter space for symmetric cooperativity cases ( β = γ). The wedge shapes delineate the bistable (memory) regime from the monostable regimes. The dashed horizontal line at α2 = 1 .5 indicates the cross-section used for the bifurcation analysis on the right. Right: Steady-state response of x1 (top) and x2 (bottom) as a function of α1, with α2 fixed at 1.5. Solid lines represent the true system dynamics, while dashed lines represent the learned model predictions using gθ. The colors correspond to the cooperativity levels defined in the left panel. 
+
+23 I. Griss Salas, E. King 
+
+Figure 16: Left: Histograms of the learned function fθ evaluated over a dense grid where x1, x 2 ∈ [0 , 5] .Black vertical dashed lines indicate mean values of −0.9224 and −0.8152 , with standard deviations 
+
+2.720 · 10 −2 and 6.807 · 10 −2, respectively. Right: Output of the learned control function gθ on the same domain for increasing control parameters α1 = α2 = β = γ ∈ { 1, 3, 5}. The top and bottom rows display the first and second output dimensions of gθ, respectively. Notably, the learned dynamics exhibit univariate behavior. 
+
+24 Discovery and control of multistable systems via structured Neural ODEs 
+
+Figure 17: Comparison of true versus learned simulated trajectories: using full fθ(x)( x − gθ(x, u)) .Initial conditions are sampled uniformly from x(0) ∈ [0 , 6] 2, while control parameters (α1, α 2, β, γ ) are drawn uniformly from [0 , 5] 4.
+
+Figure 18: Feedback control loss landscape for various control configurations. Black crosses denote true minima found and red crosses denote minima found using gθ via solving corresponding objective:  
+
+> 12
+
+∥x − gθ(x, u)∥2. A coarse grid search and subsequent root finding scheme ( scipy.optimize.root )was used to determine solutions for both the true and learned model. 
+
+25 I. Griss Salas, E. King 
+
+Figure 19: Top: Control restricted feedback control experiment for genetic toggle switch system eq. (38) for 10 randomized targets every t = 20 perturbed by noise with scale σ = 0 .05 . Bottom: 
+
+Continuous control with control iteration and strength are given by k = 1 and η = 1 as defined in eq. (10) with constraints given by eq. (39). 
+
+learning control policies, we defer a more rigorous theoretical and empirical investigation to future work. 
+
+# 8 Conclusion 
+
+We introduced a stability-constrained NODE framework for learning dynamics of nonlinear systems that are asymptotically stable from trajectory data. By enforcing the structured form 
+
+F (x, u) = f (x) ( x − g(x, u)) , f (x) < 0,
+
+the model guarantees trajectory stability, offers additional interpretability, and yields a tractable parameterization for multi-attractor and hysteretic dynamics from short time-horizon data. This structure enables accurate reconstruction of equilibrium landscapes, bifurcations, and hys-teresis loops, even in regimes where long trajectories or rich excitation are unavailable. The learned equilibrium map gθ further provides an efficient and robust control mechanism: gradient-based feed-back control policies directly optimize steady-state objectives and reliably traverse tipping points. Across mixing-tank and hysteretic benchmarks, the method achieves accurate dynamics learning and consistent closed-loop control, including steering to both stable and unstable equilibria under noise perturbations. 
+
+# Acknowledgments 
+
+This research was supported by the AT SCALE initiative via the Laboratory Directed Research and Development (LDRD) investments at Pacific Northwest National Laboratory (PNNL). PNNL is a national laboratory operated for the U.S. Department of Energy (DOE) by Battelle Memorial Institute under Contract No. DE-AC05-76RL0-1830. 26 Discovery and control of multistable systems via structured Neural ODEs 
+
+# References 
+
+[1] Zakhar Shumaylov, Peter Zaika, Philipp Scholl, Gitta Kutyniok, Lior Horesh, and Carola-Bibiane Sch¨ onlieb. When is a system discoverable from data? discovery requires chaos, 2025. URL https://arxiv.org/abs/2511.08860 .[2] Herbert Goldstein, Charles P. Poole, and John L. Safko. Classical Mechanics . Addison-Wesley, San Francisco, CA, 3rd edition, 2002. ISBN 978-0201657029. [3] Karl Johan ˚ Astr¨ om and Peter Eykhoff. System identification—a survey. Automatica , 7(2): 123–162, 1971. [4] Lennart Ljung. Perspectives on system identification. Annual Reviews in Control , 34(1):1–12, 2010. [5] Karel J Keesman. System identification: an introduction . Springer Science & Business Media, 2011. [6] Josh Bongard and Hod Lipson. Automated reverse engineering of nonlinear dynamical systems. 
+
+Proceedings of the National Academy of Sciences of the United States of America , 104:9943–8, 07 2007. [7] Michael Schmidt and Hod Lipson. Distilling free-form natural laws from experimental data. 
+
+Science (New York, N.Y.) , 324:81–5, 05 2009. [8] Wen-Xu Wang, Rui Yang, Ying-Cheng Lai, Vassilios Kovanis, and Celso Grebogi. Predicting catastrophes in nonlinear dynamical systems by compressive sensing. Phys. Rev. Lett. , 106: 154101, 4 2011. doi: 10.1103/PhysRevLett.106.154101. URL https://link.aps.org/doi/ 10.1103/PhysRevLett.106.154101 .[9] Steven L Brunton, Joshua L Proctor, and J Nathan Kutz. Discovering governing equations from data by sparse identification of nonlinear dynamical systems. Proceedings of the National Academy of Sciences , 113(15), 2016. doi: 10.1073/pnas.1517384113. [10] Samuel H Rudy, Steven L Brunton, Joshua L Proctor, and J Nathan Kutz. Data-driven discovery of partial differential equations. Science Advances , 3(4):e1602614, 2017. doi: 10. 1126/sciadv.1602614. URL https://www.science.org/doi/abs/10.1126/sciadv.1602614 .[11] Hayden Schaeffer. Learning partial differential equations via data discovery and sparse opti-mization. Proceedings of the Royal Society A: Mathematical, Physical and Engineering Sci-ences , 473(2197):20160446, 2017. [12] David L. Donoho. Compressed sensing. IEEE Transactions on Information Theory , 52(4): 1289–1306, 2006. doi: 10.1109/TIT.2006.871582. [13] Emmanuel J. Cand` es, Justin Romberg, and Terence Tao. Robust uncertainty principles: exact signal reconstruction from highly incomplete frequency information. IEEE Transactions on Information Theory , 52(2):489–509, 2006. doi: 10.1109/TIT.2005.862083. [14] Emmanuel J. Cand` es and Michael B. Wakin. An introduction to compressive sampling. IEEE Signal Processing Magazine , 25(2):21–30, 2008. doi: 10.1109/MSP.2007.914731. 27 I. Griss Salas, E. King [15] Gianluigi Pillonetto, Aleksandr Aravkin, Daniel Gedon, Lennart Ljung, Antˆ onio H. Ribeiro, and Thomas B. Sch¨ on. Deep networks for system identification: A survey. Automatica , 171: 111907, 2025. ISSN 0005-1098. doi: https://doi.org/10.1016/j.automatica.2024.111907. URL 
+
+https://www.sciencedirect.com/science/article/pii/S0005109824004011 .[16] Lennart Ljung, Carl Andersson, Koen Tiels, and Thomas B. Sch¨ on. Deep learning and system identification. IFAC-PapersOnLine , 53(2):1175–1181, 2020. ISSN 2405-8963. doi: 10.1016/j. ifacol.2020.12.1329. 21st IFAC World Congress. [17] Tian Qi Chen, Yulia Rubanova, Jesse Bettencourt, and David Duvenaud. Neural ordinary differential equations. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicol` o Cesa-Bianchi, and Roman Garnett, editors, NeurIPS , pages 6572–6583, 2018. URL 
+
+http://dblp.uni-trier.de/db/conf/nips/nips2018.html#ChenRBD18 .[18] James Koch, WoongJo Choi, Ethan King, David Garcia, Hrishikesh Das, Tianhao Wang, Ken Ross, and Keerti Kappagantula. Neural lumped parameter differential equations with appli-cation in friction-stir processing. Journal of Intelligent Manufacturing , 36(2):1111–1121, 2025. doi: 10.1007/s10845-023-02271-5. URL https://doi.org/10.1007/s10845-023-02271-5 .[19] James Koch, Ethan King, WoongJo Choi, Megan Ebers, David Garcia, Ken Ross, and Keerti Kappagantula. First contact: Data-driven friction-stir process control, 2025. URL https: //arxiv.org/abs/2507.03177 .[20] James Koch, Brenda Forland, Bruce Bernacki, Timothy Doster, and Tegan Emerson. Data-driven invertible neural surrogates of atmospheric transmission. In IGARSS 2024 - 2024 IEEE International Geoscience and Remote Sensing Symposium , pages 6943–6947, 2024. doi: 10.1109/IGARSS53475.2024.10642124. [21] James Koch, Pranab K. Roy Chowdhury, Heng Wan, Parin Bhaduri, Jim Yoon, Vivek Srikrish-nan, and W. Brent Daniel. Graph neural differential equations for coarse-grained socioeconomic dynamics, 2024. URL https://arxiv.org/abs/2407.18108 .[22] Yuji Okamoto, Tomoya Takeuchi, and Yusuke Sakemi. Learning the simplest neural ode, 2025. URL https://arxiv.org/abs/2505.02019 .[23] J. Zico Kolter and Gaurav Manek. Learning stable deep dynamics mod-els. In Advances in Neural Information Processing Systems , volume 32, pages 11128–11136, 2019. URL https://proceedings.neurips.cc/paper/2019/file/ 0a4bbceda17a6253386bc9eb45240e25-Paper.pdf .[24] Jialin Wu, Andrew Clark, Yiannis Kantaros, and Yevgeniy Vorobeychik. Neural lyapunov control for discrete-time systems. In Advances in Neural Information Processing Systems ,volume 36, pages 66612–66623, 2023. URL https://arxiv.org/abs/2305.06547 .[25] Andreas Sochopoulos, Michael Gienger, and Sethu Vijayakumar. Learning deep dynamical systems using stable neural odes. In 2024 IEEE/RSJ International Conference on Intelli-gent Robots and Systems (IROS) , pages 11163–11170, 2024. doi: 10.1109/IROS58592.2024. 10801826. [26] Qiyu Kang, Yang Song, Qinxu Ding, and Wee Peng Tay. Stable neural ode with lyapunov-stable equilibrium points for defending against adversarial attacks. In Proceedings of the 35th International Conference on Neural Information Processing Systems , NIPS ’21, Red Hook, NY, USA, 2021. Curran Associates Inc. ISBN 9781713845393. 28 Discovery and control of multistable systems via structured Neural ODEs [27] Hanshu Yan, Jiawei Du, Vincent Y. F. Tan, and Jiashi Feng. On robustness of neural ordinary differential equations. In International Conference on Learning Representations (ICLR) , 2020. URL https://openreview.net/forum?id=B1e9Y2NYvS .[28] Yuji Okamoto and Ryosuke Kojima. Learning deep dissipative dynamics. In Proceedings of the Thirty-Ninth AAAI Conference on Artificial Intelligence and Thirty-Seventh Conference on Innovative Applications of Artificial Intelligence and Fifteenth Symposium on Educational Advances in Artificial Intelligence , AAAI’25/IAAI’25/EAAI’25. AAAI Press, 2025. ISBN 978-1-57735-897-8. doi: 10.1609/aaai.v39i18.34175. URL https://doi.org/10.1609/aaai. v39i18.34175 .[29] Shaojie Bai, J. Zico Kolter, and Vladlen Koltun. Deep equilibrium models. In H. Wallach, H. Larochelle, A. Beygelzimer, F. d'Alch´ e-Buc, E. Fox, and R. Garnett, editors, Advances in Neural Information Processing Systems , volume 32. Curran Asso-ciates, Inc., 2019. URL https://proceedings.neurips.cc/paper_files/paper/2019/ file/01386bd6d8e091c2ab4c7c7de644d37b-Paper.pdf .[30] Marten Lienen and Stephan G¨ unnemann. torchode: A Parallel ODE Solver for PyTorch. In 
+
+The Symbiosis of Deep Learning and Differential Equations II, NeurIPS , 2022. URL https: //openreview.net/forum?id=uiKVKTiUYB0 .[31] Ike Griss Salas and Ethan King. FTNODE: Modeling and control of asymptotically stable systems using a foward tracking neural ode approach. https://github.com/pnnl/FTNODE ,2026. [32] Ioannis Tsamardinos, Elissavet Greasidou, and Georgios Borboudakis. Don’t lose samples to estimation: specific-to-general transfer learning for small-sample classification. Patterns , 3 (10):100612, 2022. doi: 10.1016/j.patter.2022.100612. [33] Tyler J. Bradshaw, Zachary Huemann, Junjie Hu, and Arman Rahmim. A guide to cross-validation for artificial intelligence in medical imaging. Radiology: Artificial Intelligence , 5(4), 2023. doi: 10.1148/ryai.220232. [34] Diederik P. Kingma and Jimmy Ba. Adam: A method for stochastic optimization. In 3rd International Conference on Learning Representations (ICLR) , 2015. URL http://arxiv. org/abs/1412.6980 .[35] U.S. Department of Energy. Pumped storage hydropower. https://www.energy.gov/eere/ water/pumped-storage-hydropower , 2025. Accessed: 2025-11-18. [36] Donald Ludwig, DD Jones, and CS Holling. Qualitative analysis of insect outbreak systems: the spruce budworm and forest. Journal of Animal Ecology , 47(1):315–332, 1978. [37] Steven H. Strogatz. Nonlinear Dynamics and Chaos: With Applications to Physics, Biology, Chemistry, and Engineering . CRC Press, 2nd edition, 2014. ISBN 978-0813349107. [38] Timothy Gardner, Charles Cantor, and James Collins. Construction of a genetic toggle switch in escherichia coli. Nature , 403:339–42, 2000-02-01. doi: 10.1038/35002131. [39] David Angeli and Eduardo D. Sontag. Multi-stability in monotone input/output systems. 
+
+Systems & Control Letters , 51(3):185–202, 2004. ISSN 0167-6911. doi: https://doi.org/ 10.1016/j.sysconle.2003.08.003. URL https://www.sciencedirect.com/science/article/ pii/S0167691103002317 .29 I. Griss Salas, E. King [40] Yuanlong Li and Zongli Lin. Multistability and its robustness of a class of biological systems. 
+
+IEEE Transactions on NanoBioscience , 12(4):321–331, 2013-12. ISSN 1558-2639. doi: 10. 1109/TNB.2013.2271220. URL https://ieeexplore.ieee.org/document/6578197 .[41] Alexander W. Hsu, Ike Griss Salas, Jacob M. Stevens-Haas, J. Nathan Kutz, Aleksandr Ar-avkin, and Bamdad Hosseini. A joint optimization approach to identifying sparse dynamics using least squares kernel collocation, 2026. URL https://arxiv.org/abs/2511.18555 .
+
+# A Code and data availability 
+
+The source code used to generate the results are open-source and available on GitHub at https: //github.com/pnnl/FTNODE 
+
+30

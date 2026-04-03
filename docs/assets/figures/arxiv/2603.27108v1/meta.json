@@ -1,0 +1,62 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.27108v1/fig-001.webp",
+      "caption": "Fig. 4: RoI-guided hybrid coding. Pixels are routed into two paths based on Mt(p) and parameter k. RoI: Compute and embed an inversion flag f in the LSB, selectively invert top-k MSBs if f=1. Background: Truncate to top-k MSBs, apply the same inversion, and embed f in the LSB. Both paths preserve B-bit width, reducing bit-1 density and transitions for lower memory energy.",
+      "page": 4,
+      "index": 1,
+      "width": 529,
+      "height": 258
+    },
+    {
+      "url": "assets/figures/arxiv/2603.27108v1/fig-002.webp",
+      "caption": "Fig. 2: The MotiMem closed-loop interface for neural perception. MotiMem sits between the camera stream and the memory hierarchy. It forms a closed loop: detections at time t are fed back as compact metadata to predict the RoI mask for time t+1. Guided by the RoI mask, MotiMem applies RoI-guided hybrid coding to shape the stored bitstream toward lower activity (fewer 1s/toggles) along the sensor-to-memory path, while preserving perception accuracy.",
+      "page": 4,
+      "index": 2,
+      "width": 1076,
+      "height": 445
+    },
+    {
+      "url": "assets/figures/arxiv/2603.27108v1/fig-003.webp",
+      "caption": "Fig. 5: Design Space Exploration: Perception vs. Energy Trade-off varying bit-width k. The plot sweeps the retained parameter k from 1 to 7. The blue line (Accuracy/Confidence) saturates around k = 4, while the green line (Energy Cost) continues to rise linearly. This identifies k = 4 as the algorithmic ”Sweet Spot,” providing maximum perceptual gain for the minimum necessary energy expenditure.",
+      "page": 6,
+      "index": 3,
+      "width": 529,
+      "height": 333
+    },
+    {
+      "url": "assets/figures/arxiv/2603.27108v1/fig-004.webp",
+      "caption": "TABLE I: Comprehensive comparison of encoding methods across three autonomous driving datasets. All metrics are averaged over 16 detection models. MotiMem achieves the optimal trade-off: highest mAP retention among energy-efficient methods while consuming only 57% of the original energy.",
+      "page": 6,
+      "index": 4,
+      "width": 1064,
+      "height": 289
+    },
+    {
+      "url": "assets/figures/arxiv/2603.27108v1/fig-005.webp",
+      "caption": "TABLE II: Relative mAP retention (%) across 16 detection models. Results averaged over 3 datasets. MotiMem achieves highest retention on all models.",
+      "page": 6,
+      "index": 5,
+      "width": 552,
+      "height": 359
+    },
+    {
+      "url": "assets/figures/arxiv/2603.27108v1/fig-006.webp",
+      "caption": "Fig. 6: Qualitative comparison of detection results across three autonomous driving datasets (nuScenes, Waymo, KITTI) under different encoding methods. All images are processed by YOLO26m detector. MotiMem preserves detection accuracy comparable to the Original while significantly reducing energy consumption (43% reduction). JPEG Q10 exhibits severe compression artifacts leading to missed detections. Standard codecs (JPEG Q50, WebP Q50) maintain visual quality but offer no energy benefit.",
+      "page": 7,
+      "index": 6,
+      "width": 1076,
+      "height": 237
+    },
+    {
+      "url": "assets/figures/arxiv/2603.27108v1/fig-007.webp",
+      "caption": "Fig. 1: Pareto Efficiency Analysis (Accuracy vs. Energy Proxy) across nuScenes, Waymo, and KITTI Datasets [1]– [4]. MotiMem (marked with a red star) establishes a superior Pareto frontier compared to standard codecs (JPEG, WebP) which fall into the inefficient zone due to high entropy. Evaluated across three diverse datasets and 16 detection models, MotiMem achieves the optimal trade-off by reducing the normalized bit-1 density (a direct proxy for dynamic energy) by ≈ 43% while maintaining ≈ 93% of the original uncompressed mAP. Crucially, MotiMem significantly outperforms the semantically blind “Global k=4” ablation (blue square), validating that semantic-aware allocation is superior to uniform quantization for energy-constrained perception.",
+      "page": 1,
+      "index": 7,
+      "width": 529,
+      "height": 383
+    }
+  ]
+}
