@@ -1,0 +1,126 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-001.webp",
+      "caption": "Figure 4. Mitigating MLLM Hallucination with Object-DINO Visual Guidance. Our training-free decoding strategy computes two separate logit distributions. The standard branch uses the original image u and a general prompt Tu (e.g., \"describe this image\"). The guidance branch uses the Object-DINO’s object map v and a prompt Tv (e.g., \"describe the highlighted regions\"). Here, R is the text prompt generated so far. We then add these logits, Logits(y|Tu, R, u) + α · Logits(y|Tv, R, v), to amplify tokens consistent with the visual evidence, thus correcting the hallucinations (e.g., \"Two\" → \"Three\" dogs)",
+      "page": 6,
+      "index": 1,
+      "width": 496,
+      "height": 251
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-002.webp",
+      "caption": "Figure 8. Evaluation of optimal number of clusters K using DaviesBouldin Score (lower is better). We select K = 5 for all our experiments.",
+      "page": 11,
+      "index": 2,
+      "width": 487,
+      "height": 302
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-003.webp",
+      "caption": "Figure 14. Object-centric information in patch-level interactions from MAE [11]. We visualize the inter-patch similarity maps (Aq, Ak, Av) computed from the Query, Key, and Value representations of patch tokens in a MAE ViT-B/16 model. For visualization, we invert the similarity maps so objects appear bright.",
+      "page": 15,
+      "index": 3,
+      "width": 1052,
+      "height": 310
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-004.webp",
+      "caption": "Figure 5. Experimental results of MME on the hallucination subset",
+      "page": 7,
+      "index": 4,
+      "width": 487,
+      "height": 260
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-005.webp",
+      "caption": "Figure 13. Analysis of the object-centric head distribution in ViT-L, computed over 4,000 images from the COCO dataset. (a) The heatmap shows the frequency of heads (across all 24 layers) belonging to the object-centric cluster. The red boxes highlight that numerous heads in later layers (e.g., Layers 20-23) are consistently selected, demonstrating that object-centric information is a distributed phenomenon and not confined to the final layer. (b) The plot details the final layer’s contribution, showing that several heads (circled in black) have low frequency, confirming that some final-layer heads are \"noisy\" (non-object-centric). (c) The histogram shows the number of strongly active object-centric heads per layer, with Layer 23 containing 10 heads, Layer 22 containing 5 heads, and Layer 21 containing 1 head.",
+      "page": 14,
+      "index": 5,
+      "width": 923,
+      "height": 262
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-006.webp",
+      "caption": "Figure 2. Analysis of the object-centric head distribution, computed over 4,000 images from the COCO dataset. (a) The heatmap shows the frequency of heads (across all layers) belonging to the object-centric cluster. The red boxes highlight that numerous heads in intermediate layers (e.g., Layers 8–10) are consistently selected, proving object-centric information is a distributed phenomenon and not confined to the final layer. (b) The plot details the final layer’s contribution. It shows that several heads (circled in black) have a low frequency, confirming that some final-layer heads are \"noisy\" (non-object-centric). (c) The histogram shows the number of strongly active heads per layer.",
+      "page": 3,
+      "index": 6,
+      "width": 969,
+      "height": 273
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-007.webp",
+      "caption": "Figure 12. Final Layer Head Visualization. Ensemble similarity maps Aens for all 12 heads in Layer 11 of DINO-V3. For visualization, we invert the maps to show bright colors for objects.",
+      "page": 13,
+      "index": 7,
+      "width": 840,
+      "height": 709
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-008.webp",
+      "caption": "Figure 11. Evolution of localizations with temperature. For visualization, we invert the maps to show bright colors for objects.",
+      "page": 13,
+      "index": 8,
+      "width": 840,
+      "height": 468
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-009.webp",
+      "caption": "Figure 6. Impact of Attention Components on Head Selection. CorLoc performance across three datasets (VOC2007, VOC2012, COCO20k) when using different attention components (Q,K, V ) versus their ensemble to identify object-centric heads via ObjectDINO. The performance ordering is Q < V < K < Ensemble across all datasets. This demonstrates that Ensemble leads to identification of robust object-centric heads.",
+      "page": 8,
+      "index": 9,
+      "width": 481,
+      "height": 292
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-010.webp",
+      "caption": "Figure 7. Qualitative comparison of captions generated by LLava using regular decoding (red box) vs our method (green box).",
+      "page": 8,
+      "index": 10,
+      "width": 494,
+      "height": 304
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-011.webp",
+      "caption": "Figure 3. Object-DINO Overview. Our training-free algorithm identifies a distributed set of object-centric heads from a pre-trained models such as DINO. First, for every head across all layers, we compute the patch similarity maps from its query (Aq), key (Ak), and value (Av) representations. Second, these three maps are ensembled and flattened to create a vector representing each head’s localization pattern. Third, all heads are clustered based on these pattern. Fourth, guided by the established observation that object-centric information is most prevalent in the final layer [4, 23, 28], we automatically identify the object Cluster (cobj) using the criterion that it contains the highest prevalence of final-layer heads. Finally, aggregating the similarity maps from only the object-centric heads (Hobj) produces a high-fidelity object localization, effectively filtering noise from non-object-centric heads. For visualization, we invert the maps to show bright colors for objects.",
+      "page": 4,
+      "index": 11,
+      "width": 1036,
+      "height": 234
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-012.webp",
+      "caption": "Figure 9. Guidance weight ablation for MLLM hallucination mitigation. We observe that the Cs and Ci scores are lowest for α = 0.4, making it our optimal choice",
+      "page": 12,
+      "index": 12,
+      "width": 486,
+      "height": 308
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-013.webp",
+      "caption": "Figure 10. Tau ablation. We show the optimal choice of τ for object centric signal is ∈ (10, 100)",
+      "page": 12,
+      "index": 13,
+      "width": 487,
+      "height": 303
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-014.webp",
+      "caption": "Figure 15. Analysis of the object-centric head distribution in MAE [11], computed over 4,000 random images from the COCO dataset. (a) The heatmap shows the frequency of heads (across all 12 layers) belonging to the object-centric cluster identified by our k-means clustering (K=5). (b) The plot shows the final layer’s contribution, showing that some heads (circled in black) have low frequency. (c) The histogram shows the number of strongly active object-centric heads per layer.",
+      "page": 16,
+      "index": 14,
+      "width": 923,
+      "height": 263
+    },
+    {
+      "url": "assets/figures/arxiv/2603.26127v1/fig-015.webp",
+      "caption": "Figure 16. Qualitative comparison of captions generated by Regular decoding (Red) and Ours (Green)",
+      "page": 16,
+      "index": 15,
+      "width": 1022,
+      "height": 400
+    }
+  ]
+}

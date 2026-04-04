@@ -1,0 +1,134 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-001.webp",
+      "caption": "Figure 3 Training and evaluation temperatures compose through a broad effective-temperature band, while truncation raises the achievable pass@1within that band. (a) Representative Qwen3-30B-Instruct sweeps on LCB v6 against Teff = TtrainTeval: gray = no truncation, amber/green = truncated training-time sampling. Dots are runs, curves are quadratic fits, and the dashed line marks the 42.4% baseline. (b)Qwen3-4B-Thinking on LCB v6 with truncation, shown as best pass@1 across iterations over (Ttrain, Teval).",
+      "page": 6,
+      "index": 1,
+      "width": 982,
+      "height": 356
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-002.webp",
+      "caption": "Figure 8 The vLLM v0.11.0 decoding pipeline used throughout this paper. The pipeline applies four steps in sequence: (1) temperature scaling divides all logits by T ; (2) top-k filtering keeps the k largest tempered logits and sets the rest to −∞; (3) top-p filtering further prunes from the bottom of the surviving set until cumulative mass reaches the chosen top-p threshold; and (4) Gumbel-max sampling draws a token from the resulting distribution without synchronization between CPU and GPU. Each panel shows the corresponding vLLM source excerpt with file path and line numbers.",
+      "page": 15,
+      "index": 2,
+      "width": 982,
+      "height": 907
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-003.webp",
+      "caption": "Figure 12 The toy FSMmakes the lock/fork conflict explicit. (a) The root branches into two symmetric successful paths, each of which traverses one fork and three locks before PASS. At non-root states, tok0 is the correct continuation and all other tokens lead to FAIL; at the root, the highest-probability token is incorrect. (b) The associated token-distribution archetypes instantiate a broad fork-like head and a sharp lock-like head with a distractor tail.",
+      "page": 30,
+      "index": 3,
+      "width": 970,
+      "height": 245
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-004.webp",
+      "caption": "Table 1 Comparison of training paradigms.",
+      "page": 2,
+      "index": 4,
+      "width": 786,
+      "height": 266
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-005.webp",
+      "caption": "Figure 4 A single evaluation temperature cannot satisfy both exploration at forks and precision at locks. Left: a sorting example in which the algorithm-choice token is a fork position (rust-orange), while the later uses of mid are lock positions (blue); gray ghost branches indicate other valid algorithms that could have been taken at the fork. Right: token distributions for the same two context types under low and high Teval, with head and tail mass shown explicitly. Low Teval keeps the lock precise but collapses the fork’s viable head (low exploration); high Teval restores exploration at the fork but revives the lock’s distractor tail (low precision).",
+      "page": 7,
+      "index": 5,
+      "width": 982,
+      "height": 520
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-006.webp",
+      "caption": "Table 5 Programming-only SSD preserves out-of-domain performancewell for the 30Bmodels, while smaller models showmore uneven benchmark-dependent tradeoffs. Transfer results across math reasoning (AIME), general code generation (HumanEval), and code understanding (CruxEval), and general knowledge (MMLU), reported as percentages. Best within each model group is shown in bold.",
+      "page": 29,
+      "index": 6,
+      "width": 590,
+      "height": 352
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-007.webp",
+      "caption": "Figure 11 The same effective-temperature structure appears in Qwen3-4B-Thinking. Best pass@1 (left) and pass@5 (right) across the full grid of (Ttrain, Teval) settings without training-time truncation.",
+      "page": 29,
+      "index": 7,
+      "width": 981,
+      "height": 347
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-008.webp",
+      "caption": "Figure 7 Bad data, good results. (a) At Ttrain=2.0 without truncation, a representative sample degrades into gibberish; ∼62% of outputs contain no extractable code. (b) The finetuned model still surpasses the 42.4%/53.5% base-model pass@1/pass@5, reaching 48.1% and 64.0%.",
+      "page": 10,
+      "index": 8,
+      "width": 336,
+      "height": 635
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-009.webp",
+      "caption": "Figure 15 Expanded view of the high-temperature stress test (Ttrain=2.0, no truncation) on Qwen3-30B-Instruct. (a) A representative training sample: the first 12 lines contain coherent Python, but the output degrades into multilingual gibberish by line 13; approximately 62% of synthesized outputs contain no extractable code at all. (b) Best pass@1 (blue) and pass@5 (rust) across all checkpoints for each evaluation temperature Teval ∈ [0.6, 1.5]; dashed lines mark the 42.4% and 53.5% base-model baselines. The peak at Teval=0.9 reaches 48.1% pass@1 and 64.0% pass@5. (c) Per-difficulty breakdown at the best checkpoint (iteration 2250,Teval=0.9): hatched bars show the base model, solid bars show +SSD. Gains concentrate on harder problems: easy +6.8/+5.1 pp, medium +2.2/+9.9 pp, hard +7.3/+13.8 pp (pass@1/pass@5).",
+      "page": 33,
+      "index": 9,
+      "width": 982,
+      "height": 496
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-010.webp",
+      "caption": "Figure 9 Across the full sweep, truncated and no-truncation settings occupy similar broad operating bands, but truncation reaches a higher pass@1 ceiling. SSD hyperparameter search on LCB v6 for Qwen3-30B-Instruct (baseline: 42.4% pass@1 and 53.5% pass@5). Panels show representative configurations against effective temperature Teff; curves are per-group quadratic fits, and the dashed line marks the frozen instruct baseline.",
+      "page": 28,
+      "index": 10,
+      "width": 982,
+      "height": 302
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-011.webp",
+      "caption": "Figure 10 Without training-time truncation, performance is largely organized by the effective temperature Teff = TtrainTeval. Qwen3-30B-Instruct without top-k/top-p truncation during SSD data generation. Panels show best pass@1 (left) and pass@5 (right) across the full grid of (Ttrain, Teval) settings.",
+      "page": 28,
+      "index": 11,
+      "width": 982,
+      "height": 208
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-012.webp",
+      "caption": "Figure 5 SSD turns forks into plateaus and locks into spikes. Tokens are ranked by probability. Hatched bars and dashed curves show the base model; solid bars and solid curves show the model after SSD; the red dashed cutoff marks the support retained during SSD. (a) Fork-like state: the diffuse tail is trimmed, but several top continuations remain and become more evenly weighted, forming a broad plateau over viable branches. (b) Lock-like state: the same rule trims the tail much more aggressively and concentrates mass on the dominant token, producing a sharper spike.",
+      "page": 8,
+      "index": 12,
+      "width": 981,
+      "height": 303
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-013.webp",
+      "caption": "Figure 14 After SSD, the toy’s globally optimal decoding regime shifts upward because locks becomemore temperatureinert while forks remain exploitable. The figure presents a complete view of the V19 toy simulation across three temperature regimes (columns: Low, Medium, High), organized as butterfly charts where teacher bars extend upward from the midline and student bars extend downward, with tokens ranked by descending teacher probability. Fork row: At low temperature, the teacher’s four-token head is peaked and the student’s nucleus is narrower but similarly shaped. At medium temperature, both distributions broaden, and the student retains more mass on the correct lower-ranked continuation (rank 2). At high temperature, the student’s plateau policy allocates mass nearly uniformly across the retained head, while the teacher’s tail remains diffuse. Lock row: The lock distribution is sharply peaked at the correct token (rank 1) under both teacher and student across all three temperatures. Trainingtime support compression collapses the student’s lock to a 2-token support (94.8% on correct), making it nearly temperature-inert. Readout: For each temperature column, the readout shows per-state sparkline summaries and satisfaction indicators for both teacher and student, alongside the end-to-end success probability P = [qroot(A) + qroot(B)] · qfork(correct) · qlock(correct)3. The student’s advantage grows with temperature: from comparable at low T (5.5% vs 6.4%) to substantially better at high T (13.8% vs 0.3%).Curve: The bottom panel plots exact success probability as a function of the global decoding temperature. The teacher (dashed) peaks at T ∗=0.63 and declines sharply, while the student (solid) peaks at T ∗=2.09 and remains competitive across a wide band.",
+      "page": 32,
+      "index": 13,
+      "width": 984,
+      "height": 966
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-014.webp",
+      "caption": "Figure 6 Real-model evidence that SSD both compresses distractor tails andmakes Tevalmore effective near the head. Amber: base Qwen3-30B-Instruct; blue: after SSD. (a)When tokens are sorted by model probability, cumulative mass rises faster for SSD, indicating a cleaner head and weaker diffuse tail. (b) As Teval increases, more tokens survive truncation in SSD than in the base model. (c) The entropy of the distribution after truncation increases much more strongly for SSD. (d) This higher entropy after truncation persists even when the two models place similar probability mass in their top 20 tokens, providing more viable alternatives for evaluation time exploration. Together, the base model enters decoding with more tail mass, while SSD offers more usable room for temperature to diversify the top of the distribution.",
+      "page": 9,
+      "index": 14,
+      "width": 982,
+      "height": 260
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-015.webp",
+      "caption": "Figure 13 SSD reshapes lock distributions and flattens fork policies. (a) Lock training reshaping: hatched bars show the teacher base distribution p0, solid bars show the student pθ after SSD. The correct token absorbs nearly all mass (94.8%). (b) Fork operational policy at each model’s optimal T with top-p=0.80: the teacher has a descending four-token nucleus, while the student yields a flatter plateau that allocates more mass to the correct lower-ranked continuation.",
+      "page": 31,
+      "index": 15,
+      "width": 981,
+      "height": 410
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01193v1/fig-016.webp",
+      "caption": "Figure 2 SSD outperforms the best point in the evaluated base-model decoding sweepwithin standard global decoding policies. Each panel shows one model (30B-Instruct, 4B-Instruct, 4B-Thinking) and one metric (pass@1 or pass@5); amber curves sweep base-model evaluation temperature while blue horizontal lines mark SSD results from Table 2. Solid shading marks the margin over all problems; outlined (dashed-border) shading marks the margin on hard problems.",
+      "page": 5,
+      "index": 16,
+      "width": 982,
+      "height": 527
+    }
+  ]
+}

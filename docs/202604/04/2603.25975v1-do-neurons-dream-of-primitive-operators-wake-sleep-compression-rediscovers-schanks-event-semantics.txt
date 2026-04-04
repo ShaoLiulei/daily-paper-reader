@@ -1,0 +1,706 @@
+Title: Do Neurons Dream of Primitive Operators? Wake-Sleep Compression Rediscovers Schank's Event Semantics
+
+URL Source: https://arxiv.org/pdf/2603.25975v1
+
+Published Time: Mon, 30 Mar 2026 00:16:54 GMT
+
+Number of Pages: 21
+
+Markdown Content:
+# Do Neurons Dream of Primitive Operators? Wake-Sleep Compression Rediscovers Schank’s Event Semantics 
+
+Peter Balogh 
+
+palexanderbalogh@gmail.com 
+
+Abstract 
+
+We show that they do. Roger Schank’s conceptual dependency theory proposed that all human events can be decomposed into a small set of primitive operations—ATRANS (transfer of possession), PTRANS (physical movement), MTRANS (information transfer), and others. These primitives were hand-coded based on linguistic intuition. We ask: can the same primitives be discovered automatically from data through compression pressure alone? 
+
+We adapt DreamCoder’s wake-sleep library learning algorithm to the domain of event state transformations. Given events represented as before/after world state pairs, our system searches for operator compositions that explain each event (wake), then extracts recurring patterns as new library entries optimized under Minimum Description Length (sleep). Starting from four generic state-change primitives, the system discovers specialized operators that map directly to Schank’s core primitives: MOVE PROP has ≈ ATRANS, CHANGE location ≈ PTRANS, SET knows ≈ MTRANS, and SET consumed ≈ INGEST. It also discovers compound operators corresponding to verb compositions (e.g., “mail” = ATRANS ◦ PTRANS) and novel operators for emotional state changes not present in Schank’s original taxonomy. We validate on both synthetic events and real-world commonsense data from the ATOMIC knowledge graph [Sap et al., 2019]. On synthetic data, the discovered library achieves Bayesian MDL within 4% of Schank’s hand-coded primitives while explaining 100% of events vs. Schank’s 81%. On ATOMIC data, the results are more dramatic: Schank’s primitives explain only 10% of naturalistic commonsense events, while the discovered library explains 100%. The dominant op-erators in real-world data are not Schank’s physical-action primitives but mental and emotional state changes —CHANGE wants (20%), CHANGE feels (18%), CHANGE is (18%)—none of which appear in Schank’s original taxonomy. These results provide the first empirical evidence that event primitives can be derived from compression pressure, that Schank’s core physical-action primitives (ATRANS, PTRANS, MTRANS) are information-theoretically justified, and that the complete inventory of event primitives is substantially richer than Schank proposed—with mental/emotional operators dom-inating over physical ones in naturalistic data. 
+
+# 1 Introduction 
+
+In 1972, Roger Schank proposed conceptual dependency theory [Schank, 1972], arguing that the meaning of any natural language sentence describing an event could be decomposed into a small set of primitive actions. These primitives—ATRANS (abstract transfer of possession), PTRANS (physical transfer of location), MTRANS (mental transfer of information), MBUILD (mental con-struction), INGEST (taking into the body), and several others—were designed to capture the fundamental building blocks of human event understanding. Schank’s primitives were influential but controversial. Critics argued they were arbitrary, in-complete, and reflected the intuitions of their creator rather than any deep structure of events 1
+
+> arXiv:2603.25975v1 [cs.LG] 26 Mar 2026
+
+[Wilensky, 1983, Dreyfus, 1992]. The framework fell out of favor as statistical methods came to dominate NLP, and the question of whether semantic primitives exist was largely abandoned. We revisit this question with a new tool: library learning . DreamCoder [Ellis et al., 2021] demonstrated that wake-sleep learning can discover reusable programming primitives from examples through compression pressure—the Minimum Description Length (MDL) principle automatically identifies abstractions that minimize the total cost of describing both the library and the programs that use it. If Schank’s primitives are genuinely fundamental, they should emerge from the same kind of compression pressure applied to event data. We evaluate in two complementary settings. Synthetic events generated from controlled tem-plates validate that the algorithm’s mechanics work correctly—it recovers known ground-truth categories. Real-world events drawn from the ATOMIC commonsense knowledge graph [Sap et al., 2019] test whether the primitives generalize to naturalistic data that was not designed around Schank’s theory. The second evaluation is the critical one. Our contributions are: 1. A novel domain-specific language (DSL) for representing events as state transformations over world-state triples, with operators as typed, composable templates. 2. An adaptation of wake-sleep library learning to this domain, including a composition discovery mechanism that identifies compound operators (e.g., “mail” = ATRANS ◦ PTRANS). 3. Empirical evidence that four of Schank’s core primitives (ATRANS, PTRANS, MTRANS, INGEST) emerge from pure MDL pressure on event data, along with novel primitives for emotional, goal, and attribute state changes. 4. Validation on real-world commonsense data from ATOMIC [Sap et al., 2019], showing that the complete primitive inventory is richer than Schank proposed, with mental/emotional operators dominating. 5. A Bayesian MDL framework with proper probabilistic costs that enables rigorous model comparison via Bayes factors. 
+
+# 2 Background 
+
+2.1 Schank’s Conceptual Dependency Theory 
+
+Schank’s framework [Schank, 1972, Schank and Abelson, 1977] proposed approximately 11 primitive actions: 
+
+• ATRANS : Abstract transfer of possession or ownership (give, buy, steal) 
+
+• PTRANS : Physical transfer of location (go, move, fly) 
+
+• MTRANS : Mental transfer of information (tell, teach, read) 
+
+• MBUILD : Mental construction of new information (think, decide, realize) 
+
+• INGEST : Taking a substance into the body (eat, drink, breathe) 
+
+• EXPEL : Expelling from the body 
+
+• PROPEL : Applying physical force 2• MOVE : Moving a body part 
+
+• GRASP : Grasping an object 
+
+• SPEAK : Producing sound 
+
+• ATTEND : Directing a sense organ Each event in natural language was analyzed as an instantiation of one or more of these primi-tives with specific role fillers (agent, object, source, destination, etc.). Complex events were decom-posed into compositions of primitives: “John mailed Mary the book” = ATRANS(John → Mary, book) ◦ PTRANS(book, John’s house → Mary’s house). 
+
+2.2 DreamCoder and Library Learning 
+
+DreamCoder [Ellis et al., 2021] introduced a wake-sleep algorithm for bootstrapping program syn-thesis with learned libraries. The key insight is that the right set of primitives is the one that minimizes total description length: MDL = L(Library) 
+
+| {z }
+
+> cost of primitives
+
++ X
+
+> i
+
+L(Program i | Library) 
+
+| {z }
+
+> cost of each program
+
+(1) The algorithm alternates between: 
+
+• Wake phase : Search for programs that solve tasks using the current library. 
+
+• Sleep phase : Extract common sub-expressions from successful programs and propose them as new library entries if they reduce total MDL. DreamCoder was applied to list manipulation, text editing, and graphics domains—all formu-lated in lambda calculus. We adapt the same principle to event state transformations. 
+
+2.3 Related Work 
+
+Several lines of work relate to ours. Wierzbicka [1996] proposed Natural Semantic Metalanguage (NSM), a set of approximately 65 semantic primes claimed to be universal across languages. Dowty [1991] developed proto-role theory, decomposing thematic roles into contributing properties. More recently, Sap et al. [2019] created ATOMIC, a large-scale knowledge graph of if-then commonsense knowledge about events, and Mostafazadeh et al. [2020] developed GLUCOSE with structured causal explanations. FrameNet [Baker et al., 1998] and VerbNet [Schuler, 2005] provide frame-based decompositions of verb semantics. In a different tradition, LeCun’s Joint Embedding Predictive Architecture (JEPA) [LeCun, 2022, Assran et al., 2023] proposes that intelligent systems should learn world models that predict in abstract representation space rather than pixel or token space. JEPA’s predictor module learns latent-space transformations conditioned on actions—essentially learning operators that map be-tween abstract states. Our work shares JEPA’s conviction that the right level of abstraction is neither raw observations nor hand-coded symbols, but learned representations that capture the structure of state transitions. Where JEPA learns continuous predictors in embedding space, we discover discrete, composable, interpretable operators via compression. The two approaches are complementary: JEPA provides the perceptual grounding (learning what the abstract states are), while our method provides the symbolic structure (learning how states transform into each other 3BPE (text tokenization)                
+
+> lowerlowlo wer lo w
+> Merge frequent pair
+> "l"+"o" "lo"
+> Operator Discovery (event semantics)
+> MOVE_PROP
+> has
+> CHANGE
+> loc ATRANS PTRANS
+> Specialize by relation
+> + compose frequent pairs
+
+Figure 1: Analogy between BPE tokenization and operator discovery. BPE merges frequent char-acter pairs into new tokens; our sleep phase specializes operators by relation and composes frequent operator pairs—the same compression principle applied to typed state transformations. via typed operators). A natural synthesis would use JEPA-style latent states as the world-state representation and our wake-sleep loop to discover the discrete operator vocabulary over those states. More recently, Cambria et al. [2024] proposed PrimeNet, a framework for commonsense knowl-edge representation using conceptual primitives inspired by Schank. Unlike our approach, PrimeNet’s primitives are hand-designed rather than discovered from data. Piantadosi et al. [2016] frame cog-nitive development as hierarchical Bayesian program induction, arguing that the “logical primitives of thought” emerge from learning pressures. Our work applies this insight to event semantics and provides an explicit discovery algorithm. The connection between our abstraction discovery and data compression is not merely analogi-cal (Figure 1). BPE [Sennrich et al., 2016], now standard in language model tokenization, discovers subword units through the same iterative merge-the-most-frequent-pair procedure that our com-position step uses. Huffman coding assigns shorter codewords to frequent symbols, mirroring our specialization step. Our contribution is applying these compression principles to typed, composable state transformations rather than character sequences. Our approach differs from all of the above in that we discover primitives from data rather than defining them by linguistic analysis, and we evaluate them by compression efficiency rather than linguistic coverage. 43 Method 
+
+3.1 World State Representation 
+
+We represent world states as sets of triples (s, r, o ) where s is a subject entity, r is a relation, and 
+
+o is an object or value. For example: 
+
+Before: {(John, has, book), (John, location, home)} After: {(Mary, has, book), (John, location, home)} 
+
+An event is a pair of world states (before, after) plus a natural language description. The state diff is the set of triples added and removed: ∆( Wbefore , W after ) = ( Wafter \ Wbefore , W before \ Wafter ) (2) 
+
+3.2 Operator DSL 
+
+An operator template O is defined by: 
+
+• A name (e.g., MOVE PROP) 
+
+• Typed slots: {(s1, τ 1), . . . , (sk, τ k)} where each slot has a name and type (entity, location, property, value) 
+
+• Remove patterns: triple templates with $-variables bound to slots 
+
+• Add patterns: triple templates with $-variables bound to slots An operator instance binds concrete entities to slots, producing a concrete state diff. A
+
+program is a sequence of operator instances whose composed diff explains an event’s state change. 
+
+Seed library. We initialize with four maximally generic operators. In the definitions below, e
+
+denotes an entity, p a property (relation name), v a value, s a source entity, and d a destination entity: 
+
+• SET (e, p, v): Add triple ( e, p, v ). Models the appearance of a new fact. 
+
+• UNSET (e, p, v): Remove triple ( e, p, v ). Models the disappearance of a fact. 
+
+• MOVE PROP (s, d, p, v): Remove ( s, p, v ), add ( d, p, v ). Models transfer—the source loses what the destination gains. 
+
+• CHANGE (e, p, vold , vnew ): Remove ( e, p, v old ), add ( e, p, v new ). Models value replacement. These are deliberately minimal—they can express any state change but carry no semantic commitment. The goal is to discover which specializations of these generic operators recur across events. 
+
+3.3 Wake Phase: Program Search 
+
+Given an event with target diff ∆ ∗ and a library L, we search for a program P = [ o1, . . . , o n] such that the composed diff of P matches ∆ ∗. We use beam search with width B = 30, maximum depth 3, and operators sorted by ascending arity (preferring specialized operators). For each operator, we enumerate bindings by constraining slot values to entities and relations appearing in the target diff, with early pruning of bindings that produce no overlap with the remaining unexplained diff. 53.4 Sleep Phase: Abstraction Discovery 
+
+After the wake phase produces programs for all events, the sleep phase identifies two kinds of new operators: 
+
+Specializations. For each generic operator, we group instances by the relation they operate on. If MOVE PROP is instantiated with property=“has” in ≥ k events (where k is a frequency threshold), we propose MOVE PROP has as a specialized operator with the property slot hard-coded. This reduces the arity by 1, saving 1 bit per use at the cost of adding the operator to the library. 
+
+Compositions. We identify pairs of operators that frequently appear in sequence across pro-grams. If oA → oB appears in ≥ k programs, we propose a compound operator oA◦B whose patterns combine those of oA and oB (with shared entity bindings unified). This replaces a 2-step program with a single step. Both specializations and compositions are evaluated by MDL savings: savings = n · cold 
+
+| {z } 
+
+> old total usage cost
+
+− (clib + n · cnew )
+
+| {z }
+
+> library cost + new usage cost
+
+(3) where n is the frequency, cold is the per-use cost with the existing library, cnew is the per-use cost with the new operator, and clib is the description length of the new operator template. 
+
+3.5 Pruning Phase 
+
+After convergence, we prune operators whose actual usage in programs does not justify their library cost. An operator is removed if: usage count × savings per use < library cost (4) This eliminates operators that were proposed based on pattern frequency but are not actually preferred by the search procedure. 
+
+3.6 Full Algorithm 
+
+Algorithm 1 presents the complete wake-sleep loop. 
+
+3.7 Connection to Compression Algorithms 
+
+The sleep phase has a direct analogy to well-known compression techniques. Specialization cor-responds to Huffman coding : frequently-used operator+relation combinations receive shorter codes (lower arity ⇒ fewer bits per use), exactly as Huffman assigns shorter codewords to frequent sym-bols. Composition corresponds to byte-pair encoding (BPE) [Sennrich et al., 2016]: the most frequent operator pair is merged into a single new token, reducing sequence length at the cost of a larger vocabulary. This process iterates, building a hierarchy of increasingly abstract operators— just as BPE builds a hierarchy of increasingly long subword units. The analogy is not merely metaphorical. In all three cases (Huffman, BPE, our algorithm), the objective is identical: minimize the total description length of the data given a codebook, where codebook complexity is penalized. The key difference is that our “symbols” are typed, composable state transformations rather than characters or bytes, and our “merging” must respect the algebraic structure of operator composition (shared bindings must be unified, add/remove patterns must be combined consistently). 6This perspective suggests that Schank’s primitives are the Huffman code of event semantics :the variable-length encoding that assigns the shortest descriptions to the most common state trans-formations. The fact that ATRANS, PTRANS, and MTRANS are the first operators discovered (iteration 1) mirrors how Huffman coding assigns the shortest codes first—these are the highest-frequency “symbols” in the event alphabet. 
+
+3.8 Description Length Computation 
+
+We use two MDL measures for distinct purposes. The simplified MDL serves as the algorithm’s internal search heuristic—fast to compute and sufficient to guide operator discovery. It counts structural units: 
+
+• Operator template : number of slots + number of patterns 
+
+• Operator instance : 1 (operator selection) + number of bindings 
+
+• Program : sum of instance description lengths 
+
+• Unexplained event : 2 × complexity of the target diff (penalty) Total MDL = library cost + program costs + unexplained penalties. 
+
+Worked example. Consider the event “John gave Mary the book,” with state diff: ∆ = { − (John, has, book ), +( M ary, has, book )}
+
+With the seed library (MOVE PROP, 4 slots): the program is: MOVE PROP( s=John , d =Mary , p =has , v =book) 
+
+• Library cost of MOVE PROP: 4 slots +2 patterns = 6. Here, “patterns” are the operator’s add and remove templates—the rules defining what the operator does. MOVE PROP has one remove pattern −(s, p, v ) and one add pattern +( d, p, v ), totaling 2. 
+
+• Program cost: 1 (select MOVE PROP from 4 ops) +4 (bind 4 slots) = 5. 
+
+With the discovered library (ATRANS, i.e. MOVE PROP has, 3 slots): ATRANS( s=John , d =Mary , v =book) The “has” relation is hardcoded into the operator definition, so it need not be specified at each use. 
+
+• Library cost of ATRANS: 3 slots +2 patterns = 5. ATRANS still has 2 patterns: 
+
+−(s, has , v ) and + ( d, has , v )but only 3 free slots, because “has” is baked in. 
+
+• Program cost: 1 (select ATRANS from 14 ops) +3 (bind 3 slots) = 4. 7The per-use saving is 5 − 4 = 1 bit. Over 110 ATRANS-type events in the dataset, this saves 110 bits, far exceeding the 5-bit library cost of adding ATRANS. This is the MDL pressure that drives specialization: a frequently-used operator with one fewer slot pays for itself after just 5 uses. Now consider the compound event “John mailed Mary the book,” which requires both possession transfer and physical movement. With the seed library, this takes two steps: MOVE PROP( John, M ary, has, book ) = 5 bits + CHANGE( book, location, home, of f ice ) = 5 bits Total: 10 bits. The compound operator MAIL = ATRANS ◦ PTRANS encodes both in one step with 5 shared bindings: 1 + 5 = 6 bits. The savings (10 − 6 = 4 bits per use) quickly exceed the library cost of MAIL. The Bayesian MDL (Section 6.6) serves as the evaluation metric for final model comparison. It replaces unit counts with proper probabilistic costs— − log 2(frequency) for operator selection, log 2(|entity pool |) for each binding—enabling rigorous comparison via Bayes factors. This separa-tion mirrors standard practice: DreamCoder similarly uses a proxy objective for search and a full generative model for evaluation [Ellis et al., 2021]. 
+
+# 4 Data 
+
+We generate synthetic event datasets with controlled ground-truth operator categories. Events are generated from 14 templates spanning 7 categories: 
+
+Category Templates Ground Truth 
+
+Transfer give, sell, donate, steal ATRANS Movement walk, drive, fly PTRANS Information tell, teach, inform MTRANS Learning learn, discover, realize MBUILD Emotion become happy/sad/angry state change Consumption eat, drink INGEST Creation/Destruction build, destroy CREATE/DESTROY 
+
+Compound events 
+
+Mail ship, deliver ATRANS ◦ PTRANS Trade trade, exchange ATRANS ◦ ATRANS Fetch retrieve, collect PTRANS ◦ ATRANS Visit-to-teach visit and teach PTRANS ◦ MTRANS Table 1: Event templates and their ground-truth operator categories. Each template generates events with random entity assignments from pools of 24 people, 20 objects, 16 locations, and 16 information items. We generate datasets of 100 (small), 500 (medium), and 2000 (large) events. The synthetic approach allows us to verify that discovered operators correspond to known ground-truth categories. 
+
+4.1 Real-World Data: ATOMIC 
+
+To test whether the same primitives emerge from naturalistic data not generated by a Schank-like process, we adapt the ATOMIC knowledge graph [Sap et al., 2019] as a second evaluation 8corpus. ATOMIC contains 877K textual descriptions of inferential knowledge about everyday events, crowdsourced via Amazon Mechanical Turk. Each event (e.g., “PersonX pays PersonY a compliment”) is annotated with nine typed if-then relations capturing the consequences of the event for both participants. The prefix x refers to the agent (PersonX) and o refers to others affected: 
+
+• xEffect / oEffect : What happens to X / others as a result (“X feels good,” “Y smiles”) 
+
+• xReact / oReact : How X / others feel emotionally (“happy,” “grateful”) 
+
+• xWant / oWant : What X / others want to do next (“to be friends,” “to reciprocate”) 
+
+• xIntent : Why X did it (“to be nice,” “to make Y feel better”) 
+
+• xNeed : What X needed beforehand (“to think of something nice to say”) 
+
+• xAttr : How X would be described (“kind,” “thoughtful”) We convert ATOMIC tuples into Event objects via an adapter that parses each target text into structured state changes using pattern matching. For example, “PersonX goes to the store” 
+
+→ location change, “PersonX gets a promotion” → possession change, “PersonX feels happy” →
+
+emotional state change. The adapter maps ATOMIC’s nine relation types to our triple representa-tion:                           
+
+> ATOMIC Relation State Change Triple Pattern
+> xEffect, oEffect State change (who, state ,new state) xReact, oReact Emotion change (who, feels ,emotion) xWant, oWant Goal change (who, wants ,goal) xIntent Intent (X, intends ,goal) xNeed Precondition (X, needs ,item) xAttr Attribute (X, is ,property)
+
+Table 2: Mapping from ATOMIC relation types to state-change triples. Effects are further parsed into subtypes (location, possession, knowledge, emotion) via pattern matching. We sample 2,000 events from ATOMIC’s training set (202K entries total). The resulting change-type distribution is: generic (76.9%), possession change (8.5%), emotion (8.3%), state change (4.3%), knowledge change (1.1%), location change (0.8%). This is strikingly different from our synthetic data: mental/emotional/goal states dominate, with physical actions as a small minority. 
+
+# 5 Results 
+
+5.1 Discovered Operators 
+
+Table 3 shows the operators discovered from the medium dataset (500 events, 14 templates). The system converges in 5 iterations plus a pruning phase, taking 165 seconds on CPU. 
+
+Key finding: four of Schank’s core primitives emerge from compression alone. 
+
+MOVE PROP has is functionally identical to ATRANS (transfers a “has” relation from source to destination). CHANGE location is PTRANS (changes an entity’s “location” value). SET knows is MTRANS (adds a “knows” triple—notably additive , not a transfer, correctly reflecting that information sharing does not deplete the sender). SET consumed corresponds to INGEST. 9Discovered Type Arity Schank Equiv. Example Verbs                                                 
+
+> MOVE PROP has Specialized 3ATRANS give, buy, steal CHANGE location Specialized 3PTRANS walk, drive, fly SET knows Specialized 2MTRANS tell, teach, read SET consumed Specialized ∗2INGEST eat, drink CHANGE feels Specialized 3(novel) cheer up, anger UNSET has Specialized 2ATRANS −lose, discard
+> Compound operators (discovered compositions)
+> ATRANS ◦PTRANS Compound 5—mail, ship, deliver ATRANS ◦ATRANS Compound 4—trade, exchange SET ◦UNSET Compound 4—consume, transform CHANGE ◦SET Compound 6—change + create
+
+Table 3: Operators discovered via wake-sleep library learning. Specialized operators are relation-specific versions of seed operators. Compound operators are multi-step compositions. 
+
+> ∗
+
+SET consumed was pruned at medium scale but survives at large scale with sufficient frequency. 
+
+Novel operators. The system discovers CHANGE feels (emotional state transitions) which has no direct equivalent in Schank’s original taxonomy. This suggests Schank’s focus on physical and informational actions left emotional state changes under-represented. 
+
+Structural insight: MTRANS is not ATRANS. The system correctly identifies that information transfer is structurally different from possession transfer. ATRANS is implemented as MOVE PROP (source loses, destination gains). MTRANS is implemented as SET (destination gains, source retains). This distinction emerges purely from the state-change patterns, without any linguistic knowledge. 
+
+5.2 Composition Discovery 
+
+The most striking compositional discovery is MOVE PROP has THEN CHANGE location, which corresponds exactly to the compound verb “mail/ship/deliver”: possession transfers (ATRANS) and the object physically moves (PTRANS). This validates Schank’s original analysis of compound events as operator compositions, but discovers the decomposition automatically. Other discovered compositions include: 
+
+• MOVE PROP ◦ MOVE PROP has ≈ “trade” (two ATRANSes) 
+
+• CHANGE location ◦ SET knows ≈ “visit to learn” (PTRANS ◦ MTRANS) 
+
+• SET ◦ UNSET ≈ “consume/transform” (gain new property, lose old) 
+
+5.3 MDL Comparison with Schank 
+
+The discovered library achieves MDL within 4% of Schank’s hand-coded primitives (ratio = 1.04) while explaining 100% of events vs. Schank’s 81%. The compression improvement from seed to discovered library is 25% (3099 → 2334). 
+
+5.4 Scaling Behavior 
+
+The same core operators (ATRANS, PTRANS, MTRANS analogues) emerge at all dataset sizes, demonstrating robustness. The system converges in 3–5 iterations regardless of scale. 10 "John mailed Mary the book"                
+
+> Before
+> (John, has, book)
+> (John, loc, home)
+> (book, loc, home)
+> After
+> (Mary, has, book)
+> (John, loc, home)
+> (book, loc, office)
+> ATRANS
+> src=John, dst=Mary
+> prop=has, val=book
+> (John,has,book)
+> +(Mary,has,book)
+> PTRANS
+> entity=book
+> from=home, to=office
+> (book,loc,home)
+> +(book,loc,office)
+
+Figure 2: Example event decomposition. “John mailed Mary the book” is decomposed into ATRANS (possession transfer) composed with PTRANS (physical movement). The system dis-covers this decomposition from state diffs alone, without any linguistic knowledge. 
+
+Library Ops Events Explained MDL Ratio 
+
+Seed (generic) 4 500/500 3099 1.33 Discovered (pre-prune) 24 500/500 2408 1.03 Discovered (post-prune) 14 500/500 2334 1.00 Schank (hand-coded) 7 81/100 ∗ 523 ∗ —Table 4: MDL comparison across libraries. ∗Schank’s library is evaluated on 100 events; it explains fewer events because our implementation does not cover all Schank primitives. The MDL ratio compares discovered vs. Schank on the same evaluation set, where the ratio is 1.04. 
+
+5.5 Learning Curve 
+
+Figure 3 shows the MDL trajectory across wake-sleep iterations. The system converges in 5 itera-tions, with MDL decreasing from 3,099 (seed) to 2,408 (converged), followed by pruning to 2,334 (14 operators). Notably, the three highest-frequency operators (ATRANS, PTRANS, MTRANS ana-logues) are discovered in the first iteration, suggesting they are the most information-theoretically salient primitives in the domain. Lower-frequency operators (INGEST, compounds, emotional states) require additional iterations to accumulate sufficient evidence. 
+
+5.6 Ablation Studies 
+
+We test the sensitivity of the discovery algorithm to four hyperparameters (Table 6). The key finding is robustness : the same operators emerge across a wide range of settings. 
+
+Seed library. The minimal seed (SET, UNSET) produces a better library than the full seed (26.4 vs. 27.4 bits/event), suggesting that generic operators like MOVE PROP can actually interfere—they get specialized but not all specializations pay for themselves. This is encouraging: even with minimal prior knowledge, compression discovers the same primitives. 
+
+Frequency threshold k. Results are identical for k ∈ { 3, 5, 10 , 20 }. Only at k=50 does one 11 Dataset Events Time (s) Operators Iterations 
+
+Small 100 <1 6 3Medium 500 165 14 5+prune Large 2000 60 ∗ 13 3Table 5: Scaling behavior. ∗Large dataset result is without pruning phase (specialization-only). The same core operators are discovered at all scales. Seed 1 2 3 4 5 Prune 
+
+Iteration 
+
+2400 
+
+2600 
+
+2800 
+
+3000 
+
+> Total MDL (bits)  +ATRANS
+> +PTRANS
+> +MTRANS
+> Prune
+> 10 unused ops
+
+5
+
+10 
+
+15 
+
+20 
+
+25 
+
+> Number of operators
+
+Figure 3: MDL learning curve across wake-sleep iterations. The core operators (ATRANS, PTRANS, MTRANS) emerge in iteration 1. Pruning removes 10 unused operators, further re-ducing MDL. operator fail to meet the threshold, slightly worsening MDL (28.9 bits/event). The algorithm is not sensitive to this parameter in a wide range. 
+
+Beam width. B affects only runtime (52s at B=5 vs. 278s at B=50) with no effect on the discovered library. For our operator arity ( ≤4 slots), even greedy search finds the optimal decompositions. 
+
+Dataset size. The most striking result: all three Schankian primitives emerge even from just 50 events. Compression efficiency improves with scale (31.9 → 27.4 bits/event) as rarer operators accumulate enough evidence, but the core vocabulary is robust from the start. 
+
+# 6 Discussion 
+
+6.1 Why Compression Recovers Schank 
+
+Our results suggest that Schank’s primitives are not arbitrary but reflect genuine structure in event semantics. The MDL principle favors operators that: 1. Appear frequently across diverse events (high reuse) 12 Ablation Setting Ops bits/ev Cov. A/P/M                                                               
+
+> Baseline 4 seeds, k=10, B=30 14 27.4 100% ✓
+> Seed size 2 (SET, UNSET only) 12 26.4 100% ✓
+> 4 (+ MOVE, CHANGE) 14 27.4 100% ✓
+> Freq. thresh. kk=3 14 27.4 100% ✓
+> k=5 14 27.4 100% ✓
+> k=20 14 27.4 100% ✓
+> k=50 13 28.9 100% ✓
+> Beam width BB=5 14 27.4 100% ✓
+> B=10 14 27.4 100% ✓
+> B=50 14 27.4 100% ✓
+> Dataset size NN=50 931.9 100% ✓
+> N=100 829.4 100% ✓
+> N=200 14 28.6 100% ✓
+
+Table 6: Ablation studies on synthetic data (500 events except where N varies). “A/P/M” in-dicates whether ATRANS, PTRANS, and MTRANS analogues are discovered. The algorithm is remarkably stable: all three core primitives emerge in every setting tested, including datasets as small as 50 events. 2. Have low arity (few parameters = low per-use cost) 3. Cannot be further decomposed (atomic = incompressible) ATRANS, PTRANS, and MTRANS satisfy all three criteria. They appear in hundreds of events, have arity 2–3, and correspond to irreducible state transformations (you cannot decompose “transfer of possession” into simpler state changes without losing the bundled add+remove semantics). 
+
+6.2 What Schank Missed 
+
+The system discovers CHANGE feels (emotional state transitions) as a frequently-used operator with no equivalent in Schank’s original taxonomy. One might object that specializing CHANGE by relation name is merely a “GROUP BY” operation that could produce any number of spurious operators. But the MDL framework provides a principled filter: a specialization is retained only if the bits saved by reducing arity across all uses exceed the bits spent adding the operator to the library. Most candidate specializations fail this test and are pruned. The operators that survive—CHANGE wants, CHANGE feels, CHANGE is—do so because they represent genuinely high-frequency, low-entropy state transformations in the data. Schank’s primitives were designed primarily for physical and informational actions [Schank and Abelson, 1977]. The prevalence of emotional state changes in naturalistic event descriptions suggests this is a genuine gap in the original framework. 
+
+6.3 The MTRANS Insight 
+
+Perhaps the most interesting finding is the system’s correct identification of information transfer as structurally distinct from possession transfer. ATRANS is a move (source loses, destination gains). MTRANS is an add (destination gains, source retains). This distinction, which Schank noted but which is often treated as merely terminological, turns out to have concrete information-theoretic 13 consequences: it requires a different base operator (SET vs. MOVE PROP) and cannot be unified under a single abstraction without increasing description length. 
+
+6.4 Compositionality 
+
+The discovery of compound operators like “mail” = ATRANS ◦ PTRANS validates Schank’s compo-sitional analysis of complex events. More importantly, it demonstrates that the right decomposition 
+
+emerges from compression rather than linguistic analysis. The system does not know that “mail” involves both transfer and movement—it discovers this from the co-occurrence of has-change and location-change in the state diffs. 
+
+6.5 Limitations 
+
+While we validate on both synthetic and real-world (ATOMIC) data, several limitations remain. 
+
+State representation. Our entity-relation-value triples are necessarily simplified. Real events involve temporal ordering, intensities, graded properties, conditions, and nested structures. Richer state representations might discover additional primitives corresponding to Schank’s PROPEL, GRASP, SPEAK, and ATTEND. 
+
+ATOMIC adapter coverage. Our pattern-matching adapter classifies 77% of ATOMIC targets as “generic” state changes. A more sophisticated NL-to-state-diff conversion (e.g., LLM-based) would likely reveal finer-grained operator distinctions within this generic category. 
+
+Additional data sources. Extending to GLUCOSE [Mostafazadeh et al., 2020] for causal explanations, VerbNet for verb-class decompositions, and PropBank for predicate-argument struc-tures would strengthen the generality claim. 
+
+Operator granularity. The discovered operators are named by construction (e.g., CHANGE wants) rather than by semantic analysis. Whether CHANGE wants is a single primitive or should be decomposed further (goal-adoption vs. goal-completion) is an open question requiring linguistic validation. 
+
+6.6 Bayesian Model Comparison 
+
+To move beyond simplified bit-counting, we implement a full Bayesian MDL analysis with proper probabilistic costs. The library prior assigns bits based on the universal prior over integers for structural elements (number of slots, patterns) and log 2(|type space |) bits for each type specifi-cation. Program likelihood uses frequency-weighted operator selection costs ( − log 2 fop bits, with add-one smoothing) and log 2(|pool |) bits per binding. 
+
+Library Ops Total (bits) bits/event Coverage log 2 BF vs Seed 
+
+Seed (generic) 4 15,453 30.9 100% —Schank (hand-coded) 7 15,072 30.1 81% +382 
+
+Discovered 14 13,807 27.6 100% +1,647 
+
+Table 7: Bayesian MDL comparison (500 events). Bayes factors are computed as 2 ∆bits . The discovered library beats Schank by 1,265 bits (log 2 BF = 1265, decisive evidence on Jeffreys’ scale). Under proper Bayesian scoring, the discovered library is not merely comparable to Schank but 
+
+decisively superior : log 2 BF = 1265 in favor of the discovered library over Schank (Jeffreys’ scale: 14 “decisive evidence”). This is driven by two factors: (1) the discovered library explains 100% of events vs. Schank’s 81%, eliminating costly literal-description penalties; and (2) frequency-weighted operator costs reward the heavy concentration of usage on the top three operators (ATRANS-analogue at 20%, PTRANS at 22%, MTRANS at 23%), which are cheaper to select per use than Schank’s more uniform distribution. Notably, the four seed operators receive zero usage after discovery—the specialized operators completely replace their generic parents. This is the information-theoretic signature of genuine abstraction: once MOVE PROP has exists, generic MOVE PROP is never worth its binding cost. 
+
+6.7 Real-World Validation: ATOMIC Results 
+
+Table 8 presents results on 2,000 events from ATOMIC—the critical test of whether Schank-like primitives emerge from naturalistic commonsense data not generated by a Schank-like process. 
+
+Library Ops Total (bits) bits/event Coverage log 2 BF vs Seed 
+
+Seed (generic) 4 71,394 35.7 100% —Schank (hand-coded) 7 71,429 35.7 9.9% −35 
+
+Discovered 15 70,014 35.0 100% +1,380 
+
+Table 8: Bayesian MDL on ATOMIC data (2,000 events). Schank’s primitives cover only 9.9% of real commonsense events and are worse than even the generic seed library (log 2 BF = −35), because the unexplained-event penalty for 90% uncovered events overwhelms Schank’s specialized savings. The discovered library beats both alternatives decisively. The most striking finding: Schank’s hand-coded primitives explain only 9.9% of real-world commonsense events. Our implementation covers 7 of Schank’s 11 primitives (ATRANS, PTRANS, MTRANS, MBUILD, PROPEL, INGEST, and PTRANS FULL); the remaining four (EXPEL, MOVE, GRASP, SPEAK) would increase coverage somewhat, but since none of Schank’s 11 primitives address goals, emotions, or attributes, the mental/emotional gap would remain. ATOMIC is dominated by precisely these aspects of event semantics that Schank’s physical-action-focused taxonomy leaves unaddressed. Table 9 shows the operators discovered from ATOMIC data, with their usage frequencies and semantic profiles.                                      
+
+> Discovered Operator Usage Dominant Relation Schank Equivalent
+> CHANGE wants 405 (20%) wants (not in Schank)
+> CHANGE feels 357 (18%) feels (not in Schank)
+> CHANGE is 355 (18%) is (attribute) (not in Schank)
+> CHANGE state 271 (14%) state (generic)
+> CHANGE needs 193 (10%) needs (not in Schank)
+> SET has 160 (8%) has ATRANS CHANGE intends 132 (7%) intends ≈MBUILD CHANGE status 82 (4%) status (not in Schank)
+> SET knows 23 (1%) knows MTRANS CHANGE location 15 ( <1%) location PTRANS UNSET has 7 ( <1%) has ATRANS (loss)
+
+Table 9: Operators discovered from ATOMIC data, ranked by usage. The top five operators— comprising 80% of all usage—have no equivalent in Schank’s taxonomy. 15 0 5 10 15 20 25 30 35 
+
+> Usage (%)
+> MTRANS
+> (SET_knows)
+> PTRANS
+> (CHANGE_loc)
+> ATRANS
+> (MOVE_has)
+> INGEST
+> (SET_consumed)
+> Emotion
+> (CHANGE_feels)
+> Other
+> 24%
+> 24%
+> 22%
+> 8%
+> 5%
+> 17%
+
+Synthetic Data (500 events)      
+
+> 0510 15 20 25
+> Usage (%)
+> CHANGE_wants
+> CHANGE_feels
+> CHANGE_is
+> CHANGE_state
+> CHANGE_needs
+> ATRANS
+> (SET_has)
+> CHANGE_intends
+> CHANGE_status
+> MTRANS
+> (SET_knows)
+> PTRANS
+> (CHANGE_loc)
+> 20%
+> 19%
+> 17%
+> 14%
+> 10%
+> 8%
+> 7%
+> 4%
+> 1%
+> 0.8%
+
+ATOMIC Data (2,000 events) 
+
+> In Schank's taxonomy
+> NOT in Schank
+
+Figure 4: Operator usage distribution in synthetic vs. ATOMIC data. Left : Synthetic data favors Schank’s physical-action primitives (MTRANS, PTRANS, ATRANS). Right : ATOMIC data is dominated by mental/emotional operators (red) not in Schank’s taxonomy, with physical-action operators (blue) accounting for <10% of usage. Three findings emerge from the ATOMIC experiment (Figure 4): 
+
+1. Schank’s physical-action primitives do emerge, but are minor. SET has (ATRANS, 8%), SET knows (MTRANS, 1%), and CHANGE location (PTRANS, <1%) are all discovered. This confirms that these primitives reflect genuine structure in event semantics. However, they collectively account for less than 10% of operator usage in naturalistic data. 
+
+2. Mental/emotional operators dominate. The top operator by usage is CHANGE wants (goal/desire state changes, 20%), followed by CHANGE feels (emotional transitions, 19%) and CHANGE is (attribute changes, 17%). None of these appear in Schank’s original taxonomy. This suggests that Schank’s framework was designed for a specific genre of events—physical action descriptions (“John gave Mary a book”)—and does not generalize to the broader landscape of commonsense reasoning (“After eating dinner, PersonX feels satisfied”). 
+
+3. The compression-optimal inventory is richer than Schank proposed. The discov-ered library contains 11 active operators (15 total, 4 unused seed operators), compared to Schank’s 7. The additional primitives are not arbitrary—each pays for its library cost through compression savings, as verified by the Bayesian MDL framework. 
+
+6.8 Generalization: Train/Test Split 
+
+To verify that the discovered operators generalize beyond their training data, we split the ATOMIC sample 80/20 (1,600 train, 400 test) and learn operators on the training set only. The discovered library explains all 400 held-out events with zero coverage loss. The operator usage distribution is stable across the split: CHANGE feels (19% test vs. 18% train), CHANGE is (17% vs. 18%), CHANGE wants (16% vs. 21%). The same 11 active operators emerge from the training set alone and transfer perfectly to unseen data. 16 Library Train bits/ev Test bits/ev Gap Test Cov.             
+
+> Seed (generic) 34.9 29.7 −5.2 100% Schank (hand-coded) 34.5 27.6 −5.9 10.2%
+> Discovered 34.2 29.6 −4.9100%
+
+Table 10: Generalization results (1,600 train / 400 test). The negative gap indicates test events are slightly cheaper (smaller entity pool). The discovered library explains 100% of held-out events with the smallest generalization gap. 
+
+6.9 Synthetic vs. Real-World Comparison 
+
+Comparing the two evaluation domains reveals a striking complementarity:               
+
+> Operator Synthetic Rank ATOMIC Rank
+> SET knows (MTRANS) 1st (24%) 9th (1%) CHANGE location (PTRANS) 2nd (24%) 10th ( <1%) MOVE PROP has (ATRANS) 3rd (22%) 6th (8%) CHANGE wants —1st (20%) CHANGE feels 5th (5%) 2nd (19%) CHANGE is —3rd (17%)
+
+Table 11: Operator rankings in synthetic vs. ATOMIC data. Schank’s primitives dominate synthetic data but are minor in naturalistic data, where mental/emotional operators dominate. The synthetic data, designed around physical-action templates, naturally favors Schank’s prim-itives. The ATOMIC data, drawn from crowd-sourced commonsense reasoning, reveals that the mental/emotional dimension is far more prominent in everyday event understanding. This explains both why Schank’s primitives felt so compelling (they perfectly capture physical-action events) and why they were critiqued as incomplete (they miss the majority of commonsense reasoning). 
+
+6.10 Connection to Bayesian Program Theory 
+
+Our work can be seen as bridging Schankian semantics with the Bayesian Program Theory of cog-nition [Tenenbaum et al., 2011, Goodman et al., 2014]. If cognition involves writing and executing probabilistic programs over structured representations, then Schank’s primitives are the vocabulary 
+
+of the programming language for event understanding. Our wake-sleep loop is a mechanism for discovering this vocabulary—and the fact that it converges to the same vocabulary Schank pro-posed suggests that the “mental programming language” for events has an information-theoretically determined structure. This raises an intriguing question about background cognition: if the brain discovers new oper-ators during idle processing (analogous to DreamCoder’s sleep phase), then “thinking” is not just data manipulation but language evolution —the continuous refinement of the mental programming language itself. 
+
+6.11 Connection to JEPA and World Models 
+
+LeCun’s JEPA framework [LeCun, 2022] proposes that autonomous intelligence requires world models that predict outcomes in abstract representation spaces. JEPA’s predictor module is, in essence, a learned operator —a function that maps one latent state to another, conditioned on 17 an action. Our work complements JEPA in a fundamental way: while JEPA learns continuous 
+
+predictors in embedding space, our system discovers the discrete, compositional structure of those transformations. The synthesis is natural: use JEPA to learn what the abstract states are (grounding percep-tion in latent representations), then use wake-sleep library learning to discover how those states 
+
+transform (extracting discrete, typed, composable operators). The resulting system would have both the perceptual fluency of learned embeddings and the compositional reasoning of symbolic operators—with neither component hand-coded. This also connects to the hierarchical aspect of JEPA. LeCun’s blueprint envisions multiple levels of abstraction, from millisecond motor predictions to long-term planning. Our operator hierarchy—atomic operators (ATRANS, PTRANS) composing into compound operators (“mail” = ATRANS ◦ PTRANS)—provides a concrete mechanism for building such hierarchies from data. 
+
+6.12 Future Work 
+
+Several extensions suggest themselves, spanning theory, tooling, and neural integration. 
+
+Richer data and cross-corpus convergence. Our ATOMIC results reveal the dominance of mental/emotional operators, but with 77% of targets classified as “generic” by our pattern-matching adapter, finer-grained distinctions are likely hidden. An LLM-based adapter could parse ATOMIC targets into structured state changes with higher fidelity. Running on GLUCOSE [Mostafazadeh et al., 2020], PropBank, and VerbNet would test whether the same primitive inventory emerges across independent corpora—convergence would strongly support the universality claim. 
+
+Probabilistic programming formalization. Our wake-sleep loop is, in essence, inference in a probabilistic program [Goodman et al., 2014, Piantadosi et al., 2016]: the library defines a generative model over events (choose an operator, sample bindings, execute), and library learning is hierarchical Bayesian inference over the prior itself. Implementing the system in a probabilistic programming language like WebPPL would enable proper posterior distributions over libraries, counterfactual queries (“what if ATRANS did not exist?”), and principled handling of uncertainty about operator boundaries. 
+
+Neural operator execution via Hebbian plasticity. The BDH (Baby Dragon Hatchling) architecture [Kosowski et al., 2025] demonstrates that Hebbian synaptic plasticity can serve as working memory during LLM inference, with specific synapses strengthening when the model pro-cesses related concepts. Our discovered operators predict which synaptic co-activation patterns should emerge: ATRANS predicts co-activation between possession-related neurons for agent, pa-tient, and object whenever “give/buy/steal” events are processed. Testing this prediction in BDH would connect our information-theoretic framework to a biologically plausible neural substrate. 
+
+Grammar–semantics decoupling in SSMs. Our operators decompose what happens in an event (the semantic content); grammar handles how it is expressed (syntactic realization). This factorization aligns with recent work on training state-space models (SSMs) on grammar-interleaved text, where structural tags are interleaved with content words. The operators discovered here could serve as the semantic level of such an architecture: a “meaning module” operating in operator space, coupled to a “syntax module” handling linearization. The PPL framework provides a principled training objective for this factorization: approximate the posterior P (operators | words). 
+
+Interactive operator discovery tool. The wake-sleep loop, Bayesian MDL scoring, and ATOMIC adapter together form the nucleus of a general-purpose tool for discovering domain-specific primitives from any corpus of state-change data. Extending this to interactive use—where a researcher can inspect discovered operators, adjust frequency thresholds, and compare alternative decompositions in real time—would make the method accessible beyond the NLP community, with 18 potential applications in program synthesis, game AI, and cognitive modeling. 
+
+# 7 Conclusion 
+
+We have shown that DreamCoder-style wake-sleep library learning, applied to event state transfor-mations, rediscovers Schank’s core semantic primitives from pure compression pressure and—when applied to real-world commonsense data—reveals a substantially richer primitive inventory than Schank proposed. On synthetic data, the discovered operators achieve Bayesian MDL within 4% of hand-coded primitives while providing complete event coverage. On ATOMIC data, the results are more dra-matic: Schank’s primitives cover only 10% of naturalistic events, while the discovered library covers 100%. The dominant operators in real-world data are not Schank’s physical-action primitives but mental and emotional state changes—CHANGE wants, CHANGE feels, CHANGE is—which col-lectively account for 56% of all operator usage. Three conclusions emerge: 
+
+1. Schank was right about the mechanism. Event semantics does decompose into a small set of reusable primitives, and these primitives can be derived from compression pressure. This vindicates the core insight of conceptual dependency theory. 
+
+2. Schank was incomplete about the inventory. The compression-optimal set contains approximately 11 operators, not 7. The missing primitives govern mental states (goals, emotions, attributes, intentions) that are more prevalent in everyday reasoning than the physical actions Schank focused on. 
+
+3. The right approach is discovery, not enumeration. Rather than debating which prim-itives belong in the inventory—a question that has occupied linguistics for decades—we can derive 
+
+the answer from data via compression. Different data distributions yield different operator invento-ries (physical-action-heavy data recovers Schank; commonsense data reveals the mental/emotional primitives), but the method is domain-agnostic. These results suggest that the structure of event cognition is not a matter of linguistic convention but of information-theoretic optimality—and that the “mental programming language” for events is richer, more psychologically oriented, and more discoverable than previously assumed. 
+
+# References 
+
+Mahmoud Assran, Quentin Duval, Ishan Misra, Piotr Bojanowski, Pascal Vincent, Michael Rabbat, Yann LeCun, and Nicolas Ballas. Self-supervised learning from images with a joint-embedding predictive architecture. CVPR , 2023. Collin F Baker, Charles J Fillmore, and John B Lowe. The berkeley framenet project. In Proceedings of ACL , 1998. Erik Cambria et al. Primenet: A framework for commonsense knowledge representation and rea-soning based on conceptual primitives. Cognitive Computation , 2024. David Dowty. Thematic proto-roles and argument selection. Language , 67(3):547–619, 1991. Hubert L Dreyfus. What Computers Still Can’t Do . MIT Press, 1992. 19 Kevin Ellis, Catherine Wong, Maxwell Nye, Mathias Sabl´ e-Meyer, Lucas Morales, Luke Hewitt, Luc Cary, Armando Solar-Lezama, and Joshua B Tenenbaum. Dreamcoder: bootstrapping in-ductive program synthesis with wake-sleep library learning. Proceedings of the ACM SIGPLAN Conference on Programming Language Design and Implementation , 2021. Noah D Goodman, Joshua B Tenenbaum, and Tobias Gerstenberg. Concepts in a probabilistic language of thought. 2014. Adrian Kosowski, Jan Chorowski, et al. The dragon hatchling: The missing link between the transformer and models of the brain. arXiv preprint arXiv:2509.26507 , 2025. Yann LeCun. A path towards autonomous machine intelligence. Open Review , 2022. Nasrin Mostafazadeh, Aditya Kalyanpur, Lori Moon, David Buchanan, Lauren Berkowitz, Or Bi-ran, and Jennifer Chu-Carroll. Glucose: Generalized and contextualized story explanations. In 
+
+Proceedings of EMNLP , 2020. Steven T Piantadosi, Joshua B Tenenbaum, and Noah D Goodman. The logical primitives of thought: Empirical foundations for compositional cognitive models. Psychological Review , 123 (4):392, 2016. Maarten Sap, Ronan Le Bras, Emily Allaway, Chandra Bhagavatula, Nicholas Lourie, Hannah Rashkin, Brendan Roof, Noah A Smith, and Yejin Choi. Atomic: An atlas of machine common-sense for if-then reasoning. In Proceedings of AAAI , 2019. Roger C Schank. Conceptual dependency: A theory of natural language understanding. Cognitive Psychology , 3(4):552–631, 1972. Roger C Schank and Robert P Abelson. Scripts, Plans, Goals, and Understanding . Lawrence Erlbaum Associates, 1977. Karin Kipper Schuler. Verbnet: A broad-coverage, comprehensive verb lexicon. 2005. Rico Sennrich, Barry Haddow, and Alexandra Birch. Neural machine translation of rare words with subword units. In Proceedings of ACL , 2016. Joshua B Tenenbaum, Charles Kemp, Thomas L Griffiths, and Noah D Goodman. How to grow a mind: Statistics, structure, and abstraction. Science , 331:1279–1285, 2011. Anna Wierzbicka. Semantics: Primes and universals. 1996. Robert Wilensky. Planning and Understanding . Addison-Wesley, 1983. 20 Algorithm 1 Wake-Sleep Operator Discovery 
+
+Require: Events E = {(W before  
+
+> i
+
+, W after  
+
+> i
+
+)}Ni=1 , seed library L0, frequency threshold k, max iterations 
+
+T
+
+Ensure: Discovered library L∗ 
+
+> 1:
+
+L ← L 0 
+
+> 2:
+
+for t = 1 to T do  
+
+> 3:
+
+// Wake: find programs using current library  
+
+> 4:
+
+for each event ei ∈ E do  
+
+> 5:
+
+Pi ← BeamSearch(∆( ei), L, B =30 , D =3)  
+
+> 6:
+
+end for  
+
+> 7:
+
+// Sleep: discover abstractions (cf. BPE over operators)  
+
+> 8:
+
+Lnew ← ∅  
+
+> 9:
+
+for each operator o ∈ L do  
+
+> 10:
+
+for each relation r with freq( o, r ) ≥ k do  
+
+> 11:
+
+Propose specialization or (hardcode r, reduce arity by 1)  
+
+> 12:
+
+if MDL savings( or) > 0 then  
+
+> 13:
+
+Lnew ← L new ∪ { or} 
+
+> 14:
+
+end if  
+
+> 15:
+
+end for  
+
+> 16:
+
+end for  
+
+> 17:
+
+for each operator pair ( oA, o B ) with co-occurrence ≥ k do  
+
+> 18:
+
+Propose composition oA◦B (merge patterns, unify bindings)  
+
+> 19:
+
+if MDL savings( oA◦B ) > 0 then  
+
+> 20:
+
+Lnew ← L new ∪ { oA◦B } 
+
+> 21:
+
+end if  
+
+> 22:
+
+end for  
+
+> 23:
+
+L ← L ∪ L new  
+
+> 24:
+
+if Lnew = ∅ then  
+
+> 25:
+
+break  
+
+> 26:
+
+end if  
+
+> 27:
+
+end for  
+
+> 28:
+
+// Prune: remove operators that don’t pay for themselves  
+
+> 29:
+
+for each o ∈ L \ L 0 do  
+
+> 30:
+
+if usage( o) × savings per use( o) < library cost( o) then  
+
+> 31:
+
+L ← L \ { o} 
+
+> 32:
+
+end if  
+
+> 33:
+
+end for  
+
+> 34:
+
+return L
+
+21

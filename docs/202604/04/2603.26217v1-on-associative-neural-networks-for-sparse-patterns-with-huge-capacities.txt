@@ -1,0 +1,2057 @@
+Title: On associative neural networks for sparse patterns with huge capacities
+
+URL Source: https://arxiv.org/pdf/2603.26217v1
+
+Published Time: Mon, 30 Mar 2026 00:43:44 GMT
+
+Number of Pages: 22
+
+Markdown Content:
+ON ASSOCIATIVE NEURAL NETWORKS FOR SPARSE PATTERNS WITH HUGE CAPACITIES 
+
+MATTHIAS L ¨OWE AND FRANCK VERMET 
+
+Abstract. Generalized Hopfield models with higher-order or exponential in-teraction terms are known to have substantially larger storage capacities than the classical quadratic model. On the other hand, associative memories for sparse patterns, such as the Willshaw and Amari models, already outperform the classical Hopfield model in the sparse regime. In this paper we combine these two mechanisms. We introduce higher-order versions of sparse associative memory models and study their storage capacities. For fixed interaction order n, we obtain storage capacities of poly-nomial order in the system size. When the interaction order is allowed to grow logarithmically with the number of neurons, this yields super-polynomial ca-pacities. We also discuss an analogue in the Gripon–Berrou architecture which was formulated for non-sparse messages (see [ABGJ14]). Our results show that the capacity increase caused by higher-order interac-tions persists in the sparse setting, although the precise storage scale depends on the underlying architecture. 
+
+1. Introduction 
+
+Since the seminal paper of Hopfield [Hop82], neural networks with Hebbian in-teractions have been studied as models of associative memory. In the classical Hopfield model, one stores M random patterns 
+
+ξ1, . . . , ξ M ∈ {− 1, +1 }N
+
+by means of quadratic interactions, and one asks whether the resulting dynamics is able to recover these patterns from the induced energy landscape. Depending on the notion of retrieval, the model stores at most linearly many patterns in the number N of neurons; see, for instance, [MPRV87, Bur94, New88, Lou97, Tal98]. Extensions to correlated patterns and diluted architectures were studied in [L¨ ow98, LV05b, LV11, LV15]. When the stored patterns are sparse, i.e. when the active state occurs only rarely, the classical Hopfield model is no longer the most natural associative memory model. In that regime, several alternatives have been proposed, including the models of Willshaw [WBL69], Amari [iA89], and related systems [Oka96, LV05a, 
+
+Date : March 30, 2026. 2000 Mathematics Subject Classification. Primary: 82C32, 60K35, Secondary: 68T05, 92B20. 
+
+Key words and phrases. Neural networks, associative memory, exponential inequalities.  
+
+> 1
+> arXiv:2603.26217v1 [math.PR] 27 Mar 2026 2MATTHIAS L ¨OWE AND FRANCK VERMET
+
+ABGJ14]. Their performance was compared systematically in [GHLV16]. Ageneral conclusion is that sparsity alone can lead to a significant increase in storage capacity: depending on the model and on the retrieval criterion, one obtains storage capacities ranging from order αN up to order c N 2   
+
+> (log N)2
+
+.
+
+A different mechanism for increasing the capacity of associative memories is to re-place the quadratic interaction term by higher-order interactions. Variants of this type were considered already in [New88] and were recently revisited by Krotov and Hopfield [KH16]. For interaction polynomials of degree n, the storage capac-ity increases to polynomial order in N , more precisely to scales of order N n−1;rigorous results in this direction were obtained in [New88, DHL +17]. Moreover, in [DHL +17] it was shown that, in a suitable large-order limit corresponding to exponential interactions, one obtains exponentially large storage capacities. Acontinuous version of this model with exponential storage capacity was proposed in [RSL +20]. Interestingly, they showed the equivalence of this model with the at-tention mechanisms used in transformers and language models. Recent work has also established a link between associative memory models and the diffusion mod-els used in generative AI ([Amb24],[PRN +25]). Many questions remain regarding the notion of memorization and information generation, which underscores the continued interest in studying associative memory models. The aim of the present paper is to study associative memory models for sparse binary patterns with higher-order interaction terms, thereby linking the sparse models investigated in [GHLV16] with the huge capacity mechanism of [DHL +17]. In particular, we introduce higher-order versions of the Amari and Willshaw mod-els and investigate the resulting storage capacities. For fixed interaction order, we obtain polynomial storage capacities in the sparse setting. If the interaction order grows logarithmically with the system size, the capacity becomes super-polynomial. We also discuss a related construction in the Gripon–Berrou archi-tecture, where the block structure leads to a different natural storage scale. Our results are fixed-point stability results: with high probability, stored patterns are stable under the corresponding one-step dynamics. We do not address here the size of basins of attraction or the correction of partially corrupted patterns. Nevertheless, the results show that the capacity increase due to higher-order interactions is robust and persists far beyond the classical dense Hopfield setting. The remainder of the paper is organized as follows. In the next section we define the higher-order sparse associative memory models studied here. The main results on storage capacities are stated in Section 3, where we also discuss the effect of growing interaction order and the corresponding Gripon–Berrou variant. The proofs are given in the final section. ASSOCIATIVE MEMORIES FOR SPARSE PATTERNS WITH HUGE CAPACITY 3
+
+2. The models 
+
+Throughout this paper we consider sparse 0-1 patterns (ξμ)μ=1 ,...,M ,
+
+where the random variables ξμi are i.i.d. and take values in {0, 1}. We assume that 
+
+P(ξμi = 1) = p = pN
+
+is small. In fact, we shall always choose 
+
+pN = log NN ,
+
+which corresponds to an extremely sparse regime. For even sparser patterns, there is a positive probability that some of the messages ξμ are identically zero (and then, of course, they cannot be distinguished anymore). We shall consider various associative memory models for such sparse patterns. They will be described through their local fields and retrieval dynamics. 2.1. Amari’s models. The first class of models we consider is inspired by work of Amari [iA89]. It is the sparse analogue of a generalized Hopfield model with higher-order interactions. For a configuration σ = ( σi)Ni=1 ∈ { 0, 1}N , define the retrieval dynamics T =(Ti)Ni=1 by 
+
+Ti(σ) := Θ 
+
+
+
+> ∗
+
+X
+
+> 1≤j1,...,j n−1≤N
+
+σj1 · · · σjn−1 Wi,j 1,...,j n−1 − h
+
+ , (1) where the restricted sum P∗ runs over pairwise distinct indices and 
+
+Wi1,...,i n := 
+
+> M
+
+X
+
+> μ=1
+
+ξμi1 ξμi2 · · · ξμin . (2) Here Θ( x) = 1{x> 0} denotes the Heaviside function. We choose 
+
+h = γ log n−1 N
+
+for some γ > 0. A threshold is necessary here, since otherwise the local fields would typically force all neurons to become active. Next we consider a logarithmically growing interaction order. For fixed n, the storage capacity remains of polynomial order in N . To obtain a genuinely larger capacity while staying within the sparse regime, it is natural to let the interaction order grow with the system size. Since the typical number of active neurons in a pattern is of order log N , the choice 
+
+n = κ log N
+
+with κ < 1 is the natural sparse analogue of the large-order regime. While in [DHL +17] this limit was realized through an exponential interaction function, here 4 MATTHIAS L ¨OWE AND FRANCK VERMET 
+
+we implement it directly by letting n depend on N . This leads to the dynamics 
+
+bT = ( bTi)Ni=1 defined by 
+
+bTi(σ) := Θ 
+
+
+
+> ∗
+
+X
+
+> 1≤j1,...,j n−1≤N
+
+σj1 · · · σjn−1 Wi,j 1,...,j n−1 − h
+
+ , (3) where now n = κ log N . For notational simplicity, we shall always tacitly assume that κ log N ∈ N. In this situation we choose 
+
+h = γn−1 log n−1 N
+
+for some γ > 0. 2.2. Willshaw models. The Willshaw models are close relatives of Amari’s models and go back to the celebrated paper by Willshaw [WBL69]. They dif-fer from Amari’s models in that the synaptic efficacies do not depend on the number of stored messages using a given set of neurons, but only on whether this set appears in at least one stored message. Formally, one may either assume that the variables ξμi are i.i.d. Bernoulli random variables with success probability 
+
+p = log NN ,
+
+or one may choose M messages uniformly at random from the set of all messages with exactly c = log N active neurons. The two settings are very similar, although one or the other is sometimes more convenient mathematically. The Willshaw-type models have the same dynamics as in (1) and (3), respectively. The only difference is that the weights (2) are replaced by 
+
+Wi1,...,i n := Θ 
+
+> M
+
+X
+
+> μ=1
+
+ξμi1 ξμi2 · · · ξμin − 1
+
+!
+
+. (4) 2.3. GB models. The next class of models is inspired by the work of Gripon and Berrou ([ABGJ14], for example). Here the setting is slightly different. We consider systems of size 
+
+N = l log l =: lc 
+
+for integers l, c ∈ N. The neurons are grouped into l blocks of size c.We now restrict ourselves to a special family of sparse messages 
+
+ξ1, . . . , ξ M .
+
+Each message ξμ has exactly one active neuron in each block, and hence exactly 
+
+l active neurons in total. More precisely, if ( a, k ) denotes the k-th neuron in the 
+
+a-th block, then for each μ = 1 , . . . , M and each a = 1 , . . . , l there exists exactly one k ∈ { 1, . . . , c } such that 
+
+ξμ 
+
+> (a,k )
+
+= 1 ,
+
+while all other coordinates of ξμ are equal to 0. ASSOCIATIVE MEMORIES FOR SPARSE PATTERNS WITH HUGE CAPACITY 5
+
+The dynamics is analogous to that of the Willshaw model. Define 
+
+W(a1,k 1),..., (an,k n) := Θ 
+
+> M
+
+X
+
+> μ=1
+
+ξμ 
+
+> (a1,k 1)
+
+· · · ξμ 
+
+> (an,k n)
+
+− 1
+
+!
+
+, (5) whenever a1, . . . , a n are pairwise distinct, and set 
+
+W(a1,k 1),..., (an,k n) := 0 otherwise. For σ ∈ { 0, 1}lc , define the local field 
+
+S(a,k )(σ) := 
+
+> l
+
+X 
+
+> a2,...,a n=1
+> a,a 2,...,a npairwise distinct
+> c
+
+X
+
+> k2,...,k n=1
+
+W(a,k ),(a2,k 2),..., (an,k n) σ(a2,k 2) · · · σ(an,k n).
+
+(6) Finally, define the dynamics by 
+
+T(a,k )(σ) = Θ  S(a,k )(σ) − h, (7) for a suitable threshold h.As before, one may also allow the interaction order to grow with the system size by taking 
+
+n = κ log N
+
+for some κ < 1. 3. Storage capacities 
+
+We now turn to the storage capacities of the models introduced in the previous section. We begin with the higher-order Amari and Willshaw models for fixed interaction order, and then consider the logarithmically growing regime. Finally, we discuss the corresponding results in the Gripon–Berrou architecture. 
+
+Theorem 3.1. Consider Amari’s model with fixed interaction order n, defined by (1) and (2) , and choose 
+
+h = γ log n−1 N
+
+for some 0 < γ < 1. Then there exists α0 = α0(n, γ ) > 0 such that for every 
+
+α < α 0, the choice 
+
+M = α N n
+
+(log N )n
+
+satisfies 
+
+P T (ξμ) = ξμ −→ 1 as N → ∞ 
+
+for every fixed stored pattern ξμ.
+
+Theorem 3.1 has an immediate consequence for the Willshaw model with fixed n.6 MATTHIAS L ¨OWE AND FRANCK VERMET 
+
+Corollary 3.2. Consider the higher-order Willshaw model with fixed interaction order n, defined by (1) and (4) , and choose 
+
+h = γ log n−1 N
+
+for some 0 < γ < 1. Then there exists α0 = α0(n, γ ) > 0 such that for every 
+
+α < α 0, the choice 
+
+M = α N n
+
+(log N )n
+
+satisfies 
+
+P T (ξμ) = ξμ −→ 1 as N → ∞ 
+
+for every fixed stored pattern ξμ.
+
+We next turn to the GB model with fixed interaction order n.
+
+Theorem 3.3. Let n ≥ 2 be fixed and assume that 
+
+M = αc n
+
+for some α > 0. Let 
+
+h = γ
+
+ l − 1
+
+n − 1
+
+
+
+with 0 < α < γ < 1. Then, for every stored message ξμ,
+
+P T (ξμ) = ξμ −→ 1 as l → ∞ .
+
+We now consider the regime n = κ log N of Amari’s model. 
+
+Theorem 3.4. Consider Amari’s model with interaction order 
+
+n = κ log N ∈ N, κ < 1,
+
+defined by (3) and (2) . Choose 
+
+h = γn−1 log n−1 N
+
+for some 0 < γ < 1. Then there exists α0 = α0(κ, γ ) > 0 such that for every 
+
+α < α 0, the choice 
+
+M = αn−1 exp  κ(log 2 N − log N log log N )
+
+results in 
+
+P T (ξμ) = ξμ −→ 1 as N → ∞ .
+
+Remark 3.5. At first sight, the capacity scale 
+
+M = αn−1 exp  κ(log 2 N − log N log log N )
+
+may seem rather small compared with the exponentially large capacity 
+
+M = exp( αN )
+
+obtained in [DHL +17, Theorem 3] . However, the two situations are not directly comparable. In the generalized Hopfield model there are 2N possible patterns, and ASSOCIATIVE MEMORIES FOR SPARSE PATTERNS WITH HUGE CAPACITY 7
+
+typical patterns have order N active coordinates. In the sparse setting considered here, by contrast, typical patterns have only order log N active coordinates, and the number of such typical sparse patterns is of order 
+
+exp(log 2 N − log N log log N ).
+
+In this sense, Theorem 3.4 is the natural sparse analogue of the large-capacity result in [DHL +17] .
+
+The preceding theorem has the following analogue for the Willshaw model. 
+
+Corollary 3.6. Consider the higher-order Willshaw model with interaction order 
+
+n = κ log N ∈ N, κ < 1,
+
+defined by (3) and (4) . Choose 
+
+h = γn−1 log n−1 N
+
+for some 0 < γ < 1. Then there exists α0 = α0(κ, γ ) > 0 such that for every 
+
+α < α 0, the choice 
+
+M = αn−1 exp  κ(log 2 N − log N log log N )
+
+satisfies 
+
+P T (ξμ) = ξμ −→ 1 as N → ∞ 
+
+for every fixed stored pattern ξμ.
+
+The analysis of the GB-model with fixed n does not verbatim carry over to the situation with growing n. However, we can show 
+
+Theorem 3.7. Assume that c = c(l) ∼ log l and let 
+
+n = κc 
+
+for some fixed κ > 0. Let 
+
+M = αc n
+
+for some α ∈ (0 , 1) , and choose 
+
+h = γ
+
+ l − 1
+
+n − 1
+
+
+
+with α < γ < 1. Then, for every stored message ξμ,
+
+P T (ξμ) = ξμ −→ 1 as l → ∞ .8 MATTHIAS L ¨OWE AND FRANCK VERMET 
+
+4. Proofs 
+
+Proof of Theorem 3.1. Without loss of generality, it suffices to consider μ = 1. Fix δ ∈ (0 , 1) and define 
+
+Aδ := 
+
+( NX
+
+> j=1
+
+ξ1 
+
+> j
+
+− log N ≤ (1 − δ) log N
+
+)
+
+. (8) By the law of large numbers, 
+
+P(Aδ) −→ 1 as N → ∞ .
+
+We first consider coordinates i such that ξ1 
+
+> i
+
+= 1. On the event Aδ, the pattern 
+
+ξ1 has at least δ log N active coordinates. Hence the contribution of the message 
+
+μ = 1 alone yields 
+
+> ∗
+
+X
+
+> 1≤j1,...,j n−1≤N
+
+ξ1 
+
+> j1
+
+· · · ξ1 
+
+> jn−1
+
+Wi,j 1,...,j n−1 ≥ (n − 1)! 
+
+δ log N − 1
+
+n − 1
+
+
+
+.
+
+Note that, for every ε > 0 and all N large enough, we have (n − 1)! 
+
+δ log N − 1
+
+n − 1
+
+
+
+≥ (1 − ε)δ n−1(log N )n−1. (9) Choosing δ such that δ n−1 > γ , it follows that 
+
+Ti(ξ1) = 1 on the set Aδ
+
+for all sufficiently large N .Next consider a coordinate i such that ξ1 
+
+> i
+
+= 0. On the event Aδ, the number of active coordinates of ξ1 lies between δ log N and 
+
+d := (2 − δ) log N
+
+and we assume, without loss of generality, that those active coordinates are the first ones. Conditioning on the number d′ of active coordinates of ξ1, we obtain 
+
+P {Ti(ξ1)̸ = ξ1 
+
+> i
+
+} ∩ { ξ1 
+
+> i
+
+= 0 } ∩ Aδ
+
+
+
+≤
+
+> d
+
+X  
+
+> d′=δlog N
+
+P
+
+
+
+> ∗
+
+X
+
+> i1,...,i n−1≤d′
+> M
+
+X
+
+> μ=2
+
+ξμi ξμi1 · · · ξμin−1 ≥ h
+
+
+
+> N
+
+X
+
+> j=1
+
+ξ1 
+
+> j
+
+= d′
+
+ P
+
+> N
+
+X
+
+> j=1
+
+ξ1 
+
+> j
+
+= d′
+
+!
+
+≤ max     
+
+> δlog N≤d′≤d
+
+P
+
+
+
+> ∗
+
+X
+
+> i1,...,i n−1≤d′
+> M
+
+X
+
+> μ=2
+
+ξμi ξμi1 · · · ξμin−1 ≥ h
+
+
+
+> N
+
+X
+
+> j=1
+
+ξ1 
+
+> j
+
+= d′
+
+ . (10) Since all summands are nonnegative, the probability on the right-hand side is increasing in d′. Hence it is bounded above by the corresponding expression with 
+
+d′ = d. Relabelling the active coordinates if necessary, we may therefore assume that 
+
+ξ11 = · · · = ξ1 
+
+> d
+
+= 1 and ξ1 
+
+> d+1
+
+= · · · = ξ1 
+
+> N
+
+= 0 ,ASSOCIATIVE MEMORIES FOR SPARSE PATTERNS WITH HUGE CAPACITY 9
+
+and obtain 
+
+P {Ti(ξ1)̸ = ξ1 
+
+> i
+
+} ∩ { ξ1 
+
+> i
+
+= 0 } ∩ Aδ
+
+
+
+≤ P
+
+
+
+> ∗
+
+X
+
+> i1,...,i n−1≤dM
+
+X
+
+> μ=2
+
+ξμi ξμi1 · · · ξμin−1 ≥ h
+
+ . (11) Using Markov’s inequality, we obtain for every t > 0, 
+
+P
+
+
+
+> ∗
+
+X
+
+> i1,...,i n−1≤dM
+
+X
+
+> μ=2
+
+ξμi ξμi1 · · · ξμin−1 ≥ h
+
+
+
+≤ e−th E
+
+exp 
+
+t
+
+> ∗
+
+X
+
+> i1,...,i n−1≤dM
+
+X
+
+> μ=2
+
+ξμi ξμi1 · · · ξμin−1
+
+ . (12) By independence of the patterns, 
+
+E
+
+exp 
+
+t
+
+> ∗
+
+X
+
+> i1,...,i n−1≤dM
+
+X
+
+> μ=2
+
+ξμi ξμi1 · · · ξμin−1
+
+
+
+=E
+
+exp 
+
+t
+
+> ∗
+
+X
+
+> i1,...,i n−1≤d
+
+ξ2 
+
+> i
+
+ξ2 
+
+> i1
+
+· · · ξ2
+
+> in−1
+
+ 
+
+> M−1
+
+≤E
+
+exp 
+
+t
+
+> ∗
+
+X
+
+> i1,...,i n−1≤d
+
+ξ2 
+
+> i
+
+ξ2 
+
+> i1
+
+· · · ξ2
+
+> in−1
+
+
+
+> M
+
+, (13) since the expectation on the right-hand side is at least 1. Taking expectation with respect to ξ2 
+
+> i
+
+first, we get 
+
+E
+
+exp 
+
+t
+
+> ∗
+
+X
+
+> i1,...,i n−1≤d
+
+ξ2 
+
+> i
+
+ξ2 
+
+> i1
+
+· · · ξ2
+
+> in−1
+
+
+
+= 1 − p + p E
+
+exp 
+
+t
+
+> ∗
+
+X
+
+> i1,...,i n−1≤d
+
+ξ2 
+
+> i1
+
+· · · ξ2
+
+> in−1
+
+ . (14) Set xj := ξ2 
+
+> j
+
+for j = 1 , . . . , d , and define 
+
+h(xi1 , . . . , x in−1 ) := xi1 · · · xin−1 .
+
+Then ∗X
+
+> i1,...,i n−1≤d
+
+ξ2 
+
+> i1
+
+· · · ξ2 
+
+> in−1
+
+= ( n − 1)! 
+
+ dn − 1
+
+
+
+Ud(h),10 MATTHIAS L ¨OWE AND FRANCK VERMET 
+
+where 
+
+Ud(h) := 1
+
+  dn−1
+
+ X
+
+> 1≤i1<··· <i n−1≤d
+
+h(xi1 , . . . , x in−1 )is a U -statistic of degree n − 1. We now use Hoeffding’s decomposition idea [Hoe63]. Set 
+
+k := 
+
+ dn − 1
+
+
+
+and 
+
+B(x1, . . . , x d) := 1
+
+k
+
+> k−1
+
+X
+
+> r=0
+
+h(xr(n−1)+1 , . . . , x (r+1)( n−1) ).
+
+Then 
+
+Ud(h) = 1
+
+d!
+
+X
+
+> σ∈Sd
+
+B(xσ(1) , . . . , x σ(d)).
+
+where, of course, Sd is the symmetric group over {1, . . . , d }. Hence, for any T ∈ R
+
+exp( T U d(h)) = exp T 1
+
+d!
+
+X
+
+> σ∈Sd
+
+B(xσ(1) , . . . , x σ(d))
+
+!
+
+≤ 1
+
+d!
+
+X
+
+> σ∈Sd
+
+exp  T B (xσ(1) , . . . , x σ(d))
+
+by Jensen’s inequality. Since the blocks in the definition of B are disjoint, the corresponding random variables are independent, and therefore 
+
+E[eT U d(h)] ≤
+
+> k−1
+
+Y
+
+> r=0
+
+E
+
+
+
+exp 
+
+Tk h(xr(n−1)+1 , . . . , x (r+1)( n−1) )
+
+ 
+
+=
+
+
+
+E
+
+
+
+exp 
+
+Tk h(x1, . . . , x n−1)
+
+ k
+
+. (15) Now h(x1, . . . , x n−1) is Bernoulli distributed with success probability pn−1. Hence 
+
+E
+
+
+
+exp 
+
+Tk h(x1, . . . , x n−1)
+
+ 
+
+= 1 − pn−1 + pn−1eT /k .
+
+Therefore 
+
+E[eT U d(h)] ≤  1 − pn−1 + pn−1eT /k k .
+
+We now choose 
+
+T = t(n − 1)! 
+
+ dn − 1
+
+
+
+.
+
+Since n is fixed, there exists a constant Cn > 0 such that (n − 1)!   dn−1
+
+
+
+k ≤ Cndn−2ASSOCIATIVE MEMORIES FOR SPARSE PATTERNS WITH HUGE CAPACITY 11 
+
+for all large d. Thus 
+
+E
+
+exp 
+
+t
+
+> ∗
+
+X
+
+> i1,...,i n−1≤d
+
+ξ2 
+
+> i1
+
+· · · ξ2
+
+> in−1
+
+ ≤
+
+
+
+1 − pn−1 + pn−1eCntd n−2 k
+
+. (16) Combining (12), (13), (14), and (16), we obtain 
+
+P
+
+
+
+> ∗
+
+X
+
+> i1,...,i n−1≤dM
+
+X
+
+> μ=2
+
+ξμi ξμi1 · · · ξμin−1 ≥ h
+
+
+
+≤ exp 
+
+
+
+−th + M p 
+
+
+
+1 − pn−1 + pn−1eCntd n−2 k
+
+− 1
+
+ 
+
+. (17) Now choose 
+
+t = adn−2
+
+with a > 0 to be fixed later. Then 
+
+Cntd n−2 = Cna, 
+
+and therefore 
+
+1 − pn−1 + pn−1eCntd n−2 k
+
+=  1 + pn−1(eCna − 1) k .
+
+Since 
+
+k p n−1 ≍ d
+
+log NN
+
+n−1
+
+−→ 0,
+
+we have  1 + pn−1(eCna − 1) k − 1 = (1 + o(1)) k p n−1(eCna − 1) .
+
+Hence the exponent in (17) is bounded by 
+
+−th + (1 + o(1)) M p nk(eCna − 1) . (18) Now recall that 
+
+h = γ(log N )n−1 and d = (2 − δ) log N, 
+
+so 
+
+th = adn−2 γ(log N )n−1 = (1 + o(1)) aγ 
+
+(2 − δ)n−2 log N. 
+
+Moreover, 
+
+M p n = α N n
+
+(log N )n · (log N )n
+
+N n = α, 
+
+and 
+
+k = (1 + o(1)) dn − 1 = (1 + o(1)) 2 − δn − 1 log N. 
+
+Thus (18) becomes 
+
+−(1 + o(1)) aγ 
+
+(2 − δ)n−2 log N + (1 + o(1)) α 2 − δn − 1(eCna − 1) log N. 12 MATTHIAS L ¨OWE AND FRANCK VERMET 
+
+Since 
+
+eCna − 1 = Cna + O(a2) as a ↓ 0,
+
+we may choose a > 0 small enough and then α > 0 small enough such that 
+
+aγ 
+
+(2 − δ)n−2 > 2α 2 − δn − 1(eCna − 1) .
+
+Since aγ 
+
+(2 − δ)n−2 > 2α 2 − δn − 1(eCna − 1) ,
+
+there exists ρ = ρ(n, γ, δ, α, a ) > 0 such that for all sufficiently large N , the exponent in (17) is bounded above by 
+
+−(1 + ρ) log N. 
+
+Consequently, 
+
+P Ti(ξ1)̸ = ξ1 
+
+> i
+
+, ξ 1 
+
+> i
+
+= 0 , A δ
+
+ ≤ N −(1+ ρ).
+
+In particular, there exists c = c(n, γ, δ, α ) > 1 such that 
+
+P Ti(ξ1)̸ = ξ1 
+
+> i
+
+, ξ 1 
+
+> i
+
+= 0 , A δ
+
+ ≤ N −c
+
+for all sufficiently large N .Combining this with the deterministic stability of the active coordinates on Aδ,we conclude by a union bound that 
+
+P T (ξ1)̸ = ξ1, A δ
+
+ ≤ N · N −c −→ 0.
+
+Since moreover P(Acδ) → 0, it follows that 
+
+P T (ξ1) = ξ1 −→ 1.
+
+This proves the theorem. □
+
+Let us next turn to the proof of Corollary 3.2: 
+
+Proof of Corollary 3.2. We argue as in the proof of Theorem 3.1, again condi-tioning on the event Aδ defined in (8). First consider a coordinate i such that ξ1 
+
+> i
+
+= 1. On the event Aδ, the message ξ1
+
+itself creates all relevant ( n − 1)-tuples of active coordinates, and therefore the local field in the Willshaw model is bounded below by 
+
+> ∗
+
+X
+
+> 1≤j1,...,j n−1≤N
+
+ξ1 
+
+> j1
+
+· · · ξ1 
+
+> jn−1
+
+,
+
+exactly as in the Amari model. Hence, for the same choice of δ, every active coordinate of ξ1 remains stable for all sufficiently large N .Now let i be such that ξ1 
+
+> i
+
+= 0. For every choice of pairwise distinct indices 
+
+i1, . . . , i n−1, we have Θ
+
+> M
+
+X
+
+> μ=2
+
+ξμi ξμi1 · · · ξμin−1 − 1
+
+!
+
+≤
+
+> M
+
+X
+
+> μ=2
+
+ξμi ξμi1 · · · ξμin−1 .ASSOCIATIVE MEMORIES FOR SPARSE PATTERNS WITH HUGE CAPACITY 13 
+
+Thus the local field at a zero-coordinate in the Willshaw model is bounded above by the corresponding local field in Amari’s model. In particular, whenever a zero-coordinate is turned into a 1 by the Willshaw dynamics, the same happens in the Amari dynamics. Therefore the error probability for inactive coordinates in the Willshaw model is bounded by the corresponding error probability in Theorem 3.1. Combining this with the stability of active coordinates on Aδ and using P(Aδ) → 1, the claim follows. □
+
+Proof of Theorem 3.3. It suffices to consider a fixed stored message, say ξ1. Let (a, k a) denote the unique active neuron of ξ1 in block a ∈ { 1, . . . , l }.First consider a correct neuron ( a, k a). For every choice of pairwise distinct blocks 
+
+a2, . . . , a n ∈ { 1, . . . , l } \ { a}, the hyperedge (( a, k a), (a2, k a2 ), . . . , (an, k an )) is present, since it is created by the message ξ1 itself. Hence 
+
+S(a,k a)(ξ1) ≥
+
+ l − 1
+
+n − 1
+
+
+
+.
+
+Since h = γ  l−1
+
+> n−1
+
+ with γ < 1, it follows that 
+
+T(a,k a)(ξ1) = 1 .
+
+Now let ( a, k ) be such that ξ1(a,k ) = 0. Write 
+
+K := 
+
+ l − 1
+
+n − 1
+
+
+
+.
+
+For ν ≥ 2 define 
+
+Xν := X
+
+> b̸=a
+
+1{ξν 
+
+> (b,k b)
+
+= 1 } and Zν := 1{ξν 
+
+> (a,k )
+
+= 1 }
+
+ Xν
+
+n − 1
+
+
+
+.
+
+Then 
+
+S(a,k )(ξ1) ≤
+
+> M
+
+X
+
+> ν=2
+
+Zν .
+
+Indeed, every summand contributing to S(a,k )(ξ1) is generated by at least one message ξν , ν ≥ 2, counted by Zν . Since the same hyperedge may be generated by several messages, this yields only an upper bound. Moreover, Xν ∼ Bin( l − 1, 1/c ), and   Xν
+
+> n−1
+
+ counts the number of ( n − 1)-subsets of blocks on which ξν agrees with ξ1. Hence 
+
+E
+
+ Xν
+
+n − 1
+
+ 
+
+=
+
+ l − 1
+
+n − 1
+
+
+
+c−(n−1) .14 MATTHIAS L ¨OWE AND FRANCK VERMET 
+
+Indeed, note that for every subset A ⊂ { 1, . . . , l − 1} with |A| = n − 1, the indicator IA := 1{ξν agrees with ξ1 in all blocks from A} satisfies 
+
+ Xν
+
+n − 1
+
+
+
+= X 
+
+> A:|A|=n−1
+
+IA,
+
+Therefore, 
+
+E
+
+ Xν
+
+n − 1
+
+ 
+
+= X 
+
+> A:|A|=n−1
+
+E[IA] = X 
+
+> A:|A|=n−1
+
+P(IA = 1) .
+
+For each fixed set A with |A| = n − 1, the choices in the corresponding blocks are independent, and the probability of a match in any given block is 1 /c . Hence 
+
+P(IA = 1) = c−(n−1) .
+
+Since there are exactly   l−1
+
+> n−1
+
+ such subsets A, it follows that 
+
+E
+
+ Xν
+
+n − 1
+
+ 
+
+=
+
+ l − 1
+
+n − 1
+
+
+
+c−(n−1) .
+
+Moreover, 
+
+E[Zν ] = 1
+
+c E
+
+ Xν
+
+n − 1
+
+ 
+
+= 1
+
+c
+
+ l − 1
+
+n − 1
+
+ 1
+
+c n−1 = Kc −n.
+
+Hence 
+
+E
+
+h MX
+
+> ν=2
+
+Zν
+
+i
+
+= ( M − 1) Kc −n = ( α + o(1)) K. 
+
+Since the variables ( Zν )ν≥2 are independent, an exponential Markov inequality yields, for every t > 0, 
+
+P S(a,k )(ξ1) ≥ h ≤ e−th MY
+
+> ν=2
+
+E[etZ ν ].
+
+For fixed n and sufficiently small t > 0, one can choose the constant Ct with  
+
+> Ct
+> t
+
+→ 1 as t ↓ 0 such that 
+
+E[etZ ν ] ≤ 1 + CtKc −n
+
+Therefore, using that h = γK and that 1 + x ≤ ex for all x,
+
+P S(a,k )(ξ1) ≥ h ≤ exp 
+
+
+
+−tγK + CtM Kc −n
+
+
+
+= exp 
+
+
+
+−(tγ − Ctα + o(1)) K
+
+
+
+.
+
+Since α < γ , and Ct 
+
+> t
+
+→ 1 as t ↓ 0 (which is to say that Ct is of order t for small 
+
+t) we may choose t > 0 sufficiently small so that 
+
+tγ > C tα. 
+
+Hence 
+
+P S(a,k )(ξ1) ≥ h ≤ e−c0K
+
+for some c0 > 0 and all l large enough. ASSOCIATIVE MEMORIES FOR SPARSE PATTERNS WITH HUGE CAPACITY 15 
+
+Finally, there are l(c − 1) neurons ( a, k ) with ξ1(a,k ) = 0, hence by the union bound 
+
+P ∃(a, k ) : T(a,k )(ξ1)̸ = ξ1(a,k )
+
+ ≤ l(c − 1) e−c0K −→ 0,
+
+since K =   l−1
+
+> n−1
+
+ ≍ ln−1 for fixed n. This proves the theorem. □
+
+Let us now turn to the situation where in Amari’s model we choose n = κ log N ∈
+
+N for some κ < 1. 
+
+Proof of Theorem 3.4. The proof is simpler than in the fixed-order n case. In-deed, for fixed n, the false field is a sum of many small but non-negligible contributions, and its control requires an exponential-moment estimate. When 
+
+n = κ log N , however, the relevant coincidence probabilities become so small that a first-moment bound already suffices. As before, it suffices to consider a fixed stored pattern, say ξ1.Fix δ ∈ (γ, 1) and let 
+
+Aδ := 
+
+( NX
+
+> j=1
+
+ξ1 
+
+> j
+
+− log N ≤ (1 − δ) log N
+
+)
+
+.
+
+Then 
+
+P(Aδ) −→ 1 as N → ∞ .
+
+We first consider a coordinate i such that ξ1 
+
+> i
+
+= 1. On the event Aδ, the pattern 
+
+ξ1 has at least δ log N active coordinates. Hence the contribution of the message 
+
+μ = 1 alone yields 
+
+> ∗
+
+X
+
+> 1≤j1,...,j n−1≤N
+
+ξ1 
+
+> j1
+
+· · · ξ1 
+
+> jn−1
+
+Wi,j 1,...,j n−1 ≥ (δ log N − 1) n−1,
+
+where ( x)m = x(x − 1) · · · (x − m + 1) denotes the falling factorial. Since n =
+
+κ log N with κ < 1, we have (δ log N − 1) n−1 = (1 + o(1)) δ n−1 log n−1 N. 
+
+Because δ > γ , it follows that (δ log N − 1) n−1 > γ n−1 log n−1 N = h
+
+for all sufficiently large N . Thus 
+
+Ti(ξ1) = 1 on Aδ
+
+for all large N .Now consider a coordinate i such that ξ1 
+
+> i
+
+= 0. On the event Aδ, the number of active coordinates of ξ1 is at most 
+
+d := (2 − δ) log N. 
+
+Relabelling these active coordinates if necessary, we may assume that 
+
+ξ11 = · · · = ξ1 
+
+> d
+
+= 1 , ξ1 
+
+> d+1
+
+= · · · = ξ1 
+
+> N
+
+= 0 .16 MATTHIAS L ¨OWE AND FRANCK VERMET 
+
+Then the local field at site i is bounded from above by 
+
+> M
+
+X
+
+> μ=2
+
+ξμi (Xμ)n−1,
+
+where 
+
+Xμ := 
+
+> d
+
+X
+
+> j=1
+
+ξμj ∼ Bin( d, p ), and again p = log NN .
+
+Indeed, for a fixed pattern μ ≥ 2, the random variable Xμ counts how many of the first d active coordinates of ξ1 are also active in ξμ. Hence, if ξμi = 1, the number of ordered ( n − 1)-tuples ( i1, . . . , i n−1) of pairwise distinct indices among these matching coordinates is at most (Xμ)n−1 := Xμ(Xμ − 1) · · · (Xμ − n + 2) ,
+
+that is, the falling factorial of order n − 1. We use the convention that (Xμ)n−1 = 0 whenever Xμ < n − 1.
+
+In particular, if Xμ = 0, then ( Xμ)n−1 = 0, which simply reflects the fact that in this case there are no matching coordinates at all and hence no contribution of the pattern μ to the local field. Summing over μ = 2 , . . . , M yields the claimed upper bound. Hence, using Markov’s inequality, 
+
+P Ti(ξ1)̸ = ξ1 
+
+> i
+
+, ξ 1 
+
+> i
+
+= 0 , A δ
+
+ ≤ 1
+
+h E
+
+" MX
+
+> μ=2
+
+ξμi (Xμ)n−1
+
+#
+
+=M − 1
+
+h E[ξ2 
+
+> i
+
+] E[( X2)n−1]=M − 1
+
+h p (d)n−1pn−1
+
+=M − 1
+
+h (d)n−1pn. (19) Now 
+
+M p n = αn−1 exp  κ(log 2 N − log N log log N ) log NN
+
+n
+
+= αn−1,
+
+and (d)n−1 ≤ dn−1 = ((2 − δ) log N )n−1.
+
+Since 
+
+h = γn−1 log n−1 N, 
+
+it follows from (19) that 
+
+P Ti(ξ1)̸ = ξ1 
+
+> i
+
+, ξ 1 
+
+> i
+
+= 0 , A δ
+
+ ≤ (1 + o(1)) 
+
+(2 − δ)αγ
+
+n−1
+
+.ASSOCIATIVE MEMORIES FOR SPARSE PATTERNS WITH HUGE CAPACITY 17 
+
+Recalling that n = κ log N , we obtain 
+
+(2 − δ)αγ
+
+n−1
+
+= N κ log 
+
+ (2 −δ)αγ
+
++o(1) .
+
+Choose α > 0 so small that 
+
+κ log 
+
+(2 − δ)αγ
+
+
+
+< −2.
+
+Then there exists c > 1 such that 
+
+P Ti(ξ1)̸ = ξ1 
+
+> i
+
+, ξ 1 
+
+> i
+
+= 0 , A δ
+
+ ≤ N −c
+
+for all sufficiently large N .Finally, by a union bound over all coordinates, 
+
+P T (ξ1)̸ = ξ1, A δ
+
+ ≤ N · N −c −→ 0.
+
+Since also P(Acδ) → 0, this proves 
+
+P T (ξ1) = ξ1 −→ 1.
+
+□
+
+Proof of Corollary 3.6. The argument is the same as in the proof of Theorem 3.4, exactly as in the fixed-order case. Indeed, for a coordinate i with ξ1 
+
+> i
+
+= 1, the stored message ξ1 itself creates all relevant hyperedges, so that the local field in the Willshaw model is bounded below by the corresponding local field in Amari’s model. Hence every active coordinate remains stable on the event Aδ used in the proof of Theorem 3.4. On the other hand, for a coordinate i with ξ1 
+
+> i
+
+= 0, we have Θ
+
+> M
+
+X
+
+> μ=2
+
+ξμi ξμi1 · · · ξμin−1 − 1
+
+!
+
+≤
+
+> M
+
+X
+
+> μ=2
+
+ξμi ξμi1 · · · ξμin−1
+
+for every choice of pairwise distinct indices i1, . . . , i n−1. Thus the false field in the Willshaw model is bounded above by the corresponding false field in Amari’s model. Consequently, every error event for the Willshaw dynamics is contained in the corresponding error event for Amari’s dynamics. The claim therefore follows directly from Theorem 3.4. □
+
+Let us finally turn to the GB model with growing n. Here, the proof for fixed interaction order does not extend verbatim to the case where n grows with the system size, since the random variables 
+
+Zν = 1{ξν 
+
+> (a,k )
+
+= 1 }
+
+ Xν
+
+n − 1
+
+
+
+are no longer uniformly controlled by the same exponential-moment estimate. However, if n = o(l/c ), then Xν ∼ Bin( l − 1, 1/c ) is sharply concentrated around 18 MATTHIAS L ¨OWE AND FRANCK VERMET 
+
+(l − 1) /c , and consequently   Xν
+
+> n−1
+
+ is, with overwhelming probability, within a constant factor of 
+
+c−(n−1) 
+
+ l − 1
+
+n − 1
+
+
+
+.
+
+This reduces the noise term to a binomial counting variable and yields the same storage scale M ≍ cn. More formally: 
+
+Proof of Theorem 3.7. As before, it suffices to consider a fixed stored message, say ξ1. Let ( a, k a) denote the unique active neuron of ξ1 in block a.For a correct neuron ( a, k a), the message ξ1 itself creates all hyperedges (( a, k a), (a2, k a2 ), . . . , (an, k an )) with a2, . . . , a n pairwise distinct and different from a. Hence 
+
+S(a,k a)(ξ1) ≥
+
+ l − 1
+
+n − 1
+
+
+
+> h, 
+
+since γ < 1. Therefore 
+
+T(a,k a)(ξ1) = 1 .
+
+Now fix a false neuron ( a, k ), i.e. ξ1(a,k ) = 0. Define 
+
+Xν := X
+
+> b̸=a
+
+1{ξν 
+
+> (b,k b)
+
+= 1 }, Bν := 1{ξν 
+
+> (a,k )
+
+= 1 }, as well as Zν := Bν
+
+ Xν
+
+n − 1
+
+
+
+,
+
+for ν = 2 , . . . , M . Then 
+
+S(a,k )(ξ1) ≤
+
+> M
+
+X
+
+> ν=2
+
+Zν .
+
+Indeed, every active hyperedge contributing to S(a,k )(ξ1) is generated by at least one stored message ξν , ν ≥ 2, counted by Zν ; since the same hyperedge may be generated by several messages, this gives only an upper bound. Set 
+
+λ := l − 1
+
+c and Kn := 
+
+ l − 1
+
+n − 1
+
+
+
+.
+
+Since in each block b̸ = a the message ξν hits the prescribed neuron kb with probability 1 /c , independently across blocks, we have 
+
+Xν ∼ Bin( l − 1, 1/c ),
+
+hence E[Xν ] = λ.Next, let us fix η > 0 and define εc := ηc and consider the event 
+
+Eν := {| Xν − λ| ≤ εcλ}.
+
+By a standard Hoeffding-Chernoff bound for binomial random variables, since 
+
+Xν ∼ Bin( l − 1, 1/c ) has mean λ = ( l − 1) /c and 
+
+Ecν = {| Xν − λ| > ε cλ} with εc = η/c, ASSOCIATIVE MEMORIES FOR SPARSE PATTERNS WITH HUGE CAPACITY 19 
+
+we obtain 
+
+P(Ecν ) ≤ 2 exp( −Cε 2 
+
+> c
+
+λ) = 2 exp 
+
+
+
+−Cη
+
+λc2
+
+
+
+.
+
+for some Cη > 0. Since c ∼ log l and λ ∼ l/ log l, this yields 
+
+P(Ecν ) ≤ 2 exp 
+
+
+
+−C′
+
+> η
+
+l
+
+(log l)3
+
+
+
+. (20) Consequently, 
+
+M P(Ecν ) → 0, (21) because log M = log α + n log c = O(c log c) = O(log l log log l).
+
+Hence, with probability tending to one, all events Eν occur simultaneously. On the event Eν we have (1 − εc)λ ≤ Xν ≤ (1 + εc)λ. 
+
+Wherever necessary, we will tacitly assume that (1 − εc)λ, λ and (1 + εc)λ are integers (which is relevant for the binomial coefficients below). Since n = κc and 
+
+λ ∼ l/ log l, we have n = o(λ), so for all l large enough, 
+
+ Xν
+
+n − 1
+
+
+
+≤
+
+(1 + εc)λn − 1
+
+
+
+.
+
+Moreover, (1 + εc)λn − 1
+
+
+
+≤ (1 + 2 εc)n−1
+
+ λn − 1
+
+
+
+,
+
+and since (1 + 2 εc)n−1 =
+
+
+
+1 + 2ηc
+
+κc +o(c)
+
+≤ e2κη +o(1) ,
+
+we obtain  Xν
+
+n − 1
+
+
+
+≤ e2κη +o(1) 
+
+ λn − 1
+
+
+
+.
+
+Finally,  λn − 1
+
+
+
+= (1 + o(1)) c−(n−1) Kn,
+
+so on Eν ,  Xν
+
+n − 1
+
+
+
+≤ (1 + o(1)) e2κη c−(n−1) Kn.
+
+Therefore, on the event TMν=2 Eν ,
+
+> M
+
+X
+
+> ν=2
+
+Zν ≤ (1 + o(1)) e2κη c−(n−1) KnMX
+
+> ν=2
+
+Bν .20 MATTHIAS L ¨OWE AND FRANCK VERMET 
+
+Since the variables Bν are i.i.d. Bernoulli(1 /c ), we have 
+
+> M
+
+X
+
+> ν=2
+
+Bν ∼ Bin( M − 1, 1/c ),
+
+with mean 
+
+μ = M − 1
+
+c ∼ Mc .
+
+Hence, by a standard Chernoff bound, there exists Cη > 0 such that 
+
+P
+
+> M
+
+X
+
+> ν=2
+
+Bν ≥ (1 + η)Mc
+
+!
+
+≤ exp 
+
+
+
+−Cη
+
+Mc
+
+
+
+for all sufficiently large l. On this event, and on TMν=2 Eν , we obtain 
+
+> M
+
+X
+
+> ν=2
+
+Zν ≤ (1 + o(1)) e2κη c−(n−1) Kn (1 + η)Mc .
+
+Using now that M = αc n, this becomes 
+
+> M
+
+X
+
+> ν=2
+
+Zν ≤ (1 + o(1))(1 + η)e2κη αK n.
+
+Since α < γ , we may choose η > 0 so small that (1 + η)e2κη α < γ. 
+
+Hence, for all l large enough, 
+
+S(a,k )(ξ1) < γK n = h
+
+with probability tending to one. Therefore, for every fixed false neuron ( a, k ), 
+
+P T(a,k )(ξ1)̸ = 0  ≤ εl,
+
+where 
+
+εl := P
+
+ M[
+
+> ν=2
+
+Ecν
+
+
+
++ P
+
+> M
+
+X
+
+> ν=2
+
+Bν ≥ (1 + η)Mc
+
+!
+
+≤ P
+
+ M[
+
+> ν=2
+
+Ecν
+
+
+
++ exp 
+
+
+
+−Cη
+
+Mc
+
+
+
+.
+
+By the estimates above, in particular (20) and (21) 
+
+εl = o(( l log l)−1).
+
+Since there are l(c − 1) = O(l log l) false neurons, the union bound yields 
+
+P ∃(a, k ) : ξ1(a,k ) = 0 , T (a,k )(ξ1) = 1  → 0.
+
+Together with the fact that all active neurons remain stable, this implies 
+
+P T (ξ1)̸ = ξ1 −→ 0.
+
+This proves the theorem. 
+
+□ASSOCIATIVE MEMORIES FOR SPARSE PATTERNS WITH HUGE CAPACITY 21 
+
+Remark 4.1. The logarithmic-order result for the GB model should be compared with the corresponding higher-order sparse model with some care. In the GB architecture, messages are constrained to have exactly one active neuron per block, and therefore a fixed n-tuple of neurons from distinct blocks is realized by a given message with probability c−n. This leads to the natural storage scale M ≍ cn.In the unrestricted sparse model, on the other hand, the class of admissible pat-terns is much larger, and this permits considerably larger storage capacities. Thus the difference in scale is a structural feature of the models rather than an artefact of the proof. 
+
+Remark 4.2. Theorem 3.7 is a fixed-point stability result. It shows that, with high probability, every stored GB-message is a fixed point of the one-step dynamics. In particular, the result does not by itself imply the existence of a non-trivial basin of attraction as in [DHL +17] .We do not address here the correction of partially corrupted GB-messages. Indeed, if r blocks of a stored message are corrupted, then the deterministic signal term is reduced from   l−1
+
+> n−1
+
+ to approximately 
+
+l − 1 − rn − 1
+
+
+
+,
+
+while the corresponding noise analysis becomes substantially more involved. It would therefore be natural to investigate one-step or multi-step recovery of cor-rupted GB-messages in future work. 
+
+Acknowledgements 
+
+ML was supported by the German Research Foundation under Germany’s Ex-cellence Strategy EXC 2044/2 - 390685587, Mathematics M¨ unster: Dynamics -Geometry - Structure. 
+
+References             
+
+> [ABGJ14] Behrooz Kamary Aliabadi, Claude Berrou, Vincent Gripon, and Xiaoran Jiang. Storing sparse messages in networks of neural cliques. IEEE Transactions on Neural Networks and Learning Systems , 25:980–989, 2014. [Amb24] Luca Ambrogioni. In search of dispersed memories: Generative diffusion models are associative memory networks. Entropy , 26(5):381, 2024. [Bur94] David Burshtein. Nondirect convergence radius and number of iterations of the Hopfield associative memory. IEEE Trans. Inform. Theory , 40(3):838–847, 1994. [DHL +17] Mete Demircigil, Judith Heusel, Matthias L¨ owe, Sven Upgang, and Franck Ver-met. On a model of associative memory with huge storage capacity. J. Stat. Phys. ,168(2):288–299, 2017. [GHLV16] Vincent Gripon, Judith Heusel, Matthias L¨ owe, and Franck Vermet. A comparative study of sparse associative memories. J. Stat. Phys. , 164(1):105–129, 2016. [Hoe63] Wassily Hoeffding. Probability inequalities for sums of bounded random variables.
+> J. Amer. Statist. Assoc. , 58:13–30, 1963. 22 MATTHIAS L ¨OWE AND FRANCK VERMET
+
+[Hop82] J. J. Hopfield. Neural networks and physical systems with emergent collective com-putational abilities. Proc. Nat. Acad. Sci. U.S.A. , 79(8):2554–2558, 1982. [iA89] Shun ichi Amari. Characteristics of sparsely encoded associative memory. Neural Networks , 2(6):451 – 457, 1989. [KH16] Dmitry Krotov and John J. Hopfield. Dense associative memory for pattern recog-nition. In Proceedings of the 30th International Conference on Neural Information Processing Systems , NIPS’16, pages 1180–1188, Red Hook, NY, USA, 2016. Curran Associates Inc. [Lou97] Daria Loukianova. Lower bounds on the restitution error in the Hopfield model. 
+
+Probab. Theory Related Fields , 107(2):161–176, 1997. [L¨ ow98] Matthias L¨ owe. On the storage capacity of Hopfield models with correlated patterns. 
+
+Ann. Appl. Probab. , 8(4):1216–1250, 1998. [LV05a] Matthias L¨ owe and Franck Vermet. The storage capacity of the Blume-Emery-Griffiths neural network. J. Phys. A , 38(16):3483–3503, 2005. [LV05b] Matthias L¨ owe and Franck Vermet. The storage capacity of the Hopfield model and moderate deviations. Statist. Probab. Lett. , 75(4):237–248, 2005. [LV11] Matthias L¨ owe and Franck Vermet. The Hopfield model on a sparse Erd˝ os-Renyi graph. J. Stat. Phys. , 143(1):205–214, 2011. [LV15] Matthias L¨ owe and Franck Vermet. Capacity of an associative memory model on random graph architectures. Bernoulli , 21(3):1884–1910, 2015. [MPRV87] Robert J. McEliece, Edward C. Posner, Eugene R. Rodemich, and Santosh S. Venkatesh. The capacity of the Hopfield associative memory. IEEE Trans. Inform. Theory , 33(4):461–482, 1987. [New88] Charles M. Newman. Memory capacity in neural network models: Rigorous lower bounds. Neural Networks , 1(3):223–238, 1988. [Oka96] Masato Okada. Notions of associative memory and sparse coding. Neural Networks ,9(8):1429 – 1458, 1996. Four Major Hypotheses in Neuroscience. [PRN +25] Bao Pham, Gabriel Raya, Matteo Negri, Mohammed J Zaki, Luca Ambrogioni, and Dmitry Krotov. Memorization to generalization: Emergence of diffusion models from associative memory. arXiv preprint arXiv:2505.21777 , 2025. [RSL +20] Hubert Ramsauer, Bernhard Sch¨ afl, Johannes Lehner, Philipp Seidl, Michael Widrich, Thomas Adler, Lukas Gruber, Markus Holzleitner, Milena Pavlovi´ c, Geir Kjetil Sandve, et al. Hopfield networks is all you need. arXiv preprint arXiv:2008.02217 , 2020. [Tal98] Michel Talagrand. Rigorous results for the Hopfield model with many patterns. 
+
+Probab. Theory Related Fields , 110(2):177–276, 1998. [WBL69] D. J. Willshaw, O. P. Buneman, and H. C. Longuet-Higgins. Non-Holographic As-sociative Memory. Nature , 222:960–962, June 1969. (Matthias L¨ owe) Fachbereich Mathematik und Informatik, University of M¨ unster, Einsteinstraße 62, 48149 M¨ unster, Germany 
+
+Email address , Matthias L¨ owe: maloewe@math.uni-muenster.de 
+
+(Franck Vermet) Univ Brest, CNRS UMR 6205, Laboratoire de Math´ ematiques de Bretagne Atlantique, 6, avenue Victor Le Gorgeu, CS 93837, F-29238 BREST Cedex 3, France 
+
+Email address , Franck Vermet: Franck.Vermet@univ-brest.fr

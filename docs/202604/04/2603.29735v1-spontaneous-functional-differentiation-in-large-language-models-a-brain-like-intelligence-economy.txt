@@ -1,0 +1,376 @@
+Title: Spontaneous Functional Differentiation in Large Language Models: A Brain-Like Intelligence Economy
+
+URL Source: https://arxiv.org/pdf/2603.29735v1
+
+Published Time: Wed, 01 Apr 2026 01:15:39 GMT
+
+Number of Pages: 11
+
+Markdown Content:
+# Spontaneous Functional Differentiation in Large Language Models: A Brain-Like Intelligence Economy 
+
+## Junjie Zhang 1,2 , Zhen Shen 1,2 , Gang Xiong 1,2 , Xisong Dong 1,2 
+
+> 1
+
+## Institute of Automation, Chinese Academy of Sciences, 
+
+> 2
+
+## School of Artificial Intelligence, University of Chinese Academy of Sciences  
+
+> Correspondence: Zhen.Shen@ia.ac.cn
+
+## Abstract 
+
+The evolution of intelligence in artificial sys-tems provides a unique opportunity to identify universal computational principles. Here we show that large language models spontaneously develop synergistic cores where information in-tegration exceeds individual parts remarkably similar to the human brain. Using Integrated Information Decomposition across multiple ar-chitectures we find that middle layers exhibit synergistic processing while early and late lay-ers rely on redundancy. This organization is dynamic and emerges as a physical phase tran-sition as task difficulty increases. Crucially ablating synergistic components causes catas-trophic performance loss confirming their role as the physical entity of abstract reasoning and bridging artificial and biological intelligence. 
+
+## 1 Introduction 
+
+Large Language Models (LLMs) have developed rapidly in recent years (Comanici et al., 2025; Liu et al., 2024; Huang et al., 2024; Yang et al., 2025a), especially in their extraordinary ability for zero shot generalization and abstract reasoning (Brown et al., 2020). However, a major debate remains: where does this powerful abstract capability come from (Schaeffer et al., 2023)? Is the process of this intelligence emerging similar to how wisdom is created during human growth? Understanding how such an intelligent system integrates informa-tion from multiple dimensions to produce abstract reasoning that goes beyond mere memory is vital for the progress of both artificial intelligence and neuroscience. A large number of studies have explored the structural similarities between LLMs and the hu-man brain (Li et al., 2025a,b). Investigations into the mechanisms of large models have even helped neuroscience deepen the understanding of humans (Li et al., 2025b; Yang et al., 2025b; Tian et al., 2026), other research suggests that current models contain significant redundancy (Gao et al., 2025). These studies challenge mainstream deep learn-ing theories, arguing that simply increasing model parameter scale does not create more complex abil-ities for high level feature combination or multi step reasoning (Csordás et al., 2025). Furthermore, work on the biggest problems in AI today, such as lifelong learning and the issue of forgetting, sug-gests that the emergence of intelligence in LLMs resembles anterograde amnesia (Scoville and Mil-ner, 1957). This is a human neurological condition where the brain can no longer form new long term memories after an illness, while existing memo-ries and information processing skills remain un-affected. These conflicting findings lead to a ques-tion: is there a common ground between the ab-stract abilities of LLMs and the way human intelli-gence is produced? In what form does this abstract capability exist and function inside the model? In this work, inspired by Shannon information theory (Shannon, 1948), we view large models as a multi node information processing system. By using information reorganization analysis (Medi-ano et al., 2025), we discovered an information processing logic inside LLMs that exists across different model series and scales, similar to the human brain. In the early and late layers of the model, each transformer layer functions for sim-ple information reception and lossless transmission. These layers show clear neural plasticity (Johnston, 2009), meaning that the death of some neurons in these layers does not affect the performance of the model. In contrast, neurons in the middle layers show a strong ability for information composition. They can calculate and combine the primary fea-tures passed to them to obtain new high level re-organized features that did not exist before. This is the physical entity of the abstract capability of the model. Neurons in this area show a high level of uniqueness, and the loss of some neurons will cause the model performance to collapse. This 1
+
+> arXiv:2603.29735v1 [cs.AI] 31 Mar 2026
+
+finding suggests a similarity in abstract capabil-ity between LLMs and the human brain. To some extent, it proves the natural correctness of this intel-ligence. It is not a non living system for processing information like a memory reader, but a brain like intelligence. We focus on the most advanced open source models (Yang et al., 2025a; Liu et al., 2024; Huang et al., 2024; Team et al., 2025), specifically the Qwen3 and Gemma3 series. Based on previous research (Yang et al., 2025b; Csordás et al., 2025), we mainly look at tasks involving mathematical calculation and abstract reasoning. The models show the same information processing logic when facing different types of tasks. Our contributions consist of the following parts: • We used information reorganization analy-sis to locate two distinct modules inside the model: the memory storage and transmission layers and the layers for combined reasoning and abstraction. These are located in the early or late stages and the middle stages respec-tively, with a clear boundary between the two. • We analyzed the internal residual flow and measured the trends of change between layers. From an energy perspective, we argue that memory layers strengthen memory by enhanc-ing input features, while abstraction layers combine features to create new high level ab-stract meanings by erasing and writing over the features passed from the former layers. • We performed further analysis at the network level and found that the characteristics are highly similar to the networks in the human brain. The memory layers contain multiple nodes for information storage to ensure loss-less transmission. The abstraction layers are responsible for gathering information together to ensure all primary features can be com-bined. Experiments with ablation also prove that the importance of these two parts is not the same. • Finally, we tested the generalization of this processing logic across various tasks and dif-ficulty levels. We proved that it is not a prop-erty specialized for certain tasks or models. Interestingly, we also found that for low diffi-culty abstract reasoning tasks, the model does not spontaneously evolve specialized memory and abstraction layers in order to save energy. As the difficulty increases, the model actively inputs energy to cause entropy reduction, lead-ing to the appearance of the boundary between the two modules. This behavior for saving en-ergy is highly similar to the glucose consump-tion in different regions of the human brain when handling different tasks. In summary, these findings support the idea that current LLMs share similar information processing methods with the human brain. They can sponta-neously adjust their internal structures to perform the most cost effective operations for a task. The ability to create complex features comes from the combination of primary features by the abstraction layer. At the same time, the redundancy of many parameters in the memory layer is essential to en-sure generalization and robustness. These insights will further advance the development of artificial intelligence and neuroscience. 
+
+## 2 Related Work 
+
+Research on the internal feature processing mecha-nisms and generalization capabilities of LLMs has a rich history. These studies have found that neu-rons spontaneously organize into specialized units that work together to execute tasks (Liu et al., 2022; Webb et al., 2023, 2024; Deletang et al., 2024). A classic example is the early research on the emer-gent abilities of the transformer architecture (Yang et al., 2025b). The phenomenon of grokking in modular arithmetic tasks is often considered the Drosophila experiment for studying emergence in large models (Wang et al., 2024). Subsequent work discovered that distinct logic circuits for memory and abstraction develop within the model during these tasks (Varma et al., 2024; Arora et al., 2026). This indicates that, regardless of model scale, the phenomena of emergency corresponds to internal structural reorganization and specialization. Recent studies on the depth and width of large models suggest that current architectures con-tain significant redundancy (Csordás et al., 2025; Behrouz et al., 2025). Deeper models are often seen as extensions of shallow ones and do not nec-essarily provide new reasoning capabilities, leading to low parameter efficiency. Conversely, some re-search has used heavy regularization to remove most neurons during training. In the resulting sparse models, specific circuits for syntax, pro-gramming, and mathematical tasks were discov-2ered (Gao et al., 2025). This also suggests that parameter redundancy is a key factor in ensuring the robustness and generalization performance of LLMs. Other work has sought inspiration from neu-roscience, specifically the properties of different brain regions. Researchers have observed phe-nomena in LLMs similar to the cross region com-munication of brain waves (Behrouz et al., 2025). Comparisons with the primate brainstem revealed schema neural associations where a single neuron can contain multiple semantics (Marks et al., 2025; Lieberum et al., 2024; Rajamanoharan et al., 2024; Minegishi et al., 2025). These neurons sponta-neously switch states for task specific functions like abstraction, induction, and retrieval. Such neu-ral reusability ensures efficiency and robustness (Yang et al., 2025b). These studies prove that com-putational units within LLMs are not uniformly distributed but show clear differentiation. However, very few studies have investigated the specific ge-ometric location where abstract capability resides within the model. Multiple studies have demonstrated the effective-ness of layer interventions, such as layer skipping, folding, and merging (Gromov et al., 2025; Sun et al., 2025; Lad et al., 2024). These findings show that models are robust to such interventions across most tasks; even removing an entire layer often has little impact on performance. Sensitivity is only ob-served in mathematical tasks that require multi step calculations, such as GSM8K and MATH (Cobbe et al., 2021; Hendrycks et al., 2021). This sensi-tivity is attributed to the need for these tasks to combine the results of multiple sub problems. This explains why our research primarily focuses on mathematical and reasoning tasks. 
+
+## 3 Preliminaries 
+
+3.1 Information Theory and Partial Information Decomposition 
+
+In classical information theory, the mutual infor-mation between two random variables X and Y
+
+quantifies the amount of shared information and serves as a generalized measure of statistical de-pendence. It is defined as: 
+
+I(X; Y ) = X
+
+> x∈X,y ∈Y
+
+p(x, y ) log p(x, y )
+
+p(x)p(y)= H(Y ) − H(Y |X)
+
+(1) While classical information theory is powerful, it lacks a formal concept of information consis-tency among multiple sources. Partial Information Decomposition (PID) (Mages et al., 2024) was in-troduced to address this limitation. Consider a sys-tem where two source variables X1 and X2 contain information about a target variable Y . PID aims to decouple the contributions of these source variables to the total mutual information I(Y ; {X1, X 2}).To achieve this decoupling, PID introduces three distinct atoms of information. Redun-dancy Red (Y ; X1, X 2) represents the information shared by both sources. Unique information Unq 1(Y ; X1, X 2) or Unq 2(Y ; X1, X 2) represents information available only in one specific source. Synergy Syn (Y ; X1, X 2) represents information that can only be obtained by observing both sources simultaneously. These atoms provide a compre-hensive reorganization of the mutual information according to the following system of equations: 
+
+I(Y ; {X1, X 2}) = Red (Y ; X1, X 2)+ Syn (Y ; X1, X 2)+ Unq 1(Y ; X1, X 2)+ Unq 2(Y ; X1, X 2)
+
+(2) The individual mutual information between each source and the target can also be decomposed into redundant and unique components: 
+
+I(Y ; X1) = Red (Y ; X1, X 2)+ Unq 1(Y ; X1, X 2) (3) 
+
+I(Y ; X2) = Red (Y ; X1, X 2)+ Unq 2(Y ; X1, X 2) (4) This system of equations is underdetermined be-cause there are four unknown atoms but only three independent equations provided by classical mutual information. To resolve this and obtain a unique solution for the atoms, an additional measure is required to identify the redundancy component. A common approach is to define the redundancy as the minimum information provided by either source about the target: Red (Y ; X1, X 2) = Imin (Y ; X1, X 2)= min {I(Y ; X1), I (Y ; X2)}
+
+(5) By defining the redundancy through this mini-mum mutual information criterion, all other atoms 3a
+
+# bFigure 1: Distribution of abstract and memory components and sub layer residual flow contributions in Qwen3-8B-Base. (a) Red represents heads responsible for combining primary features into high level semantics, while blue represents heads responsible for lossless information transmission. A clear boundary is visible: early layers (0 to 10) feed information to the middle, middle layers (11 to 23) reorganize features, and late layers (24 to 34) output the high level features. The fitted curve shows a clear inverted U shape. (b) The cosine similarity of each layer contribution to the residual flow demonstrates a phase transition in the middle of the network. 
+
+including synergy and unique information can be uniquely determined. This framework allows for a fine grained analysis of how information is inte-grated or transmitted within a complex system. 
+
+3.2 Integrated Information Decomposition 
+
+Although PID successfully reorganizes informa-tion from multiple sources to a single target, many complex systems require an analysis that involves multiple targets. This is the primary motivation for Integrated Information Decomposition ( ΦID) (Mediano et al., 2025). ΦID extends the PID frame-work to Time Delayed Mutual Information (TDMI), allowing for a fine grained analysis of how infor-mation dynamics evolve between two parts of a system over time: 
+
+I(X1 
+
+> t
+
+, X 2 
+
+> t
+
+; X1
+
+> t+1
+
+, X 2
+
+> t+1
+
+) (6) In this notation, the superscripts 1 and 2 repre-sent different components or modules of a complex system at time t and t+1 . ΦID rearranges these dy-namic quantities into a lattice of 16 temporal atoms. This formalization accounts for various informa-tion transitions. For instance, information encoded as synergy in the sources may become unique in-formation in the targets, representing downstream inference. Conversely, unique information in one source may become redundancy in the targets, rep-resenting a process of information duplication. To calculate the temporal evolution of informa-tion, ΦID constructed a double Boolean lattice for the source variables Xt = {X1 
+
+> t
+
+, X 2 
+
+> t
+
+} and target variables Xt+1 = {X1
+
+> t+1
+
+, X 2
+
+> t+1
+
+}. The informa-tion combinations are defined as antichains, such as the redundant state αred = {{ 1}, {2}} and the synergistic state αsyn = {{ 1, 2}} .The core of ΦID is the double redundancy func-tion I∩(α → β), which quantifies the overlapping information from the source antichain α to the tar-get antichain β. Using the minimum mutual infor-mation criterion, this is defined as: 
+
+I∩(α → β) = min  
+
+> A∈α,B ∈β
+
+I(XAt ; XBt+1 ) (7) This double redundancy function represents the cumulative sum of all pure information atoms I∂
+
+that are lower than or equal to the current nodes in the lattice hierarchy: 4I∩(α → β) = 
+
+X
+
+> α′⪯α
+
+X
+
+> β′⪯β
+
+I∂ (α′ → β′) (8) To extract the sixteen independent and non over-lapping information atoms I∂ (α → β), Möbius was applied to complete inversion over the partially ordered set: 
+
+I∂ (α → β) = X
+
+> α′⪯α
+
+X
+
+> β′⪯β
+
+μ(α′, α )
+
+μ(β′, β )I∩(α′ → β′)
+
+(9) Here μ is the Möbius function defined by the lattice topology. Through this inversion, the total Time Delayed Mutual Information is strictly con-served and decomposed into these sixteen atoms: 
+
+I(X1 
+
+> t
+
+, X 2 
+
+> t
+
+;X1
+
+> t+1
+
+, X 2
+
+> t+1
+
+) = 
+
+X
+
+> α∈A
+
+X
+
+> β∈A
+
+I∂ (α → β) (10) This mathematical formalization provides a rig-orous basis for tracking feature evolution across neural network layers. For example, the abstract reasoning capability is quantified by the synergy to synergy atom I∂ (αsyn → βsyn ), while the memory retention is captured by the redundancy to redun-dancy atom I∂ (αred → βred ).
+
+3.3 Large Language Model Architecture 
+
+The models analyzed in this study are based on the transformer architecture with pre-layer normaliza-tion. We define the following variables for each layer l:
+
+al = SelfAttention l(Norm (hl)) (11) 
+
+ˆhl = hl + al (12) 
+
+ml = MLP l(Norm (ˆhl)) (13) 
+
+hl+1 = ˆhl + ml (14) In these equations, hl ∈ RT ×dmodel represents the residual flow entering layer l. The terms 
+
+al ∈ RT ×dmodel and ml ∈ RT ×dmodel denote the outputs of the self attention layer and the MLP layer, respectively. We refer to these as sub layers. The variable T represents the length of the input a
+
+# b
+
+# c
+
+# d
+
+Figure 2: Topological properties and brain like collab-oration of attention heads. (a) and (b) show the graph theoretic properties of abstract and memory head ma-trices; the former shows high global efficiency while the latter shows high modularity. (c) and (d) visualize abstract and memory heads as nodes in an undirected graph, showing a collaboration pattern similar to brain regions. 
+
+sequence, and dmodel is the width of the residual flow. Norm( ·) indicates token level normalization. The residual flow is initialized as h0 =
+
+Embedding (x), where x is the index of the input tokens. The final output probability distribution 
+
+y = softmax (ˆ y) is derived from the output logits: 
+
+ˆy = Norm (hL)Wout (15) Here, L is the total number of layers in the net-work, Wout is the weight matrix of the output clas-sifier, and V is the size of the vocabulary. In the pre-normalization transformer architec-ture, the intervention of each sub layer on the resid-ual flow is additive. Therefore, we can quantify the contribution of each layer to the residual flow as al + ml = hl+1 − hl. This allows us to isolate the specific influence of self attention and MLP components on the evolving representation of in-formation. 
+
+## 4 Methods and Experiments 
+
+4.1 Abstract and Memory Components in LLMs 
+
+To explore the information theoretic architecture of LLMs, we draw inspiration from neuroscience. In the human brain, different regions receive mul-timodal information and integrate it to generate high level semantic features through information 5Figure 3: The evolution of energy consumption across layers. The energy consumption in the middle layers is significantly higher than in the early and late layers. 
+
+reorganization. We view LLMs as multi node inte-grated information processing systems, where each attention head is treated as a minimal processing node, similar to functional regions in the brain. We use the ΦID framework to analyze the information characteristics of each node, defining each autore-gressive step as a discrete time step to capture the temporal evolution of information processing. To perform ΦID analysis, we take the L2 norm of the activation values of each attention head at each autoregressive time step as the information output of that node: 
+
+a(hi, t ) = ∥sof tmax ( qit(Kit )⊤
+
+√dk
+
+)V it ∥2 (16) Where qit is the query vector of head hi at time step t, and Kit and V it are the key and value ma-trices. Given the temporal consistency of abstract reorganization and memory transmission in the hu-man brain, we define the abstract concept in models as the mapping from synergistic information in the source to synergistic information in the target. The memory concept is defined as redundant informa-tion that remains unchanged from source to target. These metrics capture the evolution of informa-tion and allow us to identify the internal structural changes during task execution. We chose the GSM8K dataset due to its reliance on multi step reasoning. We calculated the quanti-fied abstract and memory concepts for each atten-tion head across all time steps as follows: 
+
+T DM I = I(A1 
+
+> t
+
+, A 2 
+
+> t
+
+; A1
+
+> t+1
+
+, A 2
+
+> t+1
+
+) (17) 
+
+Abstract = syn → syn (18) 
+
+M emory = red → red (19) a 
+
+> b
+> Figure 4: Attention head functional embedding distri-bution. Blue dots represent Red heads, and red dots represent Syn heads. The left plot (ARC Easy) shows mixed heads for simple tasks. The right plot (ARC Challenge) shows a dramatic physical phase transition as task difficulty increases, with heads separating into two independent clusters and forming a clear functional boundary.
+
+By calculating the average of these indicators for each head, we estimate whether a head is dom-inated by abstraction or memory. The difference value ( abstract − memory ) serves as an indicator of whether a head functions as an information reor-ganizer or a transmitter. To prove the generalization of this method, we ranked the heads by this value to define functional boundaries within the model, as shown in Fig 1 a. The results reveal that the middle layers are mainly responsible for information re-organization to generate new semantics, while the early and late layers handle information copying and lossless transmission to ensure stability. This is consistent with interpretability research (Lad et al., 2024) suggesting that early layers perform detok-enization and late layers perform tokenization. To further explore how these layers process in-formation, we calculated the average cosine sim-ilarity of the outputs of each layer and sub layer. As shown in Fig 1 b, a value of zero corresponds to writing new orthogonal features into the resid-ual flow. Negative values correspond to erasing semantic irrelevant fringe information, while pos-itive values correspond to enhancing the input to prevent noise interference. This matches the trends in Fig 1 a: memory layers show positive similarity (enhancement and redundancy), while abstraction layers show zero or negative similarity (forgetting fringe details and writing new information). 
+
+4.2 Analogy between LLMs and Brain Regions 
+
+To investigate how abstract and memory functions are structured among attention heads, we con-6a bFigure 5: The average relative change in the layer’s contribution when a previous layer is skipped and effect of individual computation steps. (a) Integrated gradient values showing the influence of features on the final output; deep red indicates strong positive drive for logic, while large light areas indicate little contribution. (b) Average relative change in subsequent layers when a specific layer is skipped. Middle layers are crucial for performance, while early and late layers show high redundancy and minimal impact when skipped. 
+
+struct a complex network where each node rep-resents an individual attention head. Let V =
+
+{h1, h 2, . . . , h N } be the set of all N attention heads across all layers. We define the edge weight 
+
+wij between head hi and head hj as their pairwise abstract or memory metric derived from the ΦID. We visualize this network using a force directed layout algorithm (Eades, 1984). The algorithm simulates a physical system to find the optimal spatial coordinates for each head. We define an ideal distance constant k based on the total layout area and the number of heads N as 
+
+k = C
+
+q Area N . The repulsive force fr pushes all attention heads apart to prevent overlap defined as a function of their dynamic spatial distance dij on the layout by the equation fr(dij ) = − k2 
+
+> dij
+
+. The at-tractive force fa acts only between connected heads functioning as a simulated spring. Crucially this spring is scaled by their functional collaboration weight wij derived earlier through the formulation 
+
+fa(dij ) = wij d2 
+
+> ij
+> k
+
+. This formulation ensures that heads with stronger semantic synergy exert greater physical pull on each other ultimately driving them to converge into a dense topological core. The attention heads iteratively update their posi-tions based on the total force exerted on each head 
+
+hi:
+
+Ftotal (hi) = X 
+
+> hj̸=hi
+
+⃗fr(hi, h j )+ X 
+
+> hj∈N eighbors (hi)
+
+⃗fa(hi, h j ) (20) The results in Fig 2 c and d show that abstract nodes gather into a core, where fringe information is reorganized into high order features. Memory heads gather into several centers, representing in-formation backups before and after reorganization, showing clear redundancy. We further quantify this topological structure using global efficiency E and modularity Q (La-tora and Marchiori, 2001; Newman, 2006). Global efficiency measures how seamlessly integrated con-cepts travel across the attention heads. We define the physical path length lij as the shortest path between head hi and head hj , where the direct con-nection distance is the inverse of the weight wij .The global efficiency is computed as: 
+
+E = 1
+
+N (N − 1) 
+
+X 
+
+> hi̸=hj
+
+1
+
+lij 
+
+(21) Modularity quantifies the degree to which atten-tion heads group into isolated functional circuits. Let di = P 
+
+> j
+
+wij be the total functional degree of head hi, and m = 12
+
+P 
+
+> i,j
+
+wij be the total weight of the network. The modularity is defined as: 
+
+Q = 12m
+
+X
+
+> hi,h j
+
+
+
+wij − didj
+
+2m
+
+
+
+δ(ci, c j ) (22) where δ(ci, c j ) is the Kronecker delta function which equals 1 if head hi and head hj belong to the same functional community c, and 0 otherwise. Results in Fig 2 a b show that abstract compo-nents have higher global efficiency, while memory 7components are dominated by modularity. High global efficiency allows the abstract layer to receive primary information at a very low cost, focusing energy on reorganization. High modularity allows input information to be stored in different semantic clusters for easy access. Furthermore, inspired by energy consumption in primates, we defined layer energy loss as: 
+
+E(x) = ∥xl∥2
+
+∥xl−1∥2
+
+(1 − cos( xl, x l−1)) (23) This considers both amplitude and directional differences. Fig 3 shows that middle layers con-sume significantly more energy, consistent with the distribution of the abstract layer shown in Fig 1 a. This perfectly mirrors primate brain economy (Bull-more and Sporns, 2012). In biological networks peripheral sensory regions operate with low energy while central associative hubs responsible for ab-stract reasoning consume the most glucose to main-tain global efficiency (Tomasi et al., 2013). There-fore the high energy consumption of the synergistic core aligns with biological metabolic wiring. 
+
+4.3 Adaptive Architectural Differentiation in LLMs 
+
+Fig 4 shows the spontaneous topological reorgani-zation of attention heads when LLMs processes dif-ferent difficulty levels of the ARC task (Clark et al., 2018). In ARC Easy, different types of attention heads are mixed in a disordered state, suggesting that simple tasks do not activate functional special-ization. However, in ARC Challenge, a physical phase transition occurs. The heads collapse and separate into two distinct functional groups with a clear boundary. This boundary proves the spontaneous evolution of a abstract layers and a memory layers. To solve complex logic in ARC Challenge, the model must pay a high entropy energy cost for non linear fea-ture integration. The blue cluster and red cluster evolve into a high energy abstarct department for non linear integration and a low energy memory department for information relay. 
+
+4.4 Impact Analysis Across Layers 
+
+We also studied how the absence of abstract or memory layers affects subsequent calculations. We compared the hidden states hl of a full run with a run where layer s was skipped ( h′
+
+> l
+
+). The relative disturbance was measured as: 
+
+> Figure 6: Impact of head ablation on model perfor-mance. Ablating abstract heads leads to a catastrophic collapse in performance, much greater than the impact of ablating memory heads or random heads.
+
+∥(hl+1 − hl) − (¯hl+1 − ¯hl)∥2
+
+∥hl+1 − hl∥2
+
+(24) As shown in Fig 5 b, skipping middle layers has a significant impact on subsequent information processing. In contrast, early and late layers have low impact, as they primarily handle lossless trans-mission. Integrated gradients in Fig 7 a show that the model intensely extracts features in the first 15 layers, after which the signals decay significantly. This provides evidence that complex reasoning is not spread evenly but is concentrated in the middle synergistic core. 
+
+4.5 Attention Head Ablation Experiment 
+
+Finally, we performed cumulative ablation of at-tention heads based on their abs − mem rank. We compared three groups: ablation from abstraction to memory, memory to abstraction, and random ablation. As shown in Fig 6, the loss of key abstract heads leads to a performance crash of up to 400 percent. This proves that model performance is determined by a few critical nodes, while the remaining compo-nents mainly ensure stability against interference. 
+
+## 5 Limitations 
+
+Our research has several limitations. First, we fo-cused on mathematical and reasoning tasks, leav-ing the functional logic in creative or linguistic domains unexplored. Second, the brain analogy simplifies complex biological and chemical factors into a multi node system. Finally, ΦID computa-tion is resource intensive, limiting its application for real time monitoring of massive models. Fu-ture work should develop more efficient methods 8to quantify information dynamics across diverse architectures and tasks. 
+
+## 6 Conclusion 
+
+This study provides a comprehensive analysis of the internal information processing mechanisms in LLMs through the lens of ΦID. We have identi-fied a clear functional differentiation within models like Qwen3, where early and late layers serve as memory modules while the middle layers act as a core for abstract reasoning. Our findings suggest that this architectural organization is not static but dynamically emerges as task difficulty increases, a behavior that closely mimics the energy efficient glucose consumption patterns observed in the hu-man brain. By proving that the extraordinary ab-stract capabilities of these models arise from the nonlinear combination of primary features in spe-cific geometric regions, our work bridges the gap between artificial intelligence and neuroscience. 
+
+## References 
+
+Aryaman Arora, Zhengxuan Wu, Jacob Steinhardt, and Sarah Schwettmann. 2026. Language model cir-cuits are sparse in the neuron basis. arXiv preprint arXiv:2601.22594 .Ali Behrouz, Meisam Razaviyayn, Peilin Zhong, and Vahab Mirrokni. 2025. Nested learning: The illusion of deep learning architectures. In The Thirty-ninth Annual Conference on Neural Information Process-ing Systems .Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared D Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, and 1 others. 2020. Language models are few-shot learners. Advances in neural information processing systems , 33:1877–1901. Ed Bullmore and Olaf Sporns. 2012. The economy of brain network organization. Nature reviews neuro-science , 13(5):336–349. Peter Clark, Isaac Cowhey, Oren Etzioni, Tushar Khot, Ashish Sabharwal, Carissa Schoenick, and Oyvind Tafjord. 2018. Think you have solved question an-swering? try arc, the ai2 reasoning challenge. arXiv preprint arXiv:1803.05457 .Karl Cobbe, Vineet Kosaraju, Mohammad Bavarian, Mark Chen, Heewoo Jun, Lukasz Kaiser, Matthias Plappert, Jerry Tworek, Jacob Hilton, Reiichiro Nakano, and 1 others. 2021. Training verifiers to solve math word problems. arXiv preprint arXiv:2110.14168 .Gheorghe Comanici, Eric Bieber, Mike Schaekermann, Ice Pasupat, Noveen Sachdeva, Inderjit Dhillon, Mar-cel Blistein, Ori Ram, Dan Zhang, Evan Rosen, and 1 others. 2025. Gemini 2.5: Pushing the frontier with advanced reasoning, multimodality, long context, and next generation agentic capabilities. arXiv preprint arXiv:2507.06261 .Róbert Csordás, Christopher D Manning, and Christo-pher Potts. 2025. Do language models use their depth efficiently? In The Thirty-ninth Annual Conference on Neural Information Processing Systems .Gregoire Deletang, Anian Ruoss, Paul-Ambroise Duquenne, Elliot Catt, Tim Genewein, Christo-pher Mattern, Jordi Grau-Moya, Li Kevin Wenliang, Matthew Aitchison, Laurent Orseau, Marcus Hutter, and Joel Veness. 2024. Language modeling is com-pression. In The Twelfth International Conference on Learning Representations .Peter Eades. 1984. A heuristic for graph drawing. Con-gressus numerantium , 42(11):149–160. Leo Gao, Achyuta Rajaram, Jacob Coxon, Soham V Govande, Bowen Baker, and Dan Mossing. 2025. Weight-sparse transformers have interpretable cir-cuits. arXiv preprint arXiv:2511.13653 .
+
+9Andrey Gromov, Kushal Tirumala, Hassan Shapourian, Paolo Glorioso, and Dan Roberts. 2025. The un-reasonable ineffectiveness of the deeper layers. In 
+
+The Thirteenth International Conference on Learning Representations .Dan Hendrycks, Collin Burns, Saurav Kadavath, Akul Arora, Steven Basart, Eric Tang, Dawn Song, and Jacob Steinhardt. 2021. Measuring mathematical problem solving with the math dataset. NeurIPS .Kunal Chawla Huang, Kushal Lakhotia, Kyle Huang, Lailin Chen, Lakshya Garg, A Lavender, Leandro Silva, Lee Bell, Lei Zhang, Liangpeng Guo, and 1 others. 2024. The llama 3 herd of models. preprint .Michael V Johnston. 2009. Plasticity in the developing brain: implications for rehabilitation. Developmental disabilities research reviews , 15(2):94–101. Vedang Lad, Jin Hwa Lee, Wes Gurnee, and Max Tegmark. 2024. The remarkable robustness of llms: Stages of inference? arXiv preprint arXiv:2406.19384 .Vito Latora and Massimo Marchiori. 2001. Efficient behavior of small-world networks. Physical review letters , 87(19):198701. Yuxiao Li, Eric J Michaud, David D Baek, Joshua En-gels, Xiaoqing Sun, and Max Tegmark. 2025a. The geometry of concepts: Sparse autoencoder feature structure. Entropy , 27(4):344. Ziguang Li, Chao Huang, Xuliang Wang, Haibo Hu, Cole Wyeth, Dongbo Bu, Quan Yu, Wen Gao, Xingwu Liu, and Ming Li. 2025b. Lossless data compression by large models. Nature Machine Intel-ligence , 7(5):794–799. Tom Lieberum, Senthooran Rajamanoharan, Arthur Conmy, Lewis Smith, Nicolas Sonnerat, Vikrant Varma, János Kramár, Anca Dragan, Rohin Shah, and Neel Nanda. 2024. Gemma scope: Open sparse autoencoders everywhere all at once on gemma 2. In Proceedings of the 7th BlackboxNLP Workshop: Analyzing and Interpreting Neural Networks for NLP ,pages 278–300. Aixin Liu, Bei Feng, Bing Xue, Bingxuan Wang, Bochao Wu, Chengda Lu, Chenggang Zhao, Chengqi Deng, Chenyu Zhang, Chong Ruan, and 1 others. 2024. Deepseek-v3 technical report. arXiv preprint arXiv:2412.19437 .Ziming Liu, Ouail Kitouni, Niklas S Nolte, Eric Michaud, Max Tegmark, and Mike Williams. 2022. Towards understanding grokking: An effective the-ory of representation learning. Advances in Neural Information Processing Systems , 35:34651–34663. Tobias Mages, Elli Anastasiadi, and Christian Rohner. 2024. Non-negative decomposition of multivariate information: from minimum to blackwell-specific information. Entropy , 26(5):424. Samuel Marks, Can Rager, Eric J Michaud, Yonatan Be-linkov, David Bau, and Aaron Mueller. 2025. Sparse feature circuits: Discovering and editing interpretable causal graphs in language models. In The Thirteenth International Conference on Learning Representa-tions .Pedro AM Mediano, Fernando E Rosas, Andrea I Luppi, Robin L Carhart-Harris, Daniel Bor, Anil K Seth, and Adam B Barrett. 2025. Toward a unified taxonomy of information dynamics via integrated information de-composition. Proceedings of the National Academy of Sciences , 122(39):e2423297122. Gouki Minegishi, Hiroki Furuta, Yusuke Iwasawa, and Yutaka Matsuo. 2025. Rethinking evaluation of sparse autoencoders through the representation of pol-ysemous words. arXiv preprint arXiv:2501.06254 .Mark EJ Newman. 2006. Modularity and community structure in networks. Proceedings of the national academy of sciences , 103(23):8577–8582. Senthooran Rajamanoharan, Arthur Conmy, Lewis Smith, Tom Lieberum, Vikrant Varma, Janos Kra-mar, Rohin Shah, and Neel Nanda. 2024. Improving sparse decomposition of language model activations with gated sparse autoencoders. Advances in Neural Information Processing Systems , 37:775–818. Rylan Schaeffer, Brando Miranda, and Sanmi Koyejo. 2023. Are emergent abilities of large language mod-els a mirage? Advances in neural information pro-cessing systems , 36:55565–55581. William Beecher Scoville and Brenda Milner. 1957. Loss of recent memory after bilateral hippocampal lesions. Journal of neurology, neurosurgery, and psychiatry , 20(1):11. Claude Elwood Shannon. 1948. A mathematical theory of communication. The Bell system technical journal ,27(3):379–423. Qi Sun, Marc Pickett, Aakash Kumar Nain, and Llion Jones. 2025. Transformer layers as painters. In Pro-ceedings of the AAAI Conference on Artificial Intelli-gence , volume 39, pages 25219–25227. Gemma Team, Aishwarya Kamath, Johan Ferret, Shreya Pathak, Nino Vieillard, Ramona Merhej, Sarah Perrin, Tatiana Matejovicova, Alexandre Ramé, Morgane Rivière, Louis Rouillard, Thomas Mesnard, Geoffrey Cideron, Jean bastien Grill, Sabela Ramos, Edouard Yvinec, Michelle Casbon, Etienne Pot, Ivo Penchev, and 197 others. 2025. Gemma 3 technical report. 
+
+Preprint , arXiv:2503.19786. Kaixi Tian, Zhiping Zhao, Yang Chen, Ningling Ge, Shenghao Cao, Xinyong Han, Jianwen Gu, and Shan Yu. 2026. Domain-specific schema reuse supports flexible learning to learn in the primate brain. Nature Communications .
+
+10 Dardo Tomasi, Gene-Jack Wang, and Nora D Volkow. 2013. Energetic cost of brain functional connectivity. 
+
+Proceedings of the National Academy of Sciences ,110(33):13642–13647. Vikrant Varma, Rohin Shah, Zachary Kenton, Janos Kra-mar, and Ramana Kumar. 2024. Explaining grokking through circuit efficiency. Boshi Wang, Xiang Yue, Yu Su, and Huan Sun. 2024. Grokking of implicit reasoning in transformers: A mechanistic journey to the edge of generalization. 
+
+Advances in Neural Information Processing Systems ,37:95238–95265. Taylor Webb, Keith J Holyoak, and Hongjing Lu. 2023. Emergent analogical reasoning in large language models. Nature Human Behaviour , 7(9):1526–1541. Taylor W Webb, Steven M Frankland, Awni Altabaa, Si-mon Segert, Kamesh Krishnamurthy, Declan Camp-bell, Jacob Russin, Tyler Giallanza, Randall O’Reilly, John Lafferty, and 1 others. 2024. The relational bot-tleneck as an inductive bias for efficient abstraction. 
+
+Trends in Cognitive Sciences , 28(9):829–843. An Yang, Anfeng Li, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo Zheng, Bowen Yu, Chang Gao, Chengen Huang, Chenxu Lv, and 1 others. 2025a. Qwen3 technical report. arXiv preprint arXiv:2505.09388 .Yukang Yang, Declan Iain Campbell, Kaixuan Huang, Mengdi Wang, Jonathan D. Cohen, and Taylor Whit-tington Webb. 2025b. Emergent symbolic mecha-nisms support abstract reasoning in large language models. In Proceedings of the 42nd International Conference on Machine Learning , volume 267 of 
+
+Proceedings of Machine Learning Research , pages 70515–70549. PMLR. 
+
+11

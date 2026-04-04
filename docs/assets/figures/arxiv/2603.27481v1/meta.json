@@ -1,0 +1,62 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2603.27481v1/fig-001.webp",
+      "caption": "Table 1. Comparison with continual learning models on the CoIN benchmark.",
+      "page": 7,
+      "index": 1,
+      "width": 986,
+      "height": 258
+    },
+    {
+      "url": "assets/figures/arxiv/2603.27481v1/fig-002.webp",
+      "caption": "Table 5. LLaVA-DyMoE is compatible with data-based continual learning strategies.",
+      "page": 8,
+      "index": 2,
+      "width": 986,
+      "height": 202
+    },
+    {
+      "url": "assets/figures/arxiv/2603.27481v1/fig-003.webp",
+      "caption": "Figure 2. Routing-drift analysis in a controlled two-task learning experiment. After learning on the 1st task (SQA), we conduct the 2nd task (TextVQA) training using the baseline (default training) and three different token masking strategies based on token type. Throughout the training stages, we evaluate forgetting (decrease in task 1 accuracy) and new-task learning (improvement of task 2 accuracy). Polynomial regression-fitted curves are used for better visualization and readability of performance changes. The baseline (default training) refers to a scenario where each input token is assigned to all experts (including old frozen and new learnable ones). We then examine the role of each token group based on its routing score: (a) We only retain the contribution of tokens that have high affinity to the new expert group (termed “new tokens”). (b) We mask out the contribution of tokens with a high affinity to the old expert group (termed “old tokens”). (c) We only retain the contribution of tokens with a small affinity difference between the old and new expert group (termed “ambiguous tokens”).",
+      "page": 4,
+      "index": 3,
+      "width": 1007,
+      "height": 203
+    },
+    {
+      "url": "assets/figures/arxiv/2603.27481v1/fig-004.webp",
+      "caption": "Figure 5. Comparisons between baseline IncMoELoRA and LLaVA-DyMoE on cases after training on the final task. The first column shows cases from ScienceQA, the second column shows cases from ImageNet.",
+      "page": 17,
+      "index": 4,
+      "width": 913,
+      "height": 483
+    },
+    {
+      "url": "assets/figures/arxiv/2603.27481v1/fig-005.webp",
+      "caption": "Figure 3. Overview of our LLaVA-DyMoE method, which applies a dynamic MoE with LoRA experts to each layer of the language backbone in LLaVA. It is a two-fold regularization approach designed to resolve routing-drift-induced forgetting, based on our analysis of different token types in Sec. 3.3. The right panel illustrates this high-level approach: as new tasks (Task t) arrive, the router and experts expand, creating a frozen “old group” and a trainable “new group”. Our Token Assignment Guidance (TAG) prevents routing-drift (red dashed arrow) by directing tokens to appropriate expert–router groups, complemented by our Routing Score Regularization (RSR) that encourage exclusive token-to-group routing and new-expert specialization. Our method regularizes the router behavior during training and imposes no constraints at inference, allowing seamless combination with other continual learning methods.",
+      "page": 5,
+      "index": 5,
+      "width": 896,
+      "height": 316
+    },
+    {
+      "url": "assets/figures/arxiv/2603.27481v1/fig-006.webp",
+      "caption": "Table 14. Performance of LLaVA-DyMoE with expert pruning.",
+      "page": 16,
+      "index": 6,
+      "width": 1026,
+      "height": 482
+    },
+    {
+      "url": "assets/figures/arxiv/2603.27481v1/fig-007.webp",
+      "caption": "Figure 4. Layer-wise expert activation on the CoIN benchmark. Activation frequency is shown for each expert group across layers, and circle size reflects how often an expert is activated.",
+      "page": 16,
+      "index": 7,
+      "width": 1020,
+      "height": 272
+    }
+  ]
+}
