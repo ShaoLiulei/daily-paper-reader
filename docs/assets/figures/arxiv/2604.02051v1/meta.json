@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2604.02051v1/fig-001.webp",
+      "caption": "Table 1: Comparison of recursive transformer approaches. OUROBOROS is the only system where per-step weight modulation depends on the current hidden state (input-conditioned).",
+      "page": 3,
+      "index": 1,
+      "width": 556,
+      "height": 224
+    },
+    {
+      "url": "assets/figures/arxiv/2604.02051v1/fig-002.webp",
+      "caption": "Figure 1: OUROBOROS architecture. A pretrained model is split into frozen Prelude and Coda sections. The middle Recurrent Block loops a single transformer layer N times. At each step, the Controller observes the mean-pooled hidden state h̄ and generates a diagonal modulation vector applied to frozen SVD-initialized LoRA bases. A gated recurrence (initialized to 88% retention) mixes the new and previous hidden states.",
+      "page": 3,
+      "index": 2,
+      "width": 640,
+      "height": 409
+    },
+    {
+      "url": "assets/figures/arxiv/2604.02051v1/fig-003.webp",
+      "caption": "Table 4: Controller ablation across depths, ranks, and learning rates. All runs: 300K steps on a single H100. The system converges to nearly identical loss (≈ 5.08) across all configurations, demonstrating strong robustness to hyperparameter choices.",
+      "page": 6,
+      "index": 3,
+      "width": 490,
+      "height": 276
+    },
+    {
+      "url": "assets/figures/arxiv/2604.02051v1/fig-004.webp",
+      "caption": "Table 3: Controller vs. static per-step LoRA on Qwen2.5-3B (Prelude/Recurrent/Coda). All runs: 300K steps, rank 32, FineWeb-edu. The 17-layer baseline without any recurrence has loss 8.975. Lower is better. The Controller wins in every configuration, with the largest margin at depth 1.",
+      "page": 6,
+      "index": 4,
+      "width": 614,
+      "height": 265
+    }
+  ]
+}

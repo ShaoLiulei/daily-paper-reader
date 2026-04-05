@@ -1,0 +1,638 @@
+Title: ExFusion: Efficient Transformer Training via Multi-Experts Fusion
+
+URL Source: https://arxiv.org/pdf/2603.27965v1
+
+Published Time: Tue, 31 Mar 2026 01:32:02 GMT
+
+Number of Pages: 10
+
+Markdown Content:
+> JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 1
+
+# ExFusion: Efficient Transformer Training via Multi-Experts Fusion 
+
+Jiacheng Ruan, Daize Dong, Xiaoye Qu, Tong Zhu, Ting Liu, Yuzhuo Fu, Yu Cheng and Suncheng Xiang, Member, IEEE 
+
+Abstract —Mixture-of-Experts (MoE) models substantially im-prove performance by increasing the capacity of dense architec-tures. However, directly training MoE models requires consid-erable computational resources and introduces extra overhead in parameter storage and deployment. Therefore, it is critical to develop an approach that leverages the multi-expert capability of MoE to enhance performance while incurring minimal additional cost. To this end, we propose a novel pre-training approach, termed ExFusion, which improves the efficiency of Transformer training through multi-expert fusion. Specifically, during the initialization phase, ExFusion upcycles the feed-forward network (FFN) of the Transformer into a multi-expert configuration, where each expert is assigned a weight for later parameter fusion. During training, these weights allow multiple experts to be fused into a single unified expert equivalent to the original FFN, which is subsequently used for forward computation. As a result, ExFusion introduces multi-expert characteristics into the training process while incurring only marginal computational cost compared to standard dense training. After training, the learned weights are used to integrate multi-experts into a single unified expert, thereby eliminating additional overhead in storage and deployment. Extensive experiments on a variety of computer vision and natural language processing tasks demonstrate the effectiveness of the proposed method. 
+
+Index Terms —Mixture-of-Experts, Transformer, Efficient Training Method. 
+
+I. I NTRODUCTION 
+
+# TRANSFORMER-based models have rapidly progressed in computer vision (CV) [1], [2], demonstrating strong performance across tasks including image classification [3]– [5], object detection [6]–[8], and semantic segmentation [9], [10]. Recently, large-scale models have catalyzed increasing interest in scaling the parameterization of Transformer-based architectures. In this context, the Mixture-of-Experts (MoE) architecture has attracted substantial attention [11]–[14]. As 
+
+This work was partially supported by the National Natural Science Foun-dation of China under Grant No.62301315. Corresponding authors: Yuzhuo Fu, Yu Cheng and Suncheng Xiang. Jiacheng Ruan, Ting Liu, Yuzhuo Fu is with the School of Electronic Information and Electrical Engineering, Shanghai Jiao Tong University, No 800, Dongchuan Road, Minhang District, Shanghai, China, 200240 (email: jackchenruan@sjtu.edu.cn, louisa liu@sjtu.edu.cn, yzfu@sjtu.edu.cn). Daize Dong is with the Shanghai Artificial Intelligence Laboratory, Shang-hai, China, 200240 (email: dongdaize.d@pjlab.org.cn). Xiaoye Qu is with the Huazhong University of Science and Technology, Hubei, China, 430074 (email: xiaoye@hust.edu.cn). Tong Zhu is with the Soochow University, Jiangsu, China, 215031 (email: tzhu1997@outlook.com). Yu Cheng is with the Chinese University of Hong Kong, Hongkong, China, 999077 (email: chengyu05@gmail.com). Suncheng Xiang are with the School of Biomedical Engineering, Shanghai Jiao Tong University, No 800, Dongchuan Road, Minhang District, Shanghai, China, 200240 (email:xiangsuncheng17@sjtu.edu.cn). ...... 
+
+Router  Input 
+
+> Output
+
+(a) Vanilla Top-k MoE. Dense MoE-8-1 MoE-16-1 MoE-32-1 MoE-64-1 Ours           
+
+> 70
+> 75
+> 80
+> Top-1 Accuracy (%) on the ImageNet-1k
+> 77.9% 71.5% 75.3% 75.6% 75.8% 81.1%
+> Dense MoE-8-1 MoE-16-1 MoE-32-1 MoE-64-1 Ours
+> 200
+> 400
+> 600
+> 800
+> GPU hours (Lower the better)
+> 240 664 672 696 720 264
+
+(b) Performance & A100 GPU hours. Fig. 1: (a) Illustration of the vanilla Top-k MoE. Given an input, the MoE layer employs a router to identify and select the top k most pertinent experts from N . In this paper, we refer to this configuration of MoE as MoE-N -k. (b) Comparison of the performance and training GPU hours among the baseline dense model (ViT-B/16), vanilla MoE models, and our ExFusion. All models are pre-trained on the ImageNet-1k dataset and share the same number of activated parameters. illustrated in Figure 1(a), MoE substitutes the feed-forward network (FFN) layer in a standard Transformer with an MoE layer, which comprises multiple FFN modules (each serving as an expert) and a trainable router. The router selectively activates a small subset of experts to process each input. This multi-expert design enhances representational capacity and promotes learning through expert specialization and collab-oration. Consequently, MoE models offer notable advantages for large-scale datasets, particularly in settings characterized by complex and diverse tasks.  
+
+> arXiv:2603.27965v1 [cs.CV] 30 Mar 2026 JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 2
+
+However, despite their advantages, MoE models have sev-eral inherent limitations. Firstly, although MoE models often outperform their dense counterparts, these gains are offset by substantially increased parameter counts and higher train-ing costs. For example, SwinV2-MoE-S (128 experts) [15], trained on a large-scale dataset (e.g., ImageNet-22k [16]), surpasses SwinV2-S by roughly 1% on the ImageNet-1k benchmark [17]. However, this improvement requires nearly a 30× increase in parameters and additional training data. Secondly, deploying MoE models for inference also demands the accommodation of a significant number of parameters within computation devices, posing serious challenges for numerous researchers [18]. Lastly, as illustrated in Figure 1(b), we conduct a series of experiments with the ViT-B/16 and its corresponding MoE models 1 on the ImageNet-1k dataset. Under standard training recipes 2, MoE models are markedly less efficient. For instance, on ImageNet-1k, the MoE-64-1 ViT-B/16, trained with 3x GPU hours compared to ViT-B/16, still exhibits a 2.1% performance degradation. Consistent with prior findings, MoE models can underperform under standard training settings and constrained resources [19], [20]. In this paper, we pose a challenging question: Is it feasible to fully leverage the advantages of MoE while avoiding a substantial increase in overhead (e.g., parameter size, com-putational cost, and training time)? Inspired by the averaging method in ensemble learning [21], we propose a simple yet effective approach that fuses the parameters of multiple experts. This strategy retains the representational benefits of the MoE architecture while reducing overhead. To this end, we present Multi-Experts Fusion (ExFusion), a training method for Transformer-based models in CV and natural language processing (NLP). Specifically, ExFusion assigns a fusion weight to each expert and uses these weights to combine expert parameters into a single set of parameters, yielding a unified expert that processes the input. Depending on the weight-update mechanism, ExFusion has three variants: Static-Weight, Dynamic-Weight, and Memory-Bank ExFusion. The first two variants remove the router and instead use fixed or learnable weights to control the fusion process. In contrast, the third variant retains the router and introduces an additional memory bank. The memory bank stores the router-derived weights at each iteration and updates them using momentum. After training, we use the final fusion weights to merge multiple experts into a single expert and retain only the parameters of the fused expert. This design ensures that the parameter count and computational complexity of the resulting model match those of the corresponding dense model. To comprehensively demonstrate the efficacy of ExFusion, we conduct extensive experiments across CV and NLP tasks. For the CV tasks, we evaluate four Transformer-based models (ViT [1], DeiT [2], PVT [3], Swin [5]) and perform pre-training on the ImageNet-1k dataset. After pre-training, we 
+
+> 1Tutel package [15] is employed to implement MoE models, which is an advanced package specifically designed for constructing high-performance MoE models.
+> 2Training Transformer-based models on the ImageNet-1k dataset typically involves setting a batch size of 1,024 and training for 300 epochs. For more detailed training strategies, please refer to Section V-A.
+
+fine-tune the resulting models for semantic segmentation and object detection. In the realm of NLP, we opt for the T5 model for various experiments. Consistent with the CV protocol, we first pre-train T5 on the large-scale C4 dataset [22] and then fine-tune it on the GLUE benchmark to evaluate its generalization across diverse NLP tasks. These experiments not only confirm the effectiveness of our approach but also showcase its broad applicability and flexibility across different types of tasks. The main contributions are summarized as follows:  
+
+> •
+
+For the first time, we present a novel parameter-fusion method for efficient training of Transformer models, called ExFusion. Our method integrates multiple experts in MoE models during both training and post-training via associated fusion weights.  
+
+> •
+
+We systematically investigate alternative weighting schemes and propose three variants of ExFusion: static weighting, dynamic weighting, and a memory-bank mechanism. These variants provide flexible and efficient control over parameter fusion.  
+
+> •
+
+We conduct extensive experiments on both CV and NLP tasks. The results demonstrate that ExFusion achieves superior performance without increasing parameter count or computational cost. ExFusion provides a foundation for future research on efficient training frameworks across diverse tasks and domains. II. R ELATED WORK 
+
+A. Transformer-Based Models 
+
+The Transformer is an architecture composed of stacked self-attention modules and FFN layers, originally introduced for machine translation [23]. Building on the Transformer architecture, numerous language models have been proposed [22], [24], [25], demonstrating strong performance in NLP. The success of the Transformer has subsequently extended to CV. Vision Transformer (ViT) [1] applies the Transformer to image classification by tokenizing images into patches, achieving competitive results. DeiT [2] introduces token-based distillation to transfer knowledge from a teacher model in a data-efficient, data-driven manner, leading to improved perfor-mance on visual tasks. PVT [3] further proposes a pyramidal hierarchy that progressively reduces spatial resolution, and introduces spatially sparse attention patterns to better support dense prediction tasks. To improve computational efficiency, Swin Transformer [5] employs shifted local-window attention, enabling cross-window information exchange while reducing computational cost. CSWin [26] introduces cross-shaped win-dow self-attention that computes horizontal and vertical stripe-wise attention in parallel, improving efficiency. In this paper, we propose an approach that improves existing Transformer-based models via a training-centric strategy rather than designing new self-attention mechanisms. By leveraging a MoE architecture and a weighted fusion scheme, our ExFusion improves performance with slightly overhead. 
+
+B. Mixture-of-Experts 
+
+The Mixture-of-Experts (MoE) layer introduces structured sparsity and is often used to replace the feed-forward net-JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 3
+
+work (FFN) in Transformer architectures to expand model capacity. In machine translation, Gshard [27] replaces FFN layers with MoE and achieves substantial gains in translation quality. Switch Transformer [12] scales MoE to the trillion-parameter regime for language model pretraining, enabling unprecedented sparsity while improving performance. V-MoE [20] incorporates MoE layers into ViT and is pretrained on large-scale datasets (e.g., JFT-300M [28] and JFT-3B [29]) for approximately 20K TPUv3-core-days, achieving strong image classification performance. Built on Swin Transformer V2, SwinV2-MoE [15] is pretrained on ImageNet-22K [16] using 128 A100 GPUs, yielding improvements on downstream tasks. However, training and inference for MoE models often require substantial computational resources (Table 1), which can be prohibitive for the broader community. In this paper, we propose ExFusion, which significantly reduces the training and inference overhead of MoE while preserving its capacity-scaling benefits. 
+
+C. Ensemble Learning 
+
+Ensemble learning [30] is a fundamental component of machine learning, widely applied across various domains, utilizing methods such as bagging [31], boosting [32], and stacking [33]. Among these strategies, the averaging method is particularly prevalent in deep learning [34], [35], combining multiple weak models to produce a more robust model through weighted averaging. For instance, Singh et al. [36] employ optimal transport theory to average the weights of trained models, achieving minimal accuracy loss. Ainsworth et al. [37] align model weights through permutation symmetries, thereby improving the effectiveness of the averaging approach. In downstream tasks, Model Soups [38] demonstrates that av-eraging the parameters of multiple fine-tuned models enhances prediction accuracy without incurring additional inference time costs. Meanwhile, RegMean [39] explores the averaging of models fine-tuned on diverse tasks and introduces an inno-vative and effective method. Furthermore, methods such as Expert Weights Averaging (EWA) and Weight-Ensembling MoE (WEMoE) [40] improve performance without adding extra inference overhead by utilizing weight averaging or expert fusion techniques. In contrast to the aforementioned methods, we investigate the training-time weight averaging strategy. Our ExFusion method employs weighted fusion of parameters from multi-ple experts during training, followed by post-training weight averaging to compress the model and enhance efficiency in both training and inference. III. P RELIMINARIES 
+
+A. Transformer 
+
+In this section, we first review the general Transformer model. Specifically, after the input data undergoes embedding processing, it can be represented as x ∈ RL×D , where L
+
+denotes the sequence length and D denotes the dimension of the embedding. The sequence is then fed into multiple Trans-former blocks for feature extraction, each block consisting of a multi-head self-attention (MHSA) module followed by a feed-forward network (FFN) layer. Within each head, the self-attention is represented as: 
+
+q = W q (x), k = W k(x), v = W v (x), (1) 
+
+hi =
+
+> N
+
+X
+
+> j=1
+
+Sim (qi, k j )
+
+PNj=1 Sim (qi, k j ) vj , (2) where W q , W k, W v ∈ RD×D denote linear layers, and Sim (·, ·) represents the similarity function. Subsequently, the intermediate features h ∈ RL×D obtained from the MHSA module are fed into an FFN layer to produce the output 
+
+y ∈ RL×D , which can be expressed as follows: 
+
+y = W d (σ (W u(h))) , (3) where W u ∈ RD×eD and W d ∈ ReD ×D represent linear layers, where e is the expansion factor, typically set to 4. σ
+
+represents the activation function, commonly chosen as GELU [41]. 
+
+B. MoE Layer 
+
+The MoE layer typically consists of N expert networks 
+
+{E1, E 2, · · · , E n} and a router G. Each expert is an indepen-dent FFN layer, while the router contains a trainable linear layer designed to determine the importance of each expert. Given an input x ∈ RL×D , the importance is represented as follows: 
+
+G(x) = Softmax (W g (x)) , (4) where Wg ∈ RD×N denotes the linear layer in the router. 
+
+G(x) ∈ RL×N represents the importance distribution of each expert being selected for a given input. Typically, the output of the MoE layer is the sum of the outputs from k selected experts ( k ≤ N ), which can be represented as follows: 
+
+y = X
+
+> i∈K
+
+Gi(x) · Ei(x), (5) where Gi(x) is the weight allocated to the i-th expert, Ei(x)
+
+is the output of the i-th expert, and K is the set of selected top-k indices determined by G(x).IV. M ULTI -E XPERTS FUSION (E XFUSION )While Mixture-of-Experts (MoE) models have the potential to deliver outstanding performance by expanding model capac-ity, they also introduce considerable challenges, particularly in terms of escalating the requirements for training, storage, and deployment resources. This raises a critical question: Could we harness the benefits of MoE during training yet retain a parameter count and computational complexity comparable to dense models, all without a significant rise in training expenses? Our investigation approaches this query from an ensemble learning standpoint, applying an averaging technique that dynamically combines the experts, which is called Multi-Experts Fusion (ExFusion). JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 4Expert Expert        
+
+> Expert Expert Expert
+> Expert
+> Input Output
+> Fused Expert
+> Fused Expert
+> Expert
+> Expert Expert Expert
+> Expert Expert Expert
+> Expert
+> Input Output
+> Fused Expert
+> Fused Expert
+> Expert
+> Expert
+> (a) ExFusion-sw (b) ExFusion-dw
+
+Fig. 2: The overall architecture of ExFusion-sw and ExFusion-dw. The number of experts is set to four for demonstration. The dashed lines represent the multi-experts fusion process. 
+
+A. Motivation 
+
+We begin by introducing the averaging method derived from ensemble learning. Consider a scenario where there are k
+
+independent weak models, each with prediction errors that are independent and identically distributed (i.i.d.), and can be modeled as random variables Yi with variance Var (Yi) = σ2.The ensemble of model predictions Y can then be calculated as the average of predictions from all weak models, represented by Y = 1
+
+> k
+
+Pki=1 Yi. The variance of prediction Y is: Var (Y ) = 
+
+ 1
+
+k2
+
+ kX
+
+> i=1
+
+Var (Yi) = σ2
+
+k . (6) Equation 6 demonstrates that the overall variance of the model significantly decreases after applying the averaging method. Under linear approximation, the prediction error of a single model can be regarded as ϵi = b + ξi comprising a bias term b and zero-mean noise ξi. When averaging multiple experts uniformly, the bias term remains unchanged, while the noise variance is reduced to a fraction of its original value 
+
+σ2/k , thereby lowering the overall generalization error without significantly increasing the bias. This highlights the effectiveness of the averaging method in leveraging the diversity among different models to reduce variance and enhance the overall stability of the model, thereby improving the model’s performance. Drawing inspiration from this observation, we shift our focus to a new perspective on the MoE, treating each expert as a weak model that plays a role in a weighted averaging process. Specifically, consider an MoE layer containing N experts, represented as {E1, E 2, · · · , E N }
+
+with a corresponding set of weights {w1, w 2, · · · , w N }. We posit that each expert processes the input x independently, with their outputs subsequently merged through a weighted fusion mechanism. This process can be viewed as analogous to initially blending the experts according to their respective weights, thereby creating a singular fused expert ¯E, which then processes the input. Consequently, this suggests the following implication: 
+
+Y =
+
+> N
+
+X
+
+> i=1
+
+wi · Ei(x) = 
+
+" NX
+
+> i=1
+
+wi · Ei
+
+#
+
+(x) = ¯E(x). (7) Different from Sec. III-B, Ei represents an individual linear layer instead of an entire FFN layer. This design is inspired by Equation 6 and is targeted at boosting model efficacy by dimin-ishing the cumulative variance. Building on this concept, we introduce ExFusion, a method crafted to optimize the training of Transformer models through the weighted fusion of multiple experts. More specifically, we develop three variants step by step: the first is ExFusion-sw, which utilizes static weights; the second is ExFusion-dw, employing learnable weights; and the third is ExFusion-mb, which generates weights based on data-dependent information. 
+
+B. Static-Weights ExFusion (ExFusion-sw) 
+
+ExFusion-sw combines the parameters of multiple experts via a simple uniform averaging, as illustrated in Figure 2 (a). To be specific, before training, two sets of experts 
+
+{Eu 
+
+> 1
+
+, E u 
+
+> 2
+
+, · · · , E uN } and {Ed 
+
+> 1
+
+, E d 
+
+> 2
+
+, · · · , E dN } are initialized to replace two linear layers in the FFN layer, W u and W d. Each expert is then assigned a static weight of 1 
+
+> N
+
+for subsequent fusion. During the training process, we fuse each expert set into a single expert and use the fused expert to process the input x, resulting in output y. This process can be represented as: 
+
+¯Eu = 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+Eui , ¯Ed = 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+Edi ,y = ¯Ed  σ   ¯Eu(x) ,
+
+(8) where ¯Eu and ¯Ed are fused experts. Upon training com-pletion, we continue to employ the fixed weight 1 
+
+> N
+
+to fuse multiple experts, retaining only the parameters of ¯Eu and 
+
+¯Ed for storage. The advantage of this approach lies in its ability to leverage multiple experts to learn more nuanced representations, while also harnessing the concept of ensemble learning to amalgamate these experts. As a result, our approach maintains the parameter count and computational complexity as same as the dense model, while providing an extended model capacity as the MoE model without compromising the model’s efficiency. 
+
+C. Dynamic-Weights ExFusion (ExFusion-dw) 
+
+Based on the static fusion strategy, we further introduce a dynamic learning mechanism to adjust the weight correspond-JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 5Input    
+
+> Output
+> Inference Phase
+> Expert Expert
+> Expert Expert Expert
+> Expert
+> Fused Expert
+> Fused Expert
+> Input
+> Output
+> Fused Expert
+> Fused Expert
+> Training Phase
+> FFN
+> LayerNorm
+> Multi-head
+> Attention
+> LayerNorm
+> +
+> +
+> Transformer
+> Router Memory bank
+> Expert
+> Expert
+
+Fig. 3: The overall architecture of ExFusion-mb. During training, the router and memory bank control the importance of experts depending on the input data. After training, the final weights in the memory bank is employed to fuse experts. The number of experts is set to four for demonstration. The dashed lines represent the multi-experts fusion process. ing to each expert, as shown in Figure 2 (b). For two sets of experts, we introduce a shared set containing N learnable weights, denoted as W = {w1, w 2, · · · , w N }. During training, we utilize W to represent the importance of each expert and perform a weighted fusion: 
+
+¯Eu =
+
+> N
+
+X
+
+> i=1
+
+wi · Eui , ¯Ed =
+
+> N
+
+X
+
+> i=1
+
+wi · Edi . (9) After training, we utilize the optimized weights to fuse the multiple experts, preserving solely the parameters of the uni-fied expert. The merit of our dynamic weighting scheme lies in its capacity to autonomously re-calibrate the weights allocated to the experts, whose distribution signifies the contribution of each expert to the model, thereby enhancing the model’s flexibility and adaptability under different conditions. 
+
+D. Memory-Bank ExFusion (ExFusion-mb) 
+
+In MoE models, the router stands out as a crucial part of identifying the importance of experts for each input. De-spite the capability of adaptively adjusting the importance of experts, ExFusion-dw neglects the differences of the input data. To address this oversight, we introduce the router and memory bank into ExFusion-mb to account for the influence of input data on the importance of experts, as illustrated in Figure 3. Specifically, before training, a linear layer G is introduced to serve as the router, along with a memory bank 
+
+M = {m1, m 2, · · · , m N } whose parameters are initialized as zeros to store the updates of weights. Throughout the training process, the input x is processed via the router to derive the weight set W = {w1, w 2, · · · , w N } for the current iteration, and the memory bank M is updated in accordance with momentum δ:
+
+W = {w1, w 2, · · · , w N } = Softmax (G(x)) ,
+
+M = {δm i + (1 − δ)wi}Ni=1 . (10) The weights in M is then employed to fuse multi-experts: TABLE I: Comparison results of Dense ViT-B/16, the corre-sponding MoE ViT-B/16 models, and ExFusion-mb ViT-B/16 on the ImageNet-1k dataset.                              
+
+> Method Top-1(%) #Params Storage Memory GPU Hours
+> Dense ViT-B 77.9 86.6M 330MB 19,201MB 240h MoE-8-1 ViT-B 71.5 485.6M 1.8GB 29,475MB 664h MoE-16-1 ViT-B 75.3 939.0M 3.5GB 30,619MB 672h MoE-32-1 ViT-B 75.6 1845.8M 6.9GB 32,866MB 696h MoE-64-1 ViT-B 75.8 3659.3M 13.7GB 37,380MB 720h
+> ExFusion-mb ViT-B 81.1 86.6M 330MB 25,327MB 264h
+
+¯Eu =
+
+> N
+
+X
+
+> i=1
+
+mi · Eui , ¯Ed =
+
+> N
+
+X
+
+> i=1
+
+mi · Edi . (11) Similarly, the final set of weights M is used for the weighted fusion of multi-experts after training. Subsequently, both G
+
+and M are discarded to reduce the parameter storage. As a result, ExFusion-mb ensures steady updates of expert weights while leveraging data-driven insights, effectively combining efficiency with performance. V. E XPERIMENTS 
+
+To verify the effectiveness of ExFusion, we initially perform pre-training on the ImageNet-1k dataset [17]. Subsequently, the fused models are fine-tuned for object detection using the COCO dataset [42] and semantic segmentation with the ADE20K dataset [43]. Furthermore, in illustration of the versatility of our method, we also conduct language modeling experiments on the C4 dataset [22] for NLP tasks, followed by fine-tuning on the GLUE benchmark [44]. Models that are trained using ExFusion-mb are marked with the dagger symbol (†). Additionally, we fix the number of experts to 4 and set the momentum of the memory bank to 0.95 for ExFusion-mb. All experiments are conducted with 8 NVIDIA A100 GPUs. JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 6
+
+TABLE II: Results on the ImageNet-1k.                                                
+
+> Method #Params FLOPs Top-1 (%)
+> ViT-S 22.1M 4.6G 71.8
+> ViT-S †80.4(+8.6)
+> ViT-B 86.6M 17.6G 77.9
+> ViT-B †81.1(+3.2)
+> DeiT-T 5.7M 1.2G 72.2
+> DeiT-T †74.1(+1.9)
+> DeiT-S 22.1M 4.6G 79.8
+> DeiT-S †80.6(+0.8)
+> PVT-T 13.2M 1.9G 75.1
+> PVT-T †75.4(+0.3)
+> PVT-S 24.5M 3.8G 79.8
+> PVT-S †80.7(+0.9)
+> PVT-M 44.2M 6.7G 81.2
+> PVT-M †82.1(+0.9)
+> PVT-L 61.4M 9.8G 81.7
+> PVT-L †82.5(+0.8)
+> Swin-T 29M 4.5G 81.3
+> Swin-T †81.5(+0.2)
+> Swin-S 50M 8.7G 83.0
+> Swin-S †83.2(+0.2)
+> Swin-B 88M 15.4G 83.5
+> Swin-B †83.7(+0.2)
+
+A. Image Classification 
+
+ImageNet-1k [17] is a widely used image classification dataset for visual model pre-training, which contains 1.28M images for training and 50K images for validation. To ensure a fair comparison, we utilize the same training recipe as the baseline models. Specifically, AdamW [45] is utilized as the optimizer to train all models from scratch for 300 epochs, and weight decay is set to 0.05. We introduce a linear warmup of 20 epochs and use cosine decay to adjust the learning rate. The initial learning rate is established at 1e-3 for a batch size of 1,024, scaling linearly with the batch size. For data augmentation techniques, we follow the previous schemes and also employ RandAugment [46], Mixup [47], CutMix [48], and random erasing [49]. Firstly, to verify the efficiency of our method, we pre-train the ViT-B/16 dense model, along with its corresponding MoE and ExFusion-mb models. As shown in Table I and Figure 1(b), compared to the Vanilla MoE models, ExFusion-mb not only achieves the best pre-training performance but also requires the lowest training overhead. Surprisingly, our method only increases the training duration by 10% compared to the dense model. Furthermore, we validate the efficacy of our method across four classic Transformer-based models (ViT [1], DeiT [2], PVT [3], Swin [5]), and report the Top-1 accuracy. As illustrated in Table II, training existing Transformer-based models based on ExFusion-mb framework consistently yields performance improvements without increasing the number of parameters or computational cost. For example, our ViT-B †
+
+and DeiT-T † achieve gains of 3.2% and 1.9%, respectively. Moreover, our PVT-M † surpasses PVT-L by 0.4%, using only 72% of the parameters and 68% of the computational cost. These experimental results verify the strong advantage and applicability of our method across a variety of Transformer-based models. TABLE III: Results on the ADE20K.                                       
+
+> (a) Semantic FPN Backbone Iter. #Params mIoU (%)
+> PVT-T 40K 17M 35.7
+> PVT-T †37.2
+> PVT-S 40K 28M 39.8
+> PVT-S †42.0
+> PVT-M 40K 48M 41.6
+> PVT-M †43.6
+> PVT-L 40K 65M 42.1
+> PVT-L †44.4 (b) UperNet Backbone Iter. #Params mIoU (%)
+> DeiT-T 80K 34M 38.0
+> DeiT-T †40.4
+> DeiT-T 160K 34M 38.7
+> DeiT-T †40.7
+> DeiT-S 80K 52M 43.0
+> DeiT-S †43.5
+> DeiT-S 160K 52M 43.8
+> DeiT-S †44.8
+
+TABLE IV: Comparison results on the COCO dataset.                                     
+
+> (a) Mask R-CNN Backbone #Params AP bAP b
+> 50 AP b
+> 75
+> PVT-M 63.9M 42.0 64.4 45.6
+> PVT-M †42.6 65.1 46.4
+> PVT-L 81.0M 42.9 65.0 46.6
+> PVT-L †43.0 65.2 46.8 (b) RetinaNet Backbone #Params AP AP 50 AP 75
+> PVT-M 53.9M 41.9 63.1 44.3
+> PVT-M †42.6 63.7 45.5
+> PVT-L 71.1M 42.6 63.7 45.4
+> PVT-L †42.9 64.2 45.6
+
+B. Semantic Segmentation 
+
+The ADE20K dataset [43] is a predominant benchmark for semantic segmentation, consisting of 20K training images and 2K validation images. Upon pre-training PVT and DeiT models on the ImageNet-1k dataset, we further fine-tune these models on ADE20K. The performance of the pre-trained model is assessed through two segmentation methods, namely Semantic FPN [50] and UperNet [51]. As demonstrated in Table III, the pre-trained models obtained through ExFusion-mb consistently achieve performance improvements in seg-mentation tasks. More precisely, our method achieves an average mIoU improvement of 1.7%, while preserving the same parameter count. 
+
+C. Object Detection 
+
+COCO 2017 [42] is a widely recognized dataset for object detection, comprising 118K training images and 5K images for validation. We evaluate the performance of pre-trained models using two detection methods, Mask R-CNN [52] and RetinaNet [53]. As shown in Table IV, employing ExFusion-mb for enhanced pre-training of PVT models can improve the JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 730K 40K 50K 60K 70K 80K 90K 100K 
+
+Training Steps 
+
+> 1.7
+> 1.8
+> 1.9
+> 2.0
+> Training Loss  Dense
+> Vanilla MoE-4-1
+> ExFusion-mb (#Experts=4)
+
+Fig. 4: Comparison results on C4. TABLE V: Fine-tuning results on GLUE.                   
+
+> Method SST-2 MRPC QQP MNLI QNLI Avg.
+> Dense 91.3 86.8 90.7 83.5 90.2 88.5 MoE-4-1 93.1 89.2 90.4 84.0 91.3 89.6
+> ExFusion-mb 93.7 90.6 91.0 86.3 91.9 90.7
+
+performance in detection tasks. Notably, within the RetinaNet framework, our PVT-M † outperforms PVT-L by 0.1% AP 75 
+
+with only 75% of parameters. 
+
+D. Natural Language Understanding 
+
+To verify the versatility of the ExFusion framework, we also conduct experiments on natural language understanding tasks. We first pre-train T5 model [22] on the large-scale textual Colossal Clean Crawled Corpus (C4) corpus. We employ the nanoT5 project [54] to conduct T5-base model pre-training. Specifically, we train the Dense T5-base, MoE-4-1 T5-base, and T5-base with ExFusion-mb on the C4 dataset for 100K steps, with an initial learning rate of 1e-2 and a batch size of 2,048, while all other settings remained consistent with the nanoT5 project. Figure 4 shows the pre-training loss variations of the above three models. Surprisingly, our method not only achieves the best performance but also exhibits a faster convergence rate. For instance, our method reaches the same level of convergence at 30K steps as the dense model does at 100K steps, which is 3.3x faster. Furthermore, it is noteworthy that the GPU hours required for ExFusion-mb are only 1/3 of those for MoE-4-1 (644 hours vs. 1,742 hours). Finally, we utilize the GLUE benchmark 3 to verify the pre-training effect of the T5-base models. As shown in Table V, the T5-base model pre-trained via ExFusion-mb also achieves exceptional downstream performance. 
+
+E. Ablation Studies 
+
+In this section, we validate the effectiveness of each com-ponent within the ExFusion framework via comprehensive ablation studies. Unless specifically noted, we utilize DeiT-T as the baseline model, employ ExFusion-mb with four 
+
+> 3GLUE is a benchmark designed to evaluate the performance of models on a variety of natural language understanding (NLU) tasks. We utilize 5 tasks within GLUE for evaluating the fine-tuning performance of pre-trained models.
+
+TABLE VI: Results on differ-ent ExFusion variants.      
+
+> Framework Acc. baseline 72.20 ExFusion-sw 73.71 ExFusion-dw 73.96 ExFusion-mb 74.10
+
+TABLE VII: Results on the number of experts.     
+
+> #Experts Acc. 474.10 873.56 16 73.28
+
+TABLE VIII: Results on the momentum value.       
+
+> Value of δAcc. 0.90 73.72 0.92 74.06 0.95 74.10 0.98 74.08
+
+TABLE IX: Results on router settings.       
+
+> Router #Params Acc. w Shared 9.2K 74.10 w/o Shared 46.1K 73.95
+
+experts as the training strategy, and conduct experiments on the ImageNet-1k dataset. 
+
+1) Variants of ExFusion.: In the aforementioned experi-ments, we present the results for the best-performing variant, ExFusion-mb. Therefore, as shown in Table VI, we verify the effectiveness of the other two variants. The results in-dicate that without considering data-dependent information, both the static-weight-based ExFusion-sw and the dynamic-weight-based ExFusion-dw achieve suboptimal performance. However, compared to the baseline, they still achieve gains of 1.51% and 1.76%, respectively. 
+
+2) Number of Experts.: In MoE models, the number of experts is an important factor that affects the performance. To investigate the impact of this factor, we evaluate the ExFusion-mb method with varying numbers of experts. The results in Table VII indicate that increasing the number of experts actually leads to a performance decline. One plausible explanation could be that, with the total number of training epochs held constant, increasing the number of experts may result in insufficient training for each expert. Therefore, we have fixed the number of experts to 4 for ExFusion-mb. 
+
+3) Momentum Values.: In ExFusion-mb, a momentum up-date mechanism is introduced to enable the comprehensive consideration of both current and historical weights. In this context, a larger momentum value δ indicates a lower influence of the current weights, while a smaller value suggests a reduced impact of the historical weights. The ablation results for δ, as shown in Table VIII, leads us to fix the momentum value at 0.95. 
+
+4) Router Settings.: ExFusion-mb employs a shared router and a memory bank to regulate the weights of experts. We also investigate the effects of a non-sharing configuration. The results in Table IX show that the adoption of a sharing mechanism not only achieves superior performance but also reduces the number of router parameters by 80%. 
+
+5) Placement of MoE Layers.: In the MoE model, the placement of MoE layers is crucial. To further verify the importance of MoE layers, we conduct ablation studies to find the best positions for replacing dense FFN layers with multi-experts layers in Transformer. According to the results in Table JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 80 50 100 150 200 250 300                                                                   
+
+> Epoch
+> 0.10
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> 0.35
+> 0.40
+> Weights
+> Block 1
+> 050 100 150 200 250 300
+> Epoch
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> 0.35
+> 0.40
+> Weights
+> Block 2
+> 050 100 150 200 250 300
+> Epoch
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> Weights
+> Block 3
+> 050 100 150 200 250 300
+> Epoch
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> Weights
+> Block 4
+> 050 100 150 200 250 300
+> Epoch
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> Weights
+> Block 5
+> 050 100 150 200 250 300
+> Epoch
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> Weights
+> Block 6
+> 050 100 150 200 250 300
+> Epoch
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> Weights
+> Block 7
+> 050 100 150 200 250 300
+> Epoch
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> Weights
+> Block 8
+> 050 100 150 200 250 300
+> Epoch
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> Weights
+> Block 9
+> 050 100 150 200 250 300
+> Epoch
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> Weights
+> Block 10
+> 050 100 150 200 250 300
+> Epoch
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> Weights
+> Block 11
+> 050 100 150 200 250 300
+> Epoch
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> Weights
+> Block 12
+
+Fig. 5: Visualization of expert weight variations in DeiT-T †.X, ExFsion-mb achieves the best performance when all FFN layers are replaced. 
+
+6) Training Duration.: As illustrated in Table XI, em-ploying four experts for pre-training in ExFusion-mb results in an increase of only 8% in training time. Notably, even when expanding to 128 experts, the increase in training time is limited to only 11%. Additionally, as shown in Table I, compared to the vanilla MoE, ExFusion-mb significantly reduces both training time and memory usage for the same activated parameters. Furthermore, compared to dense models, ExFusion-mb results in only a 10% increase in training time, while maintaining identical inference costs. This indicates that our proposed ExFusion-mb method does not substantially increase the training time as the number of experts scales. 
+
+F. Visualization 
+
+To verify the trend of weight updates in the ExFusion-mb, we visualize the change of expert weights in DeiT-T †. As shown in Figure 5, the four lines in each subplot respectively represent the weight variation of four experts. The results indicate that ExFusion-mb can effectively adjust the impor-tance of each expert during the training process, achieving robust convergence. Furthermore, the differences among the weights further verify that experts are specialized with routing preferences, which is consistent with the consensus of many studies on MoE [14], [55]. VI. D ISCUSSION AND LIMITATION 
+
+This section delineates the distinctions between ExFusion and advanced Mixture-of-Experts (MoE) models regarding routing strategies, expert specialization, and task customiza-tion. We also address the limitations of our approach and outline directions for future research. TABLE X: Results on re-placement layers. 
+
+Replacement layers Acc. 
+
+{6, 7, 8, 9, 10, 11 } 72.98 
+
+{0, 2, 4, 6, 8, 10 } 74.07 
+
+{1, 3, 5, 7, 9, 11 } 73.29 All layers 74.10 
+
+TABLE XI: Results on train-ing duration. 
+
+#Experts Training Time - ×1 4 ×1.02 8 ×1.08 128 ×1.11 
+
+A. Efficiency and Deployment-Friendliness 
+
+A primary advantage of ExFusion is its inference effi-ciency and ease of deployment. Unlike standard MoE models, which must store all experts and routers even if sparsely activated—leading to high memory overhead—ExFusion fuses all experts into a single Feed-Forward Network (FFN) post-training. This yields an inference architecture identical to a dense Transformer in both structure and complexity. This “large during training, compact during inference” paradigm of-fers significant benefits for resource-constrained environments, including mobile devices and cloud-edge collaboration sys-tems typical in Telecommunications, Multimedia, and Mobile (TMM) applications. 
+
+B. Compatibility with Existing Dense Transformer Ecosystems 
+
+ExFusion integrates seamlessly with existing dense Trans-former ecosystems. The resulting model can directly replace any Transformer backbone without requiring modifications to downstream pipelines for tasks such as object detection or semantic segmentation. In contrast, many advanced MoE models necessitate specialized support and custom engineer-ing. This high interoperability makes ExFusion particularly suitable for industrial multimedia systems where adaptability is paramount. JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 9
+
+C. Limitations of ExFusion 
+
+Despite its efficacy in efficient Transformer training, ExFu-sion presents specific limitations: 
+
+1) Scalability of Expert Count: ExFusion aggregates all experts into a single unit via weight fusion. When the number of experts is extensive, excessive averaging may lead to over-smoothing, hindering the preservation of diverse, specialized behaviors. As indicated in Table VII, performance degrades when scaling from 4 to 16 experts, highlighting the trade-off between expert diversity and effective knowledge fusion. 
+
+2) Loss of Inference-Stage Specialization: For complex scenarios like multi-task or multimodal learning, models ben-efit from conditional computation via a router to exploit distinct expert capabilities. In such cases, retaining the MoE structure during inference is often advantageous. ExFusion’s consolidation strategy may sacrifice these benefits of dynamic specialization. 
+
+3) Validation on Massive-Scale Models: Current validation focuses on base-scale models (e.g., ViT-B, Swin-B, T5-base). The dynamics of training and fusion in models with hundreds of billions of parameters—such as LLMs or large vision mod-els—require further systematic investigation before ExFusion can be fully deployed in ultra-large-scale contexts. 
+
+D. Distinction from Other Methods 
+
+To clarify ExFusion’s unique position, we compare it with related methodologies. 
+
+1) Comparison with MoE Models: ExFusion utilizes amulti-expert structure strictly as a training scaffold, merging it into a single-expert model for deployment. Consequently, its inference parameter count and complexity remain equivalent to a dense Transformer. This contrasts with MoE models like CBDMoE [56], which improve MoE structures but retain multiple experts during inference, incurring higher storage and computational costs. 
+
+2) Comparison with Efficient Tuning Methods: While meth-ods like PEFT [57]–[62] optimize existing architectures for training efficiency, ExFusion focuses on expansion and com-pression during the pre-training stage. It enhances backbone capabilities without permanently altering the architecture. Thus, ExFusion complements, rather than competes with, efficient tuning methods. 
+
+3) Comparison with Efficient MoE Training Methods: 
+
+Compared to efficient MoE training approaches like RMoE [63] and WEMoE [64], ExFusion is distinguished by its zero-inference overhead. While RMoE and WEMoE reduce training costs, they still rely on sparse operations or dynamic routing during inference. ExFusion collapses all experts into a single dense network, producing a final model mathematically identical to a standard Transformer and eliminating deploy-ment complexities associated with sparse models. VII. C ONCLUSION 
+
+In this paper, we introduce ExFusion, a mechanism lever-aging the weighted fusion of multiple experts within MoE models to enhance Transformer performance without incur-ring additional inference overhead. To ensure flexibility, we propose three variants based on static, dynamic, and mem-ory bank strategies. Extensive experiments across diverse tasks—including image classification, semantic segmentation, object detection, and language understanding—demonstrate that ExFusion significantly improves various Transformer baselines. Notably, it achieves these gains with zero additional parameters or computational costs, underscoring its strong universality and potential. Future work will explore scaling ExFusion to larger models and adapting it for multi-modal sensor fusion, such as the integration of radar, LiDAR, and camera data in autonomous driving systems. REFERENCES [1] A. Dosovitskiy, L. Beyer, A. Kolesnikov, D. Weissenborn, X. Zhai, T. Unterthiner, M. Dehghani, M. Minderer, G. Heigold, S. Gelly et al. ,“An image is worth 16x16 words: Transformers for image recognition at scale,” arXiv preprint arXiv:2010.11929 , 2020. [2] H. Touvron, M. Cord, M. Douze, F. Massa, A. Sablayrolles, and H. J´ egou, “Training data-efficient image transformers & distillation through attention,” in International conference on machine learning .PMLR, 2021, pp. 10 347–10 357. [3] W. Wang, E. Xie, X. Li, D.-P. Fan, K. Song, D. Liang, T. Lu, P. Luo, and L. Shao, “Pyramid vision transformer: A versatile backbone for dense prediction without convolutions,” in Proceedings of the IEEE/CVF international conference on computer vision , 2021, pp. 568–578. [4] H. Wu, B. Xiao, N. Codella, M. Liu, X. Dai, L. Yuan, and L. Zhang, “Cvt: Introducing convolutions to vision transformers,” in Proceedings of the IEEE/CVF international conference on computer vision , 2021, pp. 22–31. [5] Z. Liu, Y. Lin, Y. Cao, H. Hu, Y. Wei, Z. Zhang, S. Lin, and B. Guo, “Swin transformer: Hierarchical vision transformer using shifted windows,” in Proceedings of the IEEE/CVF international conference on computer vision , 2021, pp. 10 012–10 022. [6] N. Carion, F. Massa, G. Synnaeve, N. Usunier, A. Kirillov, and S. Zagoruyko, “End-to-end object detection with transformers,” in 
+
+European conference on computer vision . Springer, 2020, pp. 213– 229. [7] X. Zhu, W. Su, L. Lu, B. Li, X. Wang, and J. Dai, “Deformable detr: Deformable transformers for end-to-end object detection,” arXiv preprint arXiv:2010.04159 , 2020. [8] Y. Li, H. Mao, R. Girshick, and K. He, “Exploring plain vision transformer backbones for object detection,” in European Conference on Computer Vision . Springer, 2022, pp. 280–296. [9] B. Cheng, A. Schwing, and A. Kirillov, “Per-pixel classification is not all you need for semantic segmentation,” Advances in Neural Information Processing Systems , vol. 34, pp. 17 864–17 875, 2021. [10] S. Zheng, J. Lu, H. Zhao, X. Zhu, Z. Luo, Y. Wang, Y. Fu, J. Feng, T. Xiang, P. H. Torr et al. , “Rethinking semantic segmentation from a sequence-to-sequence perspective with transformers,” in Proceedings of the IEEE/CVF conference on computer vision and pattern recognition ,2021, pp. 6881–6890. [11] N. Du, Y. Huang, A. M. Dai, S. Tong, D. Lepikhin, Y. Xu, M. Krikun, Y. Zhou, A. W. Yu, O. Firat et al. , “Glam: Efficient scaling of language models with mixture-of-experts,” in International Conference on Machine Learning . PMLR, 2022, pp. 5547–5569. [12] W. Fedus, B. Zoph, and N. Shazeer, “Switch transformers: Scaling to trillion parameter models with simple and efficient sparsity,” The Journal of Machine Learning Research , vol. 23, no. 1, pp. 5232–5270, 2022. [13] J. Puigcerver, C. Riquelme, B. Mustafa, and N. Houlsby, “From sparse to soft mixtures of experts,” arXiv preprint arXiv:2308.00951 , 2023. [14] L.-M. Team, “Llama-moe: Building mixture-of-experts from llama with continual pre-training,” Dec 2023. [Online]. Available: https: //github.com/pjlab-sys4nlp/llama-moe [15] C. Hwang, W. Cui, Y. Xiong, Z. Yang, Z. Liu, H. Hu, Z. Wang, R. Salas, J. Jose, P. Ram, J. Chau, P. Cheng, F. Yang, M. Yang, and Y. Xiong, “Tutel: Adaptive mixture-of-experts at scale,” 2022. [16] O. Russakovsky, J. Deng, H. Su, J. Krause, S. Satheesh, S. Ma, Z. Huang, A. Karpathy, A. Khosla, M. Bernstein et al. , “Imagenet large scale visual recognition challenge,” International journal of computer vision , vol. 115, pp. 211–252, 2015. [17] J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li, and L. Fei-Fei, “Imagenet: A large-scale hierarchical image database,” in 2009 IEEE conference on computer vision and pattern recognition . Ieee, 2009, pp. 248–255. JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 10 
+
+[18] H. Huang, N. Ardalani, A. Sun, L. Ke, H.-H. S. Lee, A. Sridhar, S. Bhosale, C.-J. Wu, and B. Lee, “Towards moe deployment: Mitigating inefficiencies in mixture-of-expert (moe) inference,” arXiv preprint arXiv:2303.06182 , 2023. [19] A. Clark, D. De Las Casas, A. Guy, A. Mensch, M. Paganini, J. Hoff-mann, B. Damoc, B. Hechtman, T. Cai, S. Borgeaud et al. , “Unified scaling laws for routed language models,” in International Conference on Machine Learning . PMLR, 2022, pp. 4057–4086. [20] C. Riquelme, J. Puigcerver, B. Mustafa, M. Neumann, R. Jenatton, A. Susano Pinto, D. Keysers, and N. Houlsby, “Scaling vision with sparse mixture of experts,” Advances in Neural Information Processing Systems , vol. 34, pp. 8583–8595, 2021. [21] X. Dong, Z. Yu, W. Cao, Y. Shi, and Q. Ma, “A survey on ensemble learning,” Frontiers of Computer Science , vol. 14, pp. 241–258, 2020. [22] C. Raffel, N. Shazeer, A. Roberts, K. Lee, S. Narang, M. Matena, Y. Zhou, W. Li, and P. J. Liu, “Exploring the limits of transfer learning with a unified text-to-text transformer,” The Journal of Machine Learning Research , vol. 21, no. 1, pp. 5485–5551, 2020. [23] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, Ł. Kaiser, and I. Polosukhin, “Attention is all you need,” Advances in neural information processing systems , vol. 30, 2017. [24] J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova, “Bert: Pre-training of deep bidirectional transformers for language understanding,” arXiv preprint arXiv:1810.04805 , 2018. [25] A. Radford, K. Narasimhan, T. Salimans, I. Sutskever et al. , “Improving language understanding by generative pre-training,” 2018. [26] X. Dong, J. Bao, D. Chen, W. Zhang, N. Yu, L. Yuan, D. Chen, and B. Guo, “Cswin transformer: A general vision transformer backbone with cross-shaped windows,” in Proceedings of the IEEE/CVF confer-ence on computer vision and pattern recognition , 2022, pp. 12 124– 12 134. [27] D. Lepikhin, H. Lee, Y. Xu, D. Chen, O. Firat, Y. Huang, M. Krikun, N. Shazeer, and Z. Chen, “Gshard: Scaling giant models with conditional computation and automatic sharding,” arXiv preprint arXiv:2006.16668 ,2020. [28] C. Sun, A. Shrivastava, S. Singh, and A. Gupta, “Revisiting unreasonable effectiveness of data in deep learning era,” in Proceedings of the IEEE international conference on computer vision , 2017, pp. 843–852. [29] X. Zhai, A. Kolesnikov, N. Houlsby, and L. Beyer, “Scaling vision transformers,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , 2022, pp. 12 104–12 113. [30] Z.-H. Zhou, Ensemble methods: foundations and algorithms . CRC press, 2012. [31] L. Breiman, “Bagging predictors,” Machine learning , vol. 24, pp. 123– 140, 1996. [32] T. Chen and C. Guestrin, “Xgboost: A scalable tree boosting system,” in Proceedings of the 22nd acm sigkdd international conference on knowledge discovery and data mining , 2016, pp. 785–794. [33] D. H. Wolpert, “Stacked generalization,” Neural networks , vol. 5, no. 2, pp. 241–259, 1992. [34] L. Choshen, E. Venezian, N. Slonim, and Y. Katz, “Fusing finetuned models for better pretraining,” arXiv preprint arXiv:2204.03044 , 2022. [35] S. Xiang, Y. Fu, M. Guan, and T. Liu, “Learning from self-discrepancy via multiple co-teaching for cross-domain person re-identification,” 
+
+Machine Learning , vol. 112, no. 6, pp. 1923–1940, 2023. [36] S. P. Singh and M. Jaggi, “Model fusion via optimal transport,” Advances in Neural Information Processing Systems , vol. 33, pp. 22 045–22 055, 2020. [37] S. K. Ainsworth, J. Hayase, and S. Srinivasa, “Git re-basin: Merging models modulo permutation symmetries,” arXiv preprint arXiv:2209.04836 , 2022. [38] M. Wortsman, G. Ilharco, S. Y. Gadre, R. Roelofs, R. Gontijo-Lopes, A. S. Morcos, H. Namkoong, A. Farhadi, Y. Carmon, S. Kornblith, and L. Schmidt, “Model soups: averaging weights of multiple fine-tuned models improves accuracy without increasing inference time,” in Proceedings of the 39th International Conference on Machine Learning , ser. Proceedings of Machine Learning Research, K. Chaudhuri, S. Jegelka, L. Song, C. Szepesvari, G. Niu, and S. Sabato, Eds., vol. 162. PMLR, 17–23 Jul 2022, pp. 23 965–23 998. [Online]. Available: https://proceedings.mlr.press/v162/wortsman22a.html [39] X. Jin, X. Ren, D. Preotiuc-Pietro, and P. Cheng, “Dataless knowledge fusion by merging weights of language models,” in The Eleventh International Conference on Learning Representations , 2022. [40] A. Tang, L. Shen, Y. Luo, N. Yin, L. Zhang, and D. Tao, “Merging multi-task models via weight-ensembling mixture of experts,” arXiv preprint arXiv:2402.00433 , 2024. [41] D. Hendrycks and K. Gimpel, “Gaussian error linear units (gelus),” arXiv preprint arXiv:1606.08415 , 2016. [42] T.-Y. Lin, M. Maire, S. Belongie, J. Hays, P. Perona, D. Ramanan, P. Doll´ ar, and C. L. Zitnick, “Microsoft coco: Common objects in context,” in Computer Vision–ECCV 2014: 13th European Conference, Zurich, Switzerland, September 6-12, 2014, Proceedings, Part V 13 .Springer, 2014, pp. 740–755. [43] B. Zhou, H. Zhao, X. Puig, T. Xiao, S. Fidler, A. Barriuso, and A. Torralba, “Semantic understanding of scenes through the ade20k dataset,” International Journal of Computer Vision , vol. 127, pp. 302– 321, 2019. [44] A. Wang, A. Singh, J. Michael, F. Hill, O. Levy, and S. R. Bowman, “Glue: A multi-task benchmark and analysis platform for natural lan-guage understanding,” arXiv preprint arXiv:1804.07461 , 2018. [45] I. Loshchilov and F. Hutter, “Decoupled weight decay regularization,” 
+
+arXiv preprint arXiv:1711.05101 , 2017. [46] E. D. Cubuk, B. Zoph, J. Shlens, and Q. V. Le, “Randaugment: Practical automated data augmentation with a reduced search space,” in Proceedings of the IEEE/CVF conference on computer vision and pattern recognition workshops , 2020, pp. 702–703. [47] H. Zhang, M. Cisse, Y. N. Dauphin, and D. Lopez-Paz, “mixup: Beyond empirical risk minimization,” arXiv preprint arXiv:1710.09412 , 2017. [48] S. Yun, D. Han, S. J. Oh, S. Chun, J. Choe, and Y. Yoo, “Cutmix: Reg-ularization strategy to train strong classifiers with localizable features,” in Proceedings of the IEEE/CVF international conference on computer vision , 2019, pp. 6023–6032. [49] Z. Zhong, L. Zheng, G. Kang, S. Li, and Y. Yang, “Random erasing data augmentation,” in Proceedings of the AAAI conference on artificial intelligence , vol. 34, no. 07, 2020, pp. 13 001–13 008. [50] A. Kirillov, R. Girshick, K. He, and P. Doll´ ar, “Panoptic feature pyramid networks,” in Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , 2019, pp. 6399–6408. [51] T. Xiao, Y. Liu, B. Zhou, Y. Jiang, and J. Sun, “Unified perceptual parsing for scene understanding,” in Proceedings of the European conference on computer vision (ECCV) , 2018, pp. 418–434. [52] K. He, G. Gkioxari, P. Doll´ ar, and R. Girshick, “Mask r-cnn,” in 
+
+Proceedings of the IEEE international conference on computer vision ,2017, pp. 2961–2969. [53] T.-Y. Lin, P. Goyal, R. Girshick, K. He, and P. Doll´ ar, “Focal loss for dense object detection,” in Proceedings of the IEEE international conference on computer vision , 2017, pp. 2980–2988. [54] P. Nawrot, “nanot5: A pytorch framework for pre-training and fine-tuning t5-style models with limited resources,” arXiv preprint arXiv:2309.02373 , 2023. [55] Z. Chen, Y. Deng, Y. Wu, Q. Gu, and Y. Li, “Towards understanding mixture of experts in deep learning,” arXiv preprint arXiv:2208.02813 ,2022. [56] F. Xu, D. Chen, T. Jia, S. Deng, and H. Wang, “Cbdmoe: Consistent-but-diverse mixture of experts for domain generalization,” IEEE Trans-actions on Multimedia , vol. 26, pp. 9814–9824, 2024. [57] J. Ruan, X. Gao, S. Xiang, M. Xie, T. Liu, and Y. Fu, “Understanding robustness of parameter-efficient tuning for image classification,” arXiv preprint arXiv:2410.09845 , 2024. [58] J. Ruan, M. Xie, J. Gao, X. Gao, S. Xiang, T. Liu, and Y. Fu, “Tte: Two tokens are enough to improve parameter-efficient tuning,” in Proceedings of the AAAI Conference on Artificial Intelligence , vol. 39, no. 19, 2025, pp. 20 209–20 217. [59] J. Ruan, J. Gao, M. Xie, S. Xiang, Z. Yu, T. Liu, Y. Fu, and X. Qu, “Gist: Improving parameter efficient fine-tuning via knowledge interaction,” in 
+
+Proceedings of the 32nd ACM International Conference on Multimedia ,2024, pp. 8835–8844. [60] J. Ruan, J. Gao, M. Xie, D. Dong, S. Xiang, T. Liu, and Y. Fu, “idat: inverse distillation adapter-tuning,” in 2024 IEEE International Conference on Multimedia and Expo (ICME) . IEEE, 2024, pp. 1–6. [61] E. J. Hu, P. Wallis, Z. Allen-Zhu, Y. Li, S. Wang, L. Wang, W. Chen 
+
+et al. , “Lora: Low-rank adaptation of large language models,” in Inter-national Conference on Learning Representations , 2021. [62] N. Ding, Y. Qin, G. Yang, F. Wei, Z. Yang, Y. Su, S. Hu, Y. Chen, C.-M. Chan, W. Chen et al. , “Parameter-efficient fine-tuning of large-scale pre-trained language models,” Nature Machine Intelligence , vol. 5, no. 3, pp. 220–235, 2023. [63] L. Wu, M. Liu, Y. Chen, D. Chen, X. Dai, and L. Yuan, “Residual mixture of experts,” arXiv preprint arXiv:2204.09636 , 2022. [64] L. Shen, A. Tang, E. Yang, G. Guo, Y. Luo, L. Zhang, X. Cao, B. Du, and D. Tao, “Efficient and effective weight-ensembling mixture of experts for multi-task model merging,” IEEE Transactions on Pattern Analysis and Machine Intelligence , 2025.
