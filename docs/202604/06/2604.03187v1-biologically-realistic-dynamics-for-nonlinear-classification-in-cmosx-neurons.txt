@@ -1,0 +1,162 @@
+Title: Biologically Realistic Dynamics for Nonlinear Classification in CMOS+X Neurons
+
+URL Source: https://arxiv.org/pdf/2604.03187v1
+
+Published Time: Mon, 06 Apr 2026 00:58:36 GMT
+
+Number of Pages: 5
+
+Markdown Content:
+# Biologically Realistic Dynamics for Nonlinear Classification in CMOS+X Neurons 
+
+Steven Louis ∗, Hannah Bradley †, Artem Litvinenko †, Cody Trevillian †, Darrin Hanna ∗, Vasyl Tyberkevych †∗ Department of Electrical and Computer Engineering  
+
+> †
+
+Department of Physics Oakland University, Rochester, MI USA slouis@oakland.edu 
+
+Abstract —Spiking neural networks encode information in spike timing and offer a pathway toward energy efficient artificial intelligence. However, a key challenge in spiking neural networks is realizing nonlinear and expressive computation in compact, energy-efficient hardware without relying on additional circuit complexity. In this work, we examine nonlinear computation in a CMOS+X spiking neuron implemented with a magnetic tunnel junction connected in series with an NMOS transistor. Circuit simulations of a multilayer network solving the XOR classifi-cation problem show that three intrinsic neuronal properties enable nonlinear behavior: threshold activation, response latency, and absolute refraction. Threshold activation determines which neurons participate in computation, response latency shifts spike timing, and absolute refraction suppresses subsequent spikes. These results show that magnetization dynamics of MTJ devices can support nonlinear computation in compact neuromorphic hardware. 
+
+Index Terms —Neuromorphic computing, Magnetic tunnel junctions (MTJ), CMOS+X, Spiking neural networks (SNN), Spintronics, Hardware neural networks, CMOS integration, In-memory computing, Biological neuron modeling 
+
+I. I NTRODUCTION 
+
+Artificial intelligence systems have advanced rapidly as neural network models have become larger and more complex [1]. These models are typically implemented on conventional CMOS hardware using arrays of artificial neurons that perform matrix operations and high-precision arithmetic [2]. Although effective, this approach requires substantial energy and is difficult to deploy on battery-powered edge devices where power consumption is constrained [3]. Spiking neural networks (SNNs) offer a more energy-efficient computing paradigm. Unlike conventional neural net-works that operate on continuous values, spiking neurons communicate using discrete events whose timing carries infor-mation [4], [5]. Because computation occurs only when spikes are present, SNNs enable sparse event-driven processing well suited for low-power neuromorphic systems. Recently, Louis et al. [6] demonstrated that a magnetic tun-nel junction (MTJ) combined with a single NMOS transistor can function as a compact spiking neuron compatible with standard CMOS manufacturing processes. This NMOS+MTJ neuron, consisting of an NMOS transistor connected in series with an MTJ, is nearly identical to a conventional 1T-1MTJ MRAM cell and produces spiking behavior through intrinsic magnetization dynamics of the MTJ free layer rather than through complex control circuitry. Beyond generating spikes, this device naturally reproduces several dynamical behaviors characteristic of biological neu-rons. These include all-or-nothing threshold activation, re-sponse latency, and refractory dynamics. In biological neural systems, such features play an essential role in shaping in-formation processing [7], [8]. However, many silicon neuron implementations reproduce only simplified versions of these behaviors, often omitting latency and refractory dynamics [9]. The NMOS+MTJ neuron is unusual in that these biolog-ically realistic behaviors arise directly from device physics. In particular, magnetization dynamics of the MTJ free layer naturally produce threshold spiking, input-dependent response latency, and refractory behavior without requiring additional circuit elements [6]. These dynamics therefore provide compu-tational mechanisms fundamentally different from those used in conventional CMOS neuron designs. This NMOS+MTJ neuron also fits within a broader class of architectures often referred to as CMOS+X, in which conventional CMOS circuitry is combined with emerging de-vice technologies that provide new device-level functionality. Examples of such devices include memristors, phase change materials, and spintronic elements such as MTJs. In this work, the MTJ provides the nonlinear dynamical behavior that enables spiking and temporal processing within an otherwise standard CMOS circuit. While the NMOS+MTJ neuron and its learning behavior were previously demonstrated [6], the computational role of these intrinsic neuronal dynamics has not been examined in detail. In particular, it remains unclear how threshold activa-tion, response latency, and refractory dynamics contribute to nonlinear computation in such networks. In this work, we examine how these three biologically real-istic properties enable nonlinear classification in NMOS+MTJ spiking neural networks. Using the XOR problem as a bench-mark, we analyze how threshold activation determines which neurons participate in computation, how response latency en-codes information in spike timing, and how absolute refraction prevents subsequent spikes from altering the output spike already in progress. By connecting device-level magnetization dynamics to network-level behavior, this work demonstrates that biologi-
+
+> arXiv:2604.03187v1 [cs.NE] 3 Apr 2026
+
+Vin 
+
+VDD VDD 
+
+Vout wk j 
+
+Synaptic 
+
+Weight 
+
+1Fig. 1. Electrical schematic illustrating two NMOS+MTJ neurons connected by a synaptic weight. Each neuron consists of a magnetic tunnel junction (MTJ), represented by the blue and orange layers, connected in series with an NMOS transistor. The synaptic connection is implemented with a voltage amplifier whose gain represents the synaptic weight wkj that controls how activity from one neuron influences the next neuron. Vin is the input voltage applied to the first neuron, Vout is the output voltage of the second neuron, and VDD is the supply voltage. 
+
+cally realistic neuronal features can serve as intrinsic com-putational resources in CMOS+X neuromorphic systems. In this architecture, nonlinear classification emerges directly from device physics rather than from additional circuit complexity. II. T HE NMOS+MTJ S PIKING NEURON STRUCTURE 
+
+The artificial neuron in this work is the NMOS+MTJ circuit introduced in [6] and derived from the MTJ neuron concept and circuit model described in [10], [11]. As illustrated in Fig. 1, the neuron consists of a magnetic tunnel junction (MTJ) connected in series with an NMOS transistor. This configura-tion resembles a one-transistor-one-MTJ (1T-1MTJ) MRAM cell and is compatible with existing CMOS manufacturing processes and embedded MRAM technologies [12]. Spiking behavior in the NMOS+MTJ neuron arises from magnetization dynamics in the MTJ free layer rather than from additional control circuitry. Prior work showed that the MTJ resistance depends on free layer orientation and that current through the device generates spin-transfer torque capable of producing a spiking response [6], [10]. When combined in series with an NMOS transistor, this resistance change appears as a voltage spike at the output [6]. The present work demon-strates that this neuron naturally exhibits threshold activation, response latency, and refractory behavior, as examined below. NMOS+MTJ neurons can be connected through analog synapses implemented as tunable voltage amplifiers. As shown in Fig. 1, the output of one neuron drives the input of another through an amplifier representing the synaptic weight. The amplifier gain sets the connection strength, allowing spikes to propagate between neurons and trigger downstream spiking with latency determined by the synaptic gain [6]. Although the NMOS transistor controls the current ampli-tude, the nonlinear spiking behavior originates from the MTJ, whose magnetization dynamics determine whether and when a resistance transition occurs. In the absence of MTJ dynamics, A i1
+
+o1
+
+Encoding 
+
+neurons 
+
+i2B
+
+Input 
+
+layer 
+
+Output 
+
+layer 
+
+bias bias A B out 1 0 0 01 0 1 11 1 0 11 1 1 01          
+
+> Fig. 2. Architecture of the NMOS+MTJ neural network used for XOR classification. Encoding neurons Aand Bdrive input-layer neurons i1and i2,which connect to output neuron o1through synaptic weights. A bias neuron provides a constant input to the network. The XOR truth table showing the bias input and target output.
+
+the circuit reduces to a linear resistive element and does not exhibit the biological features covered in this work. Importantly, threshold activation, response latency, synaptic integration, and both absolute and relative refraction arise naturally from magnetization dynamics of the MTJ free layer without additional circuitry [6]. These dynamics form the basis for the nonlinear network behavior examined in this work. III. XOR C LASSIFICATION NETWORK 
+
+The XOR function is a standard nonlinear benchmark that cannot be solved by a single-layer perceptron and therefore re-quires multilayer processing with nonlinear activation, making it an ideal, simple test case for our work. To enable gradient-based training, the network is constrained to a single-spike regime in which each neuron emits at most one spike per input, allowing spike timing to be used for backpropagation. Figure 2 shows the NMOS+MTJ neural network used for XOR classification together with the corresponding truth table. The network consists of encoding neurons A and B that generate input spikes corresponding to the truth table values, input-layer neurons i1 and i2, and output neuron o1. A bias neuron provides a constant input spikes to the network. Synaptic connections are implemented using the tunable voltage amplifier model described in Section II. The amplifier gain corresponds to a synaptic weight wkj connecting neuron 
+
+j to neuron k. These weights determine how strongly spikes from one neuron influence the next. During operation, spikes generated by neurons i1 and i2
+
+propagate through the synaptic connections to the output neuron o1. The spike timing of o1 encodes the XOR output. Following the convention introduced in [6], a spike of o1 at 
+
+t = 2 ns represents 0, while a spike at t = 2 .5 ns represents 1. The NMOS+MTJ network was trained using a spike-timing-based gradient descent algorithm implemented entirely in analog circuitry, with the learning rule derived from the loss function 
+
+L = 12 (tactual − tdesired )2 (1) where tactual is the output spike time of neuron o1 and tdesired 
+
+is the target spike time [6]. Weight updates follow 
+
+∆wkj = −η dL dt k
+
+∂t k
+
+∂w k,j 
+
+, (2) where η is the learning rate and tk is the firing time of the presynaptic neuron. During training, synaptic weights are adjusted to minimize the difference between the observed and desired output spike times specified by the XOR truth table. The reader is directed to Section V and Appendix B of [6] for a complete derivation of the learning rule and its analog circuit implementation. Here, we focus instead on how intrinsic biological features of the NMOS+MTJ neuron enable nonlinear XOR classification. IV. B IOLOGICAL FEATURES ENABLING XOR CLASSIFICATION 
+
+In the NMOS+MTJ neural network, nonlinear capability arises from three biologically realistic features of the neuron: threshold activation, response latency, and absolute refraction. Together, these properties create timing-dependent dynamics that allow the network to distinguish between input patterns that cannot be separated by linear systems. 
+
+A. Threshold Activation 
+
+The first mechanism enabling nonlinear behavior in the network is threshold activation. Biological neurons exhibit an all-or-nothing response in which spiking occurs only when the input exceeds a critical threshold. A similar behavior emerges naturally in the NMOS+MTJ neuron through the magnetization dynamics of the MTJ free layer. This effect is illustrated in Fig. 3(a-d), which show the net-work response for row 1 of the XOR truth table, corresponding to the input combination (A, B ) = (0 , 0) . Due to differences in the synaptic weights connecting the bias neuron to the input-layer neurons, the currents delivered to neurons i1 and i2 are slightly different. Under these conditions, neuron i2 receives a current that exceeds the firing threshold, while neuron i1
+
+remains below threshold and does not spike. As a result, only neuron i2 generates an output spike, which is transmitted to the output neuron o1.The output spike of neuron o1 occurs at approximately 
+
+t = 2 ns, as shown in Fig. 3(d). In this network, the spike timing encodes the logical output of the XOR operation: a spike at t = 2 ns represents a logical 0. Thus, threshold activation ensures that only inputs that exceed the firing condition propagate through the network, establishing the first stage of nonlinear processing. The timing of the output spike is set by the time required for the input current to drive the MTJ free-layer magnetization across the switching threshold. Larger input currents pro-duce stronger spin-transfer torque and faster switching, while currents closer to threshold result in slower magnetization dynamics and delayed spikes. 100 120 140                                                          
+
+> i 1 ,i 2 current,  μ A
+> (a)
+> i1current
+> i2current Row 1
+> 050 100
+> i 1 , i 2 out,  μ V
+> (b)i2output
+> 100 120 140
+> o1 current,  μ A
+> (c)o1current
+> 012345050 100 Time ,ns
+> o 1 , out,  μ V (d)o1output
+> 100 120 140
+> i 1 ,i 2 current,  μ A
+> (e)
+> i1current
+> i2current Row 3
+> 050 100
+> i 1 , i 2 out,  μ V
+> (f)i2output
+> 100 120 140
+> o1 current,  μ A
+> (g)o1current
+> 012345050 100 Time ,ns
+> o1 , out,  μ V (h)o1output
+> Fig. 3. Simulation results of rows 1 and 3 of the XOR truth table. (a,e) Input currents supplied to neurons i1and i2. (b, f) Voltage spikes of neurons i1
+> and i2. (c, g) Current supplied to output neuron o1. (d, h) Voltage spike of output neuron o1.
+
+B. Response Latency 
+
+The second mechanism enabling nonlinear computation is response latency. In biological neurons, there is a finite delay between the arrival of an input and the generation of an output spike. This delay depends on the input strength, with stronger inputs producing shorter latencies. The NMOS+MTJ neuron exhibits this behavior due to the dependence of magnetization dynamics on the magnitude of the spin-transfer torque. The effect of response latency is demonstrated in Fig. 3(e-h), which show the network response for row 3 of the XOR truth table corresponding to the input (A, B ) = (1 , 0) . In this case, the input-layer neurons receive different currents due to the trained synaptic weights connecting the encoding neurons to the network. Under these conditions, neuron i2 receives a current that exceeds the firing threshold, while neuron i1
+
+receives a slightly smaller current that remains below threshold and therefore does not spike. Compared with the response shown in Fig. 3(b), the spike generated by neuron i2 in Fig. 3(f) occurs with a longer delay between the input current and the output voltage spike. This increased latency occurs because the input current is closer to the threshold condition, which slows the magnetization dynamics responsible for spike generation. The increased latency shifts the timing of the spike received by the output neuron o1, causing it to fire at approximately 
+
+t = 2 .5 ns as shown in Fig. 3(h). In the network encoding scheme, this delayed spike represents a logical 1. Thus, response latency provides a timing-based nonlinear mechanism that allows the network to distinguish between different input combinations. 
+
+C. Absolute Refraction 
+
+The third biologically realistic feature enabling XOR clas-sification is absolute refraction. After generating a spike, biological neurons enter a refractory period during which they cannot fire again, regardless of input strength. This behavior also emerges in the NMOS+MTJ neuron as a consequence of the transient dynamics of the MTJ free-layer magnetization. The role of absolute refraction in the XOR network is illustrated in Fig. 4. In this case, both input-layer neurons i1
+
+and i2 generate spikes that are transmitted to the output neuron 
+
+o1. The first incoming spike causes o1 to fire at approximately 
+
+t = 2 .5 ns, producing the correct logical output. As shown in Fig. 4(c), a second input current pulse ex-ceeding the firing threshold is applied to neuron o1. However, this pulse overlaps in time with the output spike, neuron o1
+
+which is still within its refractory period and the ongoing magnetization dynamics are not disturbed, and a second spike is not generated. This suppression of additional spikes prevents the neuron from producing multiple outputs in response to closely spaced inputs. The refractory behavior effectively implements a time-domain winner-take-all mechanism in which the earliest spike determines the network response. Without this mechanism, the output neuron could produce multiple spikes and fail to generate the correct XOR classification. The fourth XOR, case (A, B ) = (1 , 1) , which is not shown, produces a response similar to (0 , 0) , in which the output neuron fires at t = 2 ns, with the timing determined by response latency. Together, threshold activation, response latency, and ab-solute refraction form intrinsic dynamical mechanisms that enable nonlinear computation in the NMOS+MTJ SNN. 100 120 140                                     
+
+> i 1 ,i 2 Current,  μ A
+> (a)
+> i1current
+> i2current Row 2
+> 050 100
+> i 1 , i 2 Out,  μ V
+> (b)i1output i2output
+> 100 120 140
+> o1 Current,  μ A
+> (c)o1current
+> 012345050 100 Time ,ns
+> o1 , Out,  μ V (d)o1output
+> Fig. 4. Simulation result of row 2 of the XOR truth table. (a) Input currents supplied to neurons i1and i2. (b) Voltage spikes of neurons i1and i2. (c) Current supplied to output neuron o1. (d) Voltage spike of output neuron o1.
+
+V. C ONCLUSION 
+
+In this work, we examined how the NMOS+MTJ neuron, previously presented in [6], leverages three biologically re-alistic features to perform nonlinear classification. Through simulation results for the XOR truth table, we demonstrated that threshold activation, response latency, and absolute refrac-tion each contribute to the ability of the network to solve this nonlinear classification problem. Threshold activation ensures that only inputs exceeding a critical level produce spikes. Response latency introduces input-dependent timing variations that encode information in spike timing. Absolute refraction prevents additional spikes from altering the output spike already in progress. Together these mechanisms create timing-dependent dynamics that en-able nonlinear computation. Our analysis confirms that the NMOS+MTJ neural network successfully classifies the XOR function by harnessing the combined temporal dynamics of threshold activation, response latency, and absolute refraction. These results demonstrate that biologically realistic neural behaviors, rather than serv-ing merely as biological analogies, serve as fundamental mechanisms enabling nonlinear computation in spiking neural networks. REFERENCES [1] M. Bruscia, G. A. Manduzio, F. A. Galatolo, M. G. Cimino, A. Greco, L. Cominelli, and E. P. Scilingo, “An overview on large language models across key domains: a systematic review,” in 2024 IEEE International Conference on Metrology for eXtended Reality, Artificial Intelligence and Neural Engineering (MetroXRAINE) . IEEE, 2024, pp. 125–130. [2] Y. Zhu, H. Mao, Y. Zhu, X. Wang, C. Fu, S. Ke, C. Wan, and Q. Wan, “Cmos-compatible neuromorphic devices for neuromorphic perception and computing: a review,” International Journal of Extreme Manufacturing , vol. 5, no. 4, p. 042010, 2023. [3] N. P. Jouppi, C. Young, N. Patil, D. Patterson, G. Agrawal, R. Bajwa, S. Bates, S. Bhatia, N. Boden, A. Borchers et al. , “In-datacenter performance analysis of a tensor processing unit,” in Proceedings of the 44th annual international symposium on computer architecture , 2017, pp. 1–12. [4] W. Maass, “Networks of spiking neurons: the third generation of neural network models,” Neural networks , vol. 10, no. 9, pp. 1659–1671, 1997. [5] M. Davies, N. Srinivasa, T.-H. Lin, G. Chinya, Y. Cao, S. H. Choday, G. Dimou, P. Joshi, N. Imam, S. Jain et al. , “Loihi: A neuromorphic manycore processor with on-chip learning,” Ieee micro , vol. 38, no. 1, pp. 82–99, 2018. [6] S. Louis, M. B. Abramson, H. Bradley, C. Trevillian, G. D. Nelson, A. Slavin, A. Litvinenko, J. Gorski, I. N. Krivorotov, D. Hanna et al. , “A cmos+ x spiking neuron with on-chip machine learning,” arXiv preprint arXiv:2512.03966 , 2025. [7] L. Squire, D. Berg, F. E. Bloom, S. Du Lac, A. Ghosh, and N. C. Spitzer, 
+
+Fundamental neuroscience . Academic press, 2012. [8] W. Gerstner and W. M. Kistler, Spiking neuron models: Single neurons, populations, plasticity . Cambridge university press, 2002. [9] C. Frenkel, M. Lefebvre, J.-D. Legat, and D. Bol, “A 0.086-mm 2 12.7-pj/sop 64k-synapse 256-neuron online-learning digital spiking neuro-morphic processor in 28-nm cmos,” IEEE Transactions on Biomedical Circuits and Systems , vol. 13, no. 1, pp. 145–158, 2019. [10] S. Louis, H. Bradley, C. Trevillian, A. Slavin, and V. Tyberkevych, “Spintronic neuron using a magnetic tunnel junction for low-power neuromorphic computing,” IEEE Magnetics Letters , vol. 15, pp. 1–5, 2024. [11] S. Louis, H. Bradley, A. Litvinenko, and V. Tyberkevych, “A physics-based circuit model for magnetic tunnel junctions,” IEEE Magnetics Letters , 2025. [12] “Everspin — The MRAM Company — everspin.com,” https://www.everspin.com/, [Accessed 01-03-2026].

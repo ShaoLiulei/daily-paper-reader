@@ -1,0 +1,6890 @@
+Title: Homogenized Transformers
+
+URL Source: https://arxiv.org/pdf/2604.01978v1
+
+Published Time: Fri, 03 Apr 2026 00:53:42 GMT
+
+Number of Pages: 61
+
+Markdown Content:
+HOMOGENIZED TRANSFORMERS 
+
+HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+Abstract. We study a random model of deep multi-head self-attention in which the weights are resampled independently across layers and heads, as at initialization of training. Viewing depth as a time variable, the residual stream defines a discrete-time interacting particle system on the unit sphere. We prove that, under suitable joint scalings of the depth, the residual step size, and the number of heads, this dynamics admits a nontrivial homogenized limit. Depending on the scaling, the limit is either deterministic or stochastic with common noise; in the mean-field regime, the latter leads to a stochastic nonlinear Fokker–Planck equation for the conditional law of a representative token. In the Gaussian setting, the limiting drift vanishes, making the homogenized dynamics explicit enough to study representation collapse. This yields quantitative trade-offs between dimension, context length, and temperature, and identifies regimes in which clustering can be mitigated. 
+
+Contents 
+
+1. Introduction 12. Main results 4
+
+Part 1. The homogenized model 17 3. Preliminaries 17 4. Ballistic scaling 18 5. Diffusive scaling 19 
+
+Part 2. Proofs 22 6. The homogenized model 22 7. The Gaussian case 38 Appendix A. Toolkit 56 References 58 1. Introduction 
+
+Transformers [ VSP +17 ] have become the dominant architecture in mod-ern deep learning, underpinning large language models and a wide range of sequence modeling tasks. A striking feature of their empirical success is the 
+
+Date : April 3, 2026.  
+
+> 1
+> arXiv:2604.01978v1 [math.PR] 2 Apr 2026 2HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET
+
+systematic improvement in performance with increasing scale. The study of how model size, dataset size, and compute should be jointly increased to opti-mize performance has given rise to the literature on scaling laws [KMH +20 ], which documents remarkably robust power-law relationships between loss and scale. While this body of work establishes regularities in performance as a function of scale, it leaves largely open a complementary theoretical question: 
+
+What mathematical structure emerges when a transformer is taken to an appropriate large-scale limit? 
+
+In particular, beyond empirical power laws, one may ask how architectural hyperparameters such as depth, width, number of attention heads, residual scaling, and weight initialization must be jointly scaled so that the model admits a non-degenerate and analytically tractable limiting description. In this work, we propose a scaling regime under which a sequence of transformer models with random weights converges, in a suitable sense, to a continuous limiting object. The limit is neither trivial nor singular: rather, it captures the cumulative effect of depth, attention, and residual dynamics through a (stochastic) differential equation. In turn, we use this limiting framework to study representation collapse —a phenomenon closely related to oversmoothing and rank collapse, in which token representations become increasingly clustered or low-dimensional as depth grows, ultimately degrading expressivity. Empirical and theoretical studies have documented such degeneration effects in transformers and related architectures, where deep self-attention layers drive representations toward low-rank or clustered configurations [ DCL21 , JVL22 ]. Understanding when and how such collapse occurs and how it depends on architectural scaling remains an open theoretical question. A line of rigorous mathematical work has begun to formalize these phe-nomena. In a seminal line of work, [ GLPR24 , GLPR25 ] study this clustering phenomenon in simplified regimes with fixed weights across layers, by inter-preting transformers as interacting particle systems: they show that long-time (depth) dynamics lead to clustering behavior of token representations, pro-viding a mathematical support for representation collapse and low-rank clustering. This picture was refined in [ BPA25 , BKK +25 ] to account for more general models but still ones that share weights across layers. More recently, this line of inquiry was extended to the case where only value matrices vary randomly from layer to layer. In this case, the limiting token dynamics converge to a stochastic interacting system on the sphere [FSE +26]. 
+
+Our contributions. Our starting point is a multi-head, attention-only transformer 1 with post-layer normalization. To model heterogeneity across both depth and heads, we assume that the key, query, and value matrices  
+
+> 1Adding multi-layer perceptron (MLP) blocks constitutes a straightforward technical extension with limited conceptual novelty. We comment on its effects in Remark 2.1. HOMOGENIZED TRANSFORMERS 3
+
+are independent and identically distributed (i.i.d.) across layers and heads. Strictly speaking, this assumption is valid only at initialization, since training induces correlations between weights at different depths. Our primary motivation for this choice is to reflect the structural variability present in practical architectures: distinct layers and heads are parameterized independently, and there is no a priori reason to expect identical operators to be applied repeatedly along depth. In contrast to prior theoretical works that assume tied weights across layers—leading to deterministic iterated maps, our setting allows each layer to implement a genuinely different transformation. As a consequence, the depth dynamics are no longer described by repeated application of a fixed operator, and the mechanisms underlying representation collapse are a priori unclear. In particular, when the layer-to-layer evolution is heterogeneous and potentially chaotic, it is not obvious whether the clustering phenomena observed in tied-weight models should persist. One of our main findings is that, perhaps surprisingly, clustering and rank collapse can still arise under appropriate scaling, even in this fully heterogeneous regime. A secondary motivation concerns initialization. Since independence across layers holds exactly at initialization, the large-depth limit we analyze may be interpreted as describing the intrinsic signal propagation properties of the architecture prior to training. This perspective isolates the role of architectural scaling and weight initialization in shaping representation dynamics, and clarifies which collapse phenomena are structural consequences of depth itself, rather than artifacts of optimization or weight sharing. Our main tool is a limiting homogenized transformer model given by a stochastic differential equation (SDE) on (Sd−1)n driven by a common 
+
+cylindrical noise; see Theorem 1. Homogenized transformers distill the complex interaction of random weight matrices across layers into the sum of a common drift and a noise term that is independent across layers. This results in a mathematically tractable object to study oversmoothing and guide weight initialization; see Theorems 2, 3 and 4. 
+
+Related work. On the specific question of hyperparameter scaling and ini-tialization, our results connect to several recent approaches. We briefly review the most relevant contributions here and return to a detailed comparison after presenting our main results. Signal propagation at initialization is analyzed in [ NAB +22 ], where rank collapse —a clustering phenomenon in which token representations concentrate in a low-dimensional subspace as they propagate through layers—is identified as a central obstruction in deep Transformers. Appropriate hyperparameter scalings are derived to mitigate this degeneracy. The contraction properties of a single attention block are studied in [ CNQG25 ], where a phase transition in the forward dynamics is exhibited. A corresponding phase transition for gradient scaling in the backward pass is also identified, leading to the prescription of initializing Transformers at the intersection of the two critical regimes—the so-called 
+
+edge of chaos . Empirical results corroborate this principle. More recently, 4 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+[BNL +24 , DZN +25 , Chi25 , CCM26 ] propose initialization scalings designed to escape the lazy regime, in which parameters move negligibly during train-ing and the model behaves effectively as a random feature method. This perspective is closely connected to mean-field, NTK, and μP scaling theories [ Chi25 , JGH18 , Yan21 ], which formalize the distinction between linearized and feature-learning training dynamics. Our perspective is different. We focus exclusively on the forward pass as a structural lens on deep attention architectures. Avoiding oversmoothing or rank collapse at initialization is a prerequisite for meaningful feature learning in deep attention stacks, even though the classical feature learning vs. lazy dichotomy s concerns training dynamics and can, in principle, arise independently of rank collapse. Beyond concrete prescriptions for initialization scaling, our results clar-ify how signals propagate through deep stacks of inhomogeneous attention layers. In particular, we show that an effective drift driving tokens toward low-dimensional representations can emerge purely from diversity across layers, even in the absence of explicit contraction at the single-layer level. Furthermore, our homogenization results indicate that Transformer mod-els with tied weights across layers provide a principled approximation to trained deep Transformers, offering theoretical support for this commonly used simplification. 2. Main results 
+
+In this section, we introduce our model of random attention-only Trans-formers and informally derive the homogenized transformer as an appropriate scaling limit. We state our main results while deliberately suppressing certain technical definitions and assumptions in order to highlight the core ideas and mechanisms. Complete formulations and detailed derivations are deferred to the subsequent sections. 2.1. Setup. We study encoder, attention-only Transformers in which at-tention weights are i.i.d. across heads and layers. Since training dynamics is not our focus, we collapse the usual query–key pair into a single matrix 
+
+A = Q⊤K and write the parameters of head h in layer ℓ as 
+
+θℓh = ( V ℓh , Aℓh) i.i.d.
+
+∼ ρ∗ ∈ P (Θ), Θ = ( Rd×d)2,
+
+for ℓ ∈ [L] and h ∈ [H], where L is the depth and H the number of heads. Token embeddings xℓi ∈ Sd−1 evolve from one layer to the next according according to the update rule 
+
+xℓ+1  
+
+> i
+
+= N xℓi + ηH
+
+> H
+
+X
+
+> h=1
+
+Bθℓh
+
+[μXℓ ] ( xℓi )
+
+!
+
+, (2.1) HOMOGENIZED TRANSFORMERS 5
+
+where N(x) = x/ ∥x∥ is a normalization layer and η > 0 is the residual scale, and 
+
+μXℓ = 1
+
+n
+
+> n
+
+X
+
+> k=1
+
+δxℓk
+
+is the empirical measure of tokens at layer ℓ. The attention-induced velocity field is 
+
+Bθ[μ]( x) = 1
+
+ZA[μ]( x)
+
+Z
+
+eβ⟨Ax,y ⟩V y μ (d y), (2.2) with normalizing constant 
+
+ZA[μ]( x) = 
+
+Z
+
+eβ⟨Ax,y ⟩ μ(d y).
+
+2.2. Homogenization. Homogenization shows that, under the appropriate scaling, the discrete multi-head, multi-layer random-attention updates con-verge to a simple effective drift–diffusion dynamics on the sphere: the mean attention field produces a deterministic drift, while randomness averages into a (possibly common) stochastic forcing. Below we give an informal derivation, state the scaling regimes, and present the rigorous limit. To isolate the mechanism, in this section we ignore the spherical projection and work in Rd where the update rule (2.1) becomes 
+
+xℓ+1  
+
+> i
+
+= xℓi + ηH
+
+> H
+
+X
+
+> h=1
+
+Bθℓh
+
+[μXℓ ]( xℓi ).
+
+2.2.1. Drift–fluctuation decomposition. Write each head as the sum of its expected value and a centered random vector (r.v.): 
+
+Bθℓh
+
+[μ]( x) = bρ∗ [μ]( x) + ξθℓh
+
+[μ]( x), bρ∗ [μ]( x) := Eθ∼ρ∗ Bθ[μ]( x).
+
+Averaging over heads gives 
+
+xℓ+1  
+
+> i
+
+= xℓi + η b ρ∗ [μXℓ ]( xℓi ) + ηH
+
+> H
+
+X
+
+> h=1
+
+ξθℓh
+
+[μXℓ ]( xℓi ).
+
+The last term is an average of i.i.d. centered r.v. that we write as 
+
+> H
+
+X
+
+> h=1
+
+ξθℓh
+
+[μXℓ ]( xℓi ) ≈ √H ˜σ[μXℓ ]( xℓi ) ζℓ,
+
+where ζℓ a is a centered and isotropic random vector and ˜σ is a volatility matrix that satisfies for any i, j = 1 , . . . , n 
+
+˜σ[μXℓ ]( xℓi )˜ σ[μXℓ (xℓj )] ⊤ = Eθ∼ρ∗
+
+h
+
+ξθℓh
+
+[μXℓ ]( xℓi )ξθℓh
+
+[μXℓ ]( xℓj )⊤i
+
+.
+
+For H large enough, we can think of ζℓ as Gaussian from the Central Limit Theorem (CLT) but the argument outlined below is also valid for H = 1 .Indeed, Gaussianity will emerge from a CLT applied to a sum across layers 
+
+rather than heads. 6 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+With this notation, the update takes the suggestive form 
+
+xℓ+1  
+
+> i
+
+= xℓi + η b ρ∗ [μXℓ ]( xℓi ) + η
+
+√H ˜σ[μXℓ ]( xℓi ) ζℓ.
+
+2.2.2. Formal derivation of the scaling limit. We now think of the layers as a time discretization with step-size η of a continuous time process {X(t)}t⩾0.The above display yields 
+
+xi(t + η) = xi(t) + η b ρ∗ [μX(t)]( xi(t)) + η
+
+√H ˜σ[μX(t)]( xi(t)) ζ(t),
+
+When passing to the limit η → 0, to obtain a non-degenerate Gaussian white noise, we need to rescale the stochastic term to be of order √η. To that end, we will establish a uniform variance bound σ2 for the resulting process in (3.2), and define 
+
+α := ησ2
+
+H ,
+
+so that 
+
+xi(t + η) = xi(t) + η b ρ∗ [μX(t)]( xi(t)) + √α ˜σ[μX(t)]( xi(t)) 
+
+σ
+
+√ηζ (t),
+
+These iterations correspond to a time discretization of the system of stochastic differential equations (SDE) 
+
+dxi(t) = bρ∗ [μX(t)]( xi(t))d t + ˜σ[μX(t)]( xi(t)) 
+
+σ
+
+√αdW(t) (2.3) for i ∈ [n], where {W(t)}t⩾0 is a Wiener process common to all particles. We introduce the macroscopic time 
+
+tL := ηL, 
+
+which corresponds to L discrete iterations with step size η. Over the interval 
+
+[0 , t L], the drift accumulates to order tL, while the stochastic term accumulates to order √tLα. Comparing these two contributions yields the following three limiting regimes: 
+
+Regime Scaling Noise behavior Limit 
+
+Ballistic tLα = o(1) Noise vanishes ODE Diffusive tLα = Θ(1) Noise persists (order one) SDE Super-diffusive tLα ≫ 1 Noise dominates Noise As we shall see, in the presence of the drift term this approximation remains valid up to macroscopic times tL = O(1) ; see Theorem 1 below. In contrast, in the absence of drift, such as in the centered case treated in Section 2.3, we only need tLα = O(1) and the approximation can remain valid even for 
+
+tL → ∞ . The special case tL = Θ(1) , which arises when η = 1 /L , serves as a central and particularly illustrative example. The projection operator N(·) entails an Itô correction to the drift and the SDE (2.3) becomes HOMOGENIZED TRANSFORMERS 71           
+
+> L
+> 1√L
+> 1
+> L13
+> η
+> 1
+> α
+> α=ηα=√η
+> Static ODE I ODE II SDE Failure of approximation −32−1−12−130
+> −γ
+> −1
+> −12
+> 0
+> 12
+> 1
+> α
+> Static ODE I ODE II
+> SDE
+> Failure of approximation
+
+Figure 1. Qualitative phase diagrams in the (η, α )-plane for fixed depth L (left), together with the same picture in logarithmic co-ordinates (right), where straight lines correspond to power-law scalings of η and α with respect to L. Different regions correspond to the rigorous regimes obtained from Theorem 1. Specifically, “ODE I” (Corollary 2) yields (4.1) in the ballistic regime αηL = o(1) 
+
+and η2L = o(1) ; “ODE II” (Corollary 3) yields (4.2) in the refined deterministic regime αηL = o(1) and η3L = o(1) ; and “SDE” (Corol-lary 4) yields the homogenized SDE (3.5) in the diffusive regime 
+
+αηL = O(1) and η3L = o(1) . The region labelled “Static” corre-sponds to ηL = o(1) , so that no non-trivial macroscopic evolution is seen on the time scale tL = ηL , whereas “Failure of approximation” indicates scalings not covered by the present weak-approximation argument. We study the qualitative behavior of the homogenized model in the setting of centered Gaussian weights, for which only the diffusive regime yields non-stationary evolution—see (2.5). 
+
+dxi(t) = P⊥
+
+> xi(t)
+
+bρ∗ [μX(t)]( xi(t)) − α
+
+2σ2 E P⊥ 
+
+> xi(t)
+
+˜σ[μX(t)]( xi(t)) ζ1 2
+
+xi(t)
+
+!
+
+dt
+
++
+
+√α
+
+σ P⊥ 
+
+> xi(t)
+
+˜σ[μX(t)]( xi(t))d W(t) ,
+
+where P⊥ 
+
+> x
+
+= Id − xx ⊤ denotes the projection onto the tangent space of the sphere Sd−1 at x. This process corresponds to the stochastic modified equation 
+
+introduced by [ LTE17 , LTE19 ] as the scaling limit of stochastic gradient de-scent. Following [ GKK24 , GKR24 , GGK25 ], we study the stochastic modified flow , a different SDE with the same time marginals but that lends itself more readily to mean-field limits as n → ∞ .To obtain the stochastic modified flow, we rewrite the diffusion term in a form that reflects its origin from the fluctuations ξθ. Recall that the covariance structure of the vector ˜σ[μ]( x) ζ1 is given by 
+
+Z
+
+> Θ
+
+ξθ[μ]( x) ξθ[μ]( x)⊤ ρ∗(d θ).8 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+Equivalently, this Gaussian can be represented as a stochastic integral against a cylindrical Wiener process. More precisely, let (W(·, t )) t⩾0 be a cylindrical Wiener process on L2(ρ∗);see Section A.2 for details. Then one can write 
+
+˜σ[μ]( x) d W(t) ≡
+
+Z
+
+> Θ
+
+ξθ[μ]( x) W(d θ, dt),
+
+in the sense that both sides define Gaussian processes with the same covariance. Using this representation, we arrive at the limiting system of Itô SDEs 
+
+dxi(t) = P⊥ 
+
+> xi(t)
+
+bρ∗ [μ(t)]( xi(t)) d t +
+
+√α
+
+σ
+
+Z
+
+> Θ
+
+ξθ[μ(t)]( xi(t)) W(d θ, dt)
+
+!
+
+− α
+
+2σ2 xi(t)
+
+Z
+
+> Θ
+
+P⊥
+
+> xi(t)
+
+ξθ[μ(t)]( xi(t)) 2
+
+ρ∗(d θ) d t (2.4) for all i ∈ [n].2.2.3. Approximation results. We are now in a position to state our rigorous approximation results under moment conditions on the weight distribution ρ∗.
+
+Assumption 1. Whenever (A, V ) ∼ ρ∗, we assume that A − EA = W W ′⊤ 
+
+is independent from V . Moreover, there exists C > 0 such that {(V −EV )ij }ij 
+
+and {(W )ij , (W ′)ij }ij are independent subGaussian with variance proxy Cσ 2
+
+> V
+
+and Cσ 2 
+
+> A
+
+respectively. 
+
+Consider the piecewise constant process Xη(t) := X⌊t/η ⌋ ∈ (Sd−1)n ob-tained by interpolating the discrete updates in (2.1) , as well as the limiting object X(t) = ( x1(t), . . . , x n(t)) ∈ (Sd−1)n as the solution of the system of Itô SDEs (2.4). We have the following error bound at time T = tL = ηL .
+
+Theorem 1. Under Assumption 1, for any φ ∈ C4(( Sd−1)n) the following approximation holds uniformly until macroscopic time tL = ηL :
+
+sup 
+
+> t∈[0 ,t L]
+
+Eφ(X(t)) − Eφ(Xη(t)) ⩽ Ce Ct L η(tL + 1) max(1 , α ),
+
+where C ⩾ 1 depends on ∥φ∥C4 but not on η, α, L .
+
+Thus, as η → 0 and L → ∞ with macroscopic time tL = ηL fixed, the discrete attention dynamics (2.1) homogenize to a drift–diffusion particle system on the sphere. Full definitions and proofs appear in Sections 3 and 6.1. In fact, the proof of Theorem 1 shows that the discrete chain is approx-imated by (3.5) —which differs from (2.4) only by an additional modified drift which is uniformly of order O(η)—at an improved rate Ce Ct L η(tL +1) max (η, α ), and the statement on the more illustrative homogenized model is a consequence thereof. The derivation of Theorem 1 draws upon seminal work on the martingale problem [ EK86 , SV07 ] and developments in stochastic modified equations [LTE17 ]. More specifically, our proof follows the argument of [ GKR24 ] with HOMOGENIZED TRANSFORMERS 9
+
+the main technical novelty arising from the presence of a common cylindrical noise. 
+
+Remark 2.1 (Multi-layer perceptrons) . We expect the same homogenization argument to naturally extend to updates of the form 
+
+xℓ+1  
+
+> i
+
+= N xℓi + ηH
+
+> H
+
+X
+
+> h=1
+
+Bθℓh
+
+[μXℓ ]( xℓi ) + λη Mϕℓ (xℓi )
+
+!
+
+,
+
+where Mϕ(x) = U ψ (W x ) with ψ a smooth activation applied component-wise, and 
+
+ϕℓ = ( U ℓ, W ℓ) i.i.d.
+
+∼ ϱ∗ ∈ P (Φ), Φ := Rd×m × Rm×d.
+
+Indeed, set 
+
+mϱ∗ (x) := 
+
+Z
+
+> Φ
+
+Mϕ(x) ϱ∗(d ϕ), ζϕ(x) := Mϕ(x) − mϱ∗ (x),
+
+and 
+
+τ2 := max 
+
+> X∈(Sd−1)n
+
+Z
+
+> Φ
+> n
+
+X
+
+> i=1
+
+P⊥ 
+
+> xi
+
+ζϕ(xi) 2
+
+ϱ∗(d ϕ).
+
+Then the two relevant scales on the macroscopic time variable t = ηℓ are λη/η 
+
+and λ2
+
+> η
+
+τ2/η . The first one controls the deterministic contribution of the MLP, whereas the second one controls its fluctuations. In particular: 
+
+• if λη = κη , then the MLP contributes only an additional drift resulting in the homogenized model 
+
+dxi(t) = P⊥
+
+> xi(t)
+
+
+
+bρ∗ [μ(t)]( xi(t)) + κm ϱ∗ (xi(t)) 
+
+
+
+dt
+
++
+
+√α
+
+σ
+
+Z
+
+> Θ
+
+ξθ[μ(t)]( xi(t)) W(d θ, dt)
+
+− α
+
+2σ2 xi(t)
+
+Z
+
+> Θ
+
+P⊥
+
+> xi(t)
+
+ξθ[μ(t)]( xi(t)) 2
+
+ρ∗(d θ) d t. 
+
+• if mϱ∗ ≡ 0 and λ2
+
+> η
+
+τ2/η → αmlp ∈ (0 , ∞), then the MLP contributes an additional common-noise term, resulting in the homogenized model 
+
+dxi(t) = P⊥ 
+
+> xi(t)
+
+bρ∗ [μ(t)]( xi(t))d t +
+
+√α
+
+σ
+
+Z
+
+> Θ
+
+ξθ[μ(t)]( xi(t)) W(d θ, dt)+
+
+√αmlp 
+
+τ
+
+Z
+
+> Φ
+
+ζϕ(xi(t)) eW(d ϕ, dt)
+
+!
+
+− α
+
+2σ2 xi(t)
+
+Z
+
+> Θ
+
+P⊥
+
+> xi(t)
+
+ξθ[μ(t)]( xi(t)) 2
+
+ρ∗(d θ) d t
+
+− αmlp 
+
+2τ2 xi(t)
+
+Z
+
+> Φ
+
+P⊥
+
+> xi(t)
+
+ζϕ(xi(t)) 2
+
+ϱ∗(d ϕ) d t, 10 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+where W, eW are independent cylindrical Wiener processes. The effec-tive noise level would now be measured by tL(α + αmlp ).
+
+2.3. The Gaussian case. We can obtain sharper results when we assume that the weight matrices are exactly Gaussian rather than subGaussian. In this section, we let ρ∗ ∈ P (Θ) be such that 
+
+Vi,j i.i.d. 
+
+∼ N (0 , σ 2 
+
+> V
+
+), A = W W ′T, Wi,j , W ′
+
+> i,j
+> i.i.d.
+
+∼ N (0 , σ 2
+
+> A
+
+). (G) 2.3.1. Approximation error. Assumption (G) has two important implications: (i) The scaling parameter α, rigorously defined in (3.3) can be computed explicitly as 
+
+α = ηH σ2 
+
+> V
+
+(d − 1) .
+
+This suggests the standard scaling σ2 
+
+> V
+
+= 1 /d , which we adopt hence-forth. We keep σ2 
+
+> A
+
+general though we note that the same choice 
+
+σ2 
+
+> A
+
+= 1 /d is common in practice for random Gaussian initialization [HZRS15, VSP +17, Yan21]. (ii) Because V is centered, the drift vanishes: bρ∗ [μ] ≡ 0. As a result, the diffusive regime, αηL = Θ(1) , exhibits non-trivial dynamics that are driven entirely by random fluctuations. By contrast, in absence of random fluctuations, when αηL → 0, the ballistic regime becomes static in this setting. As a consequence, the term bρ∗ vanishes and only the Itô correction remains in the drift. After a time rescaling by σ, the relevant homogenized model to analyze becomes 
+
+dxi(t) = √αP⊥
+
+> xi(t)
+
+Z
+
+> Θ
+
+Bθ[μ(t)]( xi(t)) W(d θ, dt)
+
+− α
+
+2 xi(t)
+
+Z
+
+> Θ
+
+P⊥
+
+> xi(t)
+
+Bθ[μ(t)]( xi(t)) 2
+
+ρ∗(d θ), (2.5) where Bθ[μ]( x) is the attention field defined in (2.2) . An adaptation of the proof of Theorem 1 to this case is presented below. Note that the approximation holds until a macroscopic time tL that can be of order 1/α ≫ 1.
+
+Corollary 1. Under (G) , for any φ ∈ C4(( Sd−1)n) the following approxima-tion holds uniformly until macroscopic time tL = ηL :
+
+sup 
+
+> t∈[0 ,t L]
+
+Eφ(X(t)) − Eφ(Xη(t)) ⩽ Ce Ct Lα η(tL + 1) max( η, α ),
+
+where C ⩾ 1 depends on ∥φ∥C4 but not on η, α, L .
+
+The proof is in Section 6.2. HOMOGENIZED TRANSFORMERS 11 
+
+2.3.2. Asymptotics of the stochastic modified flow. By rescaling time, we can, without loss of generality, henceforth set α = 1 . To get a handle on (2.5) it is helpful to first consider the case β = 0 , in which case (2.5) simplifies to 
+
+dxi(t) = − d − 12 κ(t)xi(t)d t + pκ(t)P⊥
+
+> xi(t)
+
+dB(t), (2.6) where κ(t) := d−1∥ R xμ (t, dx)∥2 and B(t) is a Brownian motion in Rd.Applying the Itô formula, we find 
+
+d⟨xi(t), x j (t)⟩ = κ(t)d
+
+
+
+1 − ⟨ xi(t), x j (t)⟩ + ⟨xi(t), x j (t)⟩2 + ⟨xi(t), x j (t)⟩ − 2
+
+d
+
+
+
++ pκ(t)
+
+D 
+
+P⊥
+
+> xi(t)
+
+dB(t), x j (t)
+
+E
+
++
+
+D
+
+P⊥ 
+
+> xj(t)
+
+dB(t), x i(t)
+
+E 
+
+.
+
+A direct computation shows that the quadratic variation vanishes as d → ∞ :
+
+hp κ(·)
+
+D 
+
+P⊥
+
+> xi(·)
+
+dB(·), x j (·)
+
+E
+
++
+
+D
+
+P⊥ 
+
+> xj(·)
+
+dB(·), x i(·)
+
+Ei  
+
+> t
+
+≲
+
+Z t
+
+> 0
+
+κ(s)d s ≲ td .
+
+As the quadratic variation controls the magnitude of the martingale part of the process (this follows by virtue of the Burkholder-Davis-Gundy inequality, for example), as d → ∞ , the inner products of (2.6) evolve as 
+
+ddt ⟨xi(t), x j (t)⟩ = κ(t)d(1 − ⟨ xi(t), x j (t)⟩) + o(1) 
+
+Summing across indices, we find 
+
+ddt
+
+Z
+
+xμ (t, dx)
+
+> 2
+
+=
+
+Z
+
+xμ (t, dx)
+
+> 2
+
+1 −
+
+Z
+
+xμ (t, dx)
+
+> 2
+
+!
+
++ o(1) .
+
+This is a logistic ODE for u(t) = dκ (t) with an explicit solution that converges exponentially fast to 1 as t → ∞ —see (2.12). We thus use (G) to derive explicit equations describing representation collapse by taking scaling limits in terms of the context length n, the inverse temperature β, and the dimension d. This is in line with a recurring theme in statistical physics, wherein one replaces high-dimensional microscopic dynamics by few macroscopic order parameters , and then studies their effective dynamics [ SS95 , BAGJ24 ]. The appearance of the simplifying equation for the inner products when β = 0 is not accidental. Generally in the setting of (2.5), the natural order parameter is the Gram matrix 
+
+R(t) = 
+
+
+
+⟨x1(t), x 1(t)⟩ . . . ⟨x1(t), x n(t)⟩
+
+... . . . ...
+
+⟨xn(t), x 1(t)⟩ . . . ⟨xn(t), x n(t)⟩
+
+ ,
+
+since—by rotational invariance and Gaussian conditioning—both the drift and the conditional covariance can be expressed as functions of R(t). This yields a closed ("self-consistent") stochastic dynamics on R(t), but it remains analytically intractable. One idea would be to study the evolution of its expectation ER(t) but the latter is not closed because of the nonlinear drift. 12 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+To circumvent this limitation, we study three specific regimes for which useful statistics admit a closed evolution, summarized below: 
+
+Data regime Scaling Behavior Reference 
+
+simplex β2nd = O(1) & log nd = o(1) ˙u = u(1 − u)(1 − f (u)) Theorem 2 hemisphere β = O(d− 12 ) ˙u = u(1 − u) Theorem 3 mean-field dβ− 12 = o(1) slow motion Theorem 4 
+
+Remark 2.2. The common-noise mechanism behind Theorems 2–4 is related in spirit to the literature on synchronization by noise [FGS17 , CGS16 ]. (See 
+
+[ ES26 ] for a recent application in a machine learning context.) We stress, however, that Theorems 2–3 concern alignment of overlaps rather than path-wise synchronization. Theorem 4 studies the corresponding common-noise two-point motion. 
+
+2.3.3. Simplex data & low temperature. We begin by considering "simplex-like" configurations, a standard setting in the literature [ CNQG25 , CLPR25 ,GG25 ]. This simplification reduces the dynamics to a single parameter, making the analysis highly tractable. Despite its simplicity, the simplex model remains strongly predictive of several key practical performance metrics, including those related to weight initialization [ OWS +24 ] and context length generalization [BBC +23, Nak25, PLAS +25]. Assume that the Gram matrix at initial time is R(0) = (1 − γ(0)) In +
+
+γ(0) 11 ⊤. In the absence of a stochastic term, by permutation equivariance of attention with Gaussian matrices [ CNQG25 ], R(t) remains of the form 
+
+R(t) = (1 − γ(t)) In + γ(t)11 ⊤ for all t. In particular, the dynamics of the whole system can be summarized by the scalar γ(t). In our case, despite the presence of a stochastic term, this statement remains approximately true as summarized in the next theorem. 
+
+Theorem 2. Fix d, n ⩾ 2 and β > 0, and assume ⟨xi(0) , x j (0) ⟩ = γ0 for some γ0 ∈ (−1/(n − 1) , 1) . For any configuration (x1, . . . , x n) ∈ (Sd−1)n with 
+
+⟨xi, x j ⟩ = γ for i̸ = j, define 
+
+πA
+
+> i→k
+
+(γ) := eβ⟨Axi,x k ⟩
+
+Pnℓ=1 eβ⟨Axi,x ℓ⟩ .
+
+Then 
+
+f (γ) := E
+
+> n
+
+X
+
+> k=1
+
+ πA
+
+> i→k
+
+(γ)2 ,g(γ) := E
+
+> n
+
+X
+
+> k=1
+
+πA
+
+> i→k
+
+(γ) πA
+
+> j→k
+
+(γ), (i̸ = j), (2.7) HOMOGENIZED TRANSFORMERS 13 
+
+are well-defined (i.e. independent of the particular simplex configuration and of the choice of indices), and satisfy 0 ⩽ f (γ) ⩽ 1 and 0 ⩽ g(γ) ⩽ 1. Let 
+
+b(γ) := γ + (1 − γ)g(γ) − γ (γ + (1 − γ)f (γ)) , (2.8) 
+
+and γ ∈ C1(R⩾0) be the solution of the Cauchy problem 
+
+(
+
+˙γ(t) = b(γ(t)) 
+
+γ(0) = γ0. (2.9) 
+
+Then there exists C > 0 such that for every T > 0 and every δ ∈ (0 , 1) , with probability at least 1 − δ, the solution to (2.5) satisfies 
+
+sup  
+
+> t∈[0 ,T ]
+
+max   
+
+> i̸=j
+
+|⟨ xi(t), x j (t)⟩ − γ(t)| ⩽ eCT 
+
+s
+
+8Td log 
+
+ 2n2
+
+δ
+
+
+
+.
+
+Moreover C = O(1 + dσ 4
+
+> A
+
+β2n).
+
+The proof can be found in Section 7.2. The simplex symmetry forces the interaction terms to be essentially governed by the Gram matrix, so the stochastic drift is close to an explicit deterministic one; a Lipschitz stability estimate around this simplex manifold then propagates small errors in the Gram matrix, while standard martingale concentration bounds control the accumulated noise. 0 10 20 30 40 50      
+
+> t
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> γ(t)
+> β = 1.00, n = 8
+> β = 4.00, n = 32
+> β = 16.00, n = 128
+> β = 256.00, n = 1024 010 20 30 40 50
+> t
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> γ(t)
+> β = 1.00, n = 8
+> β = 4.00, n = 32
+> β = 16.00, n = 128
+> β = 256.00, n = 1024
+
+Figure 2. Comparison between the curve γ in Theorem 2 ( left )and that of [GLPR25, Theorem 2.13] for d = 128 (right ). 
+
+Theorem 2 can be seen as a stochastic extension of [ GLPR25 , Theorem 2.13]. While the right hand side is not precisely the same, it leads to the same long-time behavior. Indeed, assume for simplicity that γ0 ∈ (0 , 1) . Since 
+
+n ⩾ 2, for every realization of A and every γ < 1 we have πA
+
+> i→k
+
+(γ) ∈ (0 , 1) 
+
+and Pnk=1 πA
+
+> i→k
+
+(γ) = 1 , hence 
+
+> n
+
+X
+
+> k=1
+
+ πA
+
+> i→k
+
+(γ)2 < 1.14 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+Taking expectations yields f (γ) < 1 for all γ < 1. Together with g(γ) ⩾ 0,this implies that for every γ ∈ (0 , 1) ,
+
+b(γ) = (1 − γ) γ + g(γ) − γf (γ) ⩾ γ(1 − γ) 1 − f (γ) > 0.
+
+Therefore the solution γ(·) to (2.9) is strictly increasing, remains in (0 , 1) ,and satisfies γ(t) ↗ 1 as t → ∞ .Furthermore, when β is large, attention for token i concentrates on a single index k⋆i , so f (γ) ≈ 1. Moreover, g(γ) ≈ P(k⋆i = k⋆j ), which is typically of order 1/n because of independence of attention weights. Consequently the drift b(γ) ≈ O((1 − γ)/n ) becomes small, leading to slow evolution of γ(t),as seen in Figure 2. 
+
+Remark 2.3. In the proof of Theorem 1, we defined α via the worst-case bound in (3.3) , using the uniform estimate E∥ξθ[μX ]( ·)∥2 ⩽ σ2 over all configurations X ∈ (Sd−1)n. This choice is convenient for a global weak-error estimate, but it can be overly pessimistic. In the present simplex setting one may instead hope to characterize a configuration-dependent typical noise level by removing the supremum and studying R T 
+
+> 0
+
+E∥G(X(t), θ)∥2dt. We leave such a refinement for future work. 
+
+2.3.4. High temperature & dimension limit. We now relax the simplex as-sumption on the initial configuration, and do so in the high temperature regime. 
+
+Theorem 3. Fix d, n ⩾ 2 and β ∈ [0 , 1] , and assume that ⟨xi(0) , x j (0) ⟩ ⩾ γ
+
+for i̸ = j and γ ∈ (0 , 1) . Define the empirical mean 
+
+m(t) := 1
+
+n2
+
+> n
+
+X
+
+> i=1
+> n
+
+X
+
+> j=1
+
+⟨xi(t), x j (t)⟩.
+
+Let u be the unique solution to the Cauchy problem for the logistic equation 
+
+(
+
+˙u(t) = u(t)(1 − u(t)) 
+
+u(0) = m(0) . (2.10) 
+
+Then there exists a universal constant C > 0 such that for every every T > 0
+
+and every δ ∈ (0 , 1) , with probability at least 1 − δ, the solution to (2.5) 
+
+satisfies 
+
+sup  
+
+> t∈[0 ,T ]
+
+|m(t) − u(t)| ⩽ Ce CT max 
+
+ 1
+
+d , d 2σ4
+
+> A
+
+β2
+
+
+
++ C
+
+s
+
+Td log 
+
+ 4
+
+δ
+
+
+
+. (2.11) The proof can be found in Section 7.3, and is a perturbative argument around the case β = 0 discussed around (2.6) . Solving (2.10) explicitly yields 
+
+u(t) = u(0) 
+
+u(0) + (1 − u(0)) e−t , (2.12) so u(t) → 1 as t → ∞ . As such, for β small, the model, even with random weights, is a perturbation of the original Kuramoto model [GLPR25]. HOMOGENIZED TRANSFORMERS 15 0 5 10 15 20     
+
+> t
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> m(t)
+> d = 16
+> d = 32
+> d = 64
+> logistic 0510 15 20
+> t
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> m(t)
+> d = 64
+> d = 128
+> d = 256
+> logistic
+
+Figure 3. Theorem 3 asserts that the second moment approaches the solution of the logistic equation (2.10) when d is large and β
+
+is small. Left: n = 200 and β = 0 .05 . Right: n = 5000 and 
+
+β = 0 .001 .
+
+2.3.5. Slow motion. We conclude with the study of the limit n → ∞ , β → ∞ 
+
+and d → ∞ . In the mean-field limit n → ∞ , one needs to make sense of the limiting object. The empirical measure μX(t) of X(t) = ( xi(t)) i∈[n] can be shown to converge, as n → ∞ , conditionally on the noise, to a probability measure μ(t) which solves a stochastic Fokker-Planck equation—this is done in Theorem 5. In Lagrangian words, a particle x(t) ∈ Sd−1 with law μ(t) satisfies the conditional McKean-Vlasov equation 
+
+dx(t) = P⊥
+
+> x(t)
+
+Z
+
+> Θ
+
+Bθ[μ(t)]( x(t)) W(d θ, dt). (2.13) We work in the following setting. 
+
+Assumption 2. For every t ⩾ 0, μ(t) ≪ σd where σd is the uniform measure on Sd−1. Moreover ρ(t) := dμ(t)dσd satisfies ρ(t, ·) ∈ C1(Sd−1) and 
+
+0 < ρ min ⩽ ρ(t, ·) ⩽ ρmax , ∥∇ ρ(t, ·)∥L∞(Sd−1) ⩽ L
+
+for all t ⩾ 0, where ρmin and ρmax are independent of d and β.
+
+At initial time, this can be seen as a perturbative regime around the uniform distribution. It is plausible that this assumption can be imposed solely on the initial density ρ(0 , ·) and then propagated over time by using the setting of stochastic flows of Kunita [ Kun90 ]. Proving this would, however, require separate regularity analysis of the induced flow which is beyond the scope of the present paper. 
+
+Theorem 4. Under Assumption 2, consider x(1) and x(2) two solutions to 
+
+(2.13) with initial data x(1) (0) and x(2) (0) drawn independently from μ(0) .Then there exists a universal constant C > 0 such that for every T > 0 and every δ ∈ (0 , 1) and t ⩾ 0, with probability at least 1 − δ,
+
+sup  
+
+> t∈[0 ,T ]
+
+D
+
+x(1) (t), x (2) (t)
+
+E
+
+−
+
+D
+
+x(1) (0) , x (2) (0) 
+
+E
+
+⩽ Td + C
+
+s
+
+Td log 
+
+ 1
+
+δ
+
+
+
++ r(β, d ),16 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+where |r(β, d )| = O(d− 32 + β− 12 ).
+
+Furthermore, if β = β(d) is such that dβ− 12 = o(1) , then 
+
+D 
+
+x(1) (td ), x (2) (td )
+
+E  
+
+> t∈[0 ,T ]
+> Law
+
+=⇒ 
+
+> d→∞
+
+(R∞(t)) t∈[0 ,T ]
+
+where R∞(t) is the unique solution to the SDE 
+
+(
+
+du(t) = −u(t)  1 − u(t)2 dt + √2  1 − u(t)2 dB(t)
+
+u(0) = 0 , (2.14) 
+
+and B(t) is the one-dimensional Brownian motion. 
+
+The proof can be found in Section 7.4. The result can be readily transferred to the particle system by a mean-field limit result such as Theorem 5, up to standard error terms. Note that Theorem 4 shows that, on the original time scale, particles move very little up to times T ∼ d, so the system exhibits a slow transient. This is reminiscent of metastability phenomena studied for self-attention dynamics [ GKPR24 , BPA24 , BPA25 ], where the empirical measure can spend long times near structured configurations before undergoing a qualitative change. However, starting from a near-uniform initialization, the dynamics does not display a rapid deterministic escape from the vicinity of the uniform distribution, in contrast with [BPA24]. Theorem 4 is also analogous in spirit to the Bronsard–Kohn energy method for slow motion, which gives lower bounds on the time needed to leave a neighborhood of a slow manifold in gradient flows [ BK90 , OR07 ]. The analogy should be understood at the level of the conclusion rather than the proof: here we do not use an underlying energy–dissipation structure, and the lower bound on the escape time follows directly from Theorem 4. The long-time behavior of the limiting logistic SDE is treated separately in Section 7.5. 2.4. Notation. Whenever convenient we use A ≲S B to imply A ⩽ CB for 
+
+C > 0 depending only on S. We take (Ft) to be the usual augmentation of the filtration generated by {x1, . . . , x n} ∪ { βk(s) : 0 ⩽ s ⩽ t, k ⩾ 1}. We define the common-noise filtration by 
+
+FW,0 
+
+> t
+
+:= σ(βk(s) : 0 ⩽ s ⩽ t, k ⩾ 1) ,
+
+and we designate by FW 
+
+> t
+
+the usual augmentation of FW,0 
+
+> t
+
+.
+
+Acknowledgments. B.G. was supported by a Sorbonne Emergences grant, and a gift from Google. P.R. was supported by NSF grants DMS-2022448, CCF-2106377, and a gift from Apple. HOMOGENIZED TRANSFORMERS 17 
+
+Part 1. The homogenized model 
+
+3. Preliminaries 
+
+Fix n ⩾ 2. For X = ( x1, . . . , x n) ∈ (Sd−1)n write μX for the empirical measure. Define 
+
+b(X)i := P⊥ 
+
+> xi
+
+bρ∗ [μX ]( xi)
+
+and 
+
+G(X, θ)i := P⊥ 
+
+> xi
+
+ξθ[μX ]( xi) (3.1) for i ∈ [n].3.1. Defining α. Looking at the increments (2.1) and applying Taylor-Lagrange we have 
+
+xℓ+1  
+
+> i
+
+− xℓi = ηP⊥
+
+> xℓi
+
+bρ∗ [μXℓ ]( xℓi ) + ηH
+
+> H
+
+X
+
+> h=1
+
+P⊥
+
+> xℓi
+
+ξθℓh
+
+[μXℓ ]( xℓi ) + O(η2).
+
+To construct a continuous-time object, we shall follow the stochastic modified equations framework of [ LTE17 , LTE19 ], readapted in [ GKR24 , GKK24 ,GGK25 ]. To this end, we want the fluctuations to be multiplied by √η. We compute the variance of the second term 
+
+E 1
+
+√H
+
+> H
+
+X
+
+> h=1
+
+P⊥
+
+> xℓi
+
+ξθℓh
+
+[μXℓ ]( xℓi )
+
+> 2
+
+= 1
+
+H
+
+> H
+
+X
+
+> h=1
+
+E P⊥
+
+> xℓi
+
+ξθℓh
+
+[μXℓ ]( xℓi ) 2
+
+⩽ max  
+
+> X∈(Sd−1)n
+
+max  
+
+> j∈[n]
+
+E P⊥ 
+
+> xj
+
+ξθ[μX ]( xj ) 2
+
+. (3.2) Now, define σ2 as the upper bound in (3.2) . In this way, we can naturally set 
+
+α := ησ2
+
+H . (3.3) Assumption 1 crucially implies the following. 
+
+Lemma 1. Under Assumption 1, there exist C1, C 2 > 0 independent of 
+
+α, η, L such that 
+
+(1) b ∈ C4(( Sd−1)n; T(Sd−1)n).
+
+(2) We have 
+
+σ := max  
+
+> X∈(Sd−1)n
+
+∥G(X, ·)∥L2(ρ∗) < ∞
+
+and 
+
+max 
+
+> X∈(Sd−1)n
+
+∥G(X, ·)∥L3(ρ∗) ⩽ C1σ.
+
+(3) For ρ∗-a.e. θ, G(·, θ) ∈ C5(( Sd−1)n; T(Sd−1)n) and 
+
+G(·, θ) C5 L2(ρ∗)
+
++ ∇G(·,θ)G(·, θ) C5 L2(ρ∗)
+
+⩽ C2σ.
+
+Moreover we can choose C1 = O(1 + σA∥EV ∥op β 
+
+> σV
+
+) and C2 = O(1 + β10 σ10  
+
+> A
+
+d5).18 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+The proof is deferred to Section 6.3. 3.2. The SDE. Set 
+
+Gσ(X) := σ−1G(X). (3.4) Given an initial configuration X(0) ∈ (Sd−1)n, the limiting continuous-time object is the (Sd−1)n-valued Itô SDE 
+
+dX(t) = b(X(t))d t − η
+
+2 ∇b(X(t)) b(X(t))d t + √α
+
+Z
+
+> Θ
+
+Gσ(X(t), θ) W(d θ, dt).
+
+(3.5) As before, (W(t)) t⩾0 is a cylindrical Wiener process on L2(ρ∗).Note that (3.5) differs from (2.4) only in the corrector drift − η 
+
+> 2
+
+∇b(X)b(X)
+
+which is uniformly of order O(η), and can thus be absorbed in the final error term, as we ultimately choose to do in the statement of Theorem 1. By virtue of Lemma 1, the map X 7 → b(X) − η 
+
+> 2
+
+∇b(X)b(X) is a C1 vector field on (Sd−1)n, and for ρ∗-a.e. θ, X 7 → G(X, θ ) is C2. According to Proposition 5, (3.5) admits a unique global strong solution defined for all 
+
+t ⩾ 0. Note that this assumption is stronger than what is strictly needed to construct the SDE; the extra regularity is used in the proof of Theorem 1. This choice is made so that the Itô generator matches the discrete generator. 
+
+Remark 3.1. The generator of the discrete process (we omit the drift for the sake of simplicity), denoted Lη, is given by 
+
+(Lηφ)( x) = α
+
+2
+
+Z
+
+> Θ
+
+Hess φ(x)[ Gσ(x, θ), G σ(x, θ)] ρ∗(d θ).
+
+Now, consider X(t) a solution to the Itô SDE 
+
+dX(t) = 
+
+Z
+
+> Θ
+
+Gσ(X(t), θ)W(d θ, dt).
+
+By definition of the Itô SDE, the generator L of this process is given by 
+
+(Lφ)( x) = α
+
+2
+
+Z
+
+> Θ
+
+Hess φ(x)[ Gσ(x, θ), G σ(x, θ)] ρ∗(d θ).
+
+Notice that the two generators match. Since the generator characterizes the law of the process, the Itô SDE is a legitimate candidate for being the correct homogenized model. 
+
+4. Ballistic scaling 
+
+For the sake of completeness, we now list several immediate corollaries of the proof of Theorem 1, which are displayed in Figure 1. 
+
+Corollary 2 (Ballistic regime) . Under Assumption 1, in the subcritical scaling 
+
+αηL = o(1) and η2L = o(1) , the time-interpolated discrete chain Xη(t) = 
+
+X⌊t/η ⌋ defined in (2.1) with initial configuration X0 is weakly approximated by the solution X(t) of 
+
+dX(t)dt = b(X(t)) , (4.1) HOMOGENIZED TRANSFORMERS 19 
+
+with X(0) = X0 up to time tL = ηL . Namely for all φ ∈ C4(( Sd−1)n),
+
+sup 
+
+> t∈[0 ,t L]
+
+|Eφ(Xη(t)) − Eφ(X(t)) | ⩽ Ce Ct L η(tL + 1) max( η, α ).
+
+This corresponds to the region "ODE I" in Figure 1. In the case η = L−γ
+
+for some γ ∈ [0 , 1] , the scaling in Corollary 2 becomes 
+
+αL 1−γ = o(1) , L1−2γ = o(1) ,
+
+so in the large-depth regime, the second inequality is equivalent to γ > 1/2.4.1. Modified regime. Corollary 2 relies on the condition η2L = o(1) , which ensures that all O(η) corrections to the effective drift remain negligible over the macroscopic time horizon T = ηL . When η2L is not small—for instance, when η = L−γ with γ ∈ (1 /3, 1/2] —, these O(η) effects can accumulate over depth (4.1) may no longer provide an accurate deterministic effective model. Theorem 1 is obtained by matching the discrete one-step generator with the Itô generator of a continuous-time model. When the noise vanishes at macroscopic scale, this generator matching yields a corrected drift on (Sd−1)n
+
+of the form b(X) − η 
+
+> 2
+
+∇b(X)b(X). This corresponds to the “ODE II” region in Figure 1. 
+
+Corollary 3 (Modified regime) . Under Assumption 1, in the refined deter-ministic scaling αηL = o(1) and η3L = o(1) , the time-interpolated discrete chain Xη(t) = X⌊t/η ⌋ defined in (2.1) with initial configuration X0 is weakly approximated by the solution X(t) of the corrected ODE 
+
+dX(t)dt = b(X(t)) − η
+
+2 ∇b(X(t)) b(X(t)) , (4.2) 
+
+with X(0) = X0 up to time tL = ηL . More precisely, for all φ ∈ C4(( Sd−1)n),
+
+sup 
+
+> t∈[0 ,t L]
+
+|Eφ(Xη(t)) − Eφ(X(t)) | ⩽ Ce Ct L η(tL + 1) max( η, α ).
+
+5. Diffusive scaling 
+
+Now suppose ηαL = Θ(1) . We apply Theorem 1 to obtain 
+
+Corollary 4 (Diffusive regime) . In the diffusive scaling αηL = O(1) and 
+
+η3L = o(1) , the time-interpolated discrete chain Xη(t) = X⌊t/η ⌋ defined in 
+
+(2.1) with initial configuration X0 is weakly approximated by the solution 
+
+X(t) of (3.5) with X(0) = X0 up to time tL = ηL . More precisely, for all 
+
+φ ∈ C4(( Sd−1)n),
+
+sup 
+
+> t∈[0 ,t L]
+
+|Eφ(Xη(t)) − Eφ(X(t)) | ⩽ Ce Ct L η(tL + 1) max( η, α ).
+
+Remark 5.1. A key point of (3.5) is that all particles are driven by the same cylindrical Wiener process W(t) on L2(ρ∗). This is not a modeling choice but a consequence of the requirement that the diffusion limit reproduce 20 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+the cross-covariances of the discrete layer fluctuations. Indeed, writing the martingale part as 
+
+dMi(t) = √α P⊥
+
+> xi(t)
+
+Z
+
+> Θ
+
+ξθ
+
+μX(t)
+
+ (xi(t)) W(d θ, dt),
+
+we obtain the cross-variation identity 
+
+d⟨Mi, M j ⟩t = α P⊥
+
+> xi(t)
+
+K μX(t)
+
+ (xi(t), x j (t)) P⊥ 
+
+> xj(t)
+
+dt, (5.1) 
+
+for i, j ∈ [n], where 
+
+K[μ]( x, y ) := E
+
+h
+
+ξθ[μ]( x) ξθ[μ]( y)Ti
+
+∈ Rd×d
+
+is the covariance kernel. The kernel K[μ]( x, y ) should be read as a matrix-valued correlation kernel for the martingale increments of different particles. Two extreme cases help build intuition. 
+
+(i) Purely idiosyncratic noise: If K[μ]( x, y ) = 0 for all x̸ = y, then 
+
+(5.1) gives d⟨Mi, M j ⟩t ≡ 0 for i̸ = j. In that case, one may equiva-lently realize the same law by driving each particle with its own indepen-dent Brownian motion. This is the setting of classical McKean–Vlasov diffusions with idiosyncratic noise, as in recent diffusive variants of Transformers dynamics [BBR25, SS26, GGH +25, LLPW25] .
+
+(ii) Perfectly common noise: If K[μ]( x, y ) ≡ Σ is constant in (x, y ),then there exists σ0 ∈ Rd×d with Σ = σ0σ⊤ 
+
+> 0
+
+, and the cross-variations satisfy 
+
+d⟨Mi, M j ⟩t = √α P⊥
+
+> xi(t)
+
+σ0σT 
+
+> 0
+
+P⊥ 
+
+> xj(t)
+
+dt. 
+
+5.1. Mean-field limit. Due to the considerations of Theorem 4, it is neces-sary to give a sense to the mean-field limit of the homogenized model. We shall focus on the driftless case (2.5) (with α = 1 ) since that is the one of interest in Theorem 4, but the drift can easily be included in all that follows. Let (Ω , F, (Ft)t⩾0, P) be a filtered, complete probability space with right-continuous filtration Ft. Classical mean-field limits of weakly interacting diffusions with idiosyncratic noise lead to McKean–Vlasov SDEs whose law solves a deterministic nonlinear Fokker–Planck PDE. In contrast, when the particles are additionally driven by a common noise, the relevant limit object the conditional law 
+
+μ(t) := Law 
+
+
+
+x(t) | FW
+
+> t
+
+
+
+.
+
+The process (μ(t)) t⩾0 is then random and evolves according to a nonlinear Fokker–Planck SPDE. Set μn(t) := μX(t). For any μ ∈ P (Sd−1), let Gμ(x, θ) be defined through (3.1). The Itô formula gives 
+
+d⟨φ, μ n(t)⟩ = ⟨Lμn(t)φ, μ n(t)⟩dt +
+
+Z
+
+> Θ
+
+⟨∇ φ · Gμn(t)(·, θ), μ n(t)⟩W(d θ, dt),HOMOGENIZED TRANSFORMERS 21 
+
+for any smooth test function φ, where ⟨· , ·⟩ denotes the duality bracket between C0(Sd−1) and positive Borel measures on Sd−1, · is the Euclidean dot product, and Lμn(t) is the generator of the process μn(t). Thus, formally, 
+
+μn(t) solves the nonlinear Fokker-Planck SPDE 
+
+∂tμ(t) = L∗
+
+> μ(t)
+
+μ(t) + 
+
+Z
+
+> Θ
+
+div x
+
+ Gμ(t)(·, θ) μ(t) W(d t, dθ), (5.2) where L∗ 
+
+> μ
+
+is the adjoint of Lμ; it reads 
+
+L∗
+
+> μ
+
+μ = 12 div x div x
+
+Z 
+
+> Θ
+
+Gμ(·, θ)Gμ(·, θ)Tρ∗(d θ)μ
+
+
+
+.
+
+(Note that div x denotes the adjoint of the spherical gradient ∇.) 
+
+Definition 1. A FW 
+
+> t
+
+-adapted process (μ(t)) t∈[0 ,T ] with values in P(Sd−1) is called a weak solution to (5.2) if for all φ ∈ C∞(Sd−1),
+
+⟨μ(t), φ ⟩ = ⟨μ(0) , φ ⟩ +
+
+Z t
+
+> 0
+
+⟨Lμ(s)φ, μ (s)⟩ ds
+
++
+
+Z t
+
+> 0
+
+Z
+
+> Θ
+
+⟨∇ φ · Gμ(s)(·, θ), μ (s)⟩ W(d s, dθ),
+
+where Lμ is the generator 
+
+Lμφ(x) = 12
+
+Z
+
+> Θ
+
+Hess φ(x)[ Gμ(x, θ), G μ(x, θ)] ρ∗(d θ)
+
+for all φ ∈ C∞(Sd−1).
+
+Well-posedness and weak/strong notions of solutions for McKean–Vlasov SDEs with common noise have been developed in [ HŠS21 , KNRS22 ], and the corresponding SPDE formulations go back to [ KX99 ] and more recently in [CG19]. The trajectorial characterization is the following. 
+
+Definition 2. Let μ0 ∈ P (Sd−1), let x0 be an Sd−1-valued random variable independent of W with Law (x0) = μ0. A pair (x, μ ) is a solution to the McKean-Vlasov SDE associated to (5.2) if (x(t)) t⩾0 is (Ft)t⩾0-adapted, μ(t)
+
+is (FW 
+
+> t
+
+)t⩾0-adapted, with 
+
+x(0) = x0 a.s. , μ(0) = Law 
+
+
+
+x0 | FW
+
+> 0
+
+
+
+= μ0,
+
+as well as 
+
+μ(t) = Law 
+
+
+
+x(t) | FW
+
+> t
+
+
+
+a.s. ,
+
+and 
+
+dx(t) = 
+
+Z
+
+> Θ
+
+Gμ(t)(x(t), θ)W(d θ, dt). (5.3) Inspired by the literature on mean-field games with common noise [ LSZ22 ,CD18], we can show the following. 22 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+Theorem 5. Under Assumption 1, for every μ0 ∈ P(Sd−1), there exists a unique solution (x, μ ) to the McKean-Vlasov SDE (5.3) in the sense of Definition 2. Moreover, μ is the unique weak solution to (5.2) in the sense of Definition 1. 
+
+The associated mean-field limit is given in Proposition 4, and the proof can be found in Section 6.4. 
+
+Part 2. Proofs 
+
+6. The homogenized model 
+
+6.1. Proof of Theorem 1. 
+
+Proof of Theorem 1. The proof follows the ideas of [ GKR24 , Theorem 2]. Let 
+
+X1 be a one-step iterate of the Markov chain. We also specify the initial condition x ∈ (Sd−1)n by writing X(t; x) and X1(x).
+
+Lemma 2. Let φ ∈ C4(( Sd−1)n). There exists a constant C > 0 such that 
+
+max  
+
+> x∈(Sd−1)n
+
+Eφ(X(η, x )) − Eφ(X1(x)) ⩽ Cη 2 max ( η, α ) .
+
+Proof of Lemma 2. We split the proof in two steps. 
+
+Discrete process. Recall that 
+
+X1(x)i = N xi + ηb ρ∗ [μx]( xi) + ηH
+
+> H
+
+X
+
+> h=1
+
+ξθh [μx]( xi)
+
+!
+
+.
+
+Using Taylor-Lagrange, we have 
+
+φ(X1(x)) = φ(x) + η
+
+*
+
+b(x) + 1
+
+H
+
+> H
+
+X
+
+> h=1
+
+G(x, θh), ∇φ(x)
+
++
+
++ η2
+
+2 Hess φ(x) : b(x) + 1
+
+H
+
+> H
+
+X
+
+> h=1
+
+G(x, θh)
+
+!⊗2
+
++ R(η, x ),
+
+where |R(η, x )| ≲ η3(∥b(x) + 1
+
+> H
+
+PHh=1 G(x, θh)∥3)∥φ∥C3 . Taking the expec-tation yields 
+
+Eφ(X1(x)) = φ(x) + η ⟨b(x), ∇φ(x)⟩
+
++ η2
+
+2 Hess φ(x) : b(x)b(x)T
+
++ 12
+
+ ηH
+
+2
+
+Hess φ(x) : E
+
+
+
+> H
+
+X
+
+> h=1
+
+G(x, θh)
+
+!⊗2 + R(η, x ).HOMOGENIZED TRANSFORMERS 23 
+
+Using independence and the fact that G(x, θ) is centered, we have 
+
+E[φ(X1(x)) − φ(x)] = η ⟨b(x), ∇φ(x)⟩
+
++ η2
+
+2 Hess φ(x) [ b(x), b (x)] + η
+
+2
+
+ησ2
+
+H Hess φ(x) : E
+
+" G(x, θ)
+
+σ
+
+  G(x, θ)
+
+σ
+
+T#
+
++ R(η, x ).
+
+From (3.2) and (3.4), we obtain 
+
+E[φ(X1(x)) − φ(x)] = η ⟨b(x), ∇φ(x)⟩ + η2
+
+2 Hess φ(x) [ b(x), b (x)] + η
+
+2 α Hess φ(x) : E
+
+h
+
+Gσ(x, θ) Gσ(x, θ)Ti
+
++ R(η, x ).
+
+We bound the remainder term. Using the Rosenthal inequality ([ BLM13 ,Theorem 15.11]), we have 
+
+E
+
+> H
+
+X
+
+> h=1
+
+G(x, θh)
+
+> 3
+
+≲  HE∥G(x, θ)∥2 32 + HE∥G(x, θ)∥3.
+
+Using Lemma 1, we obtain 
+
+E 1
+
+H
+
+> H
+
+X
+
+> h=1
+
+G(x, θh)
+
+> 3
+
+≲
+
+ E∥G(x, θ)∥2
+
+H
+
+ 32
+
++ E∥G(x, θ)∥3
+
+H2
+
+≲
+
+ σ2
+
+H
+
+ 32
+
++ σ3
+
+H2 ≲
+
+ σ2
+
+H
+
+ 32
+
+.
+
+Combining both estimates, we find 
+
+R(η, x ) ≲ η3 ∥b(x)∥3 +
+
+ σ2
+
+H
+
+ 32
+
+!
+
+≲ η3 ∥b(x)∥3 + η 32
+
+ ησ2
+
+H
+
+ 32
+
+.
+
+Continuous process. We denote (X(η; x)) t⩾0 the solution of the SDE starting from x. By definition, we have for t = η, and V0(X) = b(X) − η 
+
+> 2
+
+∇b(X)b(X)
+
+with V0φ = ⟨∇ φ, V 0⟩,
+
+φ(X(η; x)) − φ(x) = 
+
+Z η
+
+> 0
+
+V0φ(X(s; x))d s
+
++ α
+
+2
+
+Z Z 
+
+> [0 ,η ]×Θ
+
+Hess φ(X(s; x))[ Gσ(X(s; x), θ), G σ(X(s; x), θ)] ρ∗(d θ)d s
+
++ √α
+
+Z Z 
+
+> [0 ,η ]×Θ
+
+Gσφ(X(s; x), θ)W(d s, dθ).24 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+The quadratic variation of the second term is given by 
+
+Z ·
+
+> 0
+
+Z
+
+> Θ
+
+Gσφ(X(s; x), θ)W(d s, dθ)
+
+
+
+> t
+
+=
+
+Z t
+
+> 0
+
+∥Gσφ(X(s; x), ·)∥2 
+
+> L2(ρ∗)
+
+ds. 
+
+By Fubini, 
+
+E
+
+Z t
+
+> 0
+
+Z
+
+> Θ
+
+GσV0φ(X(s; x), θ)W(d s, dθ) = 0 .
+
+Taking expectations we have 
+
+Eφ(X(η; x)) − φ(x) = 
+
+Z η
+
+> 0
+
+E[V0φ(X(s, x ))]d s
+
++ α
+
+2
+
+Z η
+
+> 0
+
+Z
+
+> Θ
+
+E
+
+h
+
+Hess φ(X(s; x))[ Gσ(X(s; x), θ), G σ(X(s; x), θ)] 
+
+i
+
+ρ∗(d θ)d s. 
+
+We now bound the right-hand side terms by using the Itô formula for V0φ:
+
+V0φ(X(t; x)) = V0φ(x)+ α
+
+2
+
+Z t
+
+> 0
+
+Z
+
+> Θ
+
+Hess V0φ(X(s; x))[ Gσ(X(s; x), θ), G σ(X(s; x), θ)] ρ∗(d θ)d s
+
++
+
+Z t
+
+> 0
+
+V 20 φ(X(s; x))d s
+
++
+
+Z t
+
+> 0
+
+Z
+
+> Θ
+
+√α G σ(V0φ)( X(s; x), θ)W(d s, dθ).
+
+Moreover 
+
+E
+
+Z η
+
+> 0
+
+Z s
+
+> 0
+
+Z
+
+> Θ
+
+α Hess V0φ(X(u; x))[ Gσ(X(u; x), θ), G σ(X(u; x), θ)] ρ∗(d θ)d uds
+
+⩽ αη 2 max  
+
+> x∈(Sd−1)n
+
+E Hess V0φ(X(s; x))[ Gσ(X(s; x), θ), G σ(X(s; x), θ)] .
+
+Using Itô’s formula for V 20 φ(X(s; x)) ,
+
+V 20 φ(X(s; x)) = V 20 φ(x) + √α
+
+Z s
+
+> 0
+
+Z
+
+> Θ
+
+GσV 20 φ(X(u; x), θ)W(d u, dθ)+
+
+Z s
+
+> 0
+
+V 30 φ(X(u; x))d u
+
++ α
+
+2
+
+Z s
+
+> 0
+
+Z
+
+> Θ
+
+Hess V 20 φ(X(u; x))[ Gσ(X(u; x), θ), G σ(X(u; x), θ)] ρ∗(d θ)d u. HOMOGENIZED TRANSFORMERS 25 
+
+All in all, 
+
+E[φ(X(η; x))] − φ(x) − V0φ(x) − η2
+
+2 V 20 φ(x)
+
+− α
+
+2
+
+Z
+
+> Θ
+
+Hess φ(X(s; x))[ Gσ(X(s; x), θ), G σ(X(s; x), θ)] ρ∗(d θ)
+
+⩽ αη 2 max  
+
+> X∈(Sd−1)n
+
+E Hess V0φ(X(η; x))[ Gσ(X(η; x), θ), G σ(X(η; x), θ)] 
+
++
+
+Z η
+
+> 0
+
+Z t
+
+> 0
+
+Z s
+
+> 0
+
+V 30 φ(X(u; x))d udsdt
+
++ α
+
+2
+
+Z η
+
+> 0
+
+Z t
+
+> 0
+
+Z s
+
+> 0
+
+Z
+
+> Θ
+
+Hess V 20 φ(X(u; x))[ Gσ(X(u; x), θ), G σ(X(u; x), θ)] ρ∗(d θ)d udsdt .
+
+and using the identity 
+
+V 20 φ(x) = ⟨Hess φ(x)V0(x), V 0(x)⟩ + ⟨∇ V0 V0(x), ∇φ(x)⟩
+
+(see Section A) we have 
+
+max  
+
+> X∈(Sd−1)n
+
+Eφ(X(η; x)) − ηV 0φ(x) − η2
+
+2 ⟨Hess φ(x)V0(x), V 0(x)⟩− αη 
+
+2 E ⟨Hess φ(x)Gσ(x, θ), G σ(x, θ)⟩ ⩽ Cη 2α. 
+
+All in all, 
+
+max  
+
+> x∈(Sd−1)n
+
+Eφ(X(η; x)) − Eφ(X1(x)) ⩽ Cη 2 max {α, η }. □
+
+By virtue of Assumption 1, Lemma 1 ensures that V0 ∈ X4(( Sd−1)n)) ,
+
+Gσ ∈ X5(( Sd−1)n), and 
+
+∥Gσ∥X4(( Sd−1)n) ∨ ∥ V0∥X5(( Sd−1)n) < ∞,
+
+where Xk(( Sd−1)n)) is defined in Definition 3. Fix T > 0. Consider 
+
+ψηt (x) := Eφ(X(t; x)) .
+
+There exists a constant C > 0 depending only on ∥φ∥C4 , ∥V0∥X5 , ∥Gσ∥X5 , but otherwise uniform in x, η, α, L , such that 
+
+∥ψηt ∥C4 ⩽ Ce Ct 
+
+by virtue of [ GKR24 , Definition 4.3]. Consider the probability spaces (Ω , F, P)
+
+and ( ˜Ω, ˜F, ˜P) as the projections of the product space (Ω × ˜Ω, F⊗ ˜F, P × ˜P)
+
+in such a way that (Xk(x)) k∈N and (X(t, x )) t⩾0 are independent processes. 26 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+For x ∈ (Sd−1)n and k ∈ N, we get by a telescoping argument 
+
+Eφ(XL(x)) − Eφ(X(Lη, x )) 
+
+⩽
+
+> L
+
+X
+
+> ℓ=1
+
+Eψη
+
+> (L−ℓ)η
+
+(Xℓ(x)) − Eψη
+
+> (L−ℓ)η
+
+(X(η; Xℓ−1(x))) 
+
+⩽
+
+> L
+
+X
+
+> ℓ=1
+
+Eψη
+
+> (L−ℓ)η
+
+(X1(Xℓ−1(x))) − Eψη
+
+> (L−ℓ)η
+
+(X(η; Xℓ−1(x))) 
+
+⩽
+
+> L
+
+X
+
+> ℓ=1
+
+max  
+
+> x∈(Sd−1)n
+
+Eψη
+
+> (L−ℓ)η
+
+(X1(x)) − Eψη
+
+> (L−ℓ)η
+
+(X(η; x)) 
+
+⩽ Ce CηL η2L max {α, η }
+
+for a universal C > 0. This argument gives, for all k ∈ { 0, . . . , L },
+
+Eφ(Xk(x)) − Eφ(X(kη, x ) ⩽ Ce CηL η2L max {α, η }. (6.1) For t ∈ [0 , t L] consider k = ⌊t/η ⌋. We have 
+
+|Eφ(Xη(t)) − Eφ(X(t)) | ⩽ Eφ(Xk(x)) − Eφ(X(kη, x )) 
+
++ |Eφ(X(kη, x )) − Eφ(X(t, x )) | .
+
+The first term is bounded by (6.1) , and the second is bounded by Dynkin’s formula for the semigroup generated by (3.5), namely 
+
+|Eφ(X(kη, x )) − Eφ(X(t, x )) | ⩽
+
+Z tkη 
+
+|ELφ(X(s, x )) |ds ⩽ Cη ∥φ∥C4 .
+
+Combining both the estimates, we obtain the desired result. □
+
+6.2. Proof of Corollary 1. 
+
+Proof of Corollary 1. The proof is similar to the one Theorem 1—we only discuss the differences. A Taylor-Lagrange expansion gives 
+
+Eφ(X1(x)) − φ(x) = η
+
+2 α Hess φ(x) : E
+
+h
+
+Gσ(x, θ) Gσ(x, θ)Ti
+
++ R(η, x ),
+
+where R(η, x ) is bounded by 
+
+R(η, x ) ≲ η 32
+
+ ησ2
+
+H
+
+ 32
+
+.
+
+For the continuous process, the same computation gives 
+
+max  
+
+> x∈(Sd−1)n
+
+Eφ(X(η; x)) − αη 
+
+2 E ⟨Hess φ(x)Gσ(x, θ), G σ(x, θ)⟩ ⩽ Cη 2α. 
+
+All in all, 
+
+max  
+
+> x∈(Sd−1)n
+
+Eφ(X(η; x)) − Eφ(X1(x)) ⩽ Cη 2 max {α, η }. □HOMOGENIZED TRANSFORMERS 27 
+
+Again consider 
+
+ψηt (x) := Eφ(X(t; x)) .
+
+In this centered Gaussian case, the limiting generator is a pure diffusion of size O(α), hence there exists a constant C > 0 depending only on 
+
+∥φ∥C4 , ∥V0∥X5 , ∥Gσ∥X5 , but otherwise uniform in x, η, α, L , such that 
+
+∥ψηt ∥C4 ⩽ Ce Cαt 
+
+by virtue of [ GKR24 , Definition 4.3]. We may then conclude as in the previous proof. 6.3. Proof of Lemma 1. 
+
+Proof of Lemma 1. For any random object Y depending on (V , A), we use 
+
+∥Y ∥Lp(A) := ( EA ∥Y ∥p) 1 
+
+> p
+
+,
+
+and the conditional norm 
+
+∥Y ∥Lp(V |A) := ( EV [∥Y ∥p | A]) 1 
+
+> p
+
+.
+
+We write ¯V := EV , ˜V := V − ¯V , ¯A := EA, and ˜A := A − ¯A. Then 
+
+uA(X) = 
+
+> n
+
+X
+
+> j=1
+
+πA 
+
+> i→j
+
+(X)xj .
+
+We decompose 
+
+Gi (X, θ) = P⊥
+
+> xi
+
+˜V uA(X) + P⊥
+
+> xi
+
+¯V  uA(X) − EA[uA(X)]  . (6.2) Consequently, using E ˜V = 0 and the independence of V and A, the cross term vanishes by conditioning on A:
+
+E
+
+hD 
+
+P⊥
+
+> xi
+
+˜V uA(X), P⊥
+
+> xi
+
+¯V  uA(X) − EA[uA(X)] Ei 
+
+= 0 ,
+
+and therefore 
+
+∥Gi (X, ·)∥2 
+
+> L2(ρ∗)
+
+= E P⊥
+
+> xi
+
+˜V uA(X) 2
+
++ E P⊥
+
+> xi
+
+¯V  uA(X) − EA[uA(X)]  2
+
+.
+
+Recall the Hanson–Wright inequality. 
+
+Lemma 3. [Ver18 , Thm 6.2.1] Suppose X ∈ Rn is a random vector with independent, mean-zero, subGaussian coordinates and B ∈ Rn×n. Then for every t ⩾ 0, we have 
+
+P
+
+
+
+XTBX − E
+
+h
+
+XTBX 
+
+i
+
+⩾ t
+
+
+
+⩽ 2 exp −c min 
+
+(
+
+t2
+
+M 4 ∥B∥2F
+
+, tM 2 ∥B∥op 
+
+)! 
+
+,
+
+where M = max i ∥Xi∥ψ2 and c > 0 is a universal constant. 28 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+Fix X ∈ (Sd−1)n and condition on A, so that u := uA(X) is deterministic. Since ˜V has independent, mean-zero, subGaussian entries, the Hoeffding inequality gives 
+
+∥( ˜V u)i∥ψ2 ⩽ ∥ ˜V ∥ψ2 ∥u∥ .
+
+Apply Lemma 3 to X = ˜V u, B = P⊥ 
+
+> xi
+
+, using ∥P⊥ 
+
+> xi
+
+∥op = 1 and ∥P⊥ 
+
+> xi
+
+∥F =
+
+√d − 1 to find 
+
+P
+
+
+
+( ˜V u)TP⊥
+
+> xi
+
+˜V u − E
+
+h
+
+( ˜V u)TP⊥
+
+> xi
+
+˜V u A
+
+i
+
+⩾ t A
+
+
+
+⩽ 2 exp − c
+
+∥ ˜V ∥2 
+
+> ψ2
+
+∥u∥2 min 
+
+(
+
+t2
+
+∥ ˜V ∥2 
+
+> ψ2
+
+∥u∥2 (d − 1) , t 
+
+)! 
+
+.
+
+In particular, 
+
+Z := ( ˜V u)TP⊥
+
+> xi
+
+˜V u − E
+
+h
+
+( ˜V u)TP⊥
+
+> xi
+
+˜V u A
+
+i
+
+is a subexponential variable satisfying the Orlicz bound 
+
+∥Z∥ψ1(V |A) ≲ ∥ ˜V ∥2 
+
+> ψ2
+
+∥u∥2 √d − 1. (6.3) Subexponential variables satisfy 
+
+∥X∥Lp ≲ p ∥X∥ψ1 . (6.4) (See [Ver18].) Applying (6.4) with p = 32 and (6.3) gives 
+
+∥Z∥L 32 (V |A) ≲ ∥ ˜V ∥2 
+
+> ψ2
+
+∥u∥2 √d − 1.
+
+By the triangle inequality, 
+
+D ˜V u, P⊥
+
+> xi
+
+˜V u
+
+E    
+
+> L32(V|A)
+
+≲ EV
+
+hD ˜V u, P⊥
+
+> xi
+
+˜V u
+
+E
+
+A
+
+i
+
++ ∥ ˜V ∥2 
+
+> ψ2
+
+∥u∥2 √d. (6.5) By the tower property, 
+
+E P⊥
+
+> xi
+
+˜V uA(X) 3
+
+= EAEV P⊥
+
+> xi
+
+˜V uA(X) 3
+
+= EA P⊥
+
+> xi
+
+˜V uA(X) 2 32   
+
+> L32(V|A)
+
+.
+
+Moreover, using Tr( P⊥ 
+
+> xi
+
+) = d − 1 and the isotropy of ˜V , we have 
+
+EV
+
+hD ˜V u, P⊥
+
+> xi
+
+˜V u
+
+E
+
+A
+
+i
+
+= EV
+
+
+
+P⊥
+
+> xi
+
+˜V u 2
+
+A
+
+
+
+= σ2 
+
+> V
+
+(d − 1) ∥u∥2 .
+
+Plugging this and (6.5) in the above yields 
+
+E P⊥
+
+> xi
+
+˜V uA(X) 3
+
+≲  σ2 
+
+> V
+
+(d − 1)  32
+
+
+
+1 + 1
+
+d 32
+
+
+
+E uA(X) 3 . (6.6) Combining (6.6) with the lower bound on the second moment, we obtain 
+
+P⊥
+
+> xi
+
+˜V uA(X) L3(ρ∗) ≲ P⊥
+
+> xi
+
+˜V uA(X) L2(ρ∗) . (6.7) HOMOGENIZED TRANSFORMERS 29 
+
+We now turn our attention to the second term in (6.2) . Set ¯g := ¯Axi, and 
+
+˜g := W (W ′Txi) = W v, where v := W ′Txi. Conditional on W ′, ( ˜gk)k∈[d]
+
+are independent since ˜gk only depends on the k-th row of W , and each row is independent. Moreover, ˜g has independent centered coordinates with 
+
+Var(˜ gk | W ′) = σ2
+
+> A
+
+∥v∥2. Let χj : Rn → R be defined as 
+
+χj (z) := ezj
+
+Pnk=1 ezk .
+
+Define the map Φ : Rd → Rd by 
+
+Φ ( g) := 
+
+> n
+
+X
+
+> j=1
+
+χj (β ⟨¯g + g, x 1⟩ , . . . , β ⟨¯g + g, x n⟩) xj ,
+
+so that uA(X) = Φ (˜ g). Write 
+
+uA(X) − EuA(X) =  uA(X) − EW [uA(X) | W ′]
+
++  EW [uA(X) | W ′] − EuA(X) .
+
+Consider the Doob martingale 
+
+Mk := E Φ (˜ g) W ′, ˜g1, . . . , ˜gk
+
+
+
+with increments ∆k := Mk − Mk−1. Then Φ (˜ g) − E[Φ (˜ g) |W ′] = Pdk=1 ∆k
+
+and the Burkholder–Davis–Gundy inequality yields 
+
+Φ (˜ g) − E[Φ (˜ g) |W ′] L3(W |W ′) ≲
+
+> d
+
+X
+
+> k=1
+
+E
+
+h
+
+∥∆k∥2 Fk−1
+
+i! 12  
+
+> L3(W|W′)
+
+,
+
+(6.8) where Fk := σ (W ′, ˜g1, . . . , ˜gk). We bound the increments as 
+
+E
+
+h
+
+∥∆k∥2 Fk−1
+
+i
+
+⩽ E
+
+
+
+Φ (˜ g) − Φ(˜ gk) 2
+
+Fk−1
+
+
+
+, (6.9) where ˜gk is obtained from ˜g by replacing the k-th coordinate with an inde-pendent copy. Writing ˜gk = ˜ g + ∆ ek, we have 
+
+Φ(˜ g) − Φ(˜ gk) = β∆
+
+Z 10
+
+B (˜ g + s ∆ek) ek ds, (6.10) where 
+
+B (g) := 
+
+> n
+
+X
+
+> j=1
+
+χj (g) xj xT 
+
+> j
+
+− Φ ( g) Φ ( g)T .
+
+Plugging (6.10) into (6.9) yields 
+
+E
+
+h
+
+∥∆k∥2 Fk−1
+
+i
+
+⩽ 2β2σ2
+
+> A
+
+∥v∥2 E
+
+Z 10
+
+B (˜ g + s∆ek) ek ds
+
+> 2
+
+.30 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+Summing over k and using ∥B (g)∥op ⩽ 1, we obtain 
+
+> d
+
+X
+
+> k=1
+
+E
+
+h
+
+∥∆k∥2 Fk−1
+
+i
+
+⩽ 2β2σ2
+
+> A
+
+∥v∥2
+
+> d
+
+X
+
+> k=1
+
+E
+
+Z 10
+
+B (˜ g + s∆ek) ek ds
+
+> 2
+
+⩽ 2dβ2σ2
+
+> A
+
+∥v∥2. (6.11) Plugging (6.11) in (6.8) yields 
+
+Φ (˜ g) − E[Φ (˜ g) | W ′] L3(W |W ′) ≲ βσA
+
+√d
+
+
+
+E W ′Txi
+
+> 3
+
+ 13
+
+Using that the entries of W ′ are subGaussian, we obtain 
+
+Φ (˜ g) − E[Φ (˜ g) |W ′] L3(W |W ′) ≲ βσ2
+
+> A
+
+d. (6.12) We now look at the second term. Define ϕ : Rd → Rd by 
+
+ϕ(v) := E
+
+> n
+
+X
+
+> j=1
+
+χj (β⟨¯g + W v, x 1⟩, . . . , β⟨¯g + W v, x n⟩)xj .
+
+Define the Doob martingale 
+
+Nk = E [ϕ(v) | v1, . . . , v k] ,
+
+with increments ∆k := Nk − Nk−1. Notice that vk are independent since the columns W are independent. Then, a similar argument shows that 
+
+∥ϕ(v) − Eϕ(v)∥L3(W ′) ≲
+
+> d
+
+X
+
+> k=1
+
+E ∥∆k∥2|G k−1
+
+! 12 
+
+> L3(W′)
+
+, (6.13) where Gk = σ(w1, . . . , w k) with wi is the i-th column of W ′. We now bound the increments in the same way as above: 
+
+E
+
+h
+
+∥∆k∥2 Gk−1
+
+i
+
+⩽ E
+
+
+
+ϕ(v) − ϕ(˜ vk) 2
+
+Gk−1
+
+
+
+,
+
+where ˜vk is obtained from v by replacing the k-th coordinate with an inde-pendent copy. Thus 
+
+∥ϕ(v) − ϕ(v′)∥ ⩽ β E∥W (v − v′)∥ ⩽ β√dσ A∥v − v′∥.
+
+Plugging the above bound in (6.13), we obtain 
+
+∥ϕ(v) − Eϕ(v)∥L3(W ′) ≲ β√dσ A
+
+> d
+
+X
+
+> k=1
+
+E
+
+
+
+W ′Txi
+
+
+
+> k
+> 2
+
+≲ 2β√dσ A. (6.14) Combining (6.14) and (6.12), we obtain 
+
+uA(X) − EA[uA(X)] L3(A) ≲ √dβσA.
+
+Therefore, 
+
+P⊥
+
+> xi
+
+¯V  uA(X) − EA[uA(X)]  
+
+> L3(ρ∗)
+
+≲ √dβσA ¯V op . (6.15) HOMOGENIZED TRANSFORMERS 31 
+
+Combining (6.15) and (6.7), we obtain 
+
+∥Gi (X, θ)∥L3(ρ∗) ≲ ∥Gi (X, θ)∥L2(ρ∗) + √dβσA ¯V op .
+
+Taking the maximum over X ∈ (Sd−1)n and using the lower bound 
+
+σ = max  
+
+> X∈(Sd−1)n
+
+∥G(X, ·)∥L2(ρ∗) ⩾ ∥G (( x, . . . , x ), ·)∥L2(ρ∗)
+
+= σV
+
+√d − 1, (6.16) valid for any fixed x ∈ Sd−1, since then uA(X) = x and the second term in (6.2) vanishes, we get item (2) with 
+
+C1 = O
+
+
+
+1 + βσA∥EV ∥op 
+
+σV
+
+
+
+.
+
+We now check item (3). We use the following fact. 
+
+Claim 1. If F : ( Sd−1)n → Rnd is a smooth tangent vector field and ˜F is any smooth extension to an open neighborhood of (Sd−1)n, then for every k ∈ N,there exists Ck > 0 such that 
+
+max  
+
+> X∈(Sd−1)n
+
+∇kF (X) ⩽ Ck max  
+
+> s∈{ 0,...,k }
+
+max  
+
+> X∈(Sd−1)n
+
+Ds ˜F (X) .
+
+(See Proposition 5.31, Theorem 5.9 and Proposition 3.31 in [ Bou23 ]. Re-call that Dr denotes Euclidean derivatives.) Recalling (6.2) , we look at Euclidean derivatives of P⊥
+
+> xi
+
+˜V uA(X) and P⊥
+
+> xi
+
+¯V (uA(X) − EA[uA(X)]) . We only tackle the first term since the computations are similar. Write, for an open neighborhood of (Sd−1)n in (Rd)n,
+
+˜Gi(X, θ) := 
+
+> n
+
+X
+
+> j=1
+
+πA 
+
+> i→j
+
+(X)P⊥
+
+> xi
+
+ ˜V xj
+
+
+
+,
+
+so that ˜Gi(X, θ) = P⊥
+
+> xi
+
+˜V uA(X) on (Sd−1)n. By the multilinear operator norm identity, for every s ∈ N,
+
+DsX ˜Gi(X, θ) = sup  
+
+> H1,...,H s̸=0
+
+DsX ˜Gi(X, θ) [ H1, . . . , H s]
+
+∥H1∥ · · · ∥ Hs∥ . (6.17) We now bound derivatives of the softmax. Note that πA 
+
+> i→j
+
+(X) = χj (Zi(X)) ,
+
+where 
+
+Zi(X) = ( β ⟨Axi, x 1⟩ , . . . , β ⟨Axi, x n⟩) ∈ Rn.
+
+Using the Faà di Bruno formula, we have for every s ∈ N,
+
+DsX πA 
+
+> i→j
+
+(X) = X
+
+> π∈P s
+
+D|π|χj (Zi(X)) 
+
+h
+
+D|B1|Zi [HB1 ] , . . . , D |B|π||Zi
+
+h
+
+HB|π|
+
+ii 
+
+,
+
+(6.18) where π = B1, . . . , B |π| runs over partitions of [s].32 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+Claim 2. There exist  CkI
+
+ such that 
+
+∂kχj
+
+∂z r1 . . . ∂z rk
+
+(z) = χj (z) X
+
+> r1,...,r k
+
+X 
+
+> I⊂{ r1,...,r k}
+
+CkI
+
+Y 
+
+> q∈{ r1,...,r k}\ I
+
+χrq (z) 1 rq =r′  
+
+> q∀(q,q ′)∈I
+
+.
+
+The claim follows by induction on 
+
+∂∂z r
+
+χj (z) = χj (z) χr (z) − 1r=j χj (z) .
+
+Notice that Zi is bilinear in X:
+
+DX Zi(X) [ H] = ( ⟨AHi, x ℓ⟩ + ⟨Axi, H ℓ⟩)ℓ∈[n] ,D2 
+
+> X
+
+Zi(X) H1, H 2 = 2   AH1 
+
+> i
+
+, H 2
+
+> ℓ
+
+ 
+
+> ℓ∈[n]
+
+,
+
+and DsX Zi(X) = 0 for all s ⩾ 3. Combining Claim 2 with (6.18) and the above bounds on derivatives of Zi gives the following uniform estimate: for every s ∈ { 0, . . . , 5} there exists Cs > 0 such that for all X ∈ (Sd−1)n and all H1, . . . , H s,
+
+DsX πA 
+
+> i→j
+
+(X) [ H1, . . . , H s] ⩽ Cs χj (Zi(X)) ( β∥A∥op )s ∥H1∥ · · · ∥ Hs∥ .
+
+(6.19) Equivalently, defining the s-linear form φs by 
+
+DsX πA 
+
+> i→j
+
+(X) [ H1, . . . , H s] = χj (Zi(X)) φs (β, A, X ) [ H1, . . . , H s] ,
+
+we have 
+
+∥φs(β, A, X )∥ ⩽ Cs(β∥A∥op )s,
+
+for s ∈ { 0, . . . , 5} uniformly in X ∈ (Sd−1)n. A direct computation also shows that for all s ∈ N,
+
+DsX
+
+
+
+P⊥
+
+> xi
+
+˜V xj
+
+
+
+≲s ∥ ˜V ∥op , DsX
+
+
+
+P⊥
+
+> xi
+
+˜V xj
+
+
+
+= 0 for s ⩾ 4. (6.20) Fix s ∈ { 0, . . . , 5}. By the Leibniz formula, for any H1, . . . , H s,
+
+DsX
+
+
+
+πA 
+
+> i→j
+
+(X)P⊥
+
+> xi
+
+˜V xj
+
+
+
+[H1, . . . , H s]=
+
+> s
+
+X
+
+> k=0
+
+X
+
+> S⊂[s]
+> |S|=k
+
+DkX
+
+ πA 
+
+> i→j
+
+(X) [HS ] Ds−kX
+
+
+
+P⊥
+
+> xi
+
+˜V xj
+
+
+
+[HSc ] .
+
+Using (6.19) and (6.20), we obtain 
+
+DsX
+
+
+
+πA 
+
+> i→j
+
+(X)P⊥
+
+> xi
+
+˜V xj
+
+
+
+[H1, . . . , H s]
+
+≲s χj (Zi(X)) ∥ ˜V ∥op (1 + ( β∥A∥op )s) ∥H1∥ · · · ∥ Hs∥ .
+
+Summing in j and using Pnj=1 χj (Zi(X)) = 1 , we get 
+
+DsX ˜Gi (X, θ) [ H1, . . . , H s] ≲s ∥ ˜V ∥op (1 + ( β∥A∥op )s) ∥H1∥ · · · ∥ Hs∥ .
+
+(6.21) HOMOGENIZED TRANSFORMERS 33 
+
+Combining (6.21) with (6.17) yields 
+
+max  
+
+> X∈(Sd−1)n
+
+DsX ˜Gi (X, θ) ≲s ∥ ˜V ∥op (1 + ( β∥A∥op )s) , (6.22) for s ∈ { 0, . . . , 5}. Now apply Claim 1 with F (X) = P⊥
+
+> xi
+
+˜V uA(X) and ˜F = ˜Gi.For k ∈ { 0, . . . , 5} we obtain, using (6.22), 
+
+max  
+
+> X∈(Sd−1)n
+
+∇k 
+
+P⊥
+
+> xi
+
+˜V uA(X)
+
+ 2
+
+≲k max  
+
+> s∈{ 0,...,k }
+
+max  
+
+> X∈(Sd−1)n
+
+DsX ˜Gi (X, θ) 2
+
+≲k ∥ ˜V ∥2op 
+
+ 1 + ( β∥A∥op )10  .
+
+Note that A = W W ′T is sub-exponential as the product of two subGaussian variables. Taking expectations and using Assumption 1 (and the independence of V and A), we get 
+
+E max  
+
+> X∈(Sd−1)n
+
+∇k 
+
+P⊥
+
+> xi
+
+˜V uA(X)
+
+ 2
+
+≲k E
+
+h
+
+∥ ˜V ∥2op 
+
+ 1 + ( β∥A∥op )10 i
+
+≲k E∥ ˜V ∥2op + β10 E∥ ˜V ∥2op E ∥A∥10 op 
+
+≲k dσ 2
+
+> V
+
+ 1 + β10 σ10  
+
+> A
+
+d5 .
+
+The same argument applies to the second term in (6.2) (with ˜V replaced by ¯V and uA(X) replaced by uA(X) − EA[uA(X)] ), yielding the same type of bound. Summing the two contributions, we conclude that for every 
+
+k ∈ { 0, . . . , 5},
+
+E max  
+
+> X∈(Sd−1)n
+
+∇kG (X, θ) 2
+
+≲k dσ 2
+
+> V
+
+ 1 + β10 σ10  
+
+> A
+
+d5 . (6.23) Using the definition ∥G(·, θ)∥C5 = max 0⩽k⩽5 max X∈(Sd−1)n ∇kG(X, θ) , we obtain from (6.23) 
+
+∥∥ G(·, θ)∥C5 ∥2 
+
+> L2(ρ∗)
+
+= E ∥G(·, θ)∥2 
+
+> C5
+
+⩽
+
+> 5
+
+X
+
+> k=0
+
+E max  
+
+> X∈(Sd−1)n
+
+∇kG(X, θ) 2
+
+≲ dσ 2
+
+> V
+
+ 1 + β10 σ10  
+
+> A
+
+d5 .
+
+Combining this with the lower bound (6.16) yields 
+
+∥∥ G(·, θ)∥C5 ∥L2(ρ∗) ≲  1 + β10 σ10  
+
+> A
+
+d5 σ.
+
+In particular, ∥G(·, θ)∥C5 < ∞ for ρ∗-a.e. θ, so G(·, θ) ∈ C5  (Sd−1)n; T(Sd−1)n
+
+for ρ∗-a.e. θ.The bound for ∥∥∇ G(·,θ)G(·, θ)∥C5 ∥L2(ρ∗) is obtained by applying the same Euclidean-derivative bounds to the map X 7 → ∇ G(·,θ)G(·, θ)( X), noting that it is smooth in X and its Euclidean derivatives up to order 5 can be bounded by the same polynomial in β∥A∥op times the appropriate moments of V ;this yields again a bound of the form 
+
+∇G(·,θ)G(·, θ) C5 L2(ρ∗) ≲  1 + β10 σ10  
+
+> A
+
+d5 σ,34 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+possibly after enlarging the implicit constant and using (6.16) . This completes the proof of item (3). Finally, item (1) follows from item (3): since ∥∥ G(·, θ)∥C5 ∥L2(ρ∗) < ∞, we have E max X ∇kG(X, θ) < ∞ for k ⩽ 4, hence we may differentiate under the expectation to obtain ∇kb(X) = E∇kG(X, θ) and continuity in X by dominated convergence. □
+
+6.4. Proof of Theorem 5. The proof is an adaptation to the cylindrical case of results in [CD18]. 
+
+Proposition 1. Under Assumption 1, 
+
+∥Gμ(x, ·) − Gν (y, ·)∥L2(ρ∗) ⩽ C (W2(μ, ν ) + ∥x − y∥)
+
+for all (μ, ν ) ∈ P (Sd−1) and (x, y ) ∈ Sd−1, where 
+
+C = O
+
+
+
+β2e4β∥ ¯A∥eβ2dσ 2
+
+> A
+
+
+
+.
+
+Proof of Proposition 1. We write ¯V := EV , ˜V := V − ¯V , ¯A := EA, and 
+
+˜A := A − ¯A. Recall (6.2): 
+
+Gμ(x, θ) = P⊥ 
+
+> x
+
+˜V mA[μ]( x) + P⊥ 
+
+> x
+
+¯V
+
+Z eβ⟨Ax,y ⟩
+
+ZA[μ]( x) − E eβ⟨Ax,y ⟩
+
+ZA[μ]( x)
+
+!
+
+yμ (d y).
+
+(6.24) Denote 
+
+Cov A 
+
+> μ
+
+(x) := 
+
+Z eβ⟨Ax,y ⟩
+
+ZA[μ]( x) − E eβ⟨Ax,y ⟩
+
+ZA[μ]( x)
+
+!
+
+yμ (d y),
+
+and 
+
+nA[μ]( x) = 
+
+Z eβ⟨Ax,y ⟩
+
+ZA[μ]( x) yμ (d y).
+
+By independence of V , A, taking the second moment of (6.24) yields 
+
+∥Gμ(x, ·)∥L2(ρ∗) = dσ 2 
+
+> V
+
+P⊥ 
+
+> x
+
+mA[μ]( x) 2 
+
+> L2(ρ∗)
+
++ E P⊥ 
+
+> x
+
+¯V Cov A 
+
+> μ
+
+(x) 2
+
+,
+
+where 
+
+mA[μ]( x) := 
+
+Z eβ⟨Ax,y ⟩
+
+ZA[μ]( x) yμ (d y) = nA[μ]( x)
+
+ZA[μ]( x) .
+
+Then, we have the following identity 
+
+∥Gμ(x, ·) − Gν (y, ·)∥2 
+
+> L2(ρ∗)
+
+= dσ 2 
+
+> V
+
+P⊥ 
+
+> x
+
+mA[μ]( x) − P⊥ 
+
+> y
+
+mA[ν]( y) 2
+
+> L2(ρ∗)
+
++ P⊥ 
+
+> x
+
+¯V Cov A 
+
+> μ
+
+(x) − P⊥ 
+
+> y
+
+¯V Cov A 
+
+> ν
+
+(y) 2 
+
+> L2(ρ∗)
+
+.HOMOGENIZED TRANSFORMERS 35 
+
+Almost surely ∥A∥op < ∞, so for all x ∈ Sd−1, e−β∥A∥op ⩽ Zμ(x) ⩽ eβ∥A∥op .So we have 
+
+nA[μ]( x)
+
+ZA[μ]( x) − nA[ν]( x)
+
+ZA[ν]( x) = nA[μ]( x) − nA[ν]( x)
+
+ZA[μ]( x)
+
++ nA[ν]( x)
+
+ 1
+
+ZA[μ]( x) − 1
+
+ZA[ν]( x)
+
+
+
+.
+
+Focus on the first term on the right-hand side. Using that Lipschitz constant of 
+
+y 7 → eβ⟨Ax,y ⟩P⊥ 
+
+> x
+
+y is bounded by eβ∥A∥op ∥V ∥op (1+ β∥A∥op ), and Kantorovich-Rubinstein duality, we have 
+
+∥nA[μ]( x) − nA[ν]( x)∥ ⩽ eβ∥A∥op ∥V ∥op (1 + β∥A∥op )W1(μ, ν ).
+
+It ensues that 
+
+nA[μ]( x) − nA[ν]( x)
+
+ZA[μ]( x) ⩽ e2β∥A∥op ∥V ∥op (1 + β∥A∥op )W2(μ, ν ).
+
+By the same reasoning, we have 
+
+nA[ν]( x)
+
+ 1
+
+ZA[μ]( x) − 1
+
+ZA[ν]( x)
+
+
+
+⩽ β∥V ∥op e4β∥A∥op W2(μ, ν ).
+
+Combining the two, we end up with 
+
+nA[μ]( x)
+
+ZA[μ]( x) − nA[ν]( x)
+
+ZA[ν]( x) ⩽ ∥V ∥op e4β∥A∥op (1+ β∥A∥op +β)W2(μ, ν ). (6.25) By the same kind of argument, 
+
+nA[ν]( x)
+
+ZA[ν]( x) − nA[ν]( y)
+
+ZA[ν]( y) ⩽ β∥A∥op e2β∥A∥op ∥x − y∥. (6.26) Introduce C(A, V , β) := β(∥A∥op e2β∥A∥op + ∥V ∥op e4β∥A∥op ). Combining (6.26) and (6.25), and using Lipschitz character of x 7 → P⊥ 
+
+> x
+
+, we obtain 
+
+P⊥ 
+
+> x
+
+mA[μ]( x) − P⊥ 
+
+> y
+
+mA[ν]( y) L2(ρ∗) ⩽ EC(A, I d, β) ( ∥x − y∥ + W2(μ, ν )) .
+
+(6.27) On the other hand, 
+
+P⊥ 
+
+> x
+
+¯V Cov A 
+
+> μ
+
+(x) − P⊥ 
+
+> y
+
+¯V Cov A 
+
+> μ
+
+(y) L2(ρ∗)
+
+⩽ P⊥ 
+
+> x
+
+¯V mA[μ]( x) − P⊥ 
+
+> y
+
+¯V mA[ν]( y) L2(ρ∗)
+
++ EA[P⊥ 
+
+> x
+
+¯V mA[μ]( x) − P⊥ 
+
+> y
+
+¯V mA[ν]( y)] L2(ρ∗)
+
+⩽ 2 P⊥ 
+
+> x
+
+¯V mA[μ]( x) − P⊥ 
+
+> y
+
+¯V mA[ν]( y) L2(ρ∗) .
+
+All in all, 
+
+P⊥ 
+
+> x
+
+¯V Cov A 
+
+> μ
+
+(x) − P⊥ 
+
+> y
+
+¯V Cov A 
+
+> μ
+
+(y) L2(ρ∗) ⩽ EK( ¯V , A, β) ( ∥x − y∥ + W2(μ, ν )) ,
+
+(6.28) 36 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+where 
+
+K( ¯V , A, β) := β
+
+
+
+∥A∥op e2β∥A∥op + ∥ ¯V ∥op e4β∥A∥op 
+
+
+
+.
+
+Combining (6.27) and (6.28), we deduce 
+
+∥Gμ(x, ·) − Gν (y, ·)∥2
+
+> L2(ρ∗)
+
+⩽  dσ 2 
+
+> V
+
+EC(A, I d, β) + EK( ¯V , A, β) (∥x − y∥ + W2(μ, ν )) .
+
+Using [ Ver18 , Theorem 4.4.5], we know that ∥A∥op is subGaussian with 
+
+∥ ∥ A∥op ∥ψ2 ≲ √dσ A, so 
+
+Eecβ∥A∥op ⩽ ecβ∥ ¯A∥op ec2β2dσ 2 
+
+> A
+
+.
+
+From the above bounds, and using σ2 ≳ dσ 2 
+
+> V
+
+and ∥ ˆV ∥op ≲ dσ 2 
+
+> V
+
+, we deduce 
+
+∥Gμ(x, ·) − Gν (y, ·)∥2
+
+> L2(ρ∗)
+
+⩽  dσ 2 
+
+> V
+
++ ∥ ¯V ∥op 
+
+ β2e4β∥ ¯A∥op ec2β2dσ 2 
+
+> A
+
+(∥x − y∥ + W2(μ, ν )) 
+
+≲ β2e4β∥ ¯A∥op ec2β2dσ 2 
+
+> A
+
+σ2 (∥x − y∥ + W2(μ, ν )) . □
+
+Proposition 2. Let μ0 ∈ P (Sd−1) and let x0 be F0-measurable, independent of W, with law μ0. Under Assumption 1, there exists a unique adapted continuous process x such that, with μ(t) = Law (x(t) | FW 
+
+> t
+
+), the pair (x, μ )
+
+solves (5.3) on [0 , T ] in the sense of Definition 2. Proof of Proposition 2. The proof is based on a fixed-point argument and is given in [ CD18 , Proposition 2.8, Volume II]. We briefly explain the adaptation. Fix T > 0. Let (x, μ ) and (x′, μ ′) be two solutions on the same space, driven by the same common noise W, with the same initial condition. Consider the martingale 
+
+Mt := √α
+
+Z t
+
+> 0
+
+Z
+
+> Θ
+
+ Gμ(s)(x(s); θ) − Gμ′(s)(x′(s); θ) W(d s, dθ). (6.29) Applying the Burkholder–Davis–Gundy inequality for Rd-valued martingales to (6.29), we have 
+
+E sup 
+
+> s∈[0 ,t ]
+
+∥Ms∥2 ≲ αE
+
+Z t
+
+> 0
+
+Gμ(s)(x(s); ·) − Gμ′(s)(x′(s); ·) 2 
+
+> L2(ρ∗)
+
+ds. 
+
+Now use the coupling bound for conditional laws: since μ(s) = Law (x(s) | FW 
+
+> s
+
+)
+
+and μ′(s) = Law (x′(s) | FW 
+
+> s
+
+), the conditional joint law of (x(s), x ′(s)) given 
+
+FW 
+
+> s
+
+is a coupling of (μ(s), μ ′(s)) , hence 
+
+W2(μ(s), μ ′(s)) 2 ⩽ E
+
+h
+
+∥x(s) − x′(s)∥2 FW
+
+> s
+
+i
+
+a.s. in s. HOMOGENIZED TRANSFORMERS 37 
+
+The right-hand side term can be bounded as 
+
+E sup 
+
+> s∈[0 ,t ]
+
+∥x(s) − x′(s)∥2 ⩽ E sup 
+
+> 0⩽s⩽t
+
+∥Ms∥2 + C(T )
+
+Z t
+
+> 0
+
+E∥x(s) − x′(s)∥2 ds
+
+≲T E
+
+Z t
+
+> 0
+
+Gμ(s)(x(s); ·) − Gμ′(s)(x′(s); ·) 2 
+
+> L2(ρ∗)
+
+ds
+
++
+
+Z t
+
+> 0
+
+E∥x(s) − x′(s)∥2 ds
+
+≲T E
+
+Z t
+
+> 0
+
+Gμ(s)(x(s); ·) − Gμ(s)(x′(s); ·) 2
+
+> L2(ρ∗)
+
++ Gμ(s)(x′(s); ·) − Gμ′(s)(x′(s); ·) 2 
+
+> L2(ρ∗)
+
+ds
+
++
+
+Z t
+
+> 0
+
+E∥x(s) − x′(s)∥2 ds
+
+≲T E
+
+Z t
+
+> 0
+
+ ∥x(s) − x′(s)∥2 + W2(μ(s), μ ′(s)) 2 ds
+
+≲T E
+
+Z t
+
+> 0
+
+∥x(s) − x′(s)∥2ds, 
+
+where we used the regularity of G with respect to μ and x. The end of the argument is similar to the proof of [CD18, Proposition 2.8, Volume II]. □
+
+Proposition 3. Let (x, μ ) be a solution of (5.3) in the sense of Definition 2. Then μ is a weak solution of (5.2) in the sense of Definition 1. 
+
+The proof is a routine application of Itô’s formula followed by conditioning on the common-noise filtration. 
+
+Proposition 4. Let Xn = ( xn 
+
+> 1
+
+, . . . , x n 
+
+> 1
+
+) solve 
+
+dxni (t) = 
+
+Z
+
+> Θ
+
+Gμn(t)(xni (t); θ)W(d θ, dt),
+
+with μn = μXn . Let ( ¯x1, . . . , ¯xn) be conditionally i.i.d., given (FW 
+
+> t
+
+)t⩾0, copies of the unique solution x of (5.3) , driven by the same common noise W, and let ¯μ be their empirical measure. Then for every T > 0 there exists CT > 0
+
+such that 
+
+max  
+
+> i∈[n]
+
+E sup  
+
+> t∈[0 ,T ]
+
+∥xni (t) − ¯xi(t)∥2 + E sup  
+
+> t∈[0 ,T ]
+
+W 22 (μn(t), ¯μn(t)) 
+
+⩽ CT
+
+n
+
+> n
+
+X
+
+> i=1
+
+E xn,i (0) − ¯xi(0) 2 .
+
+In particular, after choosing an optimal coupling of the initial data, the right hand side may be written as CT EW 22 (μn(0) , ¯μn(0)) .
+
+The proof follows directly from [ CD18 , Theorem 2.12, Volume II]. We can now conclude with 38 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+Proof of Theorem 5. By Proposition 1, the coefficient Gμ(x, ·) is globally Lipschitz in x and μ. Proposition 2 therefore yields existence and pathwise uniqueness for the conditional McKean–Vlasov SDE (5.3) . Proposition 3 shows that the conditional law of any solution is a weak solution of the SPDE (5.2) . Conversely, by a superposition principle for conditional McKean–Vlasov equations [ LSZ22 ], any weak solution of (5.2) can be lifted to a solution of (5.3); uniqueness of the latter implies uniqueness of the former. □
+
+7. The Gaussian case 
+
+7.1. Preliminary lemmas. We begin with a couple of particularly useful lemmas. 
+
+Lemma 4. Under (G) , we have bρ∗ [μ] ≡ 0 and 
+
+K[μ]( xi, x j ) = 1
+
+d P⊥ 
+
+> xi
+
+EA⟨mβ,A[μ]( xi), mβ,A[μ]( xj )⟩Id P⊥ 
+
+> xj
+
+,
+
+where 
+
+mβ,A[μ]( x) := 1
+
+ZA[μ]( x)
+
+Z
+
+eβ⟨Ax,y ⟩yμ (d y).
+
+Here, μ = μX is the empirical measure. Proof of Lemma 4. We compute 
+
+K[μ]( xi, x j ) = P⊥ 
+
+> xi
+
+E
+
+Z Z eβ⟨Axi,y ⟩
+
+ZA[μ]( xi)
+
+eβ⟨Axj ,y ′⟩
+
+ZA[μ]( xj ) V yy ′TV Tμ(d y)μ(d y′)P⊥
+
+> xj
+
+= P⊥ 
+
+> xi
+
+E
+
+Z eβ⟨Axi,y ⟩
+
+ZA[μ]( xi)
+
+eβ⟨Axj ,y ′⟩
+
+ZA[μ]( xj ) E
+
+h
+
+V yy ′TV Ti
+
+μ(d y)μ(d y′)P⊥
+
+> xj
+
+= σ2 
+
+> V
+
+P⊥ 
+
+> xi
+
+E
+
+Z eβ⟨Axi,y ⟩
+
+ZA[μ]( xi)
+
+eβ⟨Axj ,y ′⟩
+
+ZA[μ]( xj ) ⟨y, y ′⟩μ(d y)μ(d y′)Id P⊥
+
+> xj
+
+where we used EV [V yy ′TV T] = σ2 
+
+> V
+
+⟨y, y ′⟩Id and σ2 
+
+> V
+
+= 1 /d . □
+
+Lemma 5. Fix i, j ∈ [n]2 and define Rij (t) := ⟨xi(t), x j (t)⟩. We have 
+
+dRij (t) = d Mij (t) + Dij (t) d t, (7.1) 
+
+where the local martingale part is 
+
+dMij (t) = 
+
+Z
+
+> Θ
+
+(⟨Gi(t, θ), x j (t)⟩ + ⟨xi(t), G j (t, θ)⟩) W(d θ, dt), (7.2) 
+
+and the drift is 
+
+Dij (t) = 1
+
+d
+
+ d − 2 + Rij (t)2 sμ(t)(xi(t), x j (t)) 
+
+− (d − 1) 2d Rij (t)  sμ(t)(xi(t)) + sμ(t)(xj (t))  , (7.3) HOMOGENIZED TRANSFORMERS 39 
+
+where μ(t) = μX(t) and 
+
+sμ(x) := E ∥mβ,A[μ]( x)∥2 ,sμ(x, x ′) := E mβ,A[μ]( x), mβ,A[μ]( x′) .
+
+Proof of Lemma 5. Since EV = 0 entrywise and V is independent of A, we have bρ∗ [μ]( x) = EBθ[μ]( x) = 0 and hence ξθ[μ]( x) = V mβ,A[μ]( x). Set 
+
+Gi(X, θ) := P⊥ 
+
+> xi
+
+V mβ,A[μ]( xi)
+
+and Gi(t, θ) := Gi(X(t), θ). Because (2.5) is a manifold Itô SDE with diffusion vector fields tangent to Sd−1, each coordinate process admits the following ambient Rd representation: 
+
+dxi(t) = 
+
+Z
+
+> Θ
+
+Gi(t, θ) W(d θ, dt) − 12
+
+Z 
+
+> Θ
+
+∥Gi(t, θ)∥2 ρ∗(d θ)
+
+
+
+xi(t)d t. (7.4) Indeed, applying Itô to ∥xi(t)∥2 in Rd gives 
+
+d∥xi(t)∥2 = 2 ⟨xi(t), dxi(t)⟩ + d ⟨xi⟩t,
+
+and since ⟨xi, G i⟩ = 0 , the stochastic part contributes no drift, while d⟨xi⟩t =R 
+
+> Θ
+
+∥Gi∥2ρ∗(d θ) d t. Choosing the drift in (7.4) cancels the quadratic variation and ensures ∥xi(t)∥ ≡ 1.Fix i, j ∈ [n]2 and define 
+
+Rij (t) := ⟨xi(t), x j (t)⟩.
+
+Applying Itô in Rd to Rij (t) using (7.4) yields 
+
+dRij (t) = d Mij (t) + Dij (t) d t, (7.5) where the local martingale part is 
+
+dMij (t) = 
+
+Z
+
+> Θ
+
+(⟨Gi(t, θ), x j (t)⟩ + ⟨xi(t), G j (t, θ)⟩) W(d θ, dt), (7.6) and the drift is 
+
+Dij (t) = 
+
+Z
+
+> Θ
+
+⟨Gi(t, θ), G j (t, θ)⟩ ρ∗(d θ)− Rij (t)2
+
+Z
+
+> Θ
+
+ ∥Gi(t, θ)∥2 + ∥Gj (t, θ)∥2 ρ∗(d θ).
+
+(7.7) This is the standard identity 
+
+d⟨xi, x j ⟩ = ⟨dxi, x j ⟩ + ⟨xi, dxj ⟩ + d ⟨xi, x j ⟩,
+
+with the additional linear drifts coming from the sphere-preserving correction in (7.4). For fixed u, v ∈ Rd, the Gaussian identity 
+
+E[V TM V ] = 1
+
+d tr( M ) Id
+
+for all M ∈ Rd×d implies 
+
+E
+
+D
+
+P⊥ 
+
+> xi
+
+V u, P⊥ 
+
+> xj
+
+V v
+
+E
+
+= 1
+
+d tr 
+
+
+
+P⊥ 
+
+> xi
+
+P⊥
+
+> xj
+
+
+
+⟨u, v ⟩
+
+E P⊥ 
+
+> xi
+
+V u 2
+
+= 1
+
+d tr 
+
+
+
+P⊥
+
+> xi
+
+
+
+∥u∥2.40 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+Since tr( P⊥ 
+
+> xi
+
+) = d − 1 and 
+
+tr 
+
+
+
+P⊥ 
+
+> xi
+
+P⊥
+
+> xj
+
+
+
+= tr 
+
+
+
+(I − xixT 
+
+> i
+
+)( I − xj xT 
+
+> j
+
+)
+
+
+
+= d − 2 + ⟨xi, x j ⟩2 = d − 2 + R2 
+
+> ij
+
+,
+
+(7.8) we introduce the scalar quantities 
+
+sμ(x) := E∥mβ,A[μ]( x)∥2,sμ(x, x ′) := E mβ,A[μ]( x), mβ,A[μ]( x′) .
+
+(They satisfy 0 ⩽ sμ(·) ⩽ 1 and |sμ(·, ·)| ⩽ 1 since mβ,A[μ]( x) is a convex combination of unit vectors.) Conditioning on X(t) and using (7.7) –(7.8) ,we obtain the explicit drift formula 
+
+Dij (t) = 1
+
+d
+
+ d − 2 + Rij (t)2 sμ(t)(xi(t), x j (t)) (7.9) 
+
+− (d − 1) 2d Rij (t)  sμ(t)(xi(t)) + sμ(t)(xj (t))  . □
+
+7.2. Proof of Theorem 2. We briefly overload the notation for the drift D
+
+and write Dij (t) = Dij (X(t)) . We begin with the following lemma. 
+
+Lemma 6. For every configuration X ∈ (Sd−1)n with Gram matrix R ∈ Rn×n,the quantities sμX (xi) and sμX (xi, x j ), and hence Dij (X) defined in (7.9) ,depend on X only through R. Equivalently, there exists a well-defined map 
+
+Dij (·) on the set of realizable Gram matrices such that Dij (X) = Dij (R).Furthermore, if R(t) = S(γ) for some γ ∈ (−1/(n − 1) , 1) and t ⩾ 0,then for every i̸ = j, Dij (R(t)) = b(γ), where b(γ) is the function defined in Theorem 2. 
+
+We can thus further overload notation and write Dij (X(t)) = Dij (R(t)) .
+
+Proof of Lemma 6. Write 
+
+mi := mβ,A[μX(t)]( xi(t)) = 
+
+> n
+
+X
+
+> k=1
+
+πA
+
+> i→k
+
+(γ) xk(t).
+
+Let X and ˜X be two configurations of particles having the same Gram matrix. There exists an orthogonal d × d matrix O such that xi = O˜xi for all i ∈ [n].We then have 
+
+⟨Axi, x j ⟩ = ⟨OTAO˜xi, ˜xj ⟩,
+
+and by orthogonal invariance of the Gaussian law, ⟨Axi, x j ⟩ and ⟨A˜xi, ˜xj ⟩
+
+have the same law. We deduce that E[πA
+
+> i→k
+
+(γ)πA
+
+> i→ℓ
+
+(γ)] is a function of R(t)
+
+only. This implies that E⟨mi, m j ⟩ and E∥mi∥2 are functions of R(t) only as well. So, the dynamics depends on R(t) only. HOMOGENIZED TRANSFORMERS 41 
+
+We now explicitly compute the drift. We have 
+
+∥mi∥2 = X
+
+> k,ℓ
+
+πA
+
+> i→k
+
+(γ)πA
+
+> i→ℓ
+
+(γ)⟨xk(t), x ℓ(t)⟩
+
+= γ X
+
+> k
+
+πA
+
+> i→k
+
+(γ)
+
+!2
+
++ (1 − γ) X
+
+> k
+
+ πA
+
+> i→k
+
+(γ)2
+
+= γ + (1 − γ) X
+
+> k
+
+ πA
+
+> i→k
+
+(γ)2 ,
+
+and similarly, for i̸ = j,
+
+⟨mi, m j ⟩ = X
+
+> k,ℓ
+
+πA
+
+> i→k
+
+(γ)πA
+
+> j→ℓ
+
+(γ)⟨xk(t), x ℓ(t)⟩
+
+= γ + (1 − γ) X
+
+> k
+
+πA
+
+> i→k
+
+(γ)πA
+
+> j→k
+
+(γ).
+
+Taking expectations and using (2.7) , we obtain sμX(t) (xi(t)) = γ + (1 − γ)f (γ)
+
+as well as sμX(t) (xi(t), x j (t)) = γ + (1 − γ)g(γ). Plugging these expressions into the drift formula (7.9) yields exactly (2.8). □
+
+To close the dynamics, we show that the drift is Lipschitz near the simplex line. 
+
+Lemma 7. Let X ∈ (Sd−1)n and let R ∈ Rn×n be its Gram matrix. Set 
+
+R(γ) := (1 − γ)In + γ 11 T. Then there exists L > 0 such that for all γ ∈
+
+(−1/(n − 1) , 1) ,
+
+max   
+
+> 1⩽i̸=j⩽n
+
+|Dij (R) − b(γ)| ⩽ L max  
+
+> (i,j )∈[n]
+
+|Rij − R(γ)ij |.
+
+(Note that Dij (R(γ)) = b(γ).) Moreover one can take L = O(1 + dσ 4
+
+> A
+
+β2n).
+
+We henceforth write ∥A∥∞ = max (i,j )∈[n]2 |Aij | for A ∈ Rn×n.
+
+Proof of Lemma 7. Since A = W ′TW , we have that W X and W ′X are Gaussian variables. Denote hi = W xi, and gj = W ′xj . We have 
+
+Cov( hi, h j ) = σ2
+
+> A
+
+Rij Id, Cov( gi, g j ) = σ2
+
+> A
+
+Rij Id, Cov( hi, g j ) = 0 .
+
+Using tensor product notations, we can write h ∼ N (0 , σ 2
+
+> A
+
+R ⊗ Id), and 
+
+(h, g ) ∼ N (0 , Σ( R)) , where 
+
+Σ( R) = 
+
+σ2
+
+> A
+
+R ⊗ Id 00 σ2
+
+> A
+
+R ⊗ Id
+
+
+
+. (7.10) Since R is a Gram matrix, it is symmetric positive semi-definite with 
+
+diag (R) = 1 (may be singular when n > d ). Therefore Σ( R) defined in (7.10) is positive semi-definite and (h, g ) ∼ N (0 , Σ( R)) is well-defined but possibly degenerate 2. Note that ⟨Axi, x j ⟩ = hT 
+
+> i
+
+gj . In particular, we can         
+
+> 2If this were to arrive, one slight caveat is that Lemma 8 doesn’t immediately apply. But one can use a standard trick and replace by Σε(R) = Σ( R) + ϵI 2nd , then apply the lemma for Σε(R), and send ϵ→0by using dominated convergence. 42 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET
+
+rewrite 
+
+πA 
+
+> i→j
+
+(X) = eβhT 
+
+> igj
+
+Pnk=1 eβhT 
+
+> igk
+
+.
+
+Recall sμX (xi, x j ) = E[⟨P 
+
+> k
+
+πA
+
+> i→k
+
+xk, P 
+
+> ℓ
+
+πA
+
+> j→ℓ
+
+xℓ⟩], hence 
+
+sμX (xi, x j ) = 
+
+> n
+
+X
+
+> k,ℓ =1
+
+E
+
+"
+
+eβhT 
+
+> igk
+
+Pnk=1 eβhT 
+
+> igk
+
+eβhT 
+
+> jgℓ
+
+Pnk=1 eβhT 
+
+> jgk
+
+#
+
+⟨xk, x ℓ⟩,
+
+and also 
+
+sμX (xi) = 
+
+> n
+
+X
+
+> k,ℓ =1
+
+E
+
+"
+
+eβhT 
+
+> igk
+
+Pnk=1 eβhT 
+
+> igk
+
+eβhT 
+
+> igℓ
+
+Pnk=1 eβhT 
+
+> igk
+
+#
+
+⟨xk, x ℓ⟩.
+
+We can study all these quantities as functions of (R, h, g ). Since clearly 
+
+|⟨ xk, x ℓ⟩ − ⟨ x′
+
+> k
+
+, x ′
+
+> ℓ
+
+⟩| ⩽ ∥R − R′∥∞,
+
+we focus on the softmax weights. Let F (R) = Ef (h, g ). The idea in what follows is to leverage the Gaus-sianity of h, g in order to compute the derivative of F with respect to R. We recall the celebrated Gaussian interpolation lemma. 
+
+Lemma 8 (Lemma 7.2.7 from [ Ver18 ]) . Consider two independent Gaussian random vectors X ∼ N (0 , ΣX ) and Y ∼ N (0 , ΣY ). Define the interpolated Gaussian vector 
+
+Xt = √tX + √1 − tY. 
+
+Then for all φ ∈ C2(Rm), we have 
+
+ddt Eφ(Xt) = 12 E
+
+h
+
+tr 
+
+
+
+(Σ X − ΣY )T ∇2φ(Xt)
+
+i 
+
+.
+
+Consider (H0, G 0) centered Gaussian random variables on R2nd with covari-ance Σ( R(γ)) and (H1, G 1) independent Gaussian variables with covariance 
+
+Σ( R). Define Xt as the interpolation between (H0, G 0) and (H1, G 1):
+
+Xt = √t(H1, G 1) + √1 − t(H0, G 0). (7.11) Let ψ(t) := Ef (Xt). Applying Lemma 8 to (7.11) yields 
+
+ddt ψ(t) = 12 E
+
+h
+
+tr 
+
+
+
+Σ ( R − R(γ)) T ∇2f (Xt)
+
+i 
+
+. (7.12) Using the tensor product structure, we simplify (7.12) in 
+
+ddt ψ(t) = σ2
+
+> A
+
+2
+
+
+
+E tr  ∇2
+
+> g
+
+f (Xt) ( ε(R) ⊗ Id) 
+
++E tr  ∇2
+
+> h
+
+f (Xt) ( ε(R) ⊗ Id) 
+
+, (7.13) HOMOGENIZED TRANSFORMERS 43 
+
+where ε(R) := R − R(γ), and (∇2
+
+> h
+
+f, ∇2
+
+> g
+
+f ) are the (nd ) × (nd ) Hessians with respect to the vectors h, g ∈ Rnd respectively, with coefficients 
+
+(∇2
+
+> h
+
+f )(i,k ),(j,q ) = ∂(hi)k ,(hj )q f (h, g )(∇2
+
+> g
+
+f )(i,k ),(j,q ) = ∂(gi)k ,(gj )q f (h, g ).
+
+We specialize (7.13) to 
+
+f (h, g ) = eβhT 
+
+> igk
+
+Pnk′=1 eβhT 
+
+> igk′
+
+eβhT 
+
+> jgℓ
+
+Pnℓ′=1 eβhT 
+
+> jgℓ′
+
+.
+
+Since f is C∞ and its derivatives are bounded by polynomials times bounded softmax factors, Gaussian moments ensure that the differentiation under the expectation is justified. It yields the following bound 
+
+ddt ψ(t) = σ2
+
+> A
+
+2
+
+> n
+
+X
+
+> a,b =1
+
+(ε(R)) ab E tr 
+
+
+
+(∇2
+
+> h
+
+f (Xt)) (a, ·),(b, ·)
+
+
+
++ σ2
+
+> A
+
+2
+
+> n
+
+X
+
+> a,b =1
+
+(ε(R)) ab E tr 
+
+
+
+(∇2
+
+> g
+
+f (Xt)) (a, ·),(b, ·)
+
+
+
+. (7.14) The computations are similar as the ones in the proof of Lemma 1 (see Section 6.3). For i ∈ [n] let ui := βGThi where G := ( g1, . . . , g n) ∈ Rd×n.Let χ ∈ Rn → Rn denote the softmax function, so πA
+
+> i→k
+
+(u) = χk(ui). Direct computations show 
+
+∇2 
+
+> hi,h i
+
+f (h, g ) = β2χℓ(uj )
+
+> n
+
+X
+
+> r,m =1
+
+χ′′ 
+
+> k,rm
+
+(ui)grgT
+
+> m
+
+,
+
+∇2  
+
+> hj,h j
+
+f (h, g ) = β2χk(ui)
+
+> n
+
+X
+
+> r,m =1
+
+χ′′ 
+
+> ℓ,rm
+
+(uj )grgT
+
+> m
+
+,
+
+∇2 
+
+> hi,h j
+
+f (h, g ) = β2
+
+> n
+
+X
+
+> r,m =1
+
+χ′
+
+> ℓ,r
+
+(uj )χ′
+
+> k,m
+
+(ui)grgT
+
+> m
+
+,
+
+∇2 
+
+> ha,h b
+
+f (h, g ) = 0 , a / ∈ { i, j } or b / ∈ { i, j }.
+
+Taking the trace yields 
+
+tr( ∇2 
+
+> hi,h i
+
+f (h, g )) = β2χℓ(uj )
+
+> n
+
+X
+
+> r,m =1
+
+χ′′ 
+
+> k,rm
+
+(ui)⟨gr, g m⟩,
+
+tr( ∇2  
+
+> hj,h j
+
+f (h, g )) = β2χk(ui)
+
+> n
+
+X
+
+> r,m =1
+
+χ′′ 
+
+> ℓ,rm
+
+(uj )⟨gr, g m⟩,
+
+tr( ∇2 
+
+> hi,h j
+
+f (h, g )) = β2
+
+> n
+
+X
+
+> r,m =1
+
+χ′
+
+> ℓ,r
+
+(uj )χ′
+
+> k,m
+
+(ui)⟨gr, g m⟩,
+
+tr( ∇2 
+
+> ha,h b
+
+f (h, g )) = 0 , a / ∈ { i, j } or b / ∈ { i, j }.44 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+We deduce that the first term in the right-hand side of (7.14) is bounded by 
+
+(ε(R)) ii β2χℓ(uj )
+
+> n
+
+X
+
+> r,m =1
+
+χ′′ 
+
+> k,rm
+
+(ui)⟨gr, g m⟩
+
++ ( ε(R)) jj β2χk(ui)
+
+> n
+
+X
+
+> r,m =1
+
+χ′′ 
+
+> ℓ,rm
+
+(uj )⟨gr, g m⟩
+
++ ( ε(R)ij + ε(R)ji )β2
+
+> n
+
+X
+
+> r,m =1
+
+χ′
+
+> ℓ,r
+
+(uj )χ′
+
+> k,m
+
+(ui)⟨gr, g m⟩.
+
+Using χ′
+
+> i,r
+
+(u) = χi(u) 1r=i − χr(u) and 
+
+χ′′ 
+
+> i,rm
+
+(u) = χi(u)
+
+
+
+(1 r=i − χr(u))(1 m=i − χm(u)) − χm(u)(1 r=m − χr(u)) 
+
+
+
+,
+
+Cauchy-Schwarz, and the fact that χk(u) ⩾ 0, and Pnk=1 χk(u) = 1 , we find 
+
+> n
+
+X
+
+> a,b =1
+
+(ε(R)) ab Etr 
+
+
+
+(∇2
+
+> h
+
+f (Xt)) (a, ·),(b, ·)
+
+
+
+⩽ Cβ2∥ε(R)∥∞χk(ui)χℓ(uj )
+
+> n
+
+X
+
+> m=1
+
+E∥gm∥2.
+
+(7.15) The same computations for the second term in g yields that the trace is given by 
+
+tr( ∇2 
+
+> ga,g b
+
+f ) = β2χℓ(uj )χ′′ 
+
+> k,ab
+
+(ui)∥hi∥2 + β2χk(ui)χ′′ 
+
+> ℓ,ab
+
+(uj )∥hj ∥2
+
++ β2  χ′
+
+> k,a
+
+(ui)χ′
+
+> ℓ,b
+
+(uj ) + χ′
+
+> k,b
+
+(ui)χ′
+
+> ℓ,a
+
+(uj ) ⟨hj , h i⟩.
+
+Using the above estimates on the softmax derivatives, and summing as before, we obtain 
+
+> n
+
+X
+
+> a,b =1
+
+(ε(R)) ab E tr 
+
+ ∇2
+
+> g
+
+f (Xt)
+
+> (a, ·),(b, ·)
+
+
+
+⩽ Cβ2∥ε(R)∥∞χk(ui)χℓ(uj )  E∥hi∥2 + E∥hj ∥2 . (7.16) Plugging (7.15) and (7.16) into (7.14), we obtain 
+
+ddt ψ(t) ⩽ Cσ 2
+
+> A
+
+β2χk(ui)χℓ(uj )∥ε(R)∥∞ E∥hi∥2 + E∥hj ∥2 +
+
+> n
+
+X
+
+> m=1
+
+E∥gm∥2
+
+!
+
+.
+
+Recall that ψ(t) = Ef (Xt) and that ψ(1) = F (R) and ψ(0) = F (R(γ)) .Using the expression of the moment of a Gaussian variable and integrating (7.13), we find 
+
+|F (R) − F (R(γ)) | ⩽ Cσ 4
+
+> A
+
+dβ2nχ k(ui)χℓ(uj )∥ε(R)∥∞. (7.17) HOMOGENIZED TRANSFORMERS 45 
+
+Denote g(R) := sμX (xi, x j ). Using the estimate (7.17), we obtain 
+
+|g(R + ε(R)) − g(R)| ⩽ X
+
+> k,ℓ
+
+|ε(R)kℓ || Fk,ℓ (R)|
+
++ X
+
+> k,ℓ
+
+|(R + ε(R)) kℓ | | Fk,ℓ (R) − Fk,ℓ (R + ε(R)) |
+
+⩽
+
+1 + Cσ 4
+
+> A
+
+dβ2n X
+
+> k,ℓ
+
+χk(ui)χℓ(uj )
+
+ ∥ε(R)∥∞
+
+⩽  1 + Cσ 4
+
+> A
+
+dβ2n ∥ε(R)∥∞.
+
+Since the drift is a function of sμX (xi), s μX (xi, x j ) and of polynomials of R,we can conclude. □
+
+Proof of Theorem 2. By Lemma 5, for i̸ = j,
+
+Rij (t) = Rij (0) + Mij (t) + 
+
+Z t
+
+> 0
+
+Dij (R(s)) d s. 
+
+Subtract the ODE (2.9): 
+
+Rij (t) − γ(t) = Rij (0) − γ0 + Mij (t) + 
+
+Z t
+
+> 0
+
+(Dij (R(s)) − b(γ(s)))d s. 
+
+Since the initial overlaps satisfy Rij (0) = γ0, the initial error vanishes. By Lemma 6 and Lemma 7, we obtain 
+
+max   
+
+> i̸=j
+
+|Dij (R(s)) − b(γ(s)) | ⩽ L max   
+
+> i̸=j
+
+|Rij (s) − γ(s)|.
+
+Define E(t) := max i̸ =j |Rij (t) − γ(t)|. Then for all t ∈ [0 , T ],
+
+E(t) ⩽ max   
+
+> i̸=j
+
+sup 
+
+> s∈[0 ,t ]
+
+|Mij (s)| + αL 
+
+Z t
+
+> 0
+
+E(s) d s. 
+
+By Grönwall’s inequality, 
+
+E(t) ⩽ eLt max   
+
+> i̸=j
+
+sup 
+
+> s∈[0 ,t ]
+
+|Mij (s)|. (7.18) From (7.6) and the Itô isometry for cylindrical Wiener integrands [ DPZ14 ], the quadratic variation satisfies 
+
+d⟨Mij ⟩t =
+
+Z
+
+> Θ
+
+(⟨Gi(t, θ), x j (t)⟩ + ⟨xi(t), G j (t, θ)⟩)2 ρ∗(d θ) d t. 
+
+Using E[⟨V u, a ⟩⟨ V v, b ⟩] = ⟨u, v ⟩⟨ a, b ⟩/d , we compute all the terms: 
+
+E
+
+D
+
+V mβ,A[μ]( xi), P⊥
+
+> xi(t)
+
+xj (t)
+
+E2
+
+= 1
+
+d ∥mβ,A[μ]( xi)∥2 P⊥
+
+> xi(t)
+
+xj (t) 2
+
+,46 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+and 
+
+E
+
+hD 
+
+V mβ,A[μ]( xi), P⊥
+
+> xi(t)
+
+xj (t)
+
+E D 
+
+V mβ,A[μ]( xj ), P⊥ 
+
+> xj(t)
+
+xi(t)
+
+Ei 
+
+= 1
+
+d ⟨mβ,A[μ]( xi), mβ,A[μ]( xj )⟩
+
+D
+
+P⊥
+
+> xi(t)
+
+xj (t), P⊥ 
+
+> xj(t)
+
+xi(t)
+
+E
+
+.
+
+Then, 
+
+d⟨Mij ⟩t = 2
+
+d ⟨mβ,A[μ]( xi), mβ,A[μ]( xj )⟩
+
+D
+
+P⊥
+
+> xi(t)
+
+xj (t), P⊥ 
+
+> xj(t)
+
+xi(t)
+
+E
+
++ 1
+
+d
+
+
+
+∥mβ,A[μ]( xi)∥2 P⊥
+
+> xi(t)
+
+xj (t) 2
+
++ ∥mβ,A[μ]( xj )∥2 P⊥ 
+
+> xj(t)
+
+xi(t) 2
+
+Bounding the above expression, we find 
+
+⟨Mij ⟩T = 4Td .
+
+By a standard maximal inequality for continuous martingales [ DVZ01 ], for each fixed pair (i, j ),
+
+P sup  
+
+> t∈[0 ,T ]
+
+|Mij (t)| ⩾ r
+
+!
+
+⩽ 2 exp 
+
+
+
+− dr 2
+
+8T
+
+
+
+.
+
+Applying a union bound over (i, j ) ∈ [n]2 and taking r = Cp4T log(2 n2/δ )/d 
+
+gives, with probability at least 1 − δ,
+
+sup  
+
+> t∈[0 ,T ]
+
+|Mij (t)| ⩽ C
+
+s
+
+4Td log 
+
+ 2n2
+
+δ
+
+
+
+for all i, j. 
+
+Since sup | fM | ⩽ sup i,j sup |Mij |, we deduce 
+
+sup  
+
+> t∈[0 ,T ]
+
+| fM (t)| ⩽ C
+
+s
+
+4Td log 
+
+ 2n2
+
+δ
+
+
+
+(7.19) with probability at least 1 − δ. We insert (7.19) into (7.18) (with t = T ) to conclude. □
+
+7.3. Proof of Theorem 3. 
+
+Proof of Theorem 3. By definition, 
+
+m(t) = 1
+
+n2
+
+X
+
+> i,j
+
+Rij (t),
+
+so summing (7.5) over i, j and applying Lemma 5 gives 
+
+m(t) = m(0) + 
+
+Z t
+
+> 0
+
+g(X(s)) d s + fM (t), (7.20) where 
+
+g := αn2
+
+X
+
+> i,j
+
+Dij , (7.21) HOMOGENIZED TRANSFORMERS 47 
+
+with Dij given by (7.9), and 
+
+fM (t) := 1
+
+n2
+
+X
+
+> i,j
+
+Mij (t)
+
+is a continuous local martingale. Set f (u) := r(1 − u) for u ∈ [0 , 1] . We show that 
+
+|g(X) − f (m(X)) | ⩽ C
+
+ 1
+
+d + β2 E∥A∥2
+
+
+
+. (7.22) This is done in two parts. 
+
+(a). For β = 0 , we have m0,A[μ]( x) = R y μ (d y) =: m[μ] is independent of x
+
+and A, hence 
+
+sμ(x) = ∥m[μ]∥2 = m(X),sμ(xi, x j ) = ∥m[μ]∥2 = m(X).
+
+Plugging this into (7.9) and then into (7.21), one finds 
+
+g0(X) = 1
+
+d m(X) (( d − 2) + q(X) − (d − 1) m(X)) ,q(X) := 1
+
+n2
+
+X
+
+> i,j
+
+R2 
+
+> ij
+
+∈ [0 , 1] .
+
+Therefore 
+
+g0(X) − f (m(X)) = 1
+
+d m(X) ( q(X) − 2 + m(X)) ,
+
+and since m(X) ∈ [0 , 1] and q(X) ∈ [0 , 1] ,
+
+|g0(X) − f (m(X)) | ⩽ 2
+
+d .
+
+(b). We claim that for β ∈ [0 , 1] , uniformly over all empirical measures μ on 
+
+Sd−1 and x, x ′ ∈ Sd−1,
+
+sμ(x) − ∥ m[μ]∥2 + sμ(x, x ′) − ∥ m[μ]∥2 ⩽ C β2 E∥A∥2. (7.23) 
+
+Proof of (7.23) . Write μ = 1
+
+> n
+
+Pnk=1 δyk . For fixed A and x, define 
+
+wk(β) := eβ⟨Ax,y k ⟩
+
+Pnℓ=1 eβ⟨Ax,y ℓ⟩ .
+
+A direct differentiation gives 
+
+w′
+
+> k
+
+(β) = wk(β) ⟨Ax, y k⟩ − 
+
+> n
+
+X
+
+> ℓ=1
+
+wℓ(β)⟨Ax, y ℓ⟩
+
+!
+
+,
+
+hence |w′
+
+> k
+
+(β)| ⩽ 2∥A∥ wk(β), and therefore 
+
+∥∂βmβ,A[μ]( x)∥ =
+
+> n
+
+X
+
+> k=1
+
+w′
+
+> k
+
+(β) yk ⩽
+
+> n
+
+X
+
+> k=1
+
+|w′
+
+> k
+
+(β)| ⩽ 2∥A∥.48 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+Differentiating once more and using |⟨ Ax, y ⟩| ⩽ ∥A∥ and P 
+
+> k
+
+wk = 1 shows that 
+
+∂2
+
+> β
+
+mβ,A[μ]( x) ⩽ C∥A∥2
+
+for β ∈ [0 , 1] . Thus Taylor’s theorem with remainder yields 
+
+mβ,A[μ]( x) = m0,A[μ]( x) + β ∂βm0,A[μ]( x) + Rβ,A(x),
+
+and 
+
+∥Rβ,A(x)∥ ⩽ Cβ2∥A∥2,
+
+and similarly for x′. Since ∂βm0,A[μ]( x) is linear in A (equals Σ[ μ]ATx with 
+
+Σ[ μ] the empirical covariance), it has mean zero under A 7 → − A symmetry, hence 
+
+E∂βm0,A[μ]( x) = 0 .
+
+Expanding ∥mβ,A[μ]( x)∥2 and ⟨mβ,A[μ]( x), mβ,A[μ]( x′)⟩, taking expectations, and using ∥m0,A[μ]( x)∥ = ∥m[μ]∥ ⩽ 1 gives (7.23). □
+
+Now combine (7.23) with (7.9) : since |Rij | ⩽ 1 and d − 2 + R2 
+
+> ij
+
+⩽ d − 1 ⩽ d,we obtain 
+
+Dij (t) − D(0)  
+
+> ij
+
+(t) ⩽ Cβ2 E∥A∥2,
+
+where D(0)  
+
+> ij
+
+denotes the drift with β = 0 (hence sμ(·) = ∥m[μ]∥2). Averaging over i, j as in (7.21) gives 
+
+|g(X) − g0(X)| ⩽ Cβ2E∥A∥2.
+
+Together with the β = 0 bound in part (a), this proves (7.22). Let u ∈ C1(R⩾0) be the solution to the logistic ODE 
+
+(
+
+˙u(t) = f (u(t)) 
+
+u(0) = m(0) . (7.24) Let e(t) := m(t) − u(t). From (7.20) and (7.24) 
+
+e(t) = 
+
+Z t
+
+> 0
+
+(g(X(s)) − f (u(s))) d s + fM (t).
+
+Add and subtract f (m(s)) to obtain 
+
+e(t) = 
+
+Z t
+
+> 0
+
+(f (m(s)) − f (u(s))) d s +
+
+Z t
+
+> 0
+
+(g(X(s)) − f (m(s))) d s + fM (t).
+
+Since f ′(u) = (1 − 2u), we have |f (u) − f (u′)| ⩽ |u − u′| on [0 , 1] , hence 
+
+|e(t)| ⩽
+
+Z t
+
+> 0
+
+|e(s)| ds +
+
+Z t
+
+> 0
+
+|g(X(s)) − f (m(s)) | ds + sup 
+
+> s∈[0 ,t ]
+
+| fM (s)|.
+
+Using (7.22), we get 
+
+|e(t)| ⩽
+
+Z t
+
+> 0
+
+|e(s)| ds + Ct 
+
+ 1
+
+d + β2E∥A∥2
+
+
+
++ sup 
+
+> s∈[0 ,t ]
+
+| fM (s)|.HOMOGENIZED TRANSFORMERS 49 
+
+Grönwall’s inequality yields 
+
+sup  
+
+> t∈[0 ,T ]
+
+|e(t)| ⩽ eT CT 
+
+ 1
+
+d + β2 E∥A∥2
+
+
+
++ sup  
+
+> t∈[0 ,T ]
+
+| fM (t)|
+
+!
+
+. (7.25) From (7.6) and the expression of ˜M , we have 
+
+⟨ fM ⟩t = 1
+
+n4
+
+X
+
+> i,j,k,ℓ
+
+⟨Mij , M kℓ ⟩t.
+
+Using the Itô isometry for cylindrical Wiener integrals, the quadratic variation satisfies 
+
+d⟨Mij , M kℓ ⟩t =
+
+Z
+
+> Θ
+
+(⟨Gi(t, θ), x j (t)⟩ + ⟨xi(t), G j (t, θ)⟩)(⟨Gk(t, θ), x ℓ(t)⟩ + ⟨xk(t), G ℓ(t, θ)⟩) ρ∗(d θ) d t. 
+
+Using E[⟨V u, a ⟩⟨ V v, b ⟩] = ⟨u, v ⟩⟨ a, b ⟩/d , we compute all the terms 
+
+E
+
+hD 
+
+V mβ,A[μ]( xi), P⊥
+
+> xi(t)
+
+xj (t)⟩ ⟨ V mβ,A[μ]( xk), P⊥ 
+
+> xk(t)
+
+xℓ(t)
+
+Ei 
+
+= 1
+
+d E [⟨mβ,A[μ]( xi), mβ,A[μ]( xk)⟩]
+
+D
+
+P⊥
+
+> xi(t)
+
+xj (t), P⊥ 
+
+> xk
+
+xℓ
+
+E
+
+.
+
+Combining all terms, we end up with 
+
+d⟨Mij , M kℓ ⟩t = 1
+
+d E [⟨mβ,A[μ]( xi), mβ,A[μ]( xk)⟩]
+
+D
+
+P⊥
+
+> xi(t)
+
+xj (t), P⊥ 
+
+> xk
+
+xℓ
+
+E
+
++ 1
+
+d E [⟨mβ,A[μ]( xi), mβ,A[μ]( xℓ)⟩]
+
+D
+
+P⊥
+
+> xi(t)
+
+xj (t), P⊥ 
+
+> xℓ
+
+xk
+
+E
+
++ 1
+
+d E [⟨mβ,A[μ]( xj ), mβ,A[μ]( xk)⟩]
+
+D
+
+P⊥ 
+
+> xj(t)
+
+xi(t), P⊥ 
+
+> xk
+
+xℓ
+
+E
+
++ 1
+
+d E [⟨mβ,A[μ]( xj ), mβ,A[μ]( xℓ)⟩]
+
+D
+
+P⊥ 
+
+> xj(t)
+
+xi(t), P⊥ 
+
+> xℓ
+
+xk
+
+E
+
+.
+
+Using ∥P⊥ 
+
+> x
+
+∥ ⩽ 1 and ∥mβ,A[μ]( x)∥ ⩽ 1, we have 
+
+⟨Mij , M kℓ ⟩T ⩽ 4Td .
+
+Summing the above bound, we have 
+
+⟨ fM ⟩t ⩽ 4Td .
+
+By a standard maximal inequality for continuous martingales, 
+
+P sup  
+
+> t∈[0 ,T ]
+
+| fM (t)| ⩾ r
+
+!
+
+⩽ 2 exp 
+
+
+
+− r2d
+
+8T
+
+
+
+.
+
+Thus, with probability at least 1 − δ, we have 
+
+sup  
+
+> t∈[0 ,T ]
+
+| fM (t)| ⩽ C
+
+s
+
+4Td log 
+
+ 1
+
+δ
+
+
+
+.50 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+Combining (7.25) and (7.19) yields (2.11) . Finally, for A = W W ′T we have 
+
+∥A∥ ⩽ ∥W ∥∥ W ′∥, hence 
+
+E∥A∥2 ⩽ pE∥W ∥4E∥W ′∥4 ⩽ Cd 2σ4
+
+> A
+
+.
+
+(See [Ver18, 4.4.2].) □
+
+7.4. Proof of Theorem 4. The proof relies strongly on the Laplace method which can be applied in the setting where μ(t) has a density with respect to the Lebesgue measure. 
+
+Proof of Theorem 4. We proceed by a coupling argument. Consider two iid copies (x(1) (t), x (2) (t)) driven by 
+
+dx(t) = 
+
+Z
+
+> Θ
+
+Gθ[μ(t)]( x(t)) W(d θ, dt)− 12
+
+Z 
+
+> Θ
+
+∥Gθ[μ(t)]( x(t)) ∥2ρ∗(d θ)
+
+
+
+x(t)d t. 
+
+Set R(t) := ⟨x(1) (t), x (2) (t)⟩. Arguing as in the proof of Lemma 5, 
+
+d · dR(t) = − d − 12
+
+h
+
+E mβ,A[μ(t)]( x1(t)) 2 + E mβ,A[μ(t)]( x2(t)) 2i
+
+R(t)+ E  mβ,A[μ(t)]( x1(t)) , mβ,A[μ(t)]( x2(t))    d − 2 + R(t)2 + d M (t).
+
+The main observation is that in the regime β → ∞ , the linear terms in d
+
+cancel. This is due to the following. 
+
+Lemma 9. For μ as in Assumption 2, 
+
+E ⟨mβ,A[μ]( x), mβ,A[μ]( y)⟩ = E
+
+ Ax
+
+∥Ax∥ , Ay
+
+∥Ay∥
+
+
+
++ O
+
+
+
+d− 32 + β− 12
+
+
+
+for all x, y ∈ Sd−1.Proof of Lemma 9. Denote 
+
+Cβ,μ (x, y ) := E ⟨mβ,A[μ]( x), mβ,A[μ]( y)⟩ .
+
+We have 
+
+mβ,A[μ]( xi) = 
+
+Z e∥Axi∥β ⟨ Axi 
+
+> ∥Axi∥,y ⟩
+
+R e∥Axi∥β ⟨ Axi 
+
+> ∥Axi∥,y ⟩
+
+μ(d y)
+
+yμ (d y).
+
+Fix x ∈ Sd−1 and write 
+
+ux := Ax
+
+∥Ax∥ , λx := β∥Ax∥.
+
+Step 1. Laplace method. Let 0 < δ ⩽ 1 and denote by Uδ(ux) the geodesic ball of radius δ around ux:
+
+Uδ(ux) := {z ∈ Sd−1 : d(z, u x) ⩽ δ}.
+
+Let ε > 0 and work under the event {∥ Ax∥ ⩾ ε}. For y ∈ Sd−1 \ Uδ,
+
+⟨ux, y ⟩ ⩾ δ, so ⟨ux, y ⟩ ⩽ λx(1 − δ2/2) , which implies 
+
+Z 
+
+> Sd−1\Uδ(ux)
+
+eβ⟨Ax,y ⟩μ(d y) ⩽ eλx 
+
+> 
+> 1−δ22
+> 
+
+.HOMOGENIZED TRANSFORMERS 51 
+
+It suffices to estimate the integral on Uδ(ux) by the Laplace method. Let 
+
+Exp ux : Tux Sd−1 → Sd−1 denote the exponential map. For δ > 0 small enough, there exists δ′ > 0 such that 
+
+Exp ux : Vδ′ := {v ∈ Tux Sd−1 : ∥v∥ ⩽ δ′} → Uδ(ux)
+
+is a C1 diffeomorphism. In these coordinates, 
+
+Exp ux (v) = cos( ∥v∥)ux + sin( ∥v∥) v
+
+∥v∥ ,
+
+and we have 
+
+⟨ux, Exp ux (v)⟩ = cos( ∥v∥) = 1 − ∥v∥2
+
+2 + O(∥v∥4).
+
+The volume element satisfies 
+
+dσd(Exp ux (v)) = 
+
+ sin ∥v∥∥v∥
+
+d−2
+
+dv. 
+
+Thus 
+
+Den λ(x) := 
+
+Z 
+
+> Uδ(ux)
+
+eλx⟨ux,z ⟩ μ(d z)=
+
+Z
+
+> Vδ′
+
+eλx cos ∥v∥ρ(Exp ux (v)) 
+
+ sin ∥v∥∥v∥
+
+d−2
+
+dv. 
+
+Now set w := √λx v so that v = w/ √λx. Then 
+
+eλx cos ∥v∥ = eλx− λx ∥v∥22 eλx(cos ∥v∥− 1+ 12 ∥v∥2) = eλx− ∥w∥22 f (λx, ∥w∥),
+
+where f (λx, ∥w∥) is uniformly bounded and converges to 1 as λx → ∞ for each fixed w. Similarly, 
+
+ρ(Exp ux (v)) = ρ(ux) + O
+
+ ∥w∥√λx
+
+
+
+,
+
+ sin ∥v∥∥v∥
+
+d−2
+
+= 1 + O
+
+
+
+d ∥w∥2
+
+λx
+
+
+
+,
+
+with constants depending only on bounds on ρ and ∇ρ. Hence, 
+
+Den λ(x) = eλx λ− d−12
+
+> x
+
+Z
+
+> Vδ′√λx
+
+e− ∥w∥22 ρ(ux)
+
+
+
+1 + O(λ−1/2 
+
+> x
+
+(1 + ∥w∥2)) 
+
+
+
+dw
+
+= eλx λ− d−12 
+
+> x
+
+ρ(ux)
+
+
+
+(2 π) d−12 + O(λ− 12 
+
+> x
+
+)
+
+
+
+,
+
+where 2π comes from computing the Gaussian integral, and we used that the Gaussian tail outside Vδ′√λx is exponentially small in λx and can be absorbed into the same O(λ−1/2 
+
+> x
+
+). Thus we can write 
+
+Den λ(x) = Iλ(x)
+
+
+
+1 + O(λ− 12 
+
+> x
+
+)
+
+
+
+,
+
+where 
+
+Iλ(x) := eλx λ− d−12 
+
+> x
+
+ρ(ux)(2 π) d−12 .52 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+The numerator is 
+
+Num λ(x) := 
+
+Z
+
+eλx⟨ux,z ⟩z μ (d z).
+
+Repeating the same argument in exponential coordinates and using the symmetry of the Gaussian in w (the odd part integrates to zero), one obtains 
+
+Num λ(x) = ux Iλ(x)
+
+
+
+1 + O(λ− 12 
+
+> x
+
+)
+
+
+
+,
+
+so that 
+
+mβ,A[μ]( x) = Num λ(x)Den λ(x) = ux + O
+
+
+
+λ− 12
+
+> x
+
+
+
+= Ax
+
+∥Ax∥ + O
+
+
+
+(β∥Ax∥)− 12
+
+
+
+.
+
+All constants here depend only on bounds on ρ and ∇ρ, not on x. On the event {∥ Ax∥ ⩾ ε}, we thus have 
+
+∥mβ,A[μ]( x) − ux∥ ⩽ C(βε)− 12 .
+
+Furthermore, under the event {∥ Ax∥ < ε }, we have 
+
+∥mβ,A[μ]( x) − ux∥ ⩽ 2.
+
+We then rewrite Cβ,μ (x, y ) as 
+
+Cβ,μ (x, y ) = E
+
+hD 
+
+mβ,A[μ]( x)
+
+
+
+1∥Ax∥<ε + 1 ∥Ax∥⩾ε
+
+
+
+,
+
+mβ,A[μ]( y)
+
+
+
+1∥Ay∥<ε + 1 ∥Ay∥⩾ε
+
+Ei 
+
+.
+
+Putting all together, we gather 
+
+|Cβ,μ (x, y ) − E⟨ux, u y⟩| ⩽ 4 P(∥Ax∥ ⩽ ε) + C(βε)− 12 .
+
+Using the Gaussian concentration inequality [ VH14 , pp. 77], we upper bound the last term and obtain 
+
+Cβ,μ (x, y ) = E
+
+ Ax
+
+∥Ax∥ , Ay
+
+∥Ay∥
+
+
+
++ r(β, d ),
+
+where r(β, d ) = O(( βε)− 12 + e−c(ε)d). □
+
+Step 2. Expanding the expectation. We use 
+
+Lemma 10. For A = 1
+
+> dσ 2
+> A
+
+W TW ′, we have 
+
+E
+
+ Ax
+
+∥Ax∥ , Ay
+
+∥Ay∥
+
+
+
+= ⟨x, y ⟩ + ⟨x, y ⟩3 − ⟨ x, y ⟩
+
+2d + O(d− 32 ).
+
+Proof of Lemma 10. The proof is an application of the "delta method" to the dimensional parameters. HOMOGENIZED TRANSFORMERS 53 
+
+Define the random variables Xd = ( ⟨Ax, Ay⟩, ∥Ax∥2, ∥Ay∥2), whose mean 
+
+m is (⟨x, y ⟩, 1, 1) , and covariance Σ is given by 
+
+Σ = 
+
+
+
+• 2⟨x,y ⟩
+
+> d
+> 2⟨x,y ⟩
+> d
+> 2⟨x,y ⟩
+> d
+> 2
+> d
+> 2⟨x,y ⟩2
+> d
+> 2⟨x,y ⟩
+> d
+> 2⟨x,y ⟩2
+> d
+> 2
+> d
+
+ + O(d−2).
+
+Define g(x, y, z ) := x√yz . A Taylor-Lagrange expansion shows 
+
+E[g(Xd)] = g(m) + 12 ∇2g(m) : Σ + O(Rd),
+
+where Rd is a third order error satisfying |Rd| = O(d− 32 ). The Hessian evaluated in m gives 
+
+∇2g(m) = 
+
+
+
+0 − 12 − 12
+
+− 123r
+
+4
+
+r
+
+4
+
+− 12
+
+r
+
+43r
+
+4
+
+
+
+,
+
+where r = ⟨x, y ⟩. So it leads to the expansion 
+
+E
+
+ Ax
+
+∥Ax∥ , Ay
+
+∥Ay∥
+
+
+
+= ⟨x, y ⟩ − 12d
+
+ ⟨x, y ⟩ − ⟨ x, y ⟩3 + ∆ d,
+
+where |∆d| = O(d− 32 ), as desired. □
+
+Using Lemma 9, and Lemma 10, we simplify the kernel expression as 
+
+Cβ,μ (x, y ) = ⟨x, y ⟩ − 12d
+
+ ⟨x, y ⟩ − ⟨ x, y ⟩3 + r(β, d ), (7.26) and plugging (7.26) into the expression of the drift, we get 
+
+dR(t) = − 1
+
+d (R(t) − R(t)3) d t + d M (t) + εd, β(t) d t, (7.27) where |εd, β(t)| = O(d− 32 + β− 12 ).
+
+Step 3. Martingale term. By the same reasoning as in the previous proof, we have 
+
+d⟨M ⟩t = E
+
+hD 
+
+mβ,A[μ]( x(1) (t)) , mβ,A[μ]( x(2) (t)
+
+Ei D 
+
+P⊥
+
+> x(1) (t)
+
+x(2) (t), P⊥
+
+> x(2) (t)
+
+x(1) (t)
+
+E
+
++ E
+
+
+
+mβ,A[μ]( x(1) (t)) 2
+
+P⊥
+
+> x(1) (t)
+
+x(2) (t) 2
+
++ E
+
+
+
+mβ,A[μ]( x(2) (t)) 2
+
+P⊥
+
+> x(2) (t)
+
+x(1) (t) 2
+
+,54 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+thus we have ⟨M ⟩t ⩽ Ct/d . This implies, with probability at least 1 − δ, that 
+
+sup  
+
+> t∈[0 ,T ]
+
+|Mt| ⩽ C
+
+s
+
+4Td log 
+
+ 1
+
+δ
+
+
+
+(7.28) 
+
+Step 4. Combining all bounds. Integrating (7.27) , and using (7.28) gives that with probability at least 1 − δ, we have 
+
+R(t) − R(0) ⩽ − 1
+
+d
+
+Z t
+
+> 0
+
+R(s)(1 − R(s)2)d s +
+
+Z t
+
+> 0
+
+εd, β(s) d s + C
+
+s
+
+4Td log 
+
+ 1
+
+δ
+
+
+
+.
+
+Taking the supremum, and using the crude bound −1 ⩽ R(s) ⩽ 1, we have with probability at least 1 − δ, 
+
+sup  
+
+> t∈[0 ,T ]
+
+|R(t) − R(0) | ⩽ Td + C
+
+s
+
+4Td log 
+
+ 1
+
+δ
+
+
+
++ T sup  
+
+> t∈[0 ,T ]
+
+|εd, β(t)|.
+
+This concludes the proof of the first part of the statement. 
+
+Step 5. Rescaled dynamics. Let ˆRd(t) := R(dt ). The evolution of ˆRd(t) is given by 
+
+d ˆRd(t) = − ˆRd(t)(1 − ˆRd(t)2)d t + d ε d, β(dt ) d t + d ˆMd(t),
+
+where ˆMd(t) := M (dt ). We compute the quadratic variation of the martingale 
+
+ˆMd. Using Lemma 9, we have 
+
+E
+
+hD 
+
+mβ,A[μ]( x(1) (t)) , mβ,A[μ]( x(2) (t)) 
+
+Ei 
+
+=
+
+D
+
+x(1) (t), x (2) (t)
+
+E
+
++ O(d−1).
+
+Using 
+
+D
+
+P⊥
+
+> x(1) (t)
+
+x(2) (t), P⊥
+
+> x(2) (t)
+
+x(1) (t)
+
+E
+
+= −
+
+D
+
+x(1) (t), x (2) (t)
+
+E
+
++
+
+D
+
+x(1) (t), x (2) (t)
+
+E3
+
+and ∥P⊥
+
+> x(1) (t)
+
+x(2) (t)∥2 = 1 − ⟨ x(1) (t), x (2) (t)⟩2, we find that the quadratic variation (given 7.4) is 
+
+d⟨ ˆMd⟩t = 2( ˆRd(t)2 − 1) 2dt + ϵ(d) d t, 
+
+where |ϵ(d)| = O(d−1).We proceed by a classical martingale argument per Stroock-Varadhan [ SV07 , EK86 ]. We first prove the tightness of the sequence of random variables ( ˆRd)d∈N. Consider 
+
+dRd(t) = −Rd(t)(1 − Rd(t)2)d t + d ˆMd(t).
+
+We have that 
+
+∥Rd(t) − ˆRd(t)∥ → 
+
+> d→∞
+
+0.HOMOGENIZED TRANSFORMERS 55 
+
+Let t, s ∈ R, and d ∈ N; by triangle inequality, convexity of x 7 → x4 and Burkholder-Davis-Gundy inequality, we have 
+
+E∥Rd(t) − Rd(s)∥4 ⩽ CE
+
+Z ts
+
+b(Rd(u))d u
+
+> 4
+
++ CE
+
+Z ts
+
+σ(u)d B(u)
+
+> 4
+
+⩽ C(t − s)4 + C(t − s)2,
+
+where b(x) := −x(1 − x2) and, by Dambis-Dubins-Schwarz, there exists a one-dimensional Brownian motion B such that ˆMd(t) = R t 
+
+> 0
+
+σ(u) d B(u) with 
+
+σ(u)2 = ddu ⟨ ˆMd⟩u,
+
+and we have used that d⟨ ˆMd⟩t ⩽ 3 d t for d large enough. By the Kolmogorov continuity criterion, it ensues that that (Rd(·)) d∈N is tight. Define Ld on smooth functions by 
+
+Ldf (x) = −x(1 − x2)f ′(x) + (1 − x2)2f ′′ (x) + err( d, β),
+
+where err (d, β) are vanishing terms when d, β → ∞ . By the Itô formula, for all f smooth enough, Md,f defined as 
+
+Md,f (t) = f ( ˆRd(t)) − f ( ˆRd(0)) −
+
+Z t
+
+> 0
+
+Ldf ( ˆRd(s))d s
+
+is a martingale. For any subsequential limit ˆR, we then have that ˆR solves the following martingale problem 
+
+Md,f ( ˆR) = f ( ˆR(t)) − f ( ˆR(0)) −
+
+Z t
+
+> 0
+
+Ldf ( ˆR(s))d s. 
+
+Since the martingale problem is uniquely defined [ SV07 ], we deduce that the solution converges to 
+
+du(t) = −u(t)(1 − u(t)2) + √2(1 − u(t)2)d B(t),
+
+which yields the desired SDE. □
+
+7.5. On the behavior of (2.14) . We now discuss the long-time behavior of (2.14). Define θ(t) = sin u(t). One has θ(t) ∈ [−π/ 2, π/ 2] and then finds 
+
+dθ(t) = √2 cos θ(t) d B(t).
+
+We write θ(t) = θ(0) + R t
+
+> 0
+
+√2 cos θ(s) d B(s) so θ(t) is a bounded martingale with quadratic variation ⟨θ⟩t = R t 
+
+> 0
+
+2 cos 2 θ(s)d s. By the Dambis-Dubins-Schwarz theorem, there exists a Brownian motion W (t) such that 
+
+θ(t) = θ(0) + W (⟨θ⟩t).
+
+By classical results [ LG16 , Theorem 3.19] it follows that there exists a random variable θ∞ ∈ [−π/ 2, π/ 2] such that θ(t) → θ∞ a.s. as t → ∞ . If |θ∞| < π/ 2,then eventually cos θ(t) would eventually stay bounded away from 0, which would force ⟨θ⟩t → 0. But then θ(t) = θ(0) + W (⟨θ⟩t) would keep fluctuating 56 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+and not converge. Thus cos θ∞ = 0 and so θ∞ = ±π/ 2. Consequently 
+
+u(t) → ± 1 a.s. as t → ∞ . We can also compute, by hitting time arguments, 
+
+Pθ0
+
+
+
+θ∞ = π
+
+2
+
+
+
+= θ(0) 
+
+π + 12 ,
+
+and so for u(0) = 0 ,
+
+P(u∞ = −1) = P(u∞ = 1) = 12 ,
+
+which is illustrated in Figure 4. 0 2 4 6 8 10     
+
+> t
+> −1.0
+> −0.5
+> 0.0
+> 0.5
+> 1.0
+> u(t) −1.0 −0.5 0.0 0.5 1.0
+> u(T)
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> 12
+> 14
+> density
+
+Figure 4. Realizations of solutions to (2.14) in Theorem 4. 
+
+Appendix A. Toolkit 
+
+A.1. Differentiation of the sphere. We collect standard expressions for the gradient and Hessian on the product manifold (Sd−1)n, viewed as an embedded submanifold of Rd×n (or Rdn ). For X = ( x1, . . . , x n) ∈ (Sd−1)n
+
+and U = ( u1, . . . , u n) ∈ Rd×n, recall that the orthogonal projection onto the tangent space is given componentwise by 
+
+(P⊥ 
+
+> X
+
+U )i = P⊥ 
+
+> xi
+
+ui = ( I − xixT 
+
+> i
+
+)ui.
+
+Lemma 11. Let f : ( Sd−1)n → R be C2, and let ˜f be a C2 extension of f to a neighborhood of (Sd−1)n in Rd×n. Then the Riemannian gradient of f on 
+
+(Sd−1)n is 
+
+∇f (X) = P⊥ 
+
+> X
+
+∇ ˜f (X),
+
+where ∇ ˜f denotes the Euclidean gradient in Rd×n of ˜f .For any tangent vector V ∈ TX (Sd−1)n, the Riemannian Hessian satisfies 
+
+Hess f (X)[ V ] = P⊥
+
+> X
+
+
+
+∇2 ˜f (X)[ V ] − V Diag 
+
+
+
+diag( XT∇ ˜f (X)) 
+
+ 
+
+.
+
+Equivalently, component-wise, 
+
+(Hess f (X)[ V ]) i = P⊥
+
+> xi
+
+
+
+∇2
+
+> xi
+
+˜f (X)[ V ]i − ⟨ xi, ∇xi ˜f (X)⟩ vi
+
+
+
+.HOMOGENIZED TRANSFORMERS 57 
+
+If V is a C1 vector field on (Sd−1)n and f is smooth, then the second-order operator V 2 is 
+
+(V 2f )( X) = V (V f )( X) = Hess f (X)[ V (X), V (X)] + ⟨∇ f (X), (∇V V )( X)⟩,
+
+where ∇V is the Levi–Civita connection on (Sd−1)n.
+
+Recall that if U, V are smooth tangent vector fields on an embedded submanifold, and ¯V is any smooth extension of V to a neighborhood in the ambient Euclidean space, then the Levi–Civita connection satisfies 
+
+∇U V = P⊥ 
+
+> X
+
+(D ¯V (X)[ U ]) .
+
+Proof. See, e.g., [Bou23]. □
+
+Definition 3. For all k ∈ N, we denote Xk(( Sd−1)n) the set of vector fields admitting a derivative of order k, endowed with the norm 
+
+∥V ∥Xk (( Sd−1)n) := max 
+
+> X∈(Sd−1)n
+
+
+
+∥V (X)∥ + max  
+
+> j∈[k]
+
+∥∇ j V (X)∥
+
+
+
+A.2. Cylindrical Wiener process. Let (Θ, G, ρ∗) be a probability space such that L2(ρ∗) is separable. Let (Ω , F, (Ft)t⩾0, P) be a filtered, complete probability space with right-continuous filtration Ft.A cylindrical Wiener process on L2(ρ∗) defined on (Ω , F, (Ft)t⩾0, P) is a family (W(t)) t⩾0 such that (1) for each t ⩾ 0, W(t) : L2(ρ∗) → L2(Ω; P) is a linear operator; (2) for each h ∈ L2(ρ∗), the scalar-valued stochastic process (W(t)[ h]) t⩾0
+
+is an (Ft)t⩾0-Brownian motion with variance 
+
+Var( W(t)[ h]) = t∥h∥2
+
+> L2(ρ∗)
+
+.
+
+Equivalently, E[W(t)[ h]W(s)[ g]] = ( s ∧ t)⟨h, g ⟩L2(ρ∗).For a (Ft)t⩾0-progressively measurable process (G(t, ·)) t⩾0 with values in 
+
+L2(ρ∗) that almost surely satisfies G ∈ L2loc (R⩾0; L2(ρ∗)) , we define 
+
+Z t
+
+> 0
+
+Z
+
+> Θ
+
+G(s, θ )W(d θ, dt) =: 
+
+Z t
+
+> 0
+
+ℓ(s)W(d s),
+
+where ℓ(s)f = ⟨G(s, ·), f ⟩L2(ρ∗) for all f ∈ L2(ρ∗). See [ DPZ14 , PR07 ]. Furthermore, let (ek)k⩾1 be an orthonormal basis of L2(ρ∗). Then there exist i.i.d. real-valued Brownian motions (βkt )k⩾1 such that, for suitable G,
+
+Z t
+
+> 0
+
+Z
+
+> Θ
+
+G(s, θ ) W(d θ, ds) = 
+
+> ∞
+
+X
+
+> k=1
+
+Z t
+
+> 0
+
+⟨G(s, ·), e k⟩L2(ρ∗) dβks ,
+
+where the series converges in L2(Ω; P) (and hence in probability); see, e.g., [DPZ14, Section 4.2.2]. 58 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+A.3. Itô formula. We also give the definition of the Itô SDE on (Sd−1)n.
+
+Definition 4. Let B ∈ C1(( Sd−1)n; T(Sd−1)n) and G : ( Sd−1)n × Θ →
+
+T(Sd−1)n be such that for ρ∗-a.e. θ, the map X 7 → G(X, θ ) is C2. A con-tinuous (Sd−1)n-valued adapted process (X(t)) t⩾0 with X(0) = x is called a solution to the Itô SDE 
+
+dX(t) = B(X(t))d t +
+
+Z
+
+> Θ
+
+G(X(t), θ)W(d θ, dt), (A.1) 
+
+if for all g ∈ C∞(( Sd−1)n), we have 
+
+g(X(t)) = g(x) + 
+
+Z t
+
+> 0
+
+(Bg )( X(s)) d s
+
++ 12
+
+Z t
+
+> 0
+
+Z
+
+> Θ
+
+Hess g(X(s))[ G(X(s), θ ), G (X(s), θ )] ρ∗(d θ) d s
+
++
+
+Z t
+
+> 0
+
+Z
+
+> Θ
+
+(G(·, θ )g)( X(s)) W(d θ, ds),
+
+where Bg = ⟨∇ g, B ⟩, G(·, θ )g = ⟨∇ g, G (·, θ )⟩.
+
+Proposition 5. Assume B ∈ C1(( Sd−1)n; T(Sd−1)n) and that for ρ∗-a.e. θ,
+
+G(·, θ ) ∈ C2  (Sd−1)n; T(Sd−1)n, with the integrability needed to make the stochastic integral well-defined. Then for every x ∈ (Sd−1)n, there exists a unique global solution (X(t)) t⩾0 to (A.1) with X(0) = x.Proof. This is a special case of [ GKR24 , Proposition 4.2]. Since (Sd−1)n is compact, the explosion time is infinite. □
+
+References 
+
+[BAGJ24] Gérard Ben Arous, Reza Gheissari, and Aukosh Jagannath. High-dimensional limit theorems for SGD: Effective dynamics and critical scaling. Communica-tions on Pure and Applied Mathematics , 77(3):2030–2080, 2024. [BBC +23] Jinze Bai, Shuai Bai, Yunfei Chu, et al. Qwen technical report, 2023. [BBR25] Krishnakumar Balasubramanian, Sayan Banerjee, and Philippe Rigollet. On the structure of stationary solutions to McKean-Vlasov equations with appli-cations to noisy transformers. arXiv:2510.20094 , 2025. [BK90] Lia Bronsard and Robert V. Kohn. On the slowness of phase boundary motion in one space dimension. Communications on Pure and Applied Mathematics ,43(8):983–997, 1990. [BKK +25] Martin Burger, Samira Kabri, Yury Korolev, Tim Roith, and Lukas Weigand. Analysis of mean-field models arising from self-attention dynamics in trans-former architectures with layer normalization. Philosophical Transactions of the Royal Society A: Mathematical, Physical and Engineering Sciences , 383(2298), 2025. [BLM13] Stéphane Boucheron, Gábor Lugosi, and Pascal Massart. Concentration In-equalities: A Nonasymptotic Theory of Independence . Oxford Press University, 2013. [BNL +24] Blake Bordelon, Lorenzo Noci, Mufan Bill Li, Boris Hanin, and Cengiz Pehlevan. Depthwise hyperparameter transfer in residual networks: Dynamics and scaling limit. In The Twelfth International Conference on Learning Representations ,2024. HOMOGENIZED TRANSFORMERS 59 
+
+[Bou23] Nicolas Boumal. An introduction to optimization on smooth manifolds . Cam-bridge University Press, 2023. [BPA24] Giuseppe Bruno, Federico Pasqualotto, and Andrea Agazzi. Emergence of meta-stable clustering in mean-field transformer models. In The Thirteenth International Conference on Learning Representations , 2024. [BPA25] Giuseppe Bruno, Federico Pasqualotto, and Andrea Agazzi. A multiscale analysis of mean-field transformers in the moderate interaction regime. In The Thirty-ninth Annual Conference on Neural Information Processing Systems ,2025. [CCM26] Louis-Pierre Chaintron, Lénaïc Chizat, and Javier Maas. Resnets of all shapes and sizes: Convergence of training dynamics in the large-scale limit. arXiv preprint arXiv:2603.18168 , 2026. [CD18] René Carmona and François Delarue. Probabilistic theory of mean field games with applications I-II , volume 3. Springer, 2018. [CG19] Michele Coghi and Benjamin Gess. Stochastic nonlinear Fokker–Planck equa-tions. Nonlinear Analysis , 187:259–278, 2019. [CGS16] Michael Cranston, Benjamin Gess, and Michael Scheutzow. Weak synchroniza-tion for isotropic flows. Discrete & Continuous Dynamical Systems-Series B ,21(9), 2016. [Chi25] Lénaïc Chizat. The hidden width of deep ResNets: Tight error bounds and phase diagrams. arXiv:2509.10167 , 2025. [CLPR25] Shi Chen, Zhengjiang Lin, Yury Polyanskiy, and Philippe Rigollet. Critical attention scaling in long-context transformers. 2025. [CNQG25] Aditya Cowsik, Tamra Nebabu, Xiaoliang Qi, and Surya Ganguli. Geometric dynamics of signal propagation predict trainability of transformers. Physical Review E , 112(5):055301, 2025. [DCL21] Yihe Dong, Jean-Baptiste Cordonnier, and Andreas Loukas. Attention is not all you need: Pure attention loses rank doubly exponentially with depth. In 
+
+ICML , 2021. [DPZ14] Giuseppe Da Prato and Jerzy Zabczyk. Stochastic equations in infinite dimen-sions , volume 152. Cambridge university press, 2014. [DVZ01] Kacha Dzhaparidze and JH Van Zanten. On Bernstein-type inequalities for martingales. Stochastic processes and their applications , 93(1):109–117, 2001. [DZN +25] Nolan Dey, Bin Claire Zhang, Lorenzo Noci, Mufan Li, Blake Bordelon, Shane Bergsma, Cengiz Pehlevan, Boris Hanin, and Joel Hestness. Don’t be lazy: Completep enables compute-efficient deep transformers. arXiv preprint arXiv:2505.01618 , 2025. [EK86] Stewart N. Ethier and Thomas G. Kurtz. Markov Processes: Characterization and Convergence . John Wiley & Sons, 1986. Reprint, Wiley Classics Library, 2009. [ES26] Maximilian Engel and Anna Shalova. Random quadratic form on a sphere: Synchronization by common noise. arXiv preprint arXiv:2603.06187 , 2026. [FGS17] Franco Flandoli, Benjamin Gess, and Michael Scheutzow. Synchronization by noise. Probability Theory and Related Fields , 168(3):511–556, 2017. [FSE +26] Lev Fedorov, Michaël E Sander, Romuald Elie, Pierre Marion, and Mathieu Laurière. Clustering in deep stochastic transformers. arXiv:2601.21942 , 2026. [GG25] Alessio Giorlandino and Sebastian Goldt. Two failure modes of deep trans-formers and how to avoid them: a unified theory of signal propagation at initialisation. arXiv:2505.24333 , 2025. [GGH +25] Nicolai Gerber, Rishabh Gvalani, Martin Hairer, Greg Pavliotis, and An-dré Schlichting. Formation of clusters and coarsening in weakly interacting diffusions. arXiv:2510.17629 , 2025. 60 HUGO KOUBBI, BORJAN GESHKOVSKI, AND PHILIPPE RIGOLLET 
+
+[GGK25] Benjamin Gess, Rishabh S Gvalani, and Vitalii Konarovskyi. Conservative spdes as fluctuating mean field limits of stochastic gradient descent. Probability Theory and Related Fields , 192(3):1447–1515, 2025. [GKK24] Benjamin Gess, Sebastian Kassing, and Vitalii Konarovskyi. Stochastic mod-ified flows, mean-field limits and dynamics of stochastic gradient descent. 
+
+Journal of Machine Learning Research , 25(30):1–27, 2024. [GKPR24] Borjan Geshkovski, Hugo Koubbi, Yury Polyanskiy, and Philippe Rigollet. Dynamic metastability in the self-attention model. arXiv:2410.06833 , 2024. [GKR24] Benjamin Gess, Sebastian Kassing, and Nimit Rana. Stochastic modified flows for Riemannian stochastic gradient descent. SIAM Journal on Control and Optimization , 62(6):3288–3314, 2024. [GLPR24] Borjan Geshkovski, Cyril Letrouit, Yury Polyanskiy, and Philippe Rigollet. The emergence of clusters in self-attention dynamics. Advances in Neural Information Processing Systems , 36, 2024. [GLPR25] Borjan Geshkovski, Cyril Letrouit, Yury Polyanskiy, and Philippe Rigollet. A mathematical perspective on transformers. Bulletin of the American Mathe-matical Society , 62(3):427–479, 2025. [HŠS21] William R. P. Hammersley, David Šiška, and Łukasz Szpruch. Weak existence and uniqueness for McKean–Vlasov SDEs with common noise. The Annals of Probability , 49(2):527–555, 2021. [HZRS15] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Delving deep into rectifiers: Surpassing human-level performance on imagenet classification. In 
+
+Proceedings of the IEEE international conference on computer vision , pages 1026–1034, 2015. [JGH18] Arthur Jacot, Franck Gabriel, and Clément Hongler. Neural tangent ker-nel: Convergence and generalization in neural networks. Advances in Neural Information Processing Systems (NeurIPS) , 31, 2018. [JVL22] Li Jing, Pascal Vincent, and Yann LeCun. Understanding dimensional collapse in contrastive self-supervised learning. In ICLR , 2022. [KMH +20] Jared Kaplan, Sam McCandlish, Tom Henighan, Tom B. Brown, Benjamin Chess, Rewon Child, Scott Gray, Alec Radford, Jeffrey Wu, and Dario Amodei. Scaling laws for neural language models. In ICLR , 2020. [KNRS22] Chaman Kumar, Neelima, Christoph Reisinger, and Wolfgang Stockinger. Well-posedness and tamed schemes for McKean–Vlasov equations with common noise. The Annals of Applied Probability , 32(5):3283–3330, 2022. [Kun90] Hiroshi Kunita. Stochastic flows and stochastic differential equations , volume 24. Cambridge University Press, 1990. [KX99] Thomas G Kurtz and Jie Xiong. Particle representations for a class of nonlinear spdes. Stochastic Processes and their Applications , 83(1):103–126, 1999. [LG16] Jean-François Le Gall. Brownian motion, martingales, and stochastic calculus .Springer, 2016. [LLPW25] Benedict Leimkuhler, René Lohmann, Grigorios A Pavliotis, and Peter A Whalley. Cluster formation in diffusive systems. arXiv:2510.25034 , 2025. [LSZ22] Daniel Lacker, Mykhaylo Shkolnikov, and Jiacheng Zhang. Superposition and mimicking theorems for conditional McKean–Vlasov equations. Journal of the European Mathematical Society , 25(8):3229–3288, 2022. [LTE17] Qianxiao Li, Cheng Tai, and Weinan E. Stochastic modified equations and adaptive stochastic gradient algorithms. In Proceedings of the 34th International Conference on Machine Learning , volume 70 of Proceedings of Machine Learning Research , pages 2101–2110. PMLR, 2017. [LTE19] Qianxiao Li, Cheng Tai, and Weinan E. Stochastic modified equations and dy-namics of stochastic gradient algorithms i: Mathematical foundations. Journal of Machine Learning Research , 20:1–47, 2019. HOMOGENIZED TRANSFORMERS 61 
+
+[NAB +22] Lorenzo Noci, Sotiris Anagnostidis, Luca Biggio, Antonio Orvieto, Sidak Pal Singh, and Aurelien Lucchi. Signal propagation in transformers: Theoretical perspectives and the role of rank collapse. Advances in Neural Information Processing Systems , 35:27198–27211, 2022. [Nak25] Ken M. Nakanishi. Scalable-softmax is superior for attention. 2025. [OR07] Felix Otto and Maria G Reznikoff. Slow motion of gradient flows. Journal of Differential Equations , 237(2):372–420, 2007. [OWS +24] Team OLMo, Pete Walsh, Luca Soldaini, Dirk Groeneveld, Kyle Lo, Shane Arora, Akshita Bhagia, Yuling Gu, Shengyi Huang, Matt Jordan, et al. 2 OLMo 2 Furious. arXiv:2501.00656 , 2024. [PLAS +25] Krishna C. Puvvada, Faisal Ladhak, Santiago Akle Serrano, Cheng-Ping Hsieh, Shantanu Acharya, Somshubra Majumdar, Fei Jia, Samuel Kriman, Simeng Sun, Dima Rekesh, and Boris Ginsburg. Swan-gpt: An efficient and scalable approach for long-context language modeling, 2025. [PR07] Claudia Prévôt and Michael Röckner. A concise course on stochastic partial differential equations . Springer, 2007. [SS95] David Saad and Sara A Solla. On-line learning in soft committee machines. 
+
+Physical review E , 52(4):4225–4243, 1995. [SS26] Anna Shalova and André Schlichting. Solutions of stationary McKean–Vlasov equation on a high-dimensional sphere and other Riemannian manifolds. Ad-vances in Nonlinear Analysis , 15(1):20250141, 2026. [SV07] Daniel W. Stroock and S. R. Srinivasa Varadhan. Multidimensional Diffusion Processes . Classics in Mathematics. Springer, Berlin, 2007. Reprint of the 1979 edition. [Ver18] Roman Vershynin. High-dimensional probability: An introduction with applica-tions in data science , volume 47. Cambridge university press, 2018. [VH14] Ramon Van Handel. Probability in high dimension. Lecture Notes (Princeton University) , 2014. [VSP +17] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. 
+
+Advances in Neural Information Processing Systems , 30, 2017. [Yan21] Greg Yang. Tensor Programs V: Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer. Journal of Machine Learning Research , 22(242):1–73, 2021. 
+
+Hugo Koubbi 
+
+CEREMADE, UMR 7534 Université Paris Dauphine PSL 75775 Paris Cedex 16, France e-mail: hugo.koubbi@dauphine.psl.eu 
+
+Borjan Geshkovski 
+
+Laboratoire Jacques-Louis Lions Inria & Sorbonne Université 75005 Paris, France e-mail: borjan.geshkovski@inria.fr 
+
+Philippe Rigollet 
+
+Department of Mathematics Massachusetts Institute of Technology 77 Massachusetts Ave Cambridge, MA 02139, USA e-mail: rigollet@mit.edu

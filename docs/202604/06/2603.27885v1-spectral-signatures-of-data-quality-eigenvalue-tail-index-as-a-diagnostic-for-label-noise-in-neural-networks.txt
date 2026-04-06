@@ -1,0 +1,342 @@
+Title: Spectral Signatures of Data Quality: Eigenvalue Tail Index as a Diagnostic for Label Noise in Neural Networks
+
+URL Source: https://arxiv.org/pdf/2603.27885v1
+
+Published Time: Tue, 31 Mar 2026 01:25:44 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Spectral Signatures of Data Quality: Eigenvalue Tail Index as a Diagnostic for Label Noise in Neural Networks 
+
+Matthew Loftus 1, ∗
+
+> 1
+
+Independent researcher 
+
+(Dated: March 31, 2026) We investigate whether spectral properties of neural network weight matrices can predict test accuracy. Under controlled label noise variation, the tail index α of the eigenvalue distribution at the network’s bottleneck layer predicts test accuracy with leave-one-out R2 = 0 .984 (21 noise levels, 3 seeds per level), far exceeding all baselines: the best conventional metric (Frobenius norm of the optimal layer) achieves LOO R2 = 0 .149. This relationship holds across three architectures (MLP, CNN, ResNet-18) and two datasets (MNIST, CIFAR-10). However, under hyperparameter variation at fixed data quality (180 configurations varying width, depth, learning rate, and weight decay), all spectral and conventional measures are weak predictors ( R2 < 0.25), with simple baselines (global 
+
+L2 norm, LOO R2 = 0 .219) slightly outperforming spectral measures (tail α, LOO R2 = 0 .167). We therefore frame the tail index as a data quality diagnostic : a powerful detector of label corruption and training set degradation, rather than a universal generalization predictor. A noise detector calibrated on synthetic noise successfully identifies real human annotation errors in CIFAR-10N (9% noise detected with 3% error). We identify the information-processing bottleneck layer as the locus of this signature and connect the observations to the BBP phase transition in spiked random matrix models. We also report a negative result: the level spacing ratio ⟨r⟩ is uninformative for weight matrices due to Wishart universality. 
+
+I. INTRODUCTION 
+
+A central question in deep learning theory is: why do overparameterized neural networks generalize? Networks with far more parameters than training examples rou-tinely achieve low test error, contradicting classical sta-tistical learning theory [1]. Understanding when and why generalization occurs—and predicting it without a held-out test set—remains an open problem. Random matrix theory (RMT) offers a natural frame-work for studying weight matrices. At initialization, weight matrices are random, and their spectral properties are well-characterized by the Marchenko-Pastur (MP) law [2]. During training, the spectrum evolves away from MP as the network learns structure from data. Martin and Mahoney [3] showed that well-trained networks de-velop heavy-tailed eigenvalue distributions and proposed the tail index α as a quality metric. Subsequent work demonstrated that α predicts model quality (with a bias toward CV models) rather than generalization in the uni-versal sense [18], with similar findings in NLP [19]. In this work, we conduct a controlled study of spectral predictors under two distinct perturbation axes: (1) label noise variation at fixed architecture, and (2) hyperparam-eter variation at fixed data quality. This design reveals that spectral measures are powerful diagnostics for data quality degradation but not universal generalization pre-dictors. We present both positive and negative results honestly.  
+
+> ∗matthew.a.loftus@gmail.com
+
+A. Summary of contributions 
+
+1. Strong data quality prediction: The tail index 
+
+α of the bottleneck layer predicts test accuracy with LOO R2 = 0 .984 across 21 label noise levels with 3 seeds each, far exceeding all baselines ( R2 ≤ 0.149) (Sec. VIII). 2. Honest scope: Under hyperparameter variation at fixed data quality, all measures (spectral and conventional) are weak predictors ( R2 < 0.25), and simple baselines slightly outperform spectral mea-sures (Sec. IX). 3. Bottleneck hypothesis: The spectral signa-ture concentrates at the information-processing bottleneck—the layer with the highest compression ratio and sufficient spectral resolution (Sec. VII). 4. Comprehensive baselines: We compare tail α
+
+against effective rank, Frobenius norms, spectral norms, and global L2 norm, establishing clear rel-ative strengths (Sec. III B). 5. Methodological correction: The level spacing ratio ⟨r⟩ is uninformative for rectangular weight matrices due to Wishart universality (Sec. IV). 6. Theoretical framework: We connect our ob-servations to the BBP phase transition and de-rive an informal bound on outlier eigenvalue count (Sec. X). 
+
+> arXiv:2603.27885v1 [cs.LG] 29 Mar 2026
+
+2  
+
+> II. BACKGROUND A. Marchenko-Pastur law
+
+For a random matrix W ∈ Rm×n with iid entries of variance σ2, the eigenvalues of the Gram matrix S = 
+
+> 1
+> m
+
+W ⊤W follow the Marchenko-Pastur distribution with aspect ratio γ = n/m and support [ λ−, λ +] where 
+
+λ± = σ2(1 ± √γ)2. (1) Eigenvalues outside this support indicate learned struc-ture.  
+
+> B. Level spacing ratio
+
+The level spacing ratio ⟨r⟩, defined as ri =min( si, s i+1 )/ max( si, s i+1 ) where si = λi+1 − λi, dis-tinguishes uncorrelated (Poisson, ⟨r⟩ ≈ 0.386) from cor-related (GOE, ⟨r⟩ ≈ 0.531) eigenvalue statistics [4].  
+
+> C. BBP transition
+
+The Baik-Ben Arous-P´ ech´ e (BBP) transition [5] shows that a rank-1 perturbation of strength θ to a Wishart matrix produces an outlier eigenvalue above λ+ if and only if θ > σ 2√γ. This provides a sharp threshold for when learned structure becomes spectrally visible.  
+
+> D. Heavy-tailed self-regularization
+
+Martin and Mahoney [3] observed that trained net-works develop heavy-tailed eigenvalue distributions, with the tail index α (estimated via the Hill estimator [7]) serving as a quality metric. They reported correlations between α and reported test accuracy across published models, but did not establish a quantitative predictive relationship under controlled conditions.  
+
+> E. Generalization measures
+
+A number of norm-based generalization measures have been proposed, including path norms [9], spectral norms with margin [10], and PAC-Bayes bounds [11]. Jiang et al. [8] conducted a large-scale comparison of generaliza-tion measures, finding that no single measure dominates across all perturbation types. Our work complements this by studying spectral measures specifically and iden-tifying the perturbation axis (data quality vs. hyperpa-rameters) as the key determinant of predictive power.   
+
+> III. METHODS A. Spectral observables
+
+For each weight matrix W ∈ Rm×n, we compute the eigenvalues {λi} of S = 1 
+
+> m
+
+W ⊤W and measure: 
+
+• Tail index α: Hill estimator [7] on eigenvalues above the 90th percentile. Lower α indicates heav-ier tails (more concentrated signal). 
+
+• Effective rank (normalized): exp( H(p)) /n where 
+
+H(p) = − P pi log pi and pi = λi/ P λj . Values near 1 indicate uniform spectrum; values near 0 indicate rank-deficient. 
+
+• Outlier fraction : Fraction of eigenvalues above 
+
+λ+ = σ2(1 + √γ)2, where σ2 is estimated from the initial (untrained) weight matrix. 
+
+• MP deviation : Kolmogorov-Smirnov statistic be-tween the empirical eigenvalue distribution and the best-fit MP distribution.  
+
+> B. Baseline measures
+
+We compare spectral observables against conventional norm-based measures: 
+
+• Global L2 norm : pP  
+
+> l
+
+∥Wl∥2 
+
+> F
+
+, the total param-eter norm. 
+
+• Sum of Frobenius norms : P 
+
+> l
+
+∥Wl∥F .
+
+• Best-layer Frobenius norm :max l |corr( ∥Wl∥F , test acc) |, choosing the sin-gle layer whose Frobenius norm best correlates with test accuracy. 
+
+• Max spectral norm : max l σ1(Wl), the largest singular value across all layers. 
+
+• Product of spectral norms : Q 
+
+> l
+
+σ1(Wl).  
+
+> C. Architectures
+
+We test three architectures: 
+
+• MLP: [784 , 512 , 256 , 128 , 10] on MNIST, SGD with momentum 0.9, lr=0.01, 30 epochs. 
+
+• CNN: 4 conv layers (64, 64, 128, 128 channels) + 2 FC layers (256, 10) on CIFAR-10, SGD, lr=0.01, 50 epochs, no weight decay or data augmentation. 
+
+• ResNet-18: Modified for 32 ×32 input (3 ×3 first conv, no maxpool) on CIFAR-10, SGD, lr=0.01, 50 epochs. 3 
+
+> D. Label noise protocol
+
+We use two experimental designs: 
+
+EXP-010 (label noise gradient): For the MLP/MNIST architecture, we train with 21 evenly spaced label noise fractions η ∈ [0 , 1] (i.e., η ∈{0, 0.05 , 0.10 , . . . , 1.0}), with 3 independent random seeds per noise level (63 total training runs). A fraction η of training labels are replaced with uniformly random la-bels. Test labels are always clean. This produces a fine-grained gradient from full generalization ( η = 0) to pure memorization ( η = 1). All metrics are evaluated using leave-one-out (LOO) cross-validation across the 21 noise levels, with seed-averaged values and error bars. 
+
+EXP-011 (hyperparameter variation): For MLP/MNIST with clean labels (η = 0), we train 180 configurations (3 seeds each, 540 total runs) vary-ing width ∈ {64 , 128 , 256 , 512 }, depth ∈ {2, 3, 4},learning rate ∈ { 0.001 , 0.01 , 0.1}, and weight decay ∈{0, 10 −4, 10 −3, 10 −2, 10 −1}. 
+
+> E. Evaluation metric
+
+All predictive comparisons use leave-one-out (LOO) cross-validated R2, which penalizes overfitting and pro-vides an honest estimate of out-of-sample predictive power. This is a deliberately conservative metric: each prediction is made without access to the corresponding data point. Our earlier experiments with 6 noise levels gave inflated R2 values ( > 0.97) due to the small sample size; the 21-level LOO R2 reported here is the definitive result.  
+
+> F. Null model
+
+As a control, we compare spectral properties of net-works trained on real labels versus fully shuffled labels (η = 1), matched for training duration and convergence level.  
+
+> IV. LEVEL SPACING IS UNINFORMATIVE FOR WEIGHT MATRICES
+
+Our initial hypothesis was that ⟨r⟩ would transition from Poisson (at initialization) to GOE (after training), with the transition speed or final value distinguishing generalization from memorization. 
+
+This hypothesis is incorrect. We found that 
+
+⟨r⟩ ≈ 0.53 (GOE) at initialization and remains at GOE throughout training, for both real and shuffled labels (Fig. 1, bottom-right panel). The explanation is Wishart universality: for any ran-dom matrix W with iid entries (regardless of distribu-tion), the Gram matrix 1 
+
+> m
+
+W ⊤W follows the Wishart-Laguerre ensemble, which has GOE-like level spacing by construction. Since weight matrices are initialized with iid entries and SGD perturbations are small relative to the total matrix norm, ⟨r⟩ remains at GOE throughout training. 
+
+Lesson: The level spacing ratio, designed for Hamilto-nian matrices in quantum chaos, is the wrong observable for rectangular weight matrices. Bulk distribution prop-erties (tail index, outlier fraction, effective rank) are the correct tools.  
+
+> V. BULK OBSERVABLES DISTINGUISH GENERALIZATION FROM MEMORIZATION
+
+Having identified the correct observables, we compare networks trained on real labels versus shuffled labels (MLP/MNIST). At convergence (both achieving > 99% training ac-curacy), the spectral signatures differ dramatically (Ta-ble I).                      
+
+> TABLE I. Spectral properties of MLP input layer (784 →512) at convergence. Real labels: 98.3% test accuracy. Shuffled labels: 9.9% test accuracy. Observable Init Real Shuffled Outlier fraction 0% 6.4% 76% Tail α6.5 2.1 3.5 Effective rank (norm) 0.72 0.61 0.47 MP KS 0.006 0.07 0.23
+> ⟨r⟩0.53 0.53 0.53
+
+Interpretation: A generalizing network concentrates learned structure into a sparse set of large signal eigen-values (few outliers, heavy tail, MP bulk preserved). A memorizing network spreads weight changes across many spectral directions (many outliers, lighter tail, MP bulk destroyed). The level spacing ratio ⟨r⟩ is identical for both—confirming its uninformativeness. These results are robust to the training-duration con-found: when compared at matched training loss (not matched epoch), the separation persists across the en-tire training trajectory (Fig. 1).  
+
+> VI. ARCHITECTURE-DEPENDENT SPECTRAL SIGNATURES
+
+For CNNs, the spectral signature is layer-type depen-dent . In a CNN trained without regularization to 100% training accuracy on both real and shuffled labels: 
+
+• Conv layers: Both real and shuffled labels develop heavy tails and outliers. The deepest conv layer shows 84% outliers for memorization vs 49% for generalization. 
+
+• FC layer (classifier.0, 8192 → 256 ): The clean-est discriminator. Generalization compresses the 4  
+
+> FIG. 1. Spectral evolution during training, plotted against training loss (right = untrained, left = converged). Real la-bels (blue) and shuffled labels (red) show clearly separated trajectories for all bulk observables but identical ⟨r⟩.
+
+rank by 30% (0 .985 → 0.691) with heavy tails (α = 2 .1). Memorization barely changes the rank (0 .984 → 0.933) with light tails ( α = 6 .1). This reveals where learning happens: generalization concentrates structure in the FC layer (decision bound-ary), while memorization concentrates in conv layers (per-example feature encoding).  
+
+> VII. THE BOTTLENECK HYPOTHESIS
+
+We propose that spectral signatures concentrate at the information-processing bottleneck : the layer with the highest compression ratio (max dimension / min dimen-sion) that has sufficient spectral resolution (min(dim) ≳
+
+50).                 
+
+> TABLE II. Best spectral predictor of test accuracy across architectures under label noise variation. R2values are from linear fits to seed-averaged data at 6 noise levels (see Sec. VIII for the definitive 21-level LOO results). Architecture Best Layer Observable R2
+> MLP/MNIST net.2 (512 →256) tail α0.976 CNN/CIFAR-10 classifier.0 (8192 →256) tail α0.987 ResNet-18/CIFAR-10 layer2.1.conv2 eff. rank 0.989
+
+In each case, the best predictor is a spectral property of a layer in the network’s information-processing core: 
+
+• MLP: the middle hidden layer (distributed com-pression across all layers) 
+
+• CNN: the FC layer (32 × compression, the explicit bottleneck) 
+
+• ResNet: mid-depth residual blocks (skip connec-tions distribute compression) The ResNet result is notable: the FC layer has the highest compression (51 ×) but only 10 eigenvalues, mak-ing spectral estimation unreliable. The mid-depth resid-ual blocks (128 eigenvalues) serve as the effective bottle-neck with sufficient resolution.   
+
+> VIII. QUANTITATIVE PREDICTION UNDER LABEL NOISE A. Experimental design
+
+Using the fine-grained noise gradient protocol (EXP-010, Sec. III D), we train MLP/MNIST at 21 noise levels with 3 seeds each. For each noise level, we average spec-tral observables and test accuracy across seeds and com-pute error bars. We then evaluate each predictor using leave-one-out cross-validated R2.                    
+
+> B. Results
+> TABLE III. Leave-one-out R2for predicting test accuracy from spectral and baseline measures under label noise vari-ation (EXP-010: 21 noise levels, 3 seeds). The tail index α
+> dominates all alternatives. Measure LOO R2
+> Tail α(bottleneck layer) 0.984
+> Effective rank (bottleneck layer) 0.750 Best-layer Frobenius norm 0.149 Global L2norm 0.044 Sum of Frobenius norms 0.036 Max spectral norm <0Product of spectral norms <0
+
+The tail index α achieves LOO R2 = 0 .984, far ex-ceeding every baseline. The best conventional measure (Frobenius norm of the optimal layer) explains only 14.9% of variance, while α explains 98.4%. Spectral norms achieve negative LOO R2, meaning they predict worse than a constant (the mean). The effective rank is a distant second at R2 = 0 .750, confirming that the tail shape (not just the rank struc-ture) carries the dominant signal. Figure 2 shows the linear relationship.  
+
+> C. Cross-architecture consistency
+
+The original 6-point fits across architectures (Table II) all achieve R2 > 0.97, consistent with the high-resolution 21-point LOO result. The linear form test acc = a · αbottleneck + b (2) holds across MLP, CNN, and ResNet-18 architectures. 5    
+
+> FIG. 2. MLP/MNIST: Test accuracy vs. tail index αof the bottleneck layer (net.2.weight). Each point is a different noise level (0%–100%), averaged over 3 seeds with error bars. LOO
+> R2= 0 .984.
+> D. Hill estimator stability
+
+The Hill estimator for α depends on the choice of threshold quantile q (the fraction of eigenvalues used in the tail fit). Across threshold quantiles q ∈ [0 .70 , 0.95], the estimated α ranges from 1.47 to 1.87 for a typical trained network. This represents moderate stability: the qualitative conclusion (heavy tail) is robust, but the pre-cise value of α varies by ∼25% depending on the thresh-old. We use q = 0 .90 throughout, following Martin and Mahoney [3]. The high LOO R2 confirms that, despite this estimator variance, the relative ordering of α across noise levels is highly consistent.  
+
+> IX. FAILURE UNDER HYPERPARAMETER VARIATION
+
+A critical question is whether spectral measures pre-dict generalization under perturbation axes other than 
+
+data quality. We test this with EXP-011 (Sec. III D): 180 hyperparameter configurations at fixed (clean) data.               
+
+> A. Results
+> TABLE IV. Leave-one-out R2for predicting test accuracy un-der hyperparameter variation (EXP-011: 180 configs, 3 seeds each, clean labels). All measures are weak. Baselines slightly outperform spectral measures. Measure LOO R2
+> Global L2norm 0.219
+> Sum of Frobenius norms 0.204 Tail α(bottleneck layer) 0.167 Max spectral norm 0.103 Effective rank (bottleneck layer) 0.094
+
+All measures are weak predictors ( R2 < 0.25). Con-ventional norm-based measures (global L2 norm, sum of Frobenius norms) slightly outperform spectral measures (tail α, effective rank). The test accuracy range across configurations is narrow (91.1%–98.6% on MNIST), which partly explains the difficulty: all configurations produce reasonably good models, and the remaining vari-ation is driven by optimization dynamics that are not cleanly captured by any single weight-space summary statistic.  
+
+> B. Interpretation
+
+The contrast between Tables III and IV is the central finding of this paper. Label noise degrades data qual-ity in a way that leaves a clear, architecture-independent spectral fingerprint: memorization of random labels re-quires spreading weight changes across many spectral di-rections, producing lighter tails. Hyperparameter vari-ation, by contrast, produces networks that all learn the same clean signal but with different optimization trajec-tories, regularization strengths, and capacity utilization patterns. These differences are not dominated by a single spectral signature. This is consistent with Jiang et al. [8], who found that no generalization measure dominates across all perturba-tion types. Our contribution is identifying where spectral measures excel (data quality) and where they do not (hy-perparameter variation), with rigorous LOO baselines.   
+
+> X. THEORETICAL FRAMEWORK A. Outlier bound via BBP transition
+
+By the BBP transition, a rank-r perturbation ∆ W to a random weight matrix produces at most r outlier eigen-values above λ+. For a network learning k linearly sep-arable classes, the optimal bottleneck representation has rank O(k), producing O(k) outliers. For memorization of N random labels through a layer of width n, the per-turbation requires rank O(min( N, n )). This predicts: 
+
+• Generalization: O(k) outliers at the bottleneck (ob-served: 33 for k = 10, consistent with ∼ 3k due to multi-layer interactions) 
+
+• Memorization: O(n) outliers (observed: 389 out of 512, or 76%)    
+
+> B. Conjecture: Monotonicity of αin noise fraction
+
+Conjecture. Let fθ : Rd → Rk be a neural net-work with sufficient capacity to interpolate N training examples. Let Dη denote a training set where a fraction 
+
+η ∈ [0 , 1] of labels are replaced uniformly at random. Let 
+
+Wη be the bottleneck weight matrix after training to zero loss on Dη , and let αη be the tail index of the eigenvalue distribution of 1 
+
+> m
+
+W ⊤ 
+
+> η
+
+Wη . Then αη is monotonically in-creasing in η.6
+
+Proof sketch. At η = 0, the network learns a rank-
+
+k classification boundary. By the BBP transition, Wη
+
+develops O(k) outlier eigenvalues above the MP bulk, concentrating spectral mass in few directions (heavy tail, low α). At η = 1, the network must memorize N random label assignments. Since random labels have no shared structure, each training example contributes approxi-mately independently to ∆ W , producing O(min( N, n )) outlier eigenvalues that spread spectral mass across many directions (lighter tail, higher α). At intermediate η, the network must encode both a rank-k signal component (from the (1 − η)N clean examples) and a rank-O(ηN )noise component (from the ηN corrupted examples). As 
+
+η increases, the noise component grows monotonically, spreading spectral mass and increasing α. □
+
+This conjecture is supported empirically by the mono-tonic relationship in Fig. 2 and the out-of-sample valida-tion in the noise detector (mean error 1.5%). 
+
+Corollary. Given a calibration set {(αi, η i)}mi=1 from 
+
+m ≥ 3 known noise levels, the noise fraction of an un-known dataset can be estimated by linear interpolation of 
+
+α, with expected error O(1 /m ). 
+
+> C. Why the relationship is linear under label noise
+
+If label noise η controls both test accuracy (linearly: test acc ∝ 1−η) and the tail index (linearly: α ∝ η, since more noise requires more spectral directions), then com-posing these relationships gives test acc ∝ − α + const. The linearity of α in η follows from the additivity of learned structure: with noise fraction η, the network must encode (1 − η)N clean examples (rank-k structure) plus ηN random examples (rank-min( ηN, n ) structure). The tail index reflects this mixture.  
+
+> D. Why spectral measures fail under hyperparameter variation
+
+Under hyperparameter variation with clean labels, the rank of the learned signal is always O(k)—the data qual-ity is fixed. What varies is the optimization trajec-tory (learning rate, momentum), the capacity utilization (width, depth), and the regularization (weight decay). These affect the scale of weights (captured by norms) more than the shape of the spectrum (captured by α
+
+and effective rank). Martin and Mahoney [20] identi-fied precisely this distinction: shape metrics (like α) and scale metrics (like norms) play complementary roles, and datasets that vary hyperparameters can exhibit a Simp-son’s paradox where shape and scale metrics disagree. This explains why norm-based measures have a slight edge (Table IV): they directly measure the scale varia-tion that dominates in this regime.   
+
+> XI. DISCUSSION A. Relation to prior work
+
+Martin and Mahoney [3] established the connection be-tween heavy-tailed weight spectra and network quality, proposing the tail index α as a quality metric and build-ing the WeightWatcher tool. Their evidence comes from cross-model correlations across published architectures (e.g., comparing VGG, ResNet, and DenseNet). Sub-sequent work [18] showed that α predicts model quality 
+
+rather than generalization , with a bias toward CV ar-chitectures, and extended this to NLP [19]. Martin and Mahoney [20] further showed that shape metrics ( α) and scale metrics (norms) play complementary roles, with a Simpson’s paradox arising when data, models, and hy-perparameters vary simultaneously—exactly the behav-ior we observe in our hyperparameter variation exper-iments (Table IV). Our work differs from the original HTSR framework in three ways: (1) we use controlled 
+
+experiments with a continuous noise gradient and proper LOO cross-validation, producing quantitative predictive power ( R2 = 0 .984) rather than rank correlations; (2) we identify the bottleneck layer as the optimal measure-ment point, rather than averaging across layers (their “weighted alpha”); and (3) we report the honest nega-tive result under hyperparameter variation, scoping the claim to data quality diagnostics—consistent with the quality-vs-generalization distinction identified in [18]. Meng and Yao [13] is the closest prior work. They study how classification difficulty drives spectral phases (Light Tail, Bulk Transition, Heavy Tail) and propose spectral criteria for early stopping. Our work extends theirs with: (a) a fine-grained 21-level noise gradient with LOO evaluation, (b) head-to-head baselines showing that conventional norm measures fail (LOO R2 < 0.15) while tail α succeeds ( R2 = 0 .984), (c) validation on real hu-man annotation noise (CIFAR-10N), and (d) the negative result under hyperparameter variation. Yunis et al. [14] showed that spectral dynamics of weights distinguish memorizing from generalizing net-works, with random labels producing high-rank solutions. Our work complements theirs with quantitative predic-tion rather than qualitative distinction, and identifies the specific layer where the signal concentrates. Thamm et al. [15] conducted a thorough RMT analy-sis of trained weight matrices, finding that bulk eigen-values follow MP predictions and level spacings agree with RMT. Our level spacing negative result (Sec. IV) is consistent with and extends their finding by explicitly testing whether level spacing distinguishes generalization from memorization (it does not). Jiang et al. [8] benchmarked 40+ generalization mea-sures and found that no single measure dominates across all perturbation types. Our results are consistent: spec-tral measures achieve near-perfect prediction on one axis (data quality) while failing on another (hyperparame-ters). 7The information bottleneck framework of Tishby et al. [6] predicts that optimal representations compress task-irrelevant information. Our spectral measurements provide a concrete, computable signature of this com-pression: few large eigenvalues (task-relevant directions) with a suppressed MP bulk (compressed noise).  
+
+> B. Practical applications
+
+Spectral noise detector (validated on real-world noise): We demonstrate a practical label noise detection tool validated on both synthetic and real noise. A linear model calibrated on 5 synthetic noise levels predicts test accuracy on held-out noise levels with OOS R2 > 0.97 on both MLP/MNIST (mean error 1.5%) and CNN/CIFAR-10 (mean error 2.7%). Critically, the same tool detects real human annotation noise in CIFAR-10N [12]: aggre-gate labels ( ∼9% noise) detected with 3% error, worst-annotator labels ( ∼40% noise) detected with 9% error. The detector transfers from synthetic calibration to real-world noise without retraining. 
+
+Validation on real-world noise (CIFAR-10N): 
+
+To test transfer from synthetic to real noise, we ap-plied the CNN/CIFAR-10 detector (calibrated on syn-thetic noise) to CIFAR-10N [12], which contains human re-annotations with known noise rates. The detector correctly identifies clean data as clean (predicted noise = 0%) and detects real annotation noise at every level: aggregate labels ( ∼9% noise) detected with 3% error, worst-annotator labels ( ∼40% noise) detected with 9% error. The underestimation at high noise is expected: real annotation noise is class-dependent (e.g., cat–dog confusion), while our calibration assumes uniform noise. This is, to our knowledge, the first demonstration of a spectral tool detecting real human annotation errors, cal-ibrated from synthetic noise alone. 
+
+Relationship to sample-level noise detection: 
+
+Methods such as Confident Learning [16] and small-loss selection [17] identify which specific samples are misla-beled, using per-sample losses or predicted probabilities. Our spectral method answers a different question: how noisy is this dataset overall? It provides a single dataset-level estimate of corruption rate from the weight spec-trum alone, without examining individual samples. The two approaches are complementary: a spectral diagnostic could serve as a fast, cheap trigger—if α indicates signif-icant noise, a more expensive sample-level method can then identify the corrupted examples. 
+
+Early stopping under noise: When training on po-tentially corrupted data, monitoring α can detect when the network transitions from learning signal to memoriz-ing noise—the onset of tail lightening indicates overfit-ting to corrupted labels.  
+
+> C. Limitations
+
+• The tail index is a strong predictor under label noise variation but a weak predictor under hyper-parameter variation ( R2 = 0 .167). It should not be used as a universal generalization diagnostic. 
+
+• We test on small-scale networks (MLP, small CNN, ResNet-18) and standard benchmarks. Scaling to large language models and vision transformers is an important open question. 
+
+• The Hill estimator for α shows moderate instabil-ity across threshold quantiles ( α ranges 1.47–1.87 for thresholds q ∈ [0 .70 , 0.95]). While the relative ordering is robust (as evidenced by the high LOO 
+
+R2), absolute values of α should be interpreted with caution. 
+
+• The Hill estimator requires ≳50 eigenvalues for sta-bility, limiting application to narrow layers. In fine-tuning scenarios where only a narrow output layer is trained (e.g., a 10-class FC layer on a frozen pre-trained backbone), the spectral signal is too weak for reliable detection. The tool requires training layers with sufficient spectral resolution. 
+
+• We do not prove a formal generalization bound; our theoretical framework is heuristic. 
+
+• The hyperparameter variation negative result holds on both MNIST (accuracy range 91.1%–98.6%) and CIFAR-10 (accuracy range 62.7%–78.8%), confirm-ing it is not an artifact of the narrow MNIST range. 
+
+• The CIFAR-10N detector underestimates noise at high corruption levels (9% error at 40% noise), because real annotation noise has class-dependent structure that uniform synthetic calibration does not capture.  
+
+> XII. CONCLUSION
+
+We have shown that the tail index of the eigenvalue distribution at a neural network’s bottleneck layer is a powerful diagnostic for data quality. Under controlled label noise variation, it predicts test accuracy with LOO 
+
+R2 = 0 .984, while all conventional baselines fail (LOO 
+
+R2 < 0.15). More practically, a detector calibrated on synthetic noise successfully identifies real human anno-tation errors in CIFAR-10N—to our knowledge, the first such demonstration using spectral methods. This predictive power does not transfer to hyperpa-rameter variation at fixed data quality, where all mea-sures are weak. We report this honestly: spectral analysis reveals data quality , not generalization in the universal sense. The tail index is best understood as a sensitive diagnostic for label corruption, training set degradation, and annotation quality—problems that are pervasive in 8real-world machine learning but poorly served by existing tools. 
+
+ACKNOWLEDGMENTS 
+
+Computational experiments were performed on Apple M1 hardware using PyTorch with MPS acceleration. All code is available at https://github.com/MattLoftus/ rmt-neural .
+
+[1] C. Zhang, S. Bengio, M. Hardt, B. Recht, and O. Vinyals, “Understanding deep learning requires rethinking gener-alization,” in Proc. ICLR (2017). [2] V. A. Marchenko and L. A. Pastur, “Distribution of eigenvalues for some sets of random matrices,” Mat. Sb. 
+
+72 , 507 (1967). [3] C. H. Martin and M. W. Mahoney, “Implicit self-regularization in deep neural networks: Evidence from random matrix theory and implications for training,” J. Mach. Learn. Res. 22 , 1 (2021). [4] V. Oganesyan and D. A. Huse, “Localization of inter-acting fermions at high temperature,” Phys. Rev. B 75 ,155111 (2007). [5] J. Baik, G. Ben Arous, and S. P´ ech´ e, “Phase transition of the largest eigenvalue for nonnull complex sample co-variance matrices,” Ann. Probab. 33 , 1643 (2005). [6] N. Tishby and N. Zaslavsky, “Deep learning and the in-formation bottleneck principle,” in Proc. IEEE Informa-tion Theory Workshop (2015). [7] B. M. Hill, “A simple general approach to inference about the tail of a distribution,” Ann. Statist. 3, 1163 (1975). [8] Y. Jiang, B. Neyshabur, H. Mobahi, D. Krishnan, and S. Bengio, “Fantastic generalization measures and where to find them,” in Proc. ICLR (2020). [9] B. Neyshabur, R. Tomioka, and N. Srebro, “Norm-based capacity control in neural networks,” in Proc. COLT 
+
+(2015). [10] P. L. Bartlett, D. J. Foster, and M. J. Telgarsky, “Spectrally-normalized margin bounds for neural net-works,” in Proc. NeurIPS (2017). [11] G. K. Dziugaite and D. M. Roy, “Computing nonvacuous generalization bounds for deep (stochastic) neural net-works with many more parameters than training data,” in Proc. UAI (2017). [12] J. Wei, Z. Zhu, H. Cheng, T. Liu, G. Niu, and M. Sugiyama, “Learning with noisy labels revisited: Astudy using real-world human annotations,” in Proc. ICLR (2022). [13] X. Meng and J. Yao, “Impact of classification difficulty on the weight matrices spectra in deep learning and ap-plication to early-stopping,” J. Mach. Learn. Res. 24 , 1 (2023). [14] D. Yunis, K. Patel, S. Karkada, P. Ma, and B. Recht, “Approaching deep learning through the spectral dynam-ics of weights,” arXiv:2408.11804 (2024). [15] M. Thamm, M. Staats, and B. Rosenow, “Random ma-trix analysis of deep neural network weight matrices,” 
+
+Phys. Rev. E 106 , 054124 (2022). [16] C. G. Northcutt, L. Jiang, and I. L. Chuang, “Confident learning: Estimating uncertainty in dataset labels,” J. Artif. Intell. Res. 70 , 1373 (2021). [17] B. Han, Q. Yao, X. Yu, G. Niu, M. Xu, W. Hu, I. Tsang, and M. Sugiyama, “Co-teaching: Robust training of deep neural networks with extremely noisy labels,” in Proc. NeurIPS (2018). [18] C. H. Martin, T. S. Peng, and M. W. Mahoney, “Pre-dicting trends in the quality of state-of-the-art neural networks without access to training or testing data,” J. Mach. Learn. Res. 22 , 1 (2021). [19] Y. Yang, R. Theisen, L. Hodgkinson, J. E. Gonzalez, K. Ramchandran, C. H. Martin, and M. W. Mahoney, “Evaluating natural language processing models with generalization metrics that do not need access to any training or testing data,” in Proc. ACM SIGKDD (2023). [20] C. H. Martin and M. W. Mahoney, “Post-mortem on a deep learning contest: a Simpson’s paradox and the com-plementary roles of scale metrics versus shape metrics,” arXiv:2106.00734 (2021).
