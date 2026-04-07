@@ -1,0 +1,784 @@
+Title: Contracting Neural Networks: Sharp LMI Conditions with Applications to Integral Control and Deep Learning
+
+URL Source: https://arxiv.org/pdf/2604.00119v1
+
+Published Time: Thu, 02 Apr 2026 00:18:32 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Contracting Neural Networks: Sharp LMI Conditions with Applications to Integral Control and Deep Learning 
+
+Anand Gokhale, Anton V. Proskurnikov, Yu Kawano, Francesco Bullo 
+
+Abstract — This paper studies contractivity of firing-rate and Hopfield recurrent neural networks. We derive sharp LMI conditions on the synaptic matrices that characterize contractivity of both architectures, for activation functions that are either non-expansive or monotone non-expansive, in both continuous and discrete time. We establish structural relationships among these conditions, including connections to Schur diagonal stability and the recovery of optimal contraction rates for symmetric synaptic matrices. We demonstrate the utility of these results through two applications. First, we develop an LMI-based design procedure for low-gain integral controllers enabling reference tracking in contracting firing rate networks. Second, we provide an exact parameterization of weight matrices that guarantee contraction and use it to improve the expressivity of Implicit Neural Networks, achieving competitive performance on image classification benchmarks with fewer parameters. 
+
+I. I NTRODUCTION 
+
+a) Motivation: Recurrent neural networks (RNNs) are a foundational architecture in machine learning. Unlike heavily parameterized models such as transformers, RNNs main-tain low computational and memory requirements, making them well suited for deployment in resource-constrained edge applications and real-time data-driven control [6], [7]. Furthermore, their structure naturally mirrors biological neu-ral circuits, establishing them as a biologically plausible model in computational neuroscience [20]. Beyond tradi-tional sequence processing, RNNs have recently become central for implicit deep learning; in architectures such as Deep Equilibrium Models (DEQs) [24], a cascade of layers is replaced by the steady-state equilibrium of an RNN, directly linking model evaluation to the network’s asymptotic dynamics. Continuous-time versions of RNNs are particularly well positioned to exploit these advantages. In hardware implementations, continuous-time dynamics offer faster processing and lower power consumption, motivating long-standing interest in analog circuit design [23]. Across these domains, reliable implementation requires establishing stability and robustness guarantees to prevent divergent behaviors and ensure safe operation in the presence          
+
+> This work was in part supported by AFOSR project FA9550-22-1-0059 and by JST FOREST Program Grant Number JPMJFR222E. Anand Gokhale and Francesco Bullo are with the Center for Control, Dynamical Systems, and Computation, UC Santa Barbara, Santa Barbara, CA 93106 USA. email:
+
+{anand gokhale,bullo }@ucsb.edu .Anton V. Proskurnikov is with Department of Electronics and Telecommunications, Politecnico di Torino, Italy, 10129. email: 
+
+anton.p.1982@ieee.org            
+
+> Yu Kawano is with the Graduate School of Advanced Science and Engineering, Hiroshima University, Higashi-Hiroshima 739-8527, Japan. email:
+
+ykawano@hiroshima-u.ac.jp 
+
+> Anand Gokhale thanks Alexander Davydov for fruitful discussions.
+
+of noise and model uncertainties. To this end, we employ contraction theory [3] as the primary mathematical frame-work for certifying robust stability of RNNs. A key challenge in applying contraction theory to neu-ral networks is the identification of sharp, computation-ally tractable conditions that guarantee contraction. Recent works [6], [9] derive stability conditions for globally non-expansive activation functions. However, the most widely used activation functions – such as ReLU, tanh, and sigmoid – are not merely non-expansive but also monotone non-decreasing. Neglecting this additional structure may result in overly conservative stability guarantees. Accordingly, we seek to characterize the maximal set of synaptic weight matrices that render RNNs contracting for such practically important classes of nonlinearities. These sharp contractivity guarantees unlock advanced capabilities in both control design and machine learning. In control design, contractivity of the RNN allows it to be treated as a fast subsystem. Motivated by [22], we use singular perturbation arguments to develop an LMI-based design strategy for low-gain integral controllers. In machine learning, enlarging the admissible space of weight matrices directly improves model expressivity. Furthermore, recent work [15] shows that the representational capacity of implicit models is visibly enhanced by allowing the fixed point of the implicit layer to be locally, rather than globally, Lipschitz in its input. We derive an explicit parameterization of the matrices satisfying our sharp contractivity conditions, which enables the design of highly expressive implicit networks that are contracting yet are locally Lipschitz in the input. 
+
+b) Relevant Literature: Contraction theory [3] provides a powerful framework for the control of nonlinear systems and optimization, guaranteeing exponential convergence, pe-riodic entrainment, and robustness to noise. A contraction-based analysis of continuous time neural networks in the ℓ1
+
+and ℓ∞ norms has been presented in [8], and the sharpest known conditions in the Euclidean norm are limited to the symmetric case [4]. A parameterization of discrete time robust RNNs is presented in [19]. Control design for discrete time RNNs has been previ-ously studied in the context of asymptotic stability [17] and incremental ISS properties [6]. Structurally, RNNs can be considered a subclass of Lur’e-type systems, i.e., feedback interconnections of LTI blocks and static nonlinear maps. However, unlike standard Lur’e-type models, RNNs involve external inputs or outputs that may enter or exit the system through a nonlinearity. Lur’e-type systems where the inputs and outputs are linear have been studied in [1], [11] under 
+
+> arXiv:2604.00119v1 [eess.SY] 31 Mar 2026
+
+various assumptions, with [11] studying integral control of such systems. Here, we study the nonlinear case, and specifically design a reference tracking controller using tools from singular perturbation theory [22]. 
+
+c) Contributions: This paper studies stability condi-tions for continuous-time and discrete-time firing-rate neural networks (FRNNs) and Hopfield neural networks (HNNs) with non-expansive or monotone non-expansive activation functions, using the framework of contraction theory. First, we establish general conditions for the absolute contractivity of Lur’e systems in Lemma 3. Utilizing this general result, we derive novel sharp LMI conditions that guarantee the contractivity of FRNNs and HNNs across popular classes of activation functions, summarizing these comprehensively in Table I. Second, we perform a rigorous structural analysis of the conditions presented in Table I. In Theorem 7, we establish that the set of weight matrices guaranteeing contraction in discrete time is a subset of those guaranteeing contraction in continuous time. Furthermore, while the literature often assumes component-wise non-expansive nonlinearities [9], popular activation functions like ReLU, tanh, and sigmoid are also non-decreasing. We show that exploiting this additional constraint yields a strictly more expressive set of allowable weight matrices. Finally, we establish the explicit relation-ship between our FRNN and HNN conditions. Additionally we demonstrate the tightness of our inequalities by reducing them to Schur diagonal stability [6] in discrete time, recover state-of-the-art guarantees for symmetric weights [4], and connect our results to Lyapunov Diagonal Stability. Third, we demonstrate the practical utility of these con-ditions through two distinct applications. In the realm of control design, we provide a novel LMI-based procedure that enables robust reference tracking in contracting FRNNs via low-gain integral control; a result tantamount to the DC gain condition for linear systems. We validate this approach numerically on a learned two-tank system. In the context of deep learning, we derive an exact algebraic parameteriza-tion of the complete set of weight matrices satisfying our contractivity conditions. We apply this parameterization to improve the expressivity of DEQs; specifically, we utilize input-dependent networks to predict the free variables of our parameterization. This safely enhances the expressivity of the implicit layer while remaining mathematically guaranteed to be contracting, demonstrating strong performance on MNIST and CIFAR-10 image classification tasks. The rest of this paper is organized as follows: We introduce some preliminaries in Section II, and then provide a general result on Lur’e systems in Section III. We provide an analysis of the conditions for contractivity of FRNNs and HNNs in Section IV. We study both applications in Section V. II. B ACKGROUND 
+
+A. Notation 
+
+We let 0n×m be an n × m all zero matrix, In be the n × n
+
+identity matrix. For symmetric A, B ∈ Rn×n, A ⪯ B means that B − A is positive definite. We let ∥ · ∥ be a norm on 
+
+Rn and its corresponding matrix norm on Rn×n. Given a symmetric positive definite matrix P ∈ Rn×n, we let ∥ · ∥ P
+
+be the P −weighted Euclidean norm ∥x∥P := √x⊤P x , x ∈
+
+Rn. Given two normed spaces X , Y, a map F : X → Y is said to be Lipschitz from (X , ∥ · ∥ X ) to (Y, ∥ · ∥ Y ) with constant ρ ≥ 0, if for all x1, x 2 ∈ X , ∥F (x1) − F (x2)∥Y ≤
+
+ρ∥x1 − x2∥X . We let diag( A1, A 2, · · · , A n) denote a block diagonal matrix when Ai is a square matrix, and a diagonal matrix when Ai is scalar. 
+
+B. Contraction theory 
+
+Let the vector field F : R≥0 × Rn → Rn be continuous in its first argument and Lipschitz in its second, with (t, x ) →
+
+F (t, x ). We say that F is strongly infinitesimally contracting with respect to ∥ · ∥ P with rate c > 0 if for all x1, x 2 ∈ Rn,and t ≥ 0,
+
+(F (t, x 1) − F (t, x 2)) ⊤P (x1 − x2) ≤ − c∥x1 − x2∥2 
+
+> P
+
+. (1) If x(t) and y(t) are two trajectories of the system ˙x =
+
+F (t, x ), then ∥x(t) − y(t)∥P ≤ e−c(t−t0)∥x(t0) − y(t0)∥P ,for all t ≥ t0 ≥ 0. In discrete time, the system x+ = F (t, x )
+
+is strongly contracting with constant ρ if Lip x(F ) ≤ ρ < 1.We refer to [3] for a recent review of contraction theory. 
+
+C. Matrix inequalities for system analysis 
+
+For our analysis, we utilize incremental matrix multipliers constraints (IMMs) [10] paired with the S-lemma. 
+
+Definition 1 (Incremental multiplier matrix): Consider a function Ψ : Rn → Rm, and a symmetric matrix M ∈
+
+R(n+m)×(n+m). The function Ψ is said to admit the incre-mental multiplier matrix M , if, for any x, y ∈ Rn,
+
+ x − y
+
+Ψ( x) − Ψ( y)
+
+⊤
+
+M
+
+ x − y
+
+Ψ( x) − Ψ( y)
+
+
+
+≥ 0. (2) 
+
+Lemma 1: Let Q ∈ Rn×n be a positive diagonal matrix. If an elementwise nonlinearity Ψ : Rn → Rn is slope-restricted in [k1, k 2] (where k1 ≤ k2), it admits the multiplier matrix: 
+
+M =
+
+ −2k1k2Q (k1 + k2)Q
+
+(k1 + k2)Q −2Q
+
+
+
+.
+
+In the context of neural networks, we define two classes of elementwise nonlinearities based on slope restrictions. 
+
+Definition 2 (CONE and MONE nonlinearities): An ele-mentwise nonlinearity Ψ : Rn → Rn is said to be: (i) component-wise non-expansive (CONE) if it is slope-restricted in [−1, 1] , and (ii) monotonically non-decreasing and non-expansive (MONE) if it is slope-restricted in [0 , 1] .By applying Lemma 1 to the bounds defined in Defi-nition 2, we obtain the following standard multipliers [3, E3.25]. 
+
+Corollary 2: For any positive diagonal matrix Q ∈ Rn×n,the matrices 
+
+MCONE =
+
+ Q 0n×n
+
+0n×n −Q
+
+
+
+and MMONE =
+
+0n×n QQ −2Q
+
+
+
+are incremental multiplier matrices for CONE and MONE nonlinearities, respectively. III. C ONTRACTIVITY OF LUR ’E SYSTEMS 
+
+In our work, we consider both the continuous and discrete time Lur’e systems. These are presented below, 
+
+˙x = Ax + BΨ( Cx ), and (3) 
+
+x+ = Ax + BΨ( Cx ) (4) Here x ∈ Rn is the state, matrices A ∈ Rn×n, B ∈ Rn×m,
+
+C ∈ Rm×n and Ψ : Rm → Rm is a nonlinearity. We begin by presenting a general result on the absolute contractivity of Lur’e systems. The term absolute contractivity is similar to the concept of absolute stability [13], and is the property that a system is contracting for each nonlinearity Ψ obeying a certain constraint. The continuous time version of the following lemma is presented in [5], we extend it to the discrete time case. 
+
+Lemma 3 (Absolute contractivity of Lur’e systems): Con-sider the continuous time Lur’e system (3) and let P ∈ Rn×n
+
+be positive definite. Let Ψ admit an incremental matrix multiplier M ∈ R2m×2m. Let Γ be a block diagonal matrix, whose diagonal entries are C and Im. The system (3) is strongly infinitesimally contracting with respect to ∥·∥ P with rate c > 0 if there exists a λ ≥ 0 such that 
+
+P A + A⊤P + 2 cP P B B⊤P 0m×m
+
+
+
++ λΓ⊤M Γ ⪯ 0. (5) Further, the discrete time system (4) is strongly contracting with respect to ∥·∥ P with a constant ρ ∈ [0 , 1) if there exists a λ ≥ 0 such that 
+
+A⊤P A − ρ2P A⊤P B B⊤P A B⊤P B 
+
+
+
++ λΓ⊤M Γ ⪯ 0. (6) 
+
+Proof: Given x1, x 2 ∈ Rn, adopt the shorthands 
+
+∆x = x1 − x2 ∈ Rn, ∆y = y1 − y2 = C∆x ∈ Rm, and 
+
+∆Ψ = Ψ( y1) − Ψ( y2) ∈ Rm. Since 
+
+ ∆y
+
+∆Ψ 
+
+
+
+=
+
+C∆x
+
+∆Ψ 
+
+
+
+=
+
+ C 0m×m
+
+0m×n Im
+
+  ∆x
+
+∆Ψ 
+
+
+
+= Γ 
+
+ ∆x
+
+∆Ψ 
+
+
+
+,
+
+we rewrite the incremental multiplier matrix condition (2) as 
+
+ ∆y
+
+∆Ψ 
+
+⊤
+
+M
+
+ ∆y
+
+∆Ψ 
+
+
+
+≥ 0 ⇐⇒ 
+
+ ∆x
+
+∆Ψ 
+
+⊤
+
+Γ⊤M Γ
+
+ ∆x
+
+∆Ψ 
+
+
+
+≥ 0.
+
+(7) The strong infinitesimal contractivity (1) condition for the system (3) may be rewritten as 
+
+ A∆x + B∆Ψ ⊤P ∆x ≤ − η∆x⊤P ∆x
+
+⇐⇒ ∆x⊤(A⊤P + P A + 2 ηP )∆ x + 2∆ x⊤P B ∆Ψ ≤ 0
+
+⇐⇒ 
+
+ ∆x
+
+∆Ψ 
+
+⊤ A⊤P + P A + 2 ηP P B B⊤P 0m×m
+
+  ∆x
+
+∆Ψ 
+
+
+
+≤ 0.
+
+(8) By invoking S-lemma, the inequality (7) implies the inequal-ity (8) if the inequality (5) holds. Similarly, in the discrete time case, one may rewrite the contractivity condition using the definition of the Lipschitz bound in ∥ · ∥ P .
+
+∥A∆x + B∆Ψ ∥2 
+
+> P
+
+≤ ρ2∥∆x∥2
+
+> P
+
+⇐⇒ 
+
+ ∆x
+
+∆Ψ 
+
+⊤ A⊤P A − ρ2P A⊤P B B⊤P A B⊤P B 
+
+  ∆x
+
+∆Ψ 
+
+
+
+≤ 0.
+
+The final step is again an application of the S-Lemma. IV. C ONTRACTION OF FIRING RATE AND HOPFIELD 
+
+NEURAL NETWORKS 
+
+We investigate the firing rate neural network (FRNN), and the Hopfield neural network (HNN) in both continuous and discrete time. The continuous time dynamics are given below. 
+
+˙x = −x + Ψ( W x + Bu ); y = Cx (9) 
+
+˙x = −x + W Ψ( x) + Bu ; y = CΨ( x). (10) Here, the state x ∈ Rn, the bias u ∈ Rm, y ∈ Rp, and the synaptic matrix W ∈ Rn×n, Ψ( ·) is an element-wise, slope restricted nonlinearity. Equation (9) represents the firing rate dynamics, and Equation (10) represents the Hopfield dynamics. The corresponding discrete time dynamics are, 
+
+xk+1 = Ψ( W x + Bu ); y = Cx, (11) 
+
+xk+1 = W Ψ( x) + Bu ; y = CΨ( x). (12) 
+
+Remark 4: The state evolution in the FRNN and HNN dynamics (9)-(12) is structurally similar to a Lur’e model, which enables the use of Lemma 3 for the analysis of contractivity. However, in classical Lur’e systems, the input enters linearly, and the output is a linear function of the state. In FRNNs, the input appears inside the nonlinearity, and in HNNs, the output is a nonlinear function of the state. This nonlinear coupling precludes the direct application of integral control results developed for standard Lur’e systems [11]. 
+
+Theorem 5 (Contractivity of FRNN and HNN): Consider the FRNN and HNN dynamics (9)-(12), for some constant 
+
+u. Let W be the synaptic weight matrix and Ψ( ·) be the activation function belonging to either the CONE or MONE class. Given P ≻ 0, the dynamics are strongly contracting with rate c > 0 (in continuous time) or factor ρ ∈ [0 , 1) (in discrete time) in the norm ∥·∥ P if there exists a diagonal Q ≻
+
+0 such that the corresponding matrix inequality in Table I is satisfied. 
+
+Proof: The proof of each of the eight cases follows from Lemma 3 and Corollary 2. For simplicity, we provide the proof for only the FRNN case in continuous time for MONE nonlinearities; the other cases follow similarly. We begin by noting that the dynamics (9) is a continuous-time Lur’e system of the form (3), with A = −In, B = In and C = W .Per Corollary 2 a MONE nonlinearity admits the matrix multiplier M =
+
+0n×n QQ −2Q
+
+
+
+, for some positive diagonal 
+
+Q. Substituting these equalities into (5) yields (16). 
+
+A. Structural relationships of contractivity conditions 
+
+First we show that the discrete-time CONE inequalities for both network architectures are reducible to Schur diagonal stability, generalizing prior results on firing-rate models [6]. TABLE I CONTRACTIVITY CONDITIONS FOR FIRING RATE AND HOPFIELD MODELS . S EE THEOREM 5 FOR DEFINITIONS OF SYMBOLS .THE NEURAL NETWORK WITH SYNAPTIC MATRIX W CORRESPONDING TO EACH ENTRY IS CONTRACTING (WITH RATE c OR FACTOR ρ) IF THERE EXIST P ≻ 0 AND DIAGONAL Q ≻ 0 SATISFYING THE CORRESPONDING LMI.                                                                                              
+
+> Architecture Nonlinearity Discrete Time Continuous Time Firing Rate CONE [−1,1]
+> −ρ2P+W⊤QW 0n×n
+> 0n×nP−Q
+> ⪯0(13)
+> −2(1 −c)P+W⊤QW PP−Q
+> ⪯0(14)
+> MONE [0 ,1]
+> −ρ2PW⊤QQW P−2Q
+> ⪯0(15)
+> −2(1 −c)PP+W⊤QP+QW −2Q
+> ⪯0(16)
+> Hopfield CONE [−1,1]
+> −ρ2P+Q0n×n
+> 0n×nW⊤P W −Q
+> ⪯0(17)
+> −2(1 −c)P+QP W W⊤P−Q
+> ⪯0(18)
+> MONE [0 ,1]
+> −ρ2PQQW⊤P W −2Q
+> ⪯0(19)
+> −2(1 −c)PP W +QW⊤P+Q−2Q
+> ⪯0(20)
+
+Lemma 6 (Schur diagonal stability): The discrete-time CONE conditions (13) and (17) hold for a given W if and only if W is Schur diagonally stable. 
+
+Proof: Note that (13) ⇐⇒ P ⪯ Q and W ⊤QW ⪯
+
+ρ2P . Similarly, (17) ⇐⇒ Q ⪯ ρ2P and W ⊤P W ⪯ Q.First, for (13), =⇒ follows from observing that W ⊤QW ⪯
+
+ρ2P ⪯ ρ2Q. The ⇐= direction follows from choosing 
+
+P = Q. Next, for (17), for the =⇒ direction, consider the inequality Q ⪯ ρ2P , and right and left multiply by W and its transpose. We get W ⊤QW ⪯ ρ2W ⊤P W ≺ Q. For the 
+
+⇐= direction, choosing ρ2P = Q gives us our result. Next, we establish the relationships between the various conditions presented in Table I. 
+
+Disc. CONE 
+
+W(·, DISC , CONE )
+
+Eq. (13), (17) 
+
+Disc. MONE 
+
+W(·, DISC , MONE )
+
+Eq. (15), (19) 
+
+Cts. CONE 
+
+W(·, CTS , CONE )
+
+Eq. (14), (18) 
+
+Cts. MONE 
+
+W(·, CTS , MONE )
+
+Eq. (16), (20) 
+
+⊆
+
+⊆
+
+⊆
+
+⊆⊆     
+
+> Fig. 1. A summary of relationships for the contractivity conditions from Table I. The sets W(·,·,·)are described in Theorem 7. The discrete time CONE condition restricts the weight matrices the most, whereas the continuous time MONE condition enables maximum expressivity.
+
+Theorem 7 (Reductions and duality of matrix inequalities): 
+
+Let W(M, T , N ) denote the set of synaptic matrices W
+
+satisfying the matrix inequality in Table I for model M ∈ {FR , Hop }, time domain T ∈ { CTS , DISC }, and nonlinear-ity class N ∈ { CONE , MONE }. The following hold: (i) The set of synaptic matrices satisfying the condition for CONE nonlinearities is contained within the corre-sponding set for MONE nonlinearities. 
+
+W(·, ·, CONE ) ⊆ W (·, ·, MONE ).
+
+(ii) If a synaptic matrix W satisfies any discrete-time con-dition with factor ρ ∈ [0 , 1) , then it also satisfies the corresponding continuous-time condition with rate 
+
+c = (1 − ρ2)/2. Thus: 
+
+W(·, DISC , ·) ⊆ W (·, CTS , ·).
+
+(iii) A matrix W satisfies the firing rate condition for some parameters P ≻ 0 and diagonal Q ≻ 0 if and only if 
+
+W ⊤ satisfies the corresponding Hopfield LMI condition for some parameters P ′ ≻ 0 and diagonal Q′ ≻ 0.
+
+W ∈ W (FR , ·, ·) ⇐⇒ W ⊤ ∈ W (Hop , ·, ·).
+
+Proof: Regarding (i), consider the negative semidefi-nite matrices M1 =
+
+−W ⊤QW W ⊤QQW −Q
+
+
+
+and M2 =
+
+−Q QQ −Q
+
+
+
+. Adding the inequality M1 ⪯ 0 to each of the firing rate CONE inequalities inequalities yields the corresponding firing rate MONE inequality. Similarly, adding the inequality M2 ⪯ 0 to each of the Hopfield CONE in-equalities yields the corresponding MONE inequality. Next, regarding (ii), we present a proof for the firing rate MONE case. The other three cases follow similarly. Let W satisfy the discrete-time condition Eq. (15) for some ρ. Using the inverse Schur complement of the identity P − P P −1P ⪰ 0,and setting c = (1 − ρ2)/2, and adding and subtracting the correct terms, 
+
+ P −P
+
+−P P
+
+
+
+⪰ 0 = ⇒
+
+−(1 + ρ2)P P + W ⊤QP + QW −2Q
+
+
+
+⪯
+
+−ρ2P W ⊤QQW P − 2Q
+
+
+
+.
+
+Consequently, if the RHS is negative semidefinite (i.e. (15) holds), so is the LHS (i.e. (16) holds). Finally, for (iii), we shall prove each case separately. First, in the continuous time MONE case, consider the LHS of (16). Let T =diag( P −1, Q −1). Pre- and post-multiplying (16) by T yields: 
+
+T
+
+−2(1 − c)P ⋆P + QW −2Q
+
+
+
+T =
+
+−2(1 − c)P −1 ⋆W P −1 + Q−1 −2Q−1
+
+
+
+where ⋆ denotes symmetric terms. This results in the LHS of the Hopfield matrix inequality (20) with parameters W ′ =
+
+W ⊤, P ′ = P −1, and Q′ = Q−1. Next, for the continuous time CONE case, consider the Schur complement of the firing rate matrix inequality (14) about the (2,2) block. We obtain, 
+
+−2(1 − c)P + W ⊤QW + P Q −1P ⪯ 0. (21) Upon left and right multiplying this inequality by P −1,
+
+−2(1 − c)P −1 + P −1W ⊤QW P −1 + Q−1 ⪯ 0. (22) Note that (22) is the Schur complement of the Hopfield matrix inequality (18) with parameters W ′ = W ⊤, P ′ =
+
+P −1, and Q′ = Q−1. Next, in the discrete time MONE case, consider the Schur complement of the firing rate matrix (15) about the (1,1) block. 
+
+P − 2Q + ρ−2QW P −1W ⊤Q ⪯ 0. (23) Upon left and right multiplying this inequality by Q−1,
+
+Q−1P Q −1 − 2Q−1 + ρ−2W P −1W ⊤ ⪯ 0. (24) Note that (24) is the Schur complement of the Hopfield matrix inequality (19) with parameters W ′ = W ⊤, P ′ =
+
+ρ−2P −1, and Q′ = Q−1. Finally, for the discrete time CONE case, both conditions are reducible to Schur diagonal stability as shown in Lemma 6. Therefore, we only need to show that W ⊤QW ⪯ ρ2Q iff W Q −1W ⊤ ⪯ ρ2Q−1. Via Schur complement, observe that, 
+
+W ⊤QW ⪯ ρ2Q ⇐⇒ 
+
+ρ2Q W ⊤QQW Q
+
+
+
+⪰ 0
+
+⇐⇒ 
+
+ρ2Q−1 Q−1W ⊤
+
+W Q −1 Q−1
+
+
+
+⪰ 0.
+
+⇐⇒ Q−1 − ρ−2W Q −1W ⊤ ⪰ 0.
+
+Where the second step follows by pre and post multiplying the Schur complement by diag( Q−1, Q−1), and the final step follows by applying Schur complement with respect to the (1,1) block. 
+
+Corollary 8: For a fixed c > 0 or ρ ∈ [0 , 1) , each contrac-tivity condition in Table I is equivalent to a Linear Matrix Inequality (LMI) under a bijective change of variables. Consequently, the set of contracting synaptic matrices W, along with the Euclidean weighting P and diagonal multiplier Q, is characterized by a convex feasibility problem. 
+
+Proof: Due to the duality result between Hopfield and firing rate neural networks established in Theorem 7, if a condition can be parameterized as an LMI for one architec-ture, it is inherently an LMI for the other architecture. For the continuous-time Hopfield networks (both CONE and MONE), applying the variable substitution S = W ⊤P
+
+renders the respective matrix inequalities linear in the variables (P, Q, S ). By duality, the continuous-time fir-ing rate conditions are equivalently LMIs in the variables 
+
+(P −1, Q −1, W ⊤P −1).In discrete time, the firing rate MONE inequality is inher-ently linear in the variables (P, Q, S ) under the substitution 
+
+S = QW . The discrete-time Hopfield MONE case is consequently an LMI by duality. Finally, the discrete-time CONE conditions for both ar-chitectures reduce to Schur diagonal stability. This is well known to be an LMI; by applying the Schur complement to 
+
+W ⊤QW ⪯ ρ2Q and substituting S = QW , we obtain the equivalent LMI 
+
+ρ2Q S⊤
+
+S Q
+
+
+
+⪰ 0.
+
+B. Necessary versus sufficient conditions for contractivity 
+
+Theorem 7 implies that continuous-time FRNNs with MONE nonlinearities admit the largest set of synaptic matri-ces. Consequently, we focus on these dynamics with contrac-tivity inequality (16) for the rest of this letter. Corresponding results for the Hopfield case are obtained via transposition. First, we show that Lyapunov Diagonal Stability (LDS) of 
+
+W −In is necessary for the matrix inequality (16) to hold, but not sufficient. While the insufficiency result is known [14, Theorem 7], we provide a brief proof for completeness. 
+
+Proposition 9 (Relationship with Lyapunov Diagonal Sta-bility): Let W ∈ Rn×n be a synaptic matrix for the firing rate neural network (9). The following hold (i) If W satisfies (16) for P ≻ 0, diagonal Q ≻ 0 and 
+
+c > 0, then W − In is Q−LDS. (ii) The converse is not true; W − In being LDS is not sufficient to guarantee contraction in any fixed norm. 
+
+Proof: To prove (i), we left and right multiply the matrix inequality (16) by the matrix [In, I n] ∈ Rn×2n obtaining, 
+
+−2(1 − c)P + P + W ⊤Q + P + QW − 2Q ⪯ 0=⇒ W ⊤Q + QW ⪯ 2Q − 2cP ≺ 2Q. 
+
+This proves that the W − In is Q−LDS. We construct a counterexample for (ii). Consider a skew-synaptic weight matrix W =
+
+ 0 4
+
+−4 0
+
+
+
+. Since W + W ⊤ =0 ≺ 2I, W − In is LDS. For contraction in the norm ∥ · ∥ P ,the matrix M (D) = 2 P −P DW −W ⊤DP must be positive definite for all diagonal D ∈ [0 , I ], e.g., see [4]. Testing the vertices D1 = diag(1 , 0) and D2 = diag(0 , 1) ,
+
+M (D1) = 
+
+ 2p11 2p12 − 4p11 
+
+2p12 − 4p11 2p22 − 8p12 
+
+
+
+,M (D2) = 
+
+2p11 − 8p12 2p12 − 4p22 
+
+2p12 − 4p22 2p22 
+
+
+
+.
+
+Since the determinants of these matrices need to be positive,  
+
+> •
+
+p11 p22 > p 212 + 4 p211 =⇒ p22 > 4p11 . 
+
+> •
+
+p11 p22 > p 212 + 4 p222 =⇒ p11 > 4p22 .These conditions are contradictory for any P ≻ 0. Thus, 
+
+W − In is LDS but not contractive. Next, we show that restricting the matrix inequality (16) to symmetric synaptic matrices is equivalent to the known optimal characterizations given in [4]. Proposition 10 (Log-optimal characterization for symmet-ric weights): Let W = W ⊤ ∈ Rn×n.(i) For α(W ) < 0, the matrix inequality (16) holds for 
+
+P = −W , Q = In, and c = 1 .(ii) For 0 < α (W ) < 1, there exists P ≻ 0 such that W =
+
+P 1/2 − (4 α(W )) −1P , and the matrix inequality (16) holds for this P , Q = 4 α(W )In, and c = 1 − α(W ).
+
+Proof: Consider the Schur complement of (16). 
+
+−2(1 − c)P + 12 (P + W ⊤Q)Q−1(P + QW ) ⪯ 0. (25) The first statement follows from substituting P = −W ,
+
+Q = In and c = 1 into (25). From [4, Lemma 10], we may define P ≻ 0 such that W = P 1/2 − 14α(W ) P . Choosing Q = 4 α(W )I, and substituting W and Q into the LHS of (25) yields 
+
+−2(1 − c)P + 2 α(W )P , which is 0 when c = 1 −α(W ).V. A PPLICATIONS TO INTEGRAL CONTROL AND MACHINE LEARNING 
+
+A. Parameterization 
+
+In this section we study the parameterization of synaptic matrices satisfying the inequality (16); such a step enables applications in machine learning and data-driven control. 
+
+Theorem 11 (Parameterization of weight matrices): The following statements are equivalent: (i) The synaptic matrix W satisfies condition (16) for some 
+
+P ≻ 0, diagonal matrix Q ≻ 0, and c ∈ [0 , 1] .(ii) W can be written as 
+
+W = 2 √1−c diag(e d)SV ⊤V − diag(e 2d)( V ⊤V )2
+
+where S ∈ Rn×n satisfying S⊤S ⪯ In, V is a full rank matrix in Rn×n, and d ∈ Rn.
+
+Proof: Consider the (1,1) Schur complement of the in-equality (16). With some bookkeeping, we obtain, 
+
+(P + W ⊤Q)Q−1(P + QW ) ≺ 4(1 − c)P. (26) From the Douglas-Fillmore-Williams Lemma [2, Theorem 8.6.2], the inequality (26) is true if and only if there exists a matrix S ∈ Rn×n satisfying S⊤S ⪯ In and 
+
+Q−1/2(P + QW ) = 2 p(1 − c) SP 1/2. (27) Upon rearranging to solve for W ,
+
+W = 2 √1 − c Q −1/2SP 1/2 − Q−1P. (28) Now, the set of all valid Q can be parameterized using 
+
+diag(e −2d), and the set of all P ≻ 0 can be parameterized as V ⊤V for full rank V ∈ Rn×n.
+
+Remark 12: In numerical applications, the set of all matri-ces S such that S⊤S ⪯ In may be parameterized via a free variable X ∈ Rn×n by setting S = X(I + X⊤X)−1/2.Similarly, to ensure V ⊤V does not lose rank, we may approximate V ⊤V using a free matrix Y ∈ Rn×n and a small constant ϵ > 0 by setting P = Y ⊤Y + ϵI n.Theorem 11 provides a practical tool to design FRNNs that are contracting by construction. Having characterized the largest known set of synaptic matrices that guarantee contractivity for the continuous-time model (9), we now turn to utilizing these models in control and machine learning. 
+
+B. LMI conditions for integral control 
+
+Theorem 11 enables the modeling of stable continuous-time systems using contracting FRNNs. Given such a well-behaved, data-driven model, a natural next step is to achieve robust reference tracking. In this section, we establish condi-tions that enable the use of low-gain integral control, deriving these conditions via a singular perturbation argument [22]. We treat the FRNN as fast dynamics, and the integrating controller as slow dynamics. For a constant reference r ∈ Rp,consider the dynamics, 
+
+˙x = −x + Ψ ( W x + Bu ) , y = Cx (29a) 
+
+˙u = εK (r − y) (29b) where x ∈ Rn, u ∈ Rm, y ∈ Rp, and all matrices are shaped appropriately. When (29a) is contracting, the fixed point map 
+
+x⋆(u) is well posed, and is implicitly defined by 
+
+x⋆(u) = Ψ ( W x ⋆(u) + Bu ) . (30) Further, the reduced order dynamics are given by 
+
+˙u = K(r − Cx ⋆(u)) . (31) Before presenting our main result, we introduce an incre-mental matrix multiplier for this fixed point map from [5]. 
+
+Lemma 13: Let the map Ψ : Rn → Rn admit an incre-mental matrix multiplier M . Assume the implicit definition of the map x⋆(u) in equation (30) is well posed. Then the map x⋆(u) admits the incremental multiplier matrix 
+
+B W
+
+0 In
+
+⊤
+
+M
+
+B W
+
+0 In
+
+
+
+(32) Next, we derive conditions guaranteeing that the reduced-order dynamics (31) are contracting. Combined with the contractivity of the open-loop plant, these conditions ensure that the closed-loop system achieves asymptotic reference tracking via the low-gain integral control analysis of [22]. 
+
+Theorem 14 (Contractivity of the reduced dynamics and reference tracking via integral control): Consider the sys-tem (29). Let A = In − W , and Q ∈ Rn×n be a diagonal positive matrix. Assume: (A1) Ψ is slope-restricted to [δ, 1] .(A2) There exists u⋆ such that r = Cx ⋆(u⋆), and x⋆(u⋆) = Ψ( W x ⋆(u⋆) + Bu ⋆).(A3) With the shorthands Z = B⊤Q((1 − δ)In + 2 δA )
+
+and R = 2 δA ⊤QA + (1 − δ)( QA + A⊤Q), there ex-ist matrices Y and P ≻ 0 such that 
+
+2cr P − 2δB ⊤QB Z − Y C 
+
+∗ −R
+
+
+
+⪯ 0. (33) Then, with K = P −1Y ,(i) the reduced order dynamics (31) are strongly infinitesi-mally contracting with rate cr with respect to the ∥ · ∥ P ,and (ii) if the plant dynamics (29a) are strongly infinitesimally contracting, then there exists ε∗ > 0 such that for all ε ∈
+
+(0 , ε ∗), the closed-loop system (29) is asymptotically stable and achieves reference tracking. 
+
+Proof: We begin by noting that the reduced order dy-namics (31) form a Lur’e system, where the nonlinearity is given by x⋆(u). We may use Lemma 13 in conjuction with Lemma 3, to obtain the following LMI condition for contractivity in a Euclidean norm weighted by P .
+
+ 2cr P −P KC 
+
+−CKP 0m×m
+
+
+
++ λ
+
+B W
+
+0 In
+
+⊤
+
+M
+
+B W
+
+0 In
+
+
+
+⪯ 0.
+
+(34) where M is the matrix multiplier for the nonlinear-ity Ψ. Using Lemma 1, we may substitute M as  −2δQ (1 + δ)Q
+
+(1 + δ)Q −2Q
+
+
+
+. The second term in (34) resolves to 
+
+−2δB ⊤QB −2δB ⊤QW + (1 + δ)B⊤Q
+
+∗ (1 + δ)( W ⊤Q + QW ) − 2Q − 2δW ⊤QW 
+
+
+
+Now, let us set A = In − W . First, note that 
+
+−R = −2δW ⊤QW + (1 + δ)( W ⊤Q + QW ) − 2Q, Z = −2δB ⊤QW + (1 + δ)B⊤Q. 
+
+Now, we may rewrite (34) using these simplifications. 
+
+2cr P − 2δB ⊤QB Z − P KC 
+
+∗ −R
+
+
+
+⪯ 0. (35) Reparameterizing Y = P K we get the condition (33). Regarding the second statement, when the plant and the reduced order dynamics are globally strongly contracting, all of the assumptions in [22, Theorem 3.1] are met and therefore, for sufficiently small ε, the closed-loop system is asymptotically stable. 
+
+Corollary 15: Under the assumptions of Theorem 14, 
+
+P (KCA −1B) + ( KCA −1B)⊤P ≻ 2cr P, (36) i.e., the matrix −KCA −1B is Hurwitz, recovering the standard DC-gain condition for the linear case [22]. 
+
+Proof: Consider the condition (33). Pre and post multiplying both sides by diag( Im, (A−1B)⊤) and 
+
+diag( Im, (A−1B)) respectively, we obtain, 
+
+ 2cr P − 2δB ⊤QB ZA −1B − Y CA −1B
+
+(A−1B)⊤(Z − Y C )⊤ −(A−1B)⊤RA −1B
+
+
+
+⪯ 0.
+
+(37) We evaluate each term. First, we note the following, 
+
+(A−1B)⊤RA −1B = (1 − δ)B⊤(( A⊤)−1Q + QA −1)B
+
++ 2 δB ⊤QB (38) 
+
+ZA −1B = B⊤Q((1 − δ)A−1 + 2 δI )B (39) Upon making these substitutions, we further pre and post multiply (37) by the block rectangular matrix, T2 = [ Im, I m],and its transpose. Upon simplifying, we obtain, 
+
+2cr P − Y CA −1B − (Y CA −1B)⊤ ⪯ 0. (40) 0 200 400 600 800 1000  
+
+> Time [s]
+> −1.0
+> −0.5
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> Output
+> Reference
+> Learned plant
+> True plant
+> Fig. 2. We perform system identification on a standard two-tank system, using an FRNN parameterized via Theorem 11. We design the gain via a low-gain controller as described in Theorem 14.
+
+Upon substituting Y = P K , the result follows. For numerical validation, we apply our controller synthesis on a normalized version of the two tank benchmark sys-tem [21]. We utilize the parameterization in Theorem 11 to perform system identification. We fit the plant to an FRNN with n = 8 neurons and tanh ( ·) activations to enforce nonzero δ condition. We solve for the DC gain K using the LMI condition in Theorem 14. As shown in Figure 2, our controller successfully performs reference tracking. 
+
+C. Applications to implicit neural networks 
+
+Recent literature [15] establishes that the representational capacity of implicit models is fundamentally enhanced when the equilibrium mapping is allowed to exhibit local, rather than global, Lipschitz continuity. Motivated by this insight, we design an implicit neural network with input-dependent synaptic weights and biases: 
+
+x⋆(u) = Ψ( W (u)x⋆(u) + B(u)) . (41) By allowing W and B to depend on the input u, the equilibrium x⋆(u) becomes locally Lipschitz in u (instead of globally Lipschitz), enabling the model to adapt its internal dynamics to each input and thereby improving expressivity. Concretely, we parameterize W according to Theorem 11, replacing each free variable with a learned neural network, and similarly implement B as a neural network. This input-dependent network architecture natively allows x⋆(u) to be locally Lipschitz, while remaining mathematically guaran-teed to be contracting. We validate this approach on the MNIST and CIFAR-10 image classification benchmarks. As shown in Table II, our model achieves competitive accuracy while remaining parameter efficient, due to a higher expres-sivity. Full implementation details and code are provided in our repository. 1
+
+VI. C ONCLUSION 
+
+In this paper, we established sharp LMI conditions charac-terizing synaptic weights that guarantee absolute contractiv-ity for firing-rate and Hopfield neural networks. We provide a detailed analysis of these LMI conditions, including relation-ships under different classes of nonlinearities. We also show 
+
+> 1https://github.com/AnandGokhale/Contractivity Neural Networks
+
+TABLE II COMPARATIVE PERFORMANCE ON IMAGE CLASSIFICATION 
+
+BENCHMARKS 
+
+Method Model size Acc. MNIST 
+
+LBEN [18] – 98.2% monDEQ [24] 84K 99.1 ±0.1% 
+
+Ours 89K 99.33% CIFAR-10 
+
+LBEN [18] – 71.6% monDEQ [24] 172K 74.0 ±0.1% monDEQ ∗ [24] 854K 82.0 ±0.3% 
+
+Ours 134K 78.27% Ours ∗ 134K 82.30%  
+
+> ∗
+
+indicates models trained with data augmentation. 
+
+the relationship of these conditions with prior conditions, showing that our conditions are tight when the synaptic ma-trix is symmetric. By translating our continuous-time MONE condition into an exact algebraic parameterization, we bridge the gap between stability analysis and practical synthesis. We demonstrated the utility of this parameterization through two distinct applications: a novel LMI-based design for low-gain integral controllers capable of robust reference tracking, and an input-dependent implicit neural network architecture that safely increases the expressivity of implicit models, by allowing the output of an implicit layer to be locally Lipschitz in the input. Future research will proceed along several avenues. First, an interesting problem is to extend our integral control gain design to more general classes of neural networks such as RENs [16]. Second, one could also study mechanisms to stabilize FRNNs using output feedback [12]. Finally, we seek to extend our analysis to network problems, both in the context of graph neural networks, and in the context of distributed control. REFERENCES [1] V. Andrieu and S. Tarbouriech. LMI conditions for contraction and synchronization. In IFAC Symposium on Nonlinear Control Systems ,volume 52, pages 616–621, 2019. doi:10.1016/j.ifacol. 2019.12.030 .[2] D. S. Bernstein. Matrix Mathematics . Princeton University Press, 2 edition, 2009, ISBN 0691140391. [3] F. Bullo. Contraction Theory for Dynamical Systems . Kindle Direct Publishing, 1.3 edition, 2026, ISBN 979-8836646806. URL: https: //fbullo.github.io/ctds. [4] V. Centorrino, A. Gokhale, A. Davydov, G. Russo, and F. Bullo. Euclidean contractivity of neural networks with symmetric weights. 
+
+IEEE Control Systems Letters , 7:1724–1729, 2023. doi:10.1109/ LCSYS.2023.3278250 .[5] L. D’Alto and M. Corless. Incremental quadratic stability. Numerical Algebra, Control and Optimization , 3:175–201, 2013. doi:10. 3934/naco.2013.3.175 .[6] W. D’Amico, A. La Bella, and M. Farina. An incremental input-to-state stability condition for a class of recurrent neural networks. IEEE Transactions on Automatic Control , 69(4):2221–2236, 2024. doi: 10.1109/tac.2023.3327937 .[7] W. D’Amico, A. La Bella, and M. Farina. Data-driven control of echo state-based recurrent neural networks with robust stability guarantees. 
+
+Systems & Control Letters , 195:105974, 2025. doi:10.1016/j. sysconle.2024.105974 .[8] A. Davydov, S. Jafarpour, and F. Bullo. Non-Euclidean contraction theory for robust nonlinear stability. IEEE Transactions on Automatic Control , 67(12):6667–6681, 2022. doi:10.1109/TAC.2022. 3183966 .[9] L. El Ghaoui, F. Gu, B. Travacca, A. Askari, and A. Tsai. Implicit deep learning. SIAM Journal on Mathematics of Data Science , 3(3):930– 958, 2021. doi:10.1137/20M1358517 .[10] M. Fazlyab, A. Robey, H. Hassani, M. Morari, and G. J. Pappas. Efficient and accurate estimation of Lipschitz constants for deep neural networks. In Advances in Neural Information Processing Systems ,2019. URL: https://arxiv.org/abs/1906.04893. [11] M. Giaccagli, V. Andrieu, S. Tarbouriech, and D. Astolfi. LMI condi-tions for contraction, integral action, and output feedback stabilization for a class of nonlinear systems. Automatica , 154:111106, 2023. 
+
+doi:10.1016/j.automatica.2023.111106 .[12] M. Giaccagli, M. Jungers, and S. Tarbouriech. Some LMIs for the design of dynamic output feedback contractive controllers for a class of nonlinear systems. IFAC Conference on Modelling, Identification and Control of Nonlinear Systems , 58(21):73–78, 2024. doi:10. 1016/j.ifacol.2024.10.145 .[13] H. K. Khalil. Nonlinear Systems . Prentice Hall, 3 edition, 2002, ISBN 0130673897. [14] L. Kozachkov, M. Ennis, and J.-J. E. Slotine. RNNs of RNNs: Recur-sive construction of stable assemblies of recurrent neural networks. In 
+
+Advances in Neural Information Processing Systems , December 2022. 
+
+doi:10.48550/arXiv.2106.08928 .[15] J. Liu, L. Ding, S. Osher, and W. Yin. Implicit models: Expressive power scales with test-time compute. arXiv preprint , 2025. doi: 10.48550/arXiv.2510.03638 .[16] D. Martinelli, C. L. Galimberti, I. R. Manchester, L. Furieri, and G. Ferrari-Trecate. Unconstrained parametrization of dissipative and contracting neural ordinary differential equations. In IEEE Conf. on Decision and Control , page 3043–3048, 2023. doi:10.1109/ cdc49753.2023.10383704 .[17] A. Nikolakopoulou, M. Hong, and R. D. Braatz. Dynamic state feedback controller and observer design for dynamic artificial neural network models. Automatica , 146:110622, 2022. doi:10.1016/ j.automatica.2022.110622 .[18] M. Revay, R. Wang, and I. R. Manchester. Lipschitz bounded equilibrium networks. arXiv preprint arXiv:2010.01732 , 2020. doi: 10.48550/arXiv.2010.01732 .[19] M. Revay, R. Wang, and I. R. Manchester. A convex parameterization of robust recurrent neural networks. IEEE Control Systems Letters ,5(4):1363–1368, 2021. doi:10.1109/LCSYS.2020.3038221 .[20] C. J. Rozell, D. H. Johnson, R. G. Baraniuk, and B. A. Olshausen. Sparse coding via thresholding and local competition in neural circuits. 
+
+Neural Computation , 20(10):2526–2563, 2008. doi:10.1162/ neco.2008.03-07-486 .[21] M. Schoukens and J. P. No¨ el. Three benchmarks addressing open challenges in nonlinear system identification. IFAC World Congress ,50(1):446–451, 2017. doi:10.1016/j.ifacol.2017.08.071 .[22] J. W. Simpson-Porco. Analysis and synthesis of low-gain inte-gral controllers for nonlinear systems. IEEE Transactions on Automatic Control , 66(9):4148–4159, 2021. doi:10.1109/tac. 2020.3035569 .[23] D. W. Tank and J. J. Hopfield. Simple ”neural” optimization networks: An A/D converter, signal decision circuit, and a linear programming circuit. IEEE Transactions on Circuits and Systems , 33(5):533–541, 1986. doi:10.1109/TCS.1986.1085953 .[24] E. Winston and J. Z. Kolter. Monotone operator equilibrium networks. In Advances in Neural Information Processing Systems , 2020. URL: https://arxiv.org/abs/2006.08591.

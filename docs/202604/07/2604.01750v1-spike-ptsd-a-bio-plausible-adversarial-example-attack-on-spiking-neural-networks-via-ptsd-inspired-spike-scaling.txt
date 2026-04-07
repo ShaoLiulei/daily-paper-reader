@@ -1,0 +1,612 @@
+Title: Spike-PTSD: A Bio-Plausible Adversarial Example Attack on Spiking Neural Networks via PTSD-Inspired Spike Scaling
+
+URL Source: https://arxiv.org/pdf/2604.01750v1
+
+Published Time: Fri, 03 Apr 2026 00:37:31 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Spike-PTSD: A Bio-Plausible Adversarial Example Attack on Spiking Neural Networks via PTSD-Inspired Spike Scaling 
+
+## Lingxin Jin 
+
+jinlx@std.uestc.edu.cn University of Electronic Science and Technology Chengdu, China Khalifa University Abu Dhabi , The United Arab Emirates 
+
+## Wei Jiang 
+
+weijiang@uestc.edu.cn University of Electronic Science and Technology Chengdu, China 
+
+## Maregu Assefa Habtie 
+
+maregu.habtie@ku.ac.ae Khalifa University Abu Dhabi , The United Arab Emirates 
+
+## Letian Chen 
+
+chenletian03@std.uestc.edu.cn University of Electronic Science and Technology Chengdu, China 
+
+## Jinyu Zhan 
+
+zhanjy@uestc.edu.cn University of Electronic Science and Technology Chengdu, China 
+
+## Xingzhi Zhou 
+
+xingzhizhou@std.uestc.edu.cn University of Electronic Science and Technology Chengdu, China 
+
+## Lin Zuo 
+
+linzuo@uestc.edu.cn University of Electronic Science and Technology Chengdu, China 
+
+## Naoufel Werghi 
+
+naoufel.werghi@ku.ac.ae Khalifa University Abu Dhabi , The United Arab Emirates 
+
+## Abstract 
+
+Spiking Neural Networks (SNNs) are energy-efficient and biolog-ically plausible, ideal for embedded and security-critical systems, yet their adversarial robustness remains open. Existing adversar-ial attacks often overlook SNNs’ bio-plausible dynamics. We pro-pose Spike-PTSD , a biologically inspired adversarial attack frame-work modeled on abnormal neural firing in Post-Traumatic Stress Disorder (PTSD). It localizes decision-critical layers, selects neu-rons via hyper/hypoactivation signatures, and optimizes adver-sarial examples with dual objectives. Across six datasets, three encoding types, and four models, Spike-PTSD achieves over 99% success rates, systematically compromising SNN robustness. Code: https://github.com/bluefier/Spike-PTSD. 
+
+## CCS Concepts 
+
+• Computing methodologies → Artificial intelligence ; • Secu-rity and privacy → Embedded systems security .
+
+## 1 Introduction 
+
+Spiking Neural Networks (SNNs), also known as the third-generation neural networks, simulate brain-like information processing through discrete spike events [ 19 , 31 ]. Unlike conventional Artificial Neural Networks (ANNs) based on continuous computation ([ 6 , 7 , 12 , 13 , 
+
+> This work is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+> DAC ’26, Long Beach, CA, USA
+> ©2026 Copyright held by the owner/author(s). ACM ISBN 979-8-4007-2254-7/2026/07 https://doi.org/10.1145/3770743.3804164
+
+28 , 30 ]), SNNs achieve higher biological plausibility and lower en-ergy consumption, showing strong potential in embedded systems, edge intelligence, and robotics [ 25 ]. Neuromorphic hardware such as Intel Loihi [ 5], IBM TrueNorth [ 21 ], and SpiNNaker [ 8 ] further enables on-chip spike computation with ultra-low power and low latency. However, these deployments introduce new system-level at-tack surfaces. In neuromorphic platforms, the event-based interface between sensors (e.g., DVS cameras [ 36 ]) and neuromorphic cores can be exploited to inject abnormal spike streams [ 10 ]. Meanwhile, hardware non-idealities such as quantized membrane voltages or spike-timing jitter amplify these effects [ 29 , 35 ]. Hardware Trojans and bit flip attacks can further compromise neuromorphic integrity [10 , 14 ]. Thus, algorithmic vulnerabilities in SNNs may propagate to chip-level failures, threatening safety-critical applications and emphasizing the need for design-time validation and hardware trust assurance [33]. As neuromorphic hardware becomes increasingly integrated into real-world systems, such adversarial behaviors pose tangible risks to hardware-level trust and reliability, highlighting the internal vul-nerabilities of SNN-based architectures [ 33 ]. Existing works expose these vulnerabilities through various Adversarial Example Attacks (AEAs) [ 4, 11 , 17 , 18 , 26 ]. Early methods relied on equivalent ANNs to circumvent the non-differentiability of spike backpropagation [ 26 ]; later methods such as RGA [ 4 ] and HART [ 11 ] introduced surrogate gradients for direct optimization in SNNs; and PDSG [ 18 ] further adapted gradients to membrane potential dynamics. Despite their success, these methods overlook the bio-plausible mechanisms that govern spike generation and propagation. Con-sequently, they generalize poorly on dynamic (or neuromorphic) datasets and degrade sharply under targeted attack settings.  
+
+> arXiv:2604.01750v1 [cs.CR] 2 Apr 2026 DAC ’26, July 26–29, 2026, Long Beach, CA, USA Jin et al.
+
+Hypoactivation 
+
+Hyperactivation 
+
+PTSD Brain 
+
+Victim SNN 
+
+> mPFC
+> Amygdala
+
+High Spike Rate 
+
+Silence 
+
+Trigger 
+
+Adversarial 
+
+Example 
+
+Input 
+
+Input 
+
+Output 
+
+Output 
+
+Injured Neuron 
+
+Target Neuron 
+
+Figure 1: Motivation behind Spike-PTSD and analogies between the post-traumatic stress response of the PTSD-affected brain and AEAs against SNNs. 
+
+To address these limitations, we revisit the neurobiological foun-dations of SNNs. Neuroscience studies show that neurons in brains affected by Post-Traumatic Stress Disorder (PTSD) exhibit abnor-mal activations when exposed to specific triggers [ 24 , 27 ]. Hyper-or hypoactivated neurons in regions such as the amygdala and the medial prefrontal cortex (mPFC) disrupt normal spike trans-mission, causing aberrant network responses. As shown in Fig. 1, this phenomenon closely resembles AEAs for SNNs, where a small subset of neurons dominates spiking dynamics under adversarial perturbations. Inspired by this analogy, we propose a bio-plausible AEA framework, Spike-PTSD , which emulates PTSD-like neural abnormalities through controllable spike-scaling in target neurons. This mechanism bridges AEAs and biological spike dynamics for the first time, enabling higher attack success rates under temporal encoding and targeted settings. The main contributions of this work are summarized as follows: 
+
+• We propose a bio-plausible AEA attack framework for SNNs by introducing abnormal phenomena of neuronal activation in PTSD-affected brains into AEAs, which is the first attempt to bridge neuroscience and adversarial machine learning to our best knowledge. 
+
+• We propose a universal optimization objective with spike scaling for AEAs against SNNs, which can be combined with any ANN-specific traditional optimization objectives to construct SNN-specific optimization objectives. 
+
+• Our method achieves over 99 % ASR with combined optimiza-tions under most attack settings, including targeted attacks and dynamic datasets, prompting a re-examination of SNN security designs. 
+
+## 2 Preliminaries 2.1 Spiking Neural Networks 
+
+SNNs primarily rely on spike neurons to capture and transmit spike information. We focus on SNNs composed of Leaky Integrate-and-Fire (LIF) neurons, as LIF neurons have been proved to exhibit high robustness in the previous work [ 26 ]. The neuronal dynamics of Temporal Dimension 
+
+> Spatio Dimension
+> Adversarial Optimizing
+> Avg.
+> Avg.
+> BPTT
+
+Figure 2: Forward and backward processes with surrogate gradients in direct SNN training and AEAs. 𝑠 and 𝑛 denote spike and 𝑛 -th layer, respectively. 
+
+LIF neurons can be formulated as follows: 
+
+𝜏 d𝑢 
+
+d𝑡 = −𝑢 𝑡 + 𝐼 𝑡 , (1) where 𝑢 𝑡 represents the neuronal membrane potential (i.e., cumula-tive voltage) at time 𝑡 ∈ { 1, . . . ,𝑇 }. 𝑇 represents the total timestep, and 𝜏 denotes the decay time constant. 𝐼 𝑡,𝑙 𝑗 = ÍΓ (𝑙 −1) 
+
+> 𝑖 =1
+
+𝑤 𝑙 𝑖 𝑗 𝑠 𝑡,𝑙 −1 
+
+> 𝑖
+
++ 𝑏 𝑙 𝑗 
+
+refers to the presynaptic input 𝑠 𝑡,𝑙 −1 
+
+> 𝑖
+
+along with synaptic weights 
+
+𝑤 𝑙 𝑖 𝑗 and bias 𝑏 𝑙 𝑗 , where Γ(𝑙 − 1) denotes the total neuron number in the spike hidden layer (𝑙 − 1). SNNs process spike sequences along spatial and temporal dimensions (Fig. 2). During SNN inference, the mapping from membrane potential to output spikes follows the Heaviside function ( 𝐻 ) as described below: 
+
+𝑠 𝑡,𝑙 𝑖 = 𝐻 (𝑢 𝑡,𝑙 𝑖 − 𝑢 𝑡ℎ ) =
+
+(
+
+1, 𝑢 𝑡,𝑙 𝑖 ≥ 𝑢 𝑡ℎ 
+
+0, 𝑢 𝑡,𝑙 𝑖 < 𝑢 𝑡ℎ , (2) which leads to a non-differentiability issue during backpropagation ( 𝜕𝑠 𝑡,𝑙 +1 
+
+> 𝑗
+> 𝜕𝑢 𝑡,𝑙 +1
+> 𝑗
+
+and 𝜕𝑠 𝑡 +1,𝑙 𝑖  
+
+> 𝜕𝑢 𝑡 +1,𝑙 𝑖
+
+): 
+
+𝜕 L
+
+𝜕𝑠 𝑡,𝑙 𝑖 
+
+= 
+
+> Γ(𝑙 +1)
+
+∑︁ 
+
+> 𝑗 =1
+
+𝜕 L
+
+𝜕𝑠 𝑡,𝑙 +1
+
+> 𝑗
+
+𝜕𝑠 𝑡,𝑙 +1
+
+> 𝑗
+
+𝜕𝑢 𝑡,𝑙 +1
+
+> 𝑗
+
+𝜕𝑢 𝑡,𝑙 +1
+
+> 𝑗
+
+𝜕𝑠 𝑡,𝑙 𝑖 
+
++ (3) 
+
+𝜕 L
+
+𝜕𝑠 𝑡 +1,𝑙 𝑖 
+
+𝜕𝑠 𝑡 +1,𝑙 𝑖 
+
+𝜕𝑢 𝑡 +1,𝑙 𝑖 
+
+𝜕𝑢 𝑡 +1,𝑙 𝑖 
+
+𝜕𝑠 𝑡,𝑙 𝑖 
+
+, (4) where 𝑢 𝑡ℎ represents voltage threshold for spike firing. To solve this problem, surrogate gradients are employed to ensure gradient propagation [ 32 ], which are highlighted by blue arrows in Fig. 2. Moreover, we primarily target rate-coding SNNs ( 𝑟 𝑙 𝑖 =
+
+Í𝑇 𝑡 =1𝑠 𝑡,𝑙 𝑖  
+
+> 𝑇
+
+) for two key reasons: (i) They are easier to train and the most widely used [ 2, 34 ]; (ii) They exhibit stronger robustness than others [ 26 ]. 
+
+## 2.2 Adversarial Example Attacks 
+
+AEAs can induce incorrect predictions in victim models by inject-ing imperceptible perturbations into input data, without modifying model parameters. The unified optimization objective can be for-mulated as follows: 
+
+arg max  
+
+> 𝛿
+
+L𝑎𝑑𝑣 (F ( 𝑥 + 𝛿 ), 𝑦 ) 𝑠.𝑡 . ∥𝛿 ∥𝑝 < 𝜖, (5) Spike-PTSD: A Bio-Plausible Adversarial Example Attack on Spiking Neural Networks via PTSD-Inspired Spike Scaling DAC ’26, July 26–29, 2026, Long Beach, CA, USA Adversarial Perturbation Optimization Spike -Brain Profiling 
+
+> Target Layer
+
+Spike Objective :
+
+> Iterative Optimizing
+
+Injured Neuron Identification 
+
+> No spike No spike
+> Spike
+> Vanishing
+
+Result Accumulation  Trigger Embedding  Loss Combination 
+
+> Hidden Layer
+
+Class -Neuron Correlation Matrix  
+
+> Target Neurons
+> Spike
+> Count:
+> 0
+> 1
+> 2
+> 3
+> 4
+> 0
+> 1
+> 2
+> 3
+> 4
+> :0
+> 2
+> 1
+> Y
+
+Class -Neuron Correlation Matrix  
+
+> Target Neurons
+> Spike
+> Count:
+> 0
+> 1
+> 2
+> 3
+> 4
+> :0
+> 2
+> 1
+> Y
+
+Spike Firing  
+
+> Time: ASR:
+> Selection
+
+Low High 
+
+Figure 3: The overview of Spike-PTSD framework with three key modules: (i) Determine the target layer ( 𝑙 𝑡 ) during spike-brain profiling on computational time or ASR. (ii) Then, select target class ( 𝑦 𝑡 ) and neurons ( N𝑡 ) in 𝑙 𝑡 according to spike-sensitivity and fired spikes under the targeted attack setting (the orange region). (iii) Finally, set the spike objective of N𝑡 and update the perturbation ( 𝛿 ) during the combined optimization process (the purple region) to generate AEs ( ˆ𝑥 ). 
+
+where L𝑎𝑑𝑣 denotes the adversarial loss of AEAs, F represents the victim SNN, while 𝑥 and 𝑦 correspond to the input data and the target output that varies with the target setting, respectively. 𝛿 de-notes the adversarial perturbation. The 𝐿 𝑝 -norm ∥·∥ 𝑝 constrains the perturbation magnitude, with parameter 𝜖 controlling its maximum strength. FGSM [ 9] and PGD [ 20 ] are two simple yet effective AEA methods. FGSM perturbs the original input along the direction that maximizes the model’s inference loss in one iteration, as formulated below: 
+
+ˆ𝑥 = 𝑥 + 𝜖 · 𝑠𝑖𝑔𝑛 (∇ 𝑥 L𝑎𝑑𝑣 (F ( 𝑥 ), 𝑦 )) , (6) where ˆ𝑥 denotes the generated Adversarial Example (AE). PGD iteratively repeats this process, as defined below: 
+
+ˆ𝑥 𝑘 =
+
+Ö
+
+> 𝜖
+
+𝑥 𝑘 −1 + 𝛼 · 𝑠𝑖𝑔𝑛 (∇ 𝑥 L𝑎𝑑𝑣 (F ( 𝑥 𝑘 −1), 𝑦 )) , (7) where 𝑘 denotes the total iteration step, 𝛼 controls the step size per iteration, and Î𝜖 enforces the perturbation constraint at each step. However, as shown in the right panel of Fig. 2, the backpropagation during AEAs also encounters the non-differentiability problem ( 𝜕𝑟 𝑙  
+
+> 𝜕𝐼 𝑙
+
+), formulated as follows: 
+
+𝜕 L𝑎𝑑𝑣 
+
+𝜕𝑟 0 = 𝜕 L𝑎𝑑𝑣 
+
+𝜕𝑟 𝐿 (
+
+> 𝐿
+
+Ö
+
+> 𝑙 =1
+
+𝜕𝑟 𝑙 
+
+𝜕𝐼 𝑙 
+
+𝜕𝐼 𝑙 
+
+𝜕𝑟 𝑙 −1 ), (8) where 𝐿 represents the total layer number of the victim SNN. This issue can also be resolved using the surrogate gradient for rate-coding SNNs [4]. 
+
+## 2.3 Threat Model 
+
+2.3.1 Attack scenario. Our method focuses on widely used open-source model platforms where users can upload or download mod-els. Specifically, the attacker can be either the downloading user or the model uploader in this attack scenario. 
+
+2.3.2 Attackers’ capabilities. We consider targeted and untargeted attacks under white-box settings. Therefore, the attacker can access internal information of the victim model, including model structure and spike activation information. Moreover, when the attacker acts as a download user of the open-source model, they also gain access to the test dataset associated with the victim model, which is used to analyze the internal spiking information of the victim model and generate AEs. 
+
+## 3 Methodology 
+
+In this section, we present our bio-plausible AEA framework (Spike-PTSD), which simulates the post-traumatic stress responses in the PTSD-affected brain with corresponding spike scalings through three key modules: (i) spike-brain profiling, (ii) injured neuron identification, and (iii) adversarial perturbation optimization. Fig. 3 illustrates the complete framework of Spike-PTSD. 
+
+## 3.1 Spike-Brain Profiling (SBP) 
+
+In this module, we identify target layers ( 𝑙 𝑡 ) by analyzing spike acti-vation maps ( M𝑙 ) in the victim model ( F ), mirroring the functional roles of the amygdala (or mPFC) in the PTSD-affected brain. First, for each spike hidden layer 𝑙 in F , we obtain the corresponding 
+
+M𝑙 (Eq.9) during the inference process to determine whether spike vanishing occurs. 
+
+{M 𝑙 } = {M 1, M2, . . . , M𝐿 −𝑑 } = ℎ𝑜𝑜𝑘 1: 𝐿 −𝑑 {F (X)} , (9) where 𝑑 denotes the number of decision layers. X = {𝑥 𝑖 , 𝑦 𝑖 }𝑁 𝑖 =1
+
+denotes the test dataset, where 𝑁 is the total number of test data samples, and 𝑦 𝑖 represents the origin label of 𝑥 𝑖 . ℎ𝑜𝑜𝑘 {·} represents the spike extraction function. If spike vanishing occurs, spike hid-den layers with vanished spikes are removed, and the remaining spike hidden layers are considered as target candidates for 𝑙 𝑡 . Then, 
+
+𝑙 𝑡 will serve as the search space for the target neuron N𝑡 in the next module. 
+
+## 3.2 Injured Neuron Identification (INI) 
+
+In the second module, we identify target neurons N𝑡 by mirroring hyper- or hypoactivated neurons in the PTSD-affected brain un-der post-traumatic stress responses. We accordingly develop dual localization schemes for targeted and untargeted attacks. For tar-geted attacks , we identify target neurons N𝑡 in 𝑙 𝑡 , analogous to amygdala hyperactivation in the PTSD-affected brain that induces specific misbehaviour. As shown in the orange region in Fig. 3, the DAC ’26, July 26–29, 2026, Long Beach, CA, USA Jin et al. 0
+
+> 1
+> 2
+> 3
+> 4
+> 0
+> 1
+> 2
+> 3
+> 4
+
+of each Neuron in 
+
+> Spike
+> count
+> Target neurons
+> 0
+> 1
+> 2
+> 3
+> 4
+
+of each Neuron in 
+
+> Spike
+> count
+> Target neurons
+
+# Result Accumulation  Trigger Embedding  Loss Combination 
+
+Figure 4: Specific process of INI for untargeted attacks. 
+
+procedure comprises three steps: i) Each test sample 𝑥 𝑖 is sequen-tially fed into the victim model ( F ) to obtain its output class 𝑦 𝑜 and the corresponding spike activation map M𝑙 𝑡 at the target layer to construct class-neuron correlation matrix Θ𝑖 ∈ R𝑌 ×Γ (𝑙 𝑡 ) , where 𝑌 
+
+denotes the total number of classes. Specifically, if F ( 𝑥 ) = 𝑦 𝑜 and 
+
+𝑟 𝑖 = M𝑙 𝑡 [𝑜 𝑖 ] ≠ 0 during inference, where 𝑟 𝑖 represents the spike rate of 𝑜 𝑖 and 𝑜 𝑖 denotes neuron index in 𝑙 𝑡 . We set Θ𝑖 [𝑦 𝑜 ] [ 𝑜 𝑖 ] = 1;otherwise, Θ𝑖 [𝑦 𝑜 ] [ 𝑜 𝑖 ] = 0. Then, Θ𝑖 of all test samples is aggregated to construct the final correlation matrix Θ = Θ1 ⊕ Θ2 ⊕ · · · ⊕ Θ𝑁 . (ii) Select classes reliant on spike activation for inference as the target class 𝑦 𝑡 , i.e., 𝑦 𝑡 = 𝑦 𝑜 if ∃𝑜 𝑖 , Θ[𝑦 𝑜 ] [ 𝑜 𝑖 ] ≠ 0. The intuition behind this is to analogize 𝑦 𝑡 to the specific behaviours resulting from neuron hyperactivation in the Amygdala during stress responses. (iii) Ex-tract critical neurons that significantly contribute to the inference of 𝑦 𝑡 as N𝑡 , i.e., N𝑡 = {𝑜 𝑖 |Θ[𝑦 𝑡 ] [ 𝑜 𝑖 ] ≠ 0}.
+
+For untargeted attacks , we identify neurons in 𝑙 𝑡 analogous to hypoactivated neurons in the mPFC that cause regulatory dysfunc-tion as N𝑡 . As shown in Fig. 4, our selection strategy is to inhibit high-spike-rate neurons. Generally, the average pooling layer is added after the spike hidden layer in SNNs to downsample the spike output of the spike layer, and the specific output of the averaging pooling layer can be expressed as follows: 
+
+𝐴𝑣𝑔 𝑙 = 1
+
+Γ(𝑙 )∑︁ 𝑜 𝑖 ∈Γ(𝑙 )
+
+M𝑙 [𝑜 𝑖 ] = 1
+
+Γ(𝑙 )  
+
+> Γ(𝑙 )
+
+∑︁ 
+
+> 𝑖 =1
+
+𝑟 𝑖 , (10) Thus, the average spike rate 𝑟 𝑎𝑣𝑔 of 𝑙 𝑡 can be calculated as: 𝑟 𝑎𝑣𝑔 =  
+
+> 1
+> Γ(𝑙 𝑡 )
+
+ÍΓ (𝑙 𝑡 ) 
+
+> 𝑖 =1
+
+𝑟 𝑖 . Under untagreted attacks, we aim to suppress highly contributing neurons with high spike rates ( 𝑟 𝑖 > 𝑟 𝑎𝑣𝑔 ) as N𝑡 in 𝑙 𝑡 to keep silent. The underlying reason is that: the ideal output spike map M𝑙 𝑡 can be formulated as: 
+
+ˆM𝑙 𝑡 [𝑜 𝑖 ] =
+
+(
+
+0, if 𝑟 𝑖 > 𝑟 𝑎𝑣𝑔 
+
+M𝑙 𝑡 [𝑜 𝑖 ], otherwise , (11) Then, the adversarial ˆ𝐴𝑣𝑔 𝑙 𝑡 after the spike suppression in ˆM𝑙 𝑡 can be expressed as: 
+
+ˆ𝐴𝑣𝑔 𝑙 𝑡 = 1
+
+|Γ(𝑙 𝑡 )| ∑︁ 𝑜 𝑖 ∈Γ (𝑙 𝑡 ),𝑟 𝑖 ≤𝑟 𝑎𝑣𝑔 
+
+M𝑙 𝑡 [𝑜 𝑖 ], (12) Thus, the spike variation ( Δ𝐴𝑣𝑔 𝑙 𝑡 ) can be formulated as: 
+
+Δ𝐴𝑣𝑔 𝑙 𝑡 = 𝐴𝑣𝑔 𝑙 𝑡 − ˆ𝐴𝑣𝑔 𝑙 𝑡 = 1
+
+|Γ(𝑙 𝑡 )| ∑︁ 𝑜 𝑖 ∈ H 𝑙𝑡 
+
+M𝑙 𝑡 [𝑜 𝑖 ], (13) where H𝑙 𝑡 denotes the set of high-spike-rate neurons in M𝑙 𝑡 . Then, if the significance condition in Eq. 14 is satisfied, it can be verified that the spike contributions of the neurons in H𝑙 𝑡 significantly dominate the model inference. 
+
+D𝑟 =
+
+Í𝑘 ∈ H 𝑙𝑡 𝑟 𝑘 
+
+Í𝑘 ∈Γ (𝑙 𝑡 )𝑟 𝑘 
+
+> H𝑙 𝑡 
+
+|Γ(𝑙 𝑡 )| = D𝑙 𝑡 . (14) Due to the sparse spiking activations of SNNs, this significance condition generally holds for most network architectures. Moreover, we experimentally verified the significance condition for all models involved in this work (Sec. 4.5.1). 
+
+## 3.3 Adversarial Perturbation Optimization (APO) 
+
+In the last module of Spike-PTSD, we introduce spike scaling as an additional optimization objective ( L𝑠𝑝𝑖𝑘𝑒 ) for both targeted and un-targeted attacks with the original adversarial optimization objective (Eq. 5), which can be further formulated as: 
+
+L𝑎𝑑𝑣 =
+
+(Í𝑁 𝑖 =1 L𝑐𝑒 (F ( 𝑥 𝑖 + 𝛿 ), 𝑦 𝑡 ), 𝑡𝑎𝑟𝑔𝑒𝑡𝑒𝑑 
+
+Í𝑁 𝑖 =1 L𝑐𝑒 (F ( 𝑥 𝑖 + 𝛿 ), 𝑦 𝑖 ), 𝑢𝑛𝑡𝑎𝑟𝑔𝑒𝑡𝑒𝑑, (15) Then, L𝑠𝑝𝑖𝑘𝑒 for spike scaling under targeted and untargeted attacks can be uniformly expressed as: 
+
+L𝑠𝑝𝑖𝑘𝑒 = L𝑚𝑠𝑒 (M 𝑙 𝑡 , M𝑡 ); M𝑡 = {𝑟 𝑖 |M 𝑙 𝑡 [N 𝑡 ] = 𝑟 𝑡 }, (16) where M𝑡 represents the target spike objective and 𝑟 𝑡 denotes the expected spike rate of N𝑡 . For targeted attacks , we set spike amplification as the final optimization objective for N𝑡 , i.e., 𝑟 𝑡 = 1.
+
+For untargeted attacks , we expect that N𝑡 can remain silent (spike suppression) during inference on each AE, i.e., 𝑟 𝑡 = 0. Considering that both L𝑎𝑑𝑣 (targeted attack) and L𝑠𝑝𝑖𝑘𝑒 are loss minimization processes, while the overall optimization goal of AEA (Eq. 5) is a loss maximization process through gradient ascent. Therefore, a negative sign needs to be added to the corresponding L𝑎𝑑𝑣 and 
+
+L𝑠𝑝𝑖𝑘𝑒 in the combined optimization objective L𝑝𝑡𝑠𝑑 . The final 
+
+L𝑝𝑡𝑠𝑑 for bio-plausible Spike-PTSD is as follows: 
+
+L𝑝𝑡𝑠𝑑 =
+
+(
+
+−𝛾 L𝑎𝑑𝑣 − 𝛽 L𝑠𝑝𝑖𝑘𝑒 , 𝑡𝑎𝑟𝑔𝑒𝑡𝑒𝑑 𝜆 L𝑎𝑑𝑣 − 𝜇 L𝑠𝑝𝑖𝑘𝑒 , 𝑢𝑛𝑡𝑎𝑟𝑔𝑒𝑡𝑒𝑑, (17) where 𝛾 , 𝛽 , 𝜆 , and 𝜇 are coefficients to trade off the two optimization objective terms. Finally, the AE ( ˆ𝑥 ) is generated through 𝑘 iterations during the perturbation optimization according to Eq. 6 (or 7). 
+
+## 4 Experiments 
+
+This section outlines the basic experimental setup and the main experimental results. All experiments were conducted on a server with eight NVIDIA RTX 3090 GPUs. 
+
+## 4.1 Experimental Setups 
+
+4.1.1 Datasets and Models. We evaluate Spike-PTSD and state-of-the-art (SOTA) works on six datasets and three encoding types (𝐸 ): (i) Traditional: CIFAR10 [ 15 ], CIFAR100 [ 15 ], and SVHN [ 22 ]with direct ( 𝐸 1) and Poisson ( 𝐸 2) encodings; (ii) Neuromorphic: 
+
+CIFAR10-DVS (CIFARDVS) [ 16 ], N-MNIST [ 23 ], and DVS128Gesture (Gesture) [ 1 ] with frame ( 𝐸 3) encoding. Moreover, the experiments Spike-PTSD: A Bio-Plausible Adversarial Example Attack on Spiking Neural Networks via PTSD-Inspired Spike Scaling DAC ’26, July 26–29, 2026, Long Beach, CA, USA 
+
+are conducted on four spike-based model structures: VGG16, ResNet18 (Res18), VGGDVS, and ResNet19DVS (ResDVS). 
+
+4.1.2 Metric. Attack Success Rate (ASR) is a crucial metric for evaluating the attack performance of AEA. Targeted and untargeted AEAs are evaluated based on the accuracy of the victim model for correct and wrong classification of ˆ𝑥 , respectively, formulated as follows: 
+
+(
+
+𝐴𝑆𝑅 𝑡𝑎𝑟 = 1
+
+> 𝑁
+
+Í𝑁 𝑖 =1 I(F ( ˆ𝑥 𝑖 ) = 𝑦 𝑡 ) × 100% 
+
+𝐴𝑆𝑅 𝑢𝑛𝑡𝑎𝑟 = 1
+
+> 𝑁
+
+Í𝑁 𝑖 =1 I(F ( ˆ𝑥 𝑖 ) ≠ 𝑦 𝑖 ) × 100% . (18) 
+
+4.1.3 Hyperparameter Settings. For SNN models, 𝜏 = 0.2, and 𝑢 𝑡ℎ =
+
+1.0. During perturbation optimization, ∥·∥ 𝑝 = ∥·∥ ∞ and 𝜖 = 2/255 
+
+are used for FGSM and PGD by default. Moreover, we set 𝛾 = 𝛽 =
+
+𝜆 = 𝜇 = 1 to balance the loss terms in the combined optimization objective (Eq. 17) by default. 
+
+## 4.2 Comparison with State-of-the-art Works 
+
+We comprehensively compared the attack performance of Spike-PTSD with SOTA works, including RGA [ 4], HART [ 11 ], and PDSG [ 18 ]. The results are presented in TABLE 1, which records the average ASR across 20 independent runs, with Standard Error ( ±𝑆𝐸 )in the outcomes. For different datasets and model architectures, we employ the PGD method for all compared approaches, using the default parameters 𝑘 = 15 and 𝜖 = 2/255 . The data shows Spike-PTSD consistently achieves the highest ASR across all three encoding schemes, regardless of whether the dataset is static or dynamic. Notably, while other SOTA methods yield nearly zero ASR under targeted attack settings, Spike-PTSD still attains over 99% ASR in most experimental configurations. 
+
+## 4.3 Ablation studies 
+
+4.3.1 Ablation Study on Spike Hidden Layers. To validate the effec-tiveness of target layer candidates 𝑙 𝑡 in SBP, we conducted ablation experiments under different spike hidden layers. The specific at-tack performance and computational overhead under targeted and untargeted attacks on VGGDVS are documented in Fig. 5(a). We observe that for targeted attacks, an increase in target layer depth is accompanied by a slight rise in ASR and computational time, which is not significant under untargeted attacks. However, the situation on DVS128Gestue is an exception. We believe this is due to the enormous disparity in the number of target neurons across spike layers, as layer2.6 contains 220,000 target neurons while all other layers have fewer than 50,000. Therefore, shallower spike layers incur lower temporal overhead, whereas deeper spike hidden layers achieve higher ASR. 
+
+4.3.2 Ablation Study on Hyperparameters. Fig. 5(b) reports the ASR variations under both targeted and untargeted attacks with different hyperparameter values. Note that 𝛾 = 𝜆 = 0 removes the adversarial term, while 𝛽 = 𝜇 = 0 removes the spike scaling term. As shown in Fig. 5(a), when 𝛽 and 𝛾 are properly combined, they can significantly boost ASR from 7.7% to 98.07% (or from 15.87% to 98.07%). Moreover, ASR is maximized when 𝛾 = 1 and 
+
+𝛽 = 1, whereas further increasing either term may cause a slight degradation. In contrast, the spike scaling term can almost replace the adversarial term under untargeted attacks, since Spike-PTSD still achieves an ASR of 97.43% even when 𝜆 = 0.
+
+## 4.4 Effectiveness of Spike Scaling 
+
+Targeted and untargeted attacks adopt distinct spike scaling strate-gies, namely spike amplification for targeted attacks and suppres-sion for untargeted attacks. As shown in Fig. 6, N𝑡 is identified after the SBP and INI procedures, which is only a small fraction of the activated neurons in 𝑙 𝑡 . For targeted attacks , the changes in spike rates under spike amplification effects are recorded in Fig. 7. The data shows that the AE generated by targeted Spike-PTSD significantly enhances the 𝑟 𝑖 of N𝑡 , especially for N𝑡 [0 − 27 ] and 
+
+N𝑡 [35 −50 ]. For untagrted attacks , the spike rate variations under spike suppression effects are recorded in Fig. 8. As expected, the AE generated under untargeted settings caused the 𝑟 𝑖 of the most neurons in N𝑡 to plummet or even fall silent. 
+
+## 4.5 Discussion 
+
+4.5.1 Significance Condition Analysis. The experimental results of the significance condition under most of the attack settings are recorded in Table 2. It can be seen that D𝑟 is significantly higher than D𝑙 𝑡 in all settings, and thus inhibiting high-spike-rate neurons can lead to significant loss of important spike information and model performance. 
+
+4.5.2 Attack Robustness. This section analyzes the attack robust-ness of Spike-PTSD and the inherent robustness of SNN under different target classes 𝑦 𝑡 and timestep 𝑇 . The specific experimental results are recorded in Fig. 9(a) and 9(b). It shows that the attack performance (ASR) of Spike-PTSD under different 𝑦 𝑡 all signifi-cantly improved as the optimization iteration increased (Fig. 9(a)). In contrast, the baseline method (RGA [ 4 ]) only shows a limited ASR improvement (9.11% →16.04%). Moreover, as shown in Fig. 9(b), the ASRs of Spike-PTSD for victim models under different 𝑇 can generally stabilize at ≈100% as the optimization iteration increases. Therefore, we believe Spike-PTSD has high attack robustness un-der most attack settings. For the inherent robustness of SNNs, the previous study argued that SNNs exhibit higher robustness than the ANN under equal strength AEAs, since they process discrete inputs and use nonlinear activation [ 26 ]. However, Spike-PTSD can steadily increase the ASR to nearly 100%, which completely breaks through the inherent robustness of SNNs. Additionally, we observe that SNNs with smaller 𝑇 achieve higher robustness, as more iterations are required for Spike-PTSD to achieve ≈100% ASR under the same experimental setup (Fig. 9(b)). 
+
+4.5.3 System and Hardware Implications. Beyond algorithmic in-sights, Spike-PTSD also reveals system-level vulnerabilities that are highly relevant to neuromorphic hardware security. In hard-ware implementations of SNNs, such as Loihi [ 5] or TrueNorth [ 21 ], spike scaling as modeled in Spike-PTSD can be physically manifested as variations in firing thresholds, membrane voltage perturbations, or spike-timing delays caused by hardware noise or an intentional signal manipulation [ 10 , 14 ]. These effects may emerge either from hardware Trojans embedded in synaptic cir-cuits or from maliciously crafted event streams injected through DAC ’26, July 26–29, 2026, Long Beach, CA, USA Jin et al. 
+
+Table 1: Attack Performance Comparison with SOTA works on static and dynamic datasets. Targeted ASR ( ±𝑆𝐸 ) Untargeted ASR ( ±𝑆𝐸 )Dataset Model 𝐸 𝑦 𝑡 RGA [4] HART [11] PDSG [18] Ours ( ↑) RGA [4] HART [11] PDSG [18] Ours ( ↑)
+
+𝐸 1 6 0.5 ( ±0.5) 41.65 ( ±0.2) 0 ( ±0) 99.82 ( ± 0.1) 74.47 ( ±0.6) 88.47 ( ±0.5) 62.87 ( ±0.3) 99.13 ( ± 0.7) 
+
+Res18 𝐸 2 9 0 ( ±0) 9.43 ( ±0.5) 0 ( ±0) 90.66 ( ±0.7) 18.8 ( ±0.3) 30.07 ( ±0.5) 13.41 ( ±0.4) 56.23 ( ±0.7) 
+
+𝐸 1 8 1.67 ( ±0.3) 65.7 ( ±0.5) 0 ( ±0) 97.49 ( ±0.5) 87.19 ( ±0.3) 93.09 ( ±0.4) 84.19 ( ±0.3) 99.28 ( ±0.7) CIFAR10 
+
+VGG16 𝐸 2 1 1.49 ( ±0.3) 11.12 ( ±0.6) 0 ( ±0) 77.06 ( ±0.8) 17.12 ( ±0.5) 28.99 ( ±0.2) 10.71 ( ±0.3) 53.64 ( ±0.8) 
+
+𝐸 1 6 0 ( ±0) 32.59 ( ±0.4) 0 ( ±0) 99.8 ( ±0.1) 58.46 ( ±0.5) 86.57 ( ±0.3) 42.41 ( ±0.5) 98.75 ( ±0.7) 
+
+Res18 𝐸 2 0 0 ( ±0) 8.32 ( ±0.6) 0 ( ±0) 95.16 ( ±0.7) 17.89 ( ±0.2) 25.25 ( ±0.3) 10.53 ( ±0.3) 47.52 ( ±0.7) 
+
+𝐸 1 2 1.01 ( ±0.6) 38.08 ( ±0.5) 0.83 ( ±0.4) 97.82 ( ±0.2) 55.25 ( ±0.7) 63.36 ( ±0.5) 45.47 ( ±0.5) 99.86 ( ±0.1) SVHN 
+
+VGG16 𝐸 2 2 0.26 ( ±0.1) 9.28 ( ±0.5) 0 ( ±0) 91.67 ( ±0.7) 16.34 ( ±0.6) 27.02 ( ±0.7) 10.14 ( ±0.6) 42.28 ( ±0.7) 
+
+Res18 𝐸 1 15 2.31 ( ±0.5) 43.12 ( ±0.7) 0 ( ±0) 99.87 ( ±0.1) 93.21 ( ±0.7) 86.57 ( ±0.5) 81.62 ( ±0.7) 99.42 (±0.5) 
+
+CIFAR100 VGG16 𝐸 1 90 2.11 ( ±0.7) 63.8 ( ±0.5) 0 ( ±0) 98.27 ( ±0.7) 91.15 ( ±0.3) 94.28 ( ±0.5) 90.08 ( ±0.4) 99.46 ( ±0.5)
+
+VGGDVS 𝐸 3 1 16.04 ( ±0.2) 32.73 ( ±0.5) 0 ( ±0) 99.39 ( ±0.6) 72.14 ( ±0.7) 73.68 ( ±0.5) 53.38 ( ±0.8) 99.23 ( ±0.7) CIFARDVS ResDVS 𝐸 3 8 15.57 ( ±0.4) 45.16 ( ±0.7) 0 ( ±0) 99.57 ( ±0.4) 84.14 ( ±0.6) 84.19 ( ±0.5) 51.3 ( ±0.5) 99.14 ( ±0.8) 
+
+VGGDVS 𝐸 3 0 0.38 ( ±0.2) 0.92 ( ±0.5) 0 ( ±0) 99.6 ( ±0.3) 1.7 ( ±0.5) 1.64 ( ±0.5) 2.28 ( ±0.7) 99.59 ( ±0.4) N-MNIST ResDVS 𝐸 3 0 0.54 ( ±0.3) 1.36 ( ±0.2) 0.91 ( ±0.2) 92.13 ( ±0.5) 2.02 ( ±0.2) 2.12 ( ±0.2) 1.92 ( ±0.3) 72.34 ( ±0.5) 
+
+VGGDVS 𝐸 3 9 63.24 ( ±0.5) 69.56 ( ±0.8) 0 ( ±0) 99.46 ( ±0.5) 82.21 ( ±0.5) 82.41 ( ±0.6) 77.47 ( ±0.3) 99.45 ( ±0.5) Gesture ResDVS 𝐸 3 10 0.54 ( ±0.2) 55.69 ( ±0.5) 0 ( ±0) 92.13 ( ±0.7) 89.43 ( ±0.5) 89.02 ( ±0.6) 84.15 ( ±0.5) 99.44 ( ±0.5) 
+
+↑ means the higher the better. The best results are in bold, and the second-best results are underlined. Targeted  Untargeted 
+
+Targeted  Untargeted 
+
+Targeted  Untargeted    
+
+> (a) Spike Layers Targeted Untargeted
+> Targeted Untargeted (b) Hyperparameters
+
+Figure 5: Ablation studies on different target spike layers in VGGDVS (a) and hyperparameters (b). （ ）（ ）
+
+（ ）（ ）
+
+（ ）（ ）
+
+Figure 6: The number of fired neurons in the spike layers of VGGDVS and the number of N𝑡 under targeted attacks. 
+
+neuromorphic sensors [ 3 ]. The observation that hyper- and hy-poactivated neurons can globally destabilize the spike dynamics of SNNs implies that even minor analog perturbations or timing shifts at the circuit level could lead to functional misclassification. Hence, the proposed framework provides a valuable analytical tool for hardware-aware robustness evaluation and for developing design automation flows that integrate adversarial stress testing during neuromorphic chip validation. Clean  Adversarial 
+
+Figure 7: Spike rate changes under targeted attack ( 𝑦 𝑡 = 1)with spike amplification objectives on CIFAR10-DVS (VG-GDVS). The data is intercepted from the first 50 neurons in 
+
+N𝑡 .
+
+## 5 Conclusion and Future Work 
+
+In this paper, we propose Spike-PTSD, a bio-plausible AEA in-spired by PTSD-affected brain dynamics. By simulating abnormal neuronal activations in response to post-traumatic stress, Spike-PTSD controls corresponding spike scaling in victim SNNs to refine the traditional adversarial objective, making it more consistent with SNNs. Extensive experiments demonstrate that Spike-PTSD achieves state-of-the-art performance against rate-coding SNNs, even under targeted settings and temporally encoded data inputs. Spike-PTSD: A Bio-Plausible Adversarial Example Attack on Spiking Neural Networks via PTSD-Inspired Spike Scaling DAC ’26, July 26–29, 2026, Long Beach, CA, USA 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 0.0 0.1 0.2 0.3 Spike Rate Neuron Index  Clean Adv. (3) (5) (29) (36, 40) (45) Avg.  (91) (98) (113,116,118,126,131,136) (123) (144) (51, 56) (67,73) 
+
+Figure 8: Spike rate changes under untargeted Spike-PTSD with spike suppression objectives on CIFAR10-DVS (VG-GDVS). Neurons with 𝑟 𝑖 above the Avg. on the clean line are N𝑡 .Table 2: Significant contributions of high-spike-rate neurons. Dataset Model D𝑟 D𝑙 𝑡 
+
+CIFAR10-DVS VGGDVS ≈ 1 0.4601 ResNet19DVS ≈ 1 0.1589 DVS128Gesture VGGDVS 0.9969 0.3148 ResNet19DVS ≈ 1 0.2317 N-MNIST VGGDVS ≈ 1 0.2714 Res19NetDVS ≈ 1 0.0877 CIFAR10 VGG16 ≈ 1 0.1881 SVHN VGG16 0.9064 0.3805 0246810 020 40 60 80 100 ASR (%) Iteration  y t= 0 yt= 1 yt= 7 yt= 8 9.11 16.04 (RGA) 
+
+(a) Different Target Classes 0510 15 20 025 50 75 100 ASR (%) Iteration  T =5 T=10 T=20 T=30 10 D= 74% D= (b) Different Timesteps 
+
+Figure 9: Backdoor attack performance under N-MNIST , CIFAR10-DVS, and DVS128Gesture on VGGDVS with differ-ent target classes and timesteps. 
+
+Moreover, Spike-PTSD can serve as a trigger generation mecha-nism for constructing stealthy Trojan attacks on SNNs, which will be further explored in our future work. We also plan to integrate Spike-PTSD into neuromorphic design automation frameworks for security validation, enabling automated detection of hardware-level vulnerabilities and adversarial sensitivity in neuromorphic chips. 
+
+## Acknowledgments 
+
+This work was supported in part by the National Natural Science Foundation of China under Grant 62372087 and Grant 62572103, in part by the Research Fund of State Key Laboratory of Processors under Grant CLQ202310, and in part by the China Scholarship Council under Grant 202406070152. 
+
+## References 
+
+[1] Arnon Amir, Brian Taba, David Berg, Timothy Melano, Jeffrey McKinstry, Carmelo Di Nolfo, Tapan Nayak, Alexander Andreopoulos, Guillaume Garreau, Marcela Mendoza, Jeff Kusnitz, Michael Debole, Steve Esser, Tobi Delbruck, My-ron Flickner, and Dharmendra Modha. 2017. A Low Power, Fully Event-Based Gesture Recognition System. In 2017 IEEE Conference on Computer Vision and Pattern Recognition (CVPR) . 7388–7397. [2] Daniel Auge, Julian Hille, Etienne Mueller, and Alois Knoll. 2021. A survey of encoding techniques for signal processing in spiking neural networks. Neural Processing Letters 53, 6 (2021), 4693–4710. [3] Swarup Bhunia, Michael S. Hsiao, Mainak Banga, and Seetharam Narasimhan. 2014. Hardware Trojan Attacks: Threat Analysis and Countermeasures. Proc. IEEE 102, 8 (2014), 1229–1247. [4] Tong Bu, Jianhao Ding, Zecheng Hao, and Zhaofei Yu. 2023. Rate gradient approximation attack threats deep spiking neural networks. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) .7896–7906. [5] Mike Davies, Narayan Srinivasa, Tsung-Han Lin, Gautham Chinya, Yongqiang Cao, Sri Harsha Choday, Georgios Dimou, Prasad Joshi, Nabil Imam, Shweta Jain, Yuyun Liao, Chit-Kwan Lin, Andrew Lines, Ruokun Liu, Deepak Mathaikutty, Steven McCoy, Arnab Paul, Jonathan Tse, Guruguhanathan Venkataramanan, Yi-Hsin Weng, Andreas Wild, Yoonseok Yang, and Hong Wang. 2018. Loihi: A Neuromorphic Manycore Processor with On-Chip Learning. IEEE Micro 38, 1 (2018), 82–99. [6] Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2019. Bert: Pre-training of deep bidirectional transformers for language understanding. In 
+
+Proceedings of the 2019 conference of the North American chapter of the association for computational linguistics: human language technologies (NAACL-HLT) . 4171– 4186. [7] Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xi-aohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer, Georg Heigold, Sylvain Gelly, et al . 2020. An image is worth 16x16 words: Transformers for image recognition at scale. arXiv preprint arXiv:2010.11929 (2020). [8] Steve Furber and Petru t, Bogdan. 2020. Spinnaker-a spiking neural network archi-tecture . Now publishers. [9] Ian J Goodfellow, Jonathon Shlens, and Christian Szegedy. 2014. Explaining and harnessing adversarial examples. arXiv preprint arXiv:1412.6572 (2014). [10] Chao Guo, Masao Yanagisawa, and Youhua Shi. 2025. DSE-Based Hardware Trojan Attack for Neural Network Accelerators on FPGAs. IEEE Transactions on Neural Networks and Learning Systems 36, 7 (2025), 13036–13050. [11] Zecheng Hao, Tong Bu, Xinyu Shi, Zihan Huang, Zhaofei Yu, and Tiejun Huang. 2024. Threaten Spiking Neural Networks through Combining Rate and Temporal Information. In ICLR . OpenReview.net. [12] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. 2016. Deep residual learning for image recognition. In Proceedings of the IEEE conference on computer vision and pattern recognition . 770–778. [13] Sepp Hochreiter and Jürgen Schmidhuber. 1997. Long short-term memory. Neural computation 9, 8 (1997), 1735–1780. [14] Lingxin Jin, Wei Jiang, Jinyu Zhan, and Xiangyu Wen. 2024. Highly evasive targeted Bit-Trojan on deep neural networks. IEEE Trans. Comput. 73, 9 (2024), 2350–2363. [15] Alex Krizhevsky, Geoffrey Hinton, et al . 2009. Learning multiple layers of features from tiny images. (2009). [16] Hongmin Li, Hanchao Liu, Xiangyang Ji, Guoqi Li, and Luping Shi. 2017. CIFAR10-DVS: An Event-Stream Dataset for Object Classification. Frontiers in Neuroscience 
+
+11 (2017). [17] Xuanwei Lin, Chen Dong, Ximeng Liu, and Yuanyuan Zhang. 2022. SPA: An effi-cient adversarial attack on spiking neural networks using spike probabilistic. In 
+
+2022 22nd IEEE International Symposium on Cluster, Cloud and Internet Computing (CCGrid) . IEEE, 366–375. [18] Li Lun, Kunyu Feng, Qinglong Ni, Ling Liang, Yuan Wang, Ying Li, Dunshan Yu, and Xiaoxin Cui. 2025. Towards Effective and Sparse Adversarial Attack on Spiking Neural Networks via Breaking Invisible Surrogate Gradients. In 
+
+Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) . 3540–3551. [19] Wolfgang Maass. 1997. Networks of spiking neurons: the third generation of neural network models. Neural networks 10, 9 (1997), 1659–1671. [20] Aleksander Madry, Aleksandar Makelov, Ludwig Schmidt, Dimitris Tsipras, and Adrian Vladu. 2017. Towards deep learning models resistant to adversarial attacks. 
+
+arXiv preprint arXiv:1706.06083 (2017). [21] Paul A Merolla, John V Arthur, Rodrigo Alvarez-Icaza, Andrew S Cassidy, Jun Sawada, Filipp Akopyan, Bryan L Jackson, Nabil Imam, Chen Guo, Yutaka Naka-mura, et al . 2014. A million spiking-neuron integrated circuit with a scalable communication network and interface. Science 345, 6197 (2014), 668–673. [22] Yuval Netzer, Tao Wang, Adam Coates, Alessandro Bissacco, Baolin Wu, An-drew Y Ng, et al . 2011. Reading digits in natural images with unsupervised feature learning. In NIPS workshop on deep learning and unsupervised feature learning ,DAC ’26, July 26–29, 2026, Long Beach, CA, USA Jin et al. 
+
+Vol. 2011. Granada, 4. [23] Garrick Orchard, Ajinkya Jayawant, Gregory K. Cohen, and Nitish Thakor. 2015. Converting Static Image Datasets to Spiking Neuromorphic Datasets Using Sac-cades. Frontiers in Neuroscience 9 (2015). [24] Kerry J Ressler, Sabina Berretta, Vadim Y Bolshakov, Isabelle M Rosso, Edward G Meloni, Scott L Rauch, and William A Carlezon Jr. 2022. Post-traumatic stress disorder: clinical and translational neuroscience from cells to circuits. Nature Reviews Neurology 18, 5 (2022), 273–288. [25] Kaushik Roy, Akhilesh Jaiswal, and Priyadarshini Panda. 2019. Towards spike-based machine intelligence with neuromorphic computing. Nature 575, 7784 (2019), 607–617. [26] Saima Sharmin, Priyadarshini Panda, Syed Shakib Sarwar, Chankyu Lee, Wachi-rawit Ponghiran, and Kaushik Roy. 2019. A comprehensive analysis on adversarial robustness of spiking neural networks. In 2019 International Joint Conference on Neural Networks (IJCNN) . IEEE, 1–8. [27] Lisa M Shin, Scott L Rauch, and Roger K Pitman. 2006. Amygdala, medial prefrontal cortex, and hippocampal function in PTSD. Annals of the New York Academy of Sciences 1071, 1 (2006), 67–79. [28] Karen Simonyan and Andrew Zisserman. 2015. Very Deep Convolutional Networks for Large-Scale Image Recognition. arXiv:1409.1556 [cs.CV] https: //arxiv.org/abs/1409.1556 [29] Felix Staudigl and Rainer Leupers. 2025. Towards Trustworthy Neuromorphic Com-puting: an Analysis of Hardware Security and Reliability Risks . Ph. D. Dissertation. Springer. [30] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan NGomez, Łukasz Kaiser, and Illia Polosukhin. 2017. Attention is all you need. 
+
+Advances in neural information processing systems 30 (2017). [31] W. Maass. 1994. On the computational complexity of networks of spiking neurons. 
+
+Advances in neural information processing systems 7 (1994). [32] Yujie Wu, Lei Deng, Guoqi Li, Jun Zhu, and Luping Shi. 2018. Spatio-temporal backpropagation for training high-performance spiking neural networks. Fron-tiers in neuroscience 12 (2018), 331. [33] Qian Xu, Md Tanvir Arafin, and Gang Qu. 2021. Security of neural networks from hardware perspective: A survey and beyond. In Proceedings of the 26th Asia and South Pacific Design Automation Conference . 449–454. [34] Kashu Yamazaki, Viet-Khoa Vo-Ho, Darshan Bulsara, and Ngan Le. 2022. Spiking neural networks and their applications: A review. Brain sciences 12, 7 (2022), 863. [35] Yuanzhe Zhao, Pengyu He, Yan Zhu, Rui P Martins, Chi-Hang Chan, and Minglei Zhang. 2025. A 28-nm 3.32-nJ/Frame Compute-in-Memory CNN Processor With Layer Fusion for Always-on Applications. IEEE Transactions on Circuits and Systems I: Regular Papers 72, 10 (2025), 5683 – 5695. [36] Nikola Zubic, Mathias Gehrig, and Davide Scaramuzza. 2024. State Space Models for Event Cameras. In CVPR . IEEE, 5819–5828.

@@ -1,0 +1,344 @@
+Title: Decoding Functional Networks for Visual Categories via GNNs
+
+URL Source: https://arxiv.org/pdf/2603.28931v1
+
+Published Time: Wed, 01 Apr 2026 00:11:44 GMT
+
+Number of Pages: 5
+
+Markdown Content:
+# DECODING FUNCTIONAL NETWORKS FOR VISUAL CATEGORIES VIA GNNS 
+
+# Shira Karmi †,⋄ Galia Avidan ⋆, ⋄ Tammy Riklin Raviv †,⋄† The School of Electrical and Computer Engineering, Ben-Gurion University of the Negev  
+
+> ⋆
+
+# Psychology Department, Ben-Gurion University of the Negev  
+
+> ⋄
+
+# The School of Brain Sciences and Cognition, Ben-Gurion University of the Negev 
+
+ABSTRACT 
+
+Understanding how large-scale brain networks represent visual cate-gories is fundamental to linking perception and cortical organization. Using high-resolution 7T fMRI from the Natural Scenes Dataset, we construct parcel-level functional graphs and train a signed Graph Neural Network that models both positive and negative interactions, with a sparse edge mask and class-specific saliency. The model accurately decodes category-specific functional connectivity states (sports , food , vehicles ) and reveals reproducible, biologically mean-ingful subnetworks along the ventral and dorsal visual pathways. This framework bridges machine learning and neuroscience by ex-tending voxel-level category selectivity to a connectivity-based rep-resentation of visual processing. 
+
+Index Terms — fMRI, Natural Scenes Dataset, Graph Neural Networks, Explainability, Functional Connectivity 
+
+1. INTRODUCTION 
+
+Representing neural activity as functional connectivity graphs de-rived from fMRI Blood-Oxygen-Level Dependent (BOLD) signals provides a principled way to study interactions among brain re-gions during perception [1]. Graph Neural Networks (GNNs) are well-suited for this setting because they operate directly on graph-structured data and can model higher-order patterns in functional coupling [2, 3]. Recent work has demonstrated the utility of GNNs for decod-ing cognitive states and characterizing functional organization from resting-state and clinical fMRI datasets [2]. However, applications of GNNs to stimulus-driven fMRI remain comparatively limited, espe-cially under naturalistic viewing conditions, where complex visual input elicits rich, distributed activation patterns. Interpretability is an additional challenge: while GNNs can achieve strong decoding performance, their internal decision mechanisms are often opaque. Explainable-AI (XAI) methods such as learned edge masks [4], con-trastive graph pooling [5], and Gradient–Input attribution [2] have been proposed, yet they are rarely combined in a unified framework for large-scale, stimulus-driven fMRI. Here, we introduce an interpretable Signed Graph Neural Net-work (signed GNN) for decoding category-specific functional con-nectivity during naturalistic vision. We evaluate the model on the Natural Scenes Dataset (NSD) [6], which provides high-resolution, stimulus-driven fMRI responses under richly varied visual input. Positive correlations capture cooperative co-fluctuations, whereas negative correlations capture inverse co-fluctuations between net-works. By modeling both, the signed GNN represents complemen-tary neural mechanisms underlying category-selective responses. Global interpretability is achieved through a sparsity-regularized edge mask, while class-specific relevance is obtained via Gradi-ent–Input attribution. Neuroscientific work has shown that visual categories evoke re-liable and spatially distinct cortical responses. Food-selective re-gions cluster in ventral occipitotemporal cortex and extend toward limbic–orbitofrontal areas involved in reward and gustation [7, 8, 9]. Sports-related perception recruits dorsal visuomotor and pari-etal pathways supporting motion, attention, and action processing [10, 11]. Vehicle recognition engages lateral occipital and posterior ventral visual areas associated with object shape and viewpoint rep-resentations [12]. Beyond local selectivity, a large body of functional connectivity research has demonstrated that visual processing relies on distributed, multi-region coupling patterns across ventral, dorsal, and higher-order association networks (e.g., [13, 14, 15]). However, most connectivity studies rely on correlation matrices or statistical comparisons rather than learned, explainable models. We focus on 
+
+sports , food , and vehicle images because they provide reliable class distinctions in natural scenes and engage broad, multi-region corti-cal systems. These categories span complementary large-scale net-works, making them well suited for studying how category informa-tion is encoded in distributed functional connectivity. Overall, this work advances explainable graph learning for stimulus-driven fMRI by integrating large-scale naturalistic data with an interpretable signed GNN framework. Our contributions are threefold: (1) a multimodal labeling pipeline that fuses COCO instance masks and captions to derive reliable super-category as-signments; (2) a signed GNN that models both positive and negative connectivity and provides global and class-specific explanations via a learned edge mask and Gradient–Input relevance; and (3) a connectivity-based analysis that uncovers category-selective sub-networks spanning ventral, dorsal, and limbic pathways. Taken together, these components form a unified approach for charac-terizing how naturalistic visual input shapes distributed functional interactions in human cortex. 
+
+2. METHODS 
+
+Our goal is decoding category-specific functional connectivity states using an interpretable GNN framework that links aggre-gated stimulus-evoked brain responses to semantic categories. The approach is modular and applicable to stimulus-based fMRI datasets with regional time series. We denote the parcellated fMRI time series of subject s by Xs ∈
+
+RN ×P ×T , where N is the number of stimulus presentations, P is the number of cortical parcels and T the number of timepoints per trial. Our goal is to classify category-specific connectivity states into one of C super-categories using an interpretable signed GNN. For network-level analysis, each block is represented by a func-tional connectivity matrix A ∈ RP ×P capturing pairwise parcel correlations. We decompose each matrix into positive and negative components (A+, A −), which together form the signed input graph processed by the GNN. 
+
+> arXiv:2603.28931v1 [cs.CV] 30 Mar 2026
+
+(a) Sport (b) Food (c) Vehicle 
+
+Fig. 1: Example NSD stimulus with COCO instance masks and caption-derived category evidence for sports , food and vehicle 
+
+The methodological objectives are therefore threefold: (1) to derive reliable semantic category labels for each stimulus using a multimodal annotation-fusion scheme; (2) to learn category-discriminative representations of signed functional connectivity using a signed GNN; and (3) to obtain interpretable explanations of the connectivity structure underlying each visual category. 
+
+2.1. Dataset 
+
+We used the Natural Scenes Dataset (NSD) [6], a large-scale 7 Tesla fMRI resource providing high-resolution cortical responses to natu-ralistic stimuli. Across eight participants, the experiment presented up to 10,000 unique images drawn from the Microsoft COCO dataset [16], which contains complex, multi-object scenes. Each image was displayed for 4 s while participants performed a continuous recognition task, indicating whether it had appeared earlier in the experiment. This paradigm maintains attention and minimizes habituation across thousands of trials. NSD data were ac-quired at 1.8 mm isotropic resolution and projected onto each partic-ipant’s cortical surface using subject-specific reconstructions, yield-ing high-fidelity, surface-based fMRI aligned to cortical parcels. This makes NSD well suited for connectivity analysis and graph-based modeling. 
+
+2.2. Preprocessing 
+
+All fMRI data were preprocessed using the NSD-derived routines from the Algonauts 2023 pipeline [17], including motion correc-tion, detrending, hemodynamic normalization, surface projection, and standardized extraction of parcel-wise responses. Each subject’s cortical surface was then parcellated into P regions using the mul-timodal HCP–MMP1 atlas [18], which provides neurobiologically consistent boundaries. For each subject, we extracted parcel-averaged time series across all runs, yielding denoised and standardized regional signals suitable for connectivity-based analysis. 
+
+Category Fusion. We define three super-categories— sports , food ,and vehicle —and derive multimodal evidence for each NSD image using its COCO 2017 instance masks and captions. For each cate-gory c and image i, mask evidence mask c(i) quantifies the fraction of the image occupied by objects belonging to c, and text evidence 
+
+text c(i) captures the relative frequency of category-related terms in the caption. These signals are combined using a category-specific weight αc to yield score c(i) = αc text c(i) + (1 −αc) mask c(i).
+
+An illustration of this multimodal fusion appears in Fig. 1. 
+
+Category Assignment and Duplication. Since natural scenes often contain multiple semantic elements, an image may provide meaningful evidence for more than one super-category. To con-vert the continuous fusion scores into training samples, we dis-cretize each score into approximately 10% units. For each cate-gory c, the number of samples generated by image i is nc(i) = 
+
+⌊ 10 · score c(i) ⌉ , so images with stronger category evidence con-tribute proportionally more examples while keeping class sizes balanced. A global train/validation/test split is defined on the im-age indices before duplication to avoid leakage across samples or categories. 
+
+2.3. Connectivity Matrix Construction 
+
+For each subject s, let X(k) 
+
+> s
+
+∈ RP ×T denote the parcel-wise fMRI time series for trial k. Trials are grouped into blocks of fixed size K.For a block containing trials {X(k1) 
+
+> s
+
+, . . . , X (kK ) 
+
+> s
+
+}, we concatenate their time series to improve SNR for connectivity estimation, 
+
+˜Xs =  X(k1) 
+
+> s
+
+| X(k2) 
+
+> s
+
+| · · · | X(kK )
+
+> s
+
+ ∈ RP ×(KT ),
+
+and z-score the resulting matrix across time. We compute the Pearson-correlation matrix A from ˜Xs, clip-ping extreme values to the Fisher-consistent range [−1, 1] . Each block yields one connectivity matrix, producing a single graph sam-ple. Matrices are constructed independently for each super-category and balanced across classes for training. To form signed graphs, we separate positive and negative corre-lations into two channels, 
+
+A+ 
+
+> ij
+
+= max( Aij , 0) , A− 
+
+> ij
+
+= max( −Aij , 0) ,
+
+which together serve as the input to the signed GNN. Each graph represents a category-conditioned, block-level connectivity estimate, not a single-trial response. 
+
+2.4. Signed GNN Architecture 
+
+Each connectivity graph is encoded as a two-channel adjacency ten-sor A = ( A+, A −) ∈ R2×P ×P , where A+ and A− store the posi-tive and negative correlations, respectively. The interpretation of negative correlations in fMRI remains de-bated, as these values are typically weaker and can be affected by preprocessing choices such as global signal regression [19]. We therefore treat A− not as a biologically inhibitory signal but simply as an additional relational feature capturing inverse co-fluctuations that may aid classification. Separating positive and negative edges allows the signed GNN to learn data-driven distinctions between the two without imposing assumptions about their physiological meaning. This representa-tion preserves the full signed connectivity structure and enables the model to emphasize or suppress negative edges depending on their utility for category decoding. 
+
+Learnable edge mask. To promote sparse and interpretable con-nectivity patterns, we introduce a shared symmetric mask M ∈
+
+[0 , 1] P ×P that multiplicatively gates both adjacency channels, 
+
+eA+ = A+ ⊙ M, eA− = A− ⊙ M. 
+
+The mask allows the network to retain, attenuate, or suppress spe-cific connections. To encourage a small set of informative edges, we regularize M with sparsity and near-binary constraints: 
+
+Lmask = λ1∥M ∥1 + λe M ⊙ (1 −M ),
+
+promoting sparse, interpretable connectivity patterns shared across categories. Signed graph convolutions. The model contains two signed graph-convolution layers. Let h(ℓ) 
+
+> i
+
+denote the feature vector of node i at layer ℓ. Each layer updates node features via 
+
+h(ℓ+1)  
+
+> i
+
+= σ W (ℓ)+
+
+X
+
+> j
+
+eA+ 
+
+> ij
+
+h(ℓ) 
+
+> j
+
++ W (ℓ)
+
+> −
+
+X
+
+> j
+
+eA− 
+
+> ij
+
+h(ℓ) 
+
+> j
+
++ b(ℓ)
+
+!
+
+,
+
+where W (ℓ)+ and W (ℓ) 
+
+> −
+
+learn from positive and negative interactions, respectively. Node features are initialized as one-hot identity vec-tors, ensuring each parcel begins with a distinct representation. 
+
+Pooling and classification. Node embeddings after the sec-ond convolutional layer are aggregated by global mean pooling: 
+
+g = 1
+
+> P
+
+PPi=1 h(2)  
+
+> i
+
+. The pooled representation is passed through a multilayer perceptron: 
+
+z = ϕ(W1g + b1), ˆy = softmax( W2z + b2),
+
+producing class probabilities for each of the categories. 
+
+Interpretability outputs. The mask M gates all adjacency oper-ations, thus, it yields a global, category-agnostic measure of con-nectivity importance. Class-specific explanations are obtained via gradient–input attribution (Section 2.5), providing fine-grained maps of how individual connections influence each category decision. 
+
+2.5. Explainability 
+
+To interpret how the signed GNN uses functional connectivity to perform category decoding, we combine two complementary forms of analysis: (i) a global, sample-agnostic edge mask that high-lights sparse connectivity patterns shared across the dataset [4], and (ii) class-specific gradient-input attribution that identifies which edges drive each category decision [20, 21]. 
+
+(i) Global edge-importance mask. Because the learnable mask 
+
+M multiplicatively gates all adjacency matrices (Section 2), the en-try Mij directly reflects the importance of the connection between parcels i and j across all categories and samples. After training, M
+
+highlights sparse, interpretable connectivity patterns shared across categories. We visualize: Msym = 12 (M + M ⊤), and interpret high-valued edges as the core connections consistently used during graph convolution. Parcel-level global relevance is computed as the weighted node degree: 
+
+rglobal  
+
+> i
+
+= X
+
+> j
+
+Msym ,ij .
+
+(ii) Class-specific saliency maps. To capture category-dependent connectivity patterns, we compute gradient–input attribution for each class c ∈ { sports , food , vehicle }. Given the class logit fc(A)
+
+and original adjacency channel A±, the class-specific relevance is: 
+
+S± 
+
+> c
+
+= ∂f c
+
+∂A ± ⊙ A± ,
+
+followed by channel fusion: Sc = S+ 
+
+> c
+
++ S− 
+
+> c
+
+. We symmetrize and zero the diagonal, eSc = sym( Sc) − diag( Sc), and select the top-k
+
+edges by magnitude. Node-level class-specific relevance is then computed as: r(c) 
+
+> i
+
+= P 
+
+> j
+
+eSc,ij .
+
+Spatial visualization. The relevance vectors rglobal and r(c) are mapped onto the cortical surface using the Human Connectome Project multi-modal parcellation 1.0 (HCP-MMP1) [18] parcel-lation, yielding interpretable region-level importance maps. The global mask highlights a shared connectivity scaffold, whereas class-specific saliency maps reveal distinct subnetworks supporting 
+
+sports , food , and vehicle recognition. 
+
+3. EXPERIMENTS 3.1. Hemisphere Selection 
+
+We apply the full pipeline separately to the right (RH) and left (LH) hemispheres. All development is performed on the RH and then transferred unchanged to the LH, enabling controlled comparison of category-selective connectivity patterns and assessment of hemi-spheric asymmetries. RH results are reported in (Table 1) and LH results compare to RH report in (Section 4.6). 
+
+3.2. Setup and Data Splits 
+
+All analyses are performed independently for each of the eight NSD participants. To prevent data leakage, the global train/validation/test split is defined at the image level before any fMRI processing. Each image contributes a variable number of samples to its assigned super-category ( sports , food , vehicle ) based on its multimodal fusion score (Section 2), with roughly one sample added for every 10% of cate-gory evidence. 
+
+3.3. Training Protocol 
+
+Models are trained independently for each subject using minibatches of connectivity matrices derived from the training images. The signed GNN is optimized with class-weighted cross-entropy (label smoothing 0.1) and AdamW, with early stopping based on valida-tion loss. Training uses a batch size of 32, an initial learning rate of 
+
+3 × 10 −4, and weight decay of 10 −3. Random seeds are fixed across all preprocessing and training steps to ensure full reproducibility. 
+
+3.4. Evaluation 
+
+Performance is evaluated on the held-out test split using classifica-tion accuracy and per-class Average Precision (AP). Explainability is computed only after model selection, with saliency and mask-derived relevance maps evaluated per category and aggregated across subjects for group-level analysis. 
+
+4. RESULTS 
+
+(a) Epoch 0 (b) 1/3 training 
+
+(c) 2/3 training (d) End of training 
+
+Fig. 2: t-SNE progression of graph embeddings across training. Clusters emerge for sports (blue), food (red), and vehicle (green), showing the signed GNN gradually disentangles category-selective connectivity patterns. Table 1: Per-subject test accuracy and Average Precision (AP). Macro-AP is the mean AP across the three classes. Final rows show mean ± standard deviation. 
+
+Subj. Acc. Sports Food Veh. Macro-AP 
+
+1 0.790 0.916 0.939 0.829 0.895 2 0.769 0.860 0.930 0.837 0.876 3 0.640 0.739 0.843 0.643 0.742 4 0.870 0.923 0.942 0.880 0.915 5 0.810 0.929 0.949 0.918 0.932 6 0.818 0.950 0.959 0.910 0.940 7 0.790 0.854 0.961 0.804 0.873 8 0.746 0.870 0.859 0.858 0.863 
+
+Mean 0.78 0.88 0.92 0.84 0.88 
+
+± STD ±0.06 ±0.07 ±0.04 ±0.09 ±0.06 
+
+Fig. 3: Top-weighted parcels for sports, food, and vehicle. Warmer colors denote higher relevance from the learned mask and saliency. 
+
+4.1. Latent-Space Organization 
+
+Projecting pooled embeddings to 2D with t-SNE (Fig. 2) shows that category structure is absent at initialization but becomes increasingly separable during training. By convergence, sports , food , and vehi-cle occupy distinct regions of latent space, indicating that the model learns category-discriminative connectivity features. Trajectories are consistent across participants, suggesting a shared representational geometry. 
+
+4.2. Quantitative Evaluation 
+
+Training converges within 50–60 epochs with minimal overfitting. Subjects show right-hemisphere (RH) accuracy 0.78 and macro-AP 
+
+0.88 (Table 1). Food yields the highest category AP ( 0.92 ), followed by sports (0.88 ) and vehicle (0.84 ). Performance is comparable on the left hemisphere (LH; accuracy 0.80 , macro-AP 0.91 ), with the same category ranking. Inter-subject variability is modest and within expected ranges for fMRI data. 
+
+4.3. Category-Selective Connectivity Networks 
+
+Relevance maps derived from the mask and saliency reveal coher-ent, category-specific subnetworks (Fig. 3). Ventral visual parcels (VMV1–3, FFC) contribute across all categories, while dorsal vi-suomotor and limbic regions differentiate them: 
+
+Food. High relevance appears in ventral occipitotemporal areas (VMV1–2 , FFC ) and limbic–insular parcels ( FOP4 , PHA2 ), consis-tent with reports of food-selective ventral cortex [7, 8, 9]. 
+
+Sports. Dorsal visuomotor parcels ( MT/MST , V7 , VIP/LIP , 7Am )dominate, aligning with dorsal-stream roles in motion and action processing [10, 11]. 
+
+Table 2: Mean performance of contrastive learning vs. signed GNN. 
+
+Method Acc. Sports Food Veh. Macro-AP 
+
+CL 0.637 0.728 0.752 0.613 0.698 Our 0.780 0.880 0.920 0.840 0.880 
+
+Vehicles. Top-weighted parcels cluster in ventral and lateral oc-cipitotemporal cortex ( LO1–3 , VMV1–3 ) with contributions from posterior parietal areas ( PGs ), consistent with object form and lay-out processing and viewpoint-invariant recognition [12]. Interpretation relies on the HCP–MMP1 atlas [18], confirming that the signed GNN recovers subnetworks aligned with established ventral, dorsal, and limbic processing pathways. 
+
+4.4. Cross-Subject Consistency 
+
+Category-selective subnetworks are reproducible across participants, with high pairwise correlations of node-importance maps. Mild dif-ferences (e.g., weaker ventral–limbic expression for food in some subjects) show no systematic pattern and likely reflect typical fMRI variability. 
+
+4.5. Comparison to Contrastive Learning 
+
+A GraphCL-based contrastive baseline [22] performs substantially worse than the supervised signed GNN (accuracy 0.637 vs. 0.780 ;macro-AP 0.698 vs. 0.880 ; Table 2). Statistical tests confirm a consistent subject-wise advantage (Wilcoxon p = 0.0078 ; t-test 
+
+p = 2 .8 × 10 −5), reflecting the importance of supervision for cap-turing category-specific signed connectivity patterns. 
+
+4.6. Right–Left Hemisphere Comparison 
+
+LH performance closely matches RH, and connectivity explanations show broad agreement for sports and vehicle . Food-selective maps exhibit stronger, more coherent ventral–limbic involvement in RH, consistent with prior NSD reports [9]. 
+
+4.7. Methodological Note and Limitations 
+
+The signed GNN provides an interpretable framework for model-ing signed functional connectivity through a combination of a learn-able global mask and class-specific saliency. The analysis focuses on stable, category-selective connectivity configurations rather than single-trial or time-resolved dynamics. Limitations include label ambiguity in COCO-derived categories, hemisphere-only analyses, and the use of static correlations; aggregation across samples miti-gates label noise. 
+
+5. CONCLUSION 
+
+This study demonstrates that Signed Graph Neural Networks offer a powerful and interpretable way to decode large-scale fMRI connec-tivity during natural image viewing. By combining a learned edge mask with gradient-based saliency, the model reveals clear, repro-ducible subnetworks for food , sports , and vehicle —closely align-ing with well-established ventral and dorsal visual hierarchies. To-gether, these findings provide compelling, population-level evidence for how the human brain organizes and distributes semantic infor-mation under naturalistic conditions. Future work will jointly model both hemispheres to examine cross-hemispheric interactions and lateralization, and will explore individual differences in semantic preferences and behavior. More broadly, interpretable graph models offer a scalable framework for mapping how distributed neural systems represent semantic and af-fective information during real-world perception. 6. COMPLIANCE WITH ETHICAL STANDARDS 
+
+This study was conducted using publicly available human fMRI data from the Natural Scenes Dataset (NSD) [6]. Ethical approval for data collection was obtained by the original investigators at the Univer-sity of Minnesota under Institutional Review Board (IRB) protocol number 00005568, and all participants provided informed consent. The present analysis used only anonymized, open-access data and therefore required no additional ethical approval. 
+
+7. ACKNOWLEDGMENTS 
+
+This work was supported by the School of Electrical and Computer Engineering and the Zelman Center for Brain Science Research at Ben-Gurion University of the Negev through departmental and re-search scholarships awarded. The authors declare no conflicts of interest. 
+
+8. REFERENCES 
+
+[1] E. Bullmore and O. Sporns, “Complex brain networks: Graph theoretical analysis of structural and functional systems,” Na-ture Reviews Neuroscience , vol. 10, pp. 186–198, 2009. [2] X. Zhou, Y. Li, L. He, et al., “BrainNNExplainer: Interpretable graph neural networks for brain connectivity analysis,” Medi-cal Image Analysis , 2024. [3] Y. Luo, Y. Cheng, H. Yang, and Z. Liu, “Graph-based deep learning for medical diagnosis and analysis: Past, present and future,” IEEE Access , vol. 9, pp. 145–165, 2021. [4] R. Ying, D. Bourgeois, J. You, M. Zitnik, and J. Leskovec, “GNNexplainer: Generating explanations for graph neural net-works,” in Advances in Neural Information Processing Systems (NeurIPS) . IEEE, 2019, pp. 9240–9251. [5] J. Xu, Q. Bian, X. Li, A. Zhang, Y. Ke, W. K. J. Sim, and B. Guly´ as, “Contrastive graph pooling for explainable clas-sification of brain networks,” IEEE Transactions on Medical Imaging , 2024. [6] E. J. Allen, G. St-Yves, Y. Wu, J. L. Breedlove, J. S. Prince, L. T. Dowdle, M. Nau, B. Caron, F. Pestilli, I. Charest, J. B. Hutchinson, T. Naselaris, and K. Kay, “A massive 7 T fMRI dataset to bridge cognitive neuroscience and artificial intelli-gence,” Nature Neuroscience , vol. 25, pp. 116–126, 2022. [7] Y. Chen, M. Khosla, N. A. R. Murty, and N. Kanwisher, “A highly selective response to food in human visual cortex re-vealed by hypothesis-free voxel decomposition,” Current Bi-ology , vol. 32, no. 13, pp. 2875–2883.e6, 2022. [8] I. M. L. Pennock, C. Cziraki, M. Brett, N. Kriegeskorte, N. Rezaii, M. C. Iordan, et al., “Color-biased regions in the ventral visual pathway are food selective,” Current Biology ,vol. 33, no. 1, pp. 134–146, 2023. [9] N. Jain, A. Wang, M. M. Henderson, et al., “Selectivity for food in human ventral visual cortex,” Communications Biol-ogy , vol. 6, pp. 175, 2023. [10] V. Ayzenberg, T. Stephens, and S. F. Lourenco, “The dorsal vi-sual pathway represents object-centered part relations,” Jour-nal of Neuroscience , vol. 42, no. 23, pp. 4693–4705, 2022. [11] M. J. Wright and R. C. Jackson, “Brain regions concerned with perceptual skills in tennis: an fMRI study,” International Jour-nal of Psychophysiology , vol. 63, no. 2, pp. 214–220, 2007. [12] D. R. Andresen et al., “The representation of object viewpoint in human visual cortex,” NeuroImage , vol. 40, no. 1, pp. 198– 210, 2008. [13] R. Matthew Hutchison, Thomas Womelsdorf, Elena A. Allen, Peter A. Bandettini, Vince D. Calhoun, Maurizio Corbetta, Stefania Della Penna, Jeff H. Duyn, Gary H. Glover, Javier Gonzalez-Castillo, Daniel A. Handwerker, Shella Keilholz, Vesa Kiviniemi, David A. Leopold, Francesca de Pasquale, Olaf Sporns, Martin Walter, and Catherine Chang, “Dynamic functional connectivity: Promise, issues, and interpretations,” 
+
+NeuroImage , vol. 80, pp. 360–378, 2013. [14] Christopher Baldassano, Janice Chen, Asieh Zadbood, Jonathan W. Pillow, Uri Hasson, and Kenneth A. Norman, “Discovering event structure in continuous narrative percep-tion and memory,” Neuron , vol. 95, no. 3, pp. 709–721.e5, 2017. [15] James V. Haxby, Jyothi S. Guntupalli, Samuel A. Nastase, Ma Feilong Feilong, Yaroslav O. Halchenko, Andrew C. Con-nolly, Peter J. Ramadge, M. I. Gobbini, and Michael Hanke, “Hyperalignment: Modeling shared information encoded in id-iosyncratic cortical topographies,” eLife , vol. 9, pp. e56601, 2020. [16] T.-Y. Lin, M. Maire, S. Belongie, L. Bourdev, R. Girshick, J. Hays, P. Perona, D. Ramanan, C. L. Zitnick, and P. Doll´ ar, “Microsoft coco: Common objects in context,” arXiv preprint arXiv:1405.0312 , 2015. [17] G. Fales et al., “Algonauts 2023 challenge: Data prepa-ration pipeline,” https://github.com/gifale95/ algonauts_2023 , 2023, Accessed: 2025-01-15. [18] M. F. Glasser, T. S. Coalson, E. C. Robinson, C. D. Hacker, J. Harwell, E. Yacoub, K. Ugurbil, J. Andersson, C. F. Beck-mann, M. Jenkinson, S. M. Smith, and D. C. Van Essen, “A multi-modal parcellation of human cerebral cortex,” Nature ,vol. 536, no. 7615, pp. 171–178, 2016. [19] K. Murphy, R. Birn, and P. Bandettini, “The impact of global signal regression on resting state correlations: Are anti-correlated networks introduced?,” NeuroImage , vol. 44, no. 3, pp. 893–905, 2009. [20] Avanti Shrikumar, Peyton Greenside, and Anshul Kundaje, “Learning important features through propagating activation differences,” in Proceedings of the 34th International Con-ference on Machine Learning (ICML) , 2017, pp. 3145–3153. [21] Karen Simonyan, Andrea Vedaldi, and Andrew Zisserman, “Deep inside convolutional networks: Visualising image clas-sification models and saliency maps,” in International Confer-ence on Learning Representations (ICLR) Workshop , 2014. [22] Y. You, T. Chen, Y. Sui, Y. Shen, Z. Wang, and Z. Shen, “Graph contrastive learning with augmentations,” in Proc. Adv. Neural Inf. Process. Syst. (NeurIPS) , 2020, pp. 5812–5823.

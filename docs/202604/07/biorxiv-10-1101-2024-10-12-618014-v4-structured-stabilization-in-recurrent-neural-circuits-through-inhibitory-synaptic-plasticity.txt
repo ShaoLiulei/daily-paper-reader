@@ -1,0 +1,3160 @@
+Title: Structured stabilization in recurrent neural circuits through inhibitory synaptic plasticity
+
+URL Source: https://www.biorxiv.org/content/10.1101/2024.10.12.618014v4.full.pdf
+
+Number of Pages: 42
+
+Markdown Content:
+# Structured stabilization in recurrent neural circuits through 1
+
+# inhibitory synaptic plasticity 2
+
+## Dylan Festa B,K Claudia Cusseddu K,ï Julijana Gjorgjieva B,K,ï,ì
+
+> 3
+> K
+
+School of Life Sciences, Technical University of Munich, Freising, Germany ;4
+
+> ï
+
+School of Medicine and Health, TUM, Munich, Germany ;5
+
+> ì
+
+Munich Cluster for Systems Neurology (SyNergy), Germany ;6
+
+> B
+
+dylan.festa@gmail.com, gjorgjieva@tum.de 7
+
+> Compiled from L ATEX on: April 5, 2026
+
+In cortical circuits, inhibitory interneurons play a dual role: they regulate overall activity levels to prevent runaway 8
+
+excitation, and contribute to diverse computations. While unstructured inhibitory synaptic connections achieve 9
+
+the first role by homeostatically regulating firing rates, computational tasks often require structured excitatory-10 
+
+inhibitory (E/I) connectivity. Here, we consider a broad class of pairwise inhibitory spike-timing dependent 11 
+
+plasticity (iSTDP) rules, demonstrating how inhibitory connections can self-organize to both stabilize excitation 12 
+
+and generate functionally relevant connectivity motifs—a process we call “structured stabilization”. We show that 13 
+
+in both small E/I circuits and large spiking recurrent neural networks the choice of iSTDP rule can lead to either 14 
+
+mutually connected E/I pairs, or to lateral inhibition, where an inhibitory neuron connects to an excitatory neuron 15 
+
+that does not directly connect back to it. In a one-dimensional ring network with two inhibitory subpopulations 16 
+
+following these distinct iSTDP rules, the effective connectivity within the excitatory units self-organizes into a 17 
+
+Mexican-hat-like profile, with excitatory influence in the center and inhibitory influence away from the center. 18 
+
+This leads to emergent network responses such as contextual modulation effects as in the visual cortex and 19 
+
+spatially modular activity characteristic of developmental spontaneous activity. Our theoretical work introduces a 20 
+
+family of rules that retains the broad applicability and simplicity of spike-timing-based plasticity, while stabilizing 21 
+
+activity and promoting specific connectivity motifs which support emergent network computations. 22 
+
+Significance Statement 
+
+Neural circuits are faced with the dual challenge of keeping activity stable while modifying synaptic strengths during development and learning. A prominent mechanism to keep excitation in check is inhibitory synaptic plasticity. In recurrent circuit models, we show that plasticity rules based on spike timing at synapses from inhibitory to excitatory neurons can stabilize activity while reinforcing specific connectivity motifs. The shape of these rules dictates the resulting motifs, and determines whether inhibitory neurons form strong reciprocal connections with their excitatory partners or lateral connections onto excitatory neurons that do not connect back. In recurrent networks with local excitatory connectivity, these motifs generate surround suppression as in the visual cortex, and long-range spatial correlations characteristic of developmental spontaneous activity. 
+
+> 23
+
+# 1 Introduction 24 
+
+In cortical circuits, GABA-ergic interneurons constitute approximately 10% to 20% of the total neural population, 25 
+
+and can be further divided into subtypes that exhibit distinct characteristics in connectivity, plasticity and tuning 26 
+
+properties (Jiang et al. 2015; Tremblay et al. 2016). Fully understanding how these diverse interneuron subtypes 27 
+
+influence neural circuit function remains a significant challenge. A key open question is how activity-dependent 28 
+
+plasticity of inhibitory synapses in recurrent circuits sculpts this diversity into specific connectivity motifs while 29 
+
+maintaining stable network activity. 30 
+
+The dynamic balance between excitation and inhibition is crucial for generating the irregular, Poisson-like firing 31 
+
+patterns commonly observed in vivo in cortical circuits (Van Vreeswijk and Sompolinsky 1998; Brunel 2000). This 32 
+
+balance enhances the circuit’s sensitivity to input, facilitating rapid information processing (Tsodyks and Sejnowski 33 
+
+1995). Furthermore, it supports essential computations, such as receptive field emergence (Wallenstein and 34 
+
+Hasselmo 1997; Froemke et al. 2007; Dorrn et al. 2010; Kleberg et al. 2014; D’amour and Froemke 2015; Rubin 35 
+
+et al. 2017), neural assembly formation (Sadeh and Clopath 2021), and the storage of precise temporal firing 36 
+
+sequences (Maes et al. 2021; Riquelme et al. 2023; Gong and Brunel 2024; Shao et al. 2024). 37 
+
+1
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+Excitatory-inhibitory (E/I) balance can be achieved without any specific inhibitory connectivity structures. Often 38 
+
+circuit models consider inhibition simply as a “blanket” that regulates excitation, and incorporate it into a global 39 
+
+normalization term or a correction to the synaptic weights between excitatory neurons (Jin 2002; Vogels et al. 40 
+
+2011; Ravid Tannenbaum and Burak 2016; Montangie et al. 2020). While this simplified approach captures 41 
+
+fundamental properties of neural dynamics, it overlooks the possible advantages of more specific E/I connectivity 42 
+
+patterns. Incorporating structured inhibitory connections can further refine computations and circuit properties 43 
+
+such as E/I co-tuning (Clopath et al. 2016; Mackwood et al. 2021; Miehl and Gjorgjieva 2022; Eckmann et al. 44 
+
+2024), memory storage (Mongillo et al. 2018; Bergoin et al. 2023; Miehl et al. 2023; Agnes and Vogels 2024; 45 
+
+Meissner-Bernard, Jenkins, et al. 2025; Meissner-Bernard, Zenke, et al. 2025), predictive coding (Schulz et al. 46 
+
+2021), and other aspects of neural dynamics (Mongillo et al. 2018; Dahmen et al. 2020; Sadeh and Clopath 2020; 47 
+
+Hafizi et al. 2022). 48 
+
+Experimental findings demonstrate that inhibitory neurons form non-random connectivity patterns that cannot 49 
+
+be explained solely by cell distance or neuron morphology. Additional factors, including developmental factors 50 
+
+such as spontaneous activity, interneuron subtype, synaptic dynamics and targeting preference significantly 51 
+
+shape this connectivity structure (Peng et al. 2021; Udvary et al. 2022; Bollmann et al. 2023; Reimann et al. 52 
+
+2023; Wu et al. 2023; Kuan et al. 2024; Lakhera et al. 2024; Znamenskiy et al. 2024; Harth et al. 2025). In 53 
+
+the neonatal mouse cortex, even before the onset of external sensory inputs, inhibitory hub neurons regulate 54 
+
+circuit development (Bollmann et al. 2023). Moreover, theoretical studies suggest that spatial organization with a 55 
+
+widespread Mexican-hat-like effective connectivity, consisting of local excitation and longer-range inhibition, can 56 
+
+give rise to modular activity patterns with long-range spatial correlations propagating throughout the neonatal 57 
+
+ferret cortex (Smith et al. 2018). Such correlated activity is thought to serve as a scaffold for the emergence of 58 
+
+specific stimulus feature tuning in the early stages of development (Mulholland et al. 2021; Lakhera et al. 2024; 59 
+
+Trägenap et al. 2025). 60 
+
+Despite these advances, the mechanisms and principles that enable the formation and maintenance of inhibitory 61 
+
+connectivity patterns, especially in the context of excitatory connectivity, remain elusive. Genetic mechanisms 62 
+
+play a fundamental role, particularly in early developmental stages (Duan et al. 2020; Hanganu-Opatz et al. 63 
+
+2021; Wu et al. 2023). Equally important is synaptic plasticity driven by neural activity, which refines inhibitory 64 
+
+connectivity through a dynamic, activity-dependent process (Sreenivasan et al. 2022). This mechanism enables a 65 
+
+closed-loop regulation of neural dynamics, allowing for precise tuning and adaptability in the face of change. 66 
+
+While the majority of experimental and theoretical studies investigate excitatory plasticity (e.g. Kempter et al. 67 
+
+1999; Song et al. 2000; Morrison et al. 2007; Shulz and Feldman 2013, far fewer examine inhibitory plasticity. 68 
+
+Although some theoretical work has considered the impact of different forms of iSTDP in feedforward circuit 69 
+
+architectures with a single postsynaptic neuron (Kleberg et al. 2014; Luz and Shamir 2014), there is still no general 70 
+
+understanding of how pairwise iSTDP might influence the formation of specific connectivity motifs at the level of 71 
+
+recurrently connected circuits. Theoretical work has proposed an iSTDP rule that guarantees the homeostatic 72 
+
+regulation of neuronal rates (Vogels et al. 2011), becoming the “canonical” choice for plastic circuits. However, this 73 
+
+rule tends to over-regulate rates in a homeostatic manner, producing narrow rate distributions in the excitatory 74 
+
+population, which contradicts experimental findings Buzsaki and Mizuseki 2014. In other work, inhibitory rules 75 
+
+are specifically fit to experimental measurements (Lagzi et al. 2021; Bergoin et al. 2025), derived normatively 76 
+
+from computation objectives (Mackwood et al. 2021), or are found through numerical optimization on a large 77 
+
+parameter space (Confavreux et al. 2024). Here we ask how different spike timing-based rules at inhibitory 78 
+
+synapses shape which excitatory and inhibitory neurons become strongly connected in recurrent circuits, and 79 
+
+how the resulting excitatory-inhibitory motifs stabilize network firing rate, while supporting surround modulation 80 
+
+and the generation of spatially correlated spontaneous activity. 81 
+
+To address these questions, rather than studying single rules, here we propose an integrated approach by analyzing 82 
+
+a broad family of pairwise iSTDP rules and study their impact in small analytically tractable E/I circuits as well as 83 
+
+in large-scale recurrent neuronal networks (RNNs) of spiking neurons. We identify mechanisms that stabilize 84 
+
+excitatory activity while shaping circuit motifs, and show how, depending on the profile of the rule considered, 85 
+
+inhibitory connectivity adjusts to the existing excitatory connectivity in distinct ways. 86 
+
+We first consider a recurrently connected two-neuron circuit of one excitatory and one inhibitory neuron, and 87 
+
+derive how the choice of the iSTDP rule determines which features of neural activity drive the plasticity of inhibitory 88 
+
+connections. At one extreme, rules dominated by firing rates are weakly influenced by existing connectivity 89 
+
+structure in the two-neuron circuit, aiming primarily at the homeostatic regulation of firing rates, and thus 90 
+
+2
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+STDP rules AE F GH                    
+
+> 030 60 inh. weight (arb.  u.) 0. 00. 10. 20. 3
+> time (min) 030 60 ex c. rat  e (Hz) 10203040
+> 03060
+> 03060
+> 03060
+> 03060
+> unidirec �onal mutual unidirec �onal mutual
+
+circuit model 
+
+cov.-dom i nated symmetric  
+
+> 150 −150 0
+
+selects M 
+
+cov.-dominated an �symmetric  
+
+> 150 −150 0
+
+selects U C DJIrate-dominated  
+
+> t (ms) w ( a. u.)
+> 150 −150 0
+
+blanket BFigure 1: Effects of plasticity on E/I connectivity motifs in a two-neuron circuit. A. Schematics of the two-neuron circuit model. Two time-varying coupled Poisson units, one excitatory and one inhibitory, are connected by a fixed excitatory weight 𝑤 exc and a plastic inhibitory weight 𝑤 inh . The instantaneous rates are computed as the convolution between each incoming spike and an exponential synaptic kernel that either increases (exc) or decreases (inh) the instantaneous firing probability. The input to the excitatory neuron ℎexc is fixed, whereas the inhibitory input changes dynamically, keeping the inhibitory neuron at a fixed rate 𝑟 inh . Only the inhibitory synapse (dashed line) is plastic. The circuit is simulated in two configurations: unidirectional (U), with 𝑤 exc = 0 
+
+and mutual (M), with 𝑤 exc = 0.5 . B,C,D . Pairwise interaction kernels of the three iSTDP rules tested (Eq. 1). We used the following numerical parameters. B. 𝐵 = 1 , 𝛼 pre = −25 , 𝛼 post = 0 , 𝜏 + = 50 ms . C. 𝐵 = 0 , 𝛼 pre = −0.12 ,
+
+𝛼 post = 1.45 , 𝜏 + = 50 ms , 𝜏 − = 500 ms . D. 𝐵 = 0 , 𝛼 pre = −0.14 , 𝛼 post = 7.95 , 𝜏 + = 30 ms , 𝜏 − = 30 ms .
+
+E,F,G . Change in inhibitory synaptic weight over time for the M (brown) and U (light orange) circuit configurations, under the rules above each column. Dashed lines are analytic predictions for the fixed point (Methods, Eq. 11). 
+
+H,I,J . Change in excitatory firing rate over time for the M (dark blue) and U (dark green) configurations, under the rules above. Dashed horizontal lines are the analytic predictions for the fixed-point (Methods, Eq. 11). promoting “blanket” inhibition. At the opposite extreme, we find covariance-dominated rules, strongly influenced 91 
+
+by pairwise spike correlations that, in the absence of external inputs, arise from the underlying circuit connectivity. 92 
+
+These rules stabilize neural activity, while promoting specific connectivity motifs, such as a mutually connected E/I 93 
+
+pair or lateral inhibition, depending on the iSTDP features. We call the emergence of these specific connectivity 94 
+
+motifs “structured stabilization”. This structured stabilization also generalizes to large-scale recurrently connected 95 
+
+circuits where the same type of E/I connectivity motifs were observed under the different iSTDP rules. To further 96 
+
+explore the functional consequences of covariance-dominated rules, we implement an RNN whose excitatory 97 
+
+neurons follow a one-dimensional ring topology, and whose inhibitory neurons follow two distinct iSTDP rules. 98 
+
+Here, inhibitory connectivity self-organizes into an effective Mexican-hat profile, generating long-range modular 99 
+
+correlations of spontaneous activity. Finally, we demonstrate that the circuit implements contextual modulation, 100 
+
+including suppression of responses to matching stimuli and amplification for mismatched stimuli. In sum, our study 101 
+
+investigates how distinct inhibitory plasticity rules shape E/I connectivity motifs, from mutual to lateral inhibition, 102 
+
+giving rise to network response properties such as surround modulation and long-range activity correlations 103 
+
+observed in the adult and developing visual cortex. 104 
+
+3
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+# 2 Results 105 
+
+2.1 Inhibitory plasticity shapes specific E/I circuit motifs 106 
+
+We initially considered a general iSTDP rule that depends exclusively on local spike times applied to a synapse 107 
+
+from an inhibitory presynaptic to an excitatory postsynaptic neuron (inh-to-exc) (Kempter et al. 1999; Luz and 108 
+
+Shamir 2014; Akil et al. 2021). This rule contains two fixed components triggered by each pre- and post-synaptic 109 
+
+firing events, denoted as 𝛼 pre and 𝛼 post , and a kernel function, 𝐿(𝜏 ) triggered by the co-occurrence of pre-post 110 
+
+(𝜏 > 0 ) or post-pre ( 𝜏 < 0 ) spiking events (see Methods, Section 4.1). When the spiking activity is modeled as a 111 
+
+stochastic process, the mean-field equation for the evolution of the average synaptic weight can be decomposed 112 
+
+as follows (Kempter et al. 1999): 113 
+
+𝑑⟨𝑊 ⟩ 𝑑 𝑡 = 𝛼 pre 𝑟 pre + 𝛼 post 𝑟 post + 𝐵 𝑟 pre 𝑟 post + 𝑄 
+
+with 𝐵 ∶= ∫ 
+
+> +∞ −∞
+
+𝑑𝜏 𝐿(𝜏 ) and 𝑄 ∶= ∫ 
+
+> +∞ −∞
+
+𝑑𝜏 𝐿(𝜏 ) 𝐶(𝜏 ) 
+
+(1) 114 
+
+where 𝑟 pre and 𝑟 post are the pre- and post-synaptic firing rates, 𝐵 is the net area of the iSTDP kernel 𝐿(𝜏 ) , and 115 
+
+𝑄 captures the effect of the iSTDP kernel on the pre-post pairwise interactions, conveyed by the covariance 116 
+
+density curve 𝐶(𝜏 ) (see Supporting Information, Section S1.1, or Kempter et al. 1999; Morrison et al. 2008; Luz 117 
+
+and Shamir 2014; Lagzi and Fairhall 2024). To understand how inhibitory plasticity influences circuit connectivity 118 
+
+patterns, we first developed an analytical framework, in which rather than choosing a single rule, we defined a 119 
+
+family of iSTDP rules. Using these rules, we aimed to derive the closed-form solution for a two-neuron recurrent 120 
+
+E/I circuit, and link the shape of iSTDP to the pattern of learned inhibitory connections. 121 
+
+Several terms in Eq. 1 depend solely on pre- and post-synaptic firing rates. Furthermore, in the general category 122 
+
+of rules where 𝐵 is high, the contribution of the 𝐵 𝑟 pre 𝑟 post term can easily be an order of magnitude above 𝑄 ,123 
+
+even in the presence of strong pre-post correlations (see Methods, Section 4.3). Therefore, when 𝑄 ≪ 𝐵 𝑟 pre 𝑟 post ,124 
+
+the plasticity dynamics of Eq. 1 are strongly dominated by the firing rates. We call this plasticity regime “rate-125 
+
+dominated”. A prominent example of this is the previously established and well-studied rate-homeostatic iSTDP 126 
+
+rule (Vogels et al. 2011) With 𝛼 post = 0 and kernel integral 𝐵 > 0 , this rule drives the inhibitory weight to adapt 127 
+
+continuously so that the postsynaptic rate converges to the target value ̃ 𝑟 post , corresponding to a stable fixed 128 
+
+point of Eq. 1, namely: ̃ 𝑟 post ≈ −𝛼 pre /𝐵 .129 
+
+While a large value of 𝐵 simplifies the analysis by making covariance-based terms negligible, it only represents 130 
+
+a subset of possible plasticity rules. We therefore explored a broader range, including those for which the 131 
+
+iSTDP kernel has zero or near-zero net area ( 𝐵 ≈ 0 ). These rules amplify the contribution of the second-order 132 
+
+correlations between pre- and postsynaptic neuron in the 𝑄 term. We refer to them as “covariance-dominated”. 133 
+
+In choosing specific pairwise interaction kernels, we considered recent experimental findings that reported a 134 
+
+symmetric iSTDP rule for parvalbumin-expressing (PV) interneurons, as well as an antisymmetric iSTDP rule for 135 
+
+somatostatin-expressing (SST) interneurons, both projecting onto excitatory pyramidal neurons in the orbitofrontal 136 
+
+cortex (Lagzi et al. 2021). Consequently, we focused on symmetric kernels with strong short-range potentiation 137 
+
+and weak long-range depression (Fig. 1C), or antisymmetric kernels in which pre-post and post-pre interactions 138 
+
+balance each other with opposite signs (Fig. 1D). 139 
+
+Analyzing the full dynamics of Eq. 1 in a recurrently connected circuit is challenging because the covariance 140 
+
+𝐶(𝜏 ) generally depends on the synaptic weights themselves. We therefore considered a minimal two-neuron 141 
+
+E/I recurrent circuit (Fig. 1A) with fixed exc-to-inh connection (𝑤 exc ) but plastic inh-to-exc weight (𝑤 inh ). We 142 
+
+modeled the neurons as time-varying Poisson processes, where each incoming spike changes the instantaneous 143 
+
+spiking probability through an excitatory or inhibitory post-synaptic potential (EPSP/IPSP) kernel (internal traces 144 
+
+shown in Fig. S1, see also Methods Section 4.4). The inhibitory neuron’s firing rate is kept constant by an external 145 
+
+homeostatic mechanism. The excitatory neuron receives an excitatory fixed external input in addition to the 146 
+
+inhibitory input. Using this simplified model, we derived analytically a closed-form expression for the fixed-point 147 
+
+of the iSTDP dynamics (Methods, Eq. 11; Supporting Information). The condition of fixed 𝑟 inh is not required 148 
+
+for a stable solution. Allowing 𝑟 inh to vary still leads to an analytic expression for the fixed point of the iSTDP 149 
+
+dynamics, but the resulting closed-form involves the root of a quadratic equation and is therefore less intuitive 150 
+
+(see Supporting Information, S1.3, Fig. S3). 151 
+
+With this analytical framework in hand, we investigated how different iSTDP rules affect the resulting inhibitory 152 
+
+4
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+synaptic strength and the excitatory postsynaptic activity. We considered two configurations of our E/I circuit: 153 
+
+(1) a unidirectional (U) configuration, where the excitatory-to-inhibitory weight 𝑤 exc is set to zero, and (2) a mutual 154 
+
+(M) configuration, featuring a strong excitatory-to-inhibitory connection. We studied the three distinct iSTDP 155 
+
+rules in both configurations: a rate-dominated rule with a symmetric interaction kernel (Fig. 1B), a covariance-156 
+
+dominated rule also with a symmetric kernel (Fig. 1C), and a covariance-dominated rule with an antisymmetric 157 
+
+kernel (Fig. 1D). As expected, the rate-dominated rule shows minimal sensitivity to the presence of the mutual 158 
+
+connection. In both U and M configurations, the inhibitory synapse adjusts the excitatory firing rate toward the 159 
+
+target rate dictated by the rate-dependent components, approximately given by ̃ 𝑟 exc ≈ −𝛼 pre /𝐵 (Fig. 1E). Minor 160 
+
+deviations arise from the non-zero contribution of the 𝑄 term. 161 
+
+In contrast, the covariance-dominated rules are sensitive to both the circuit’s connectivity structure and the 162 
+
+shape of iSTDP kernel. With the symmetric kernel, the final inhibitory weight becomes significantly stronger in 163 
+
+the M configuration compared to the U configuration (Fig. 1F, compare brown and light orange). Conversely, 164 
+
+with the antisymmetric kernel, the inhibitory weight is lower in the M configuration (Fig. 1G). Such specificity 165 
+
+enables these rules not only to regulate excitatory rates, but also to shape specific E/I connectivity motifs—an 166 
+
+effect we termed “structured stabilization”. This property emerges from the well-known interaction between 167 
+
+the iSTDP kernel and second-order spiking statistics. While this has been previously studied for excitatory 168 
+
+plasticity (Kempter et al. 1999; Song et al. 2000; Babadi and Abbott 2013; Shulz and Feldman 2013), here we 169 
+
+extend it to inhibitory plasticity in a minimally recurrent two-neuron E/I circuit and hence consider how recurrent 170 
+
+inhibition regulates excitation. Specifically, the strong excitatory-to-inhibitory connection in the M configuration 171 
+
+generates positively-correlated post-pre events. For the symmetric iSTDP, these events occur within the positive 172 
+
+region of the kernel, leading to synaptic potentiation. Conversely, with the antisymmetric iSTDP rule, the same 173 
+
+positively-correlated events interact with the negative region of the kernel, resulting in synaptic depression. 174 
+
+Additionally, the inhibitory-to-excitatory weight generates a negative covariance density, localized instead in 175 
+
+the pre-post region of the curve. As both rules are positive here, this introduces a negative feedback in both 176 
+
+cases, limiting the value that 𝑤 inh can reach before plasticity switches into depression. Finally, adjusting the fixed 177 
+
+components of the iSTDP rule, 𝛼 pre and 𝛼 post , is also crucial for reaching the desired excitatory firing rate (set to 178 
+
+25 Hz) in the preferred circuit configuration. 179 
+
+Hence, our theoretical framework provides a link between different iSTDP rules and inhibitory connectivity in a 180 
+
+reduced two-neuron E/I recurrent circuit motif. 181 
+
+2.2 The shape of inhibitory STDP affects inhibitory connectivity 182 
+
+Having established that different covariance-dominated rules can achieve structured stabilization, namely stabilize 183 
+
+excitatory firing rates and shape specific E/I connectivity motifs, we next investigated how the specific form 184 
+
+of the iSTDP kernel shapes the learned inhibitory connectivity. We considered four kernel shapes: symmetric, 185 
+
+antisymmetric, and their “inverted” counterparts, obtained by reversing the sign of the kernel (Fig. 2A). We 186 
+
+analyzed the behavior of these kernels in the reduced two-neuron E/I circuit. To explore the parameter space, 187 
+
+we varied the rate-dependent parameters 𝐵 and 𝛼 pre , while keeping 𝛼 post = 0 . With this parametrization, the 188 
+
+covariance-dominated regime corresponds to values of 𝐵 and 𝛼 pre close to zero. 189 
+
+Our analysis found that both symmetric and antisymmetric kernels yield stable fixed-points in the covariance-190 
+
+dominated regime (Fig. 2A,B, top row, and Supporting Information Fig. S2C,D). These kernels, which we term 191 
+
+“self-stabilizing” exhibit robustness to parameter fluctuations and reliably converge to a stable inhibitory weight. 192 
+
+In contrast, the inverted antisymmetric and the inverted symmetric rule are unstable in the covariance-dominated 193 
+
+regime, with inhibitory weights either decaying to zero or saturating depending on the initial conditions. We 194 
+
+categorize these as “saturating” kernels (Fig. 2A, bottom panels, and Fig. S2E,F in Supporting Information). 195 
+
+Saturating kernels can still reach stability with strong rate-dependent terms, which reduce the overall influence of 196 
+
+the kernel shape on the final weight. 197 
+
+This difference in stability arises from how the kernels interact with changes in pre- and postsynaptic correlations. 198 
+
+Consider a synapse operating under a covariance-dominated plasticity rule at its fixed point. At equilibrium, 199 
+
+potentiation and depression events balance exactly. A perturbation that strengthens the inhibitory weight leads 200 
+
+to a reduction in pre-post firing events due to the increased inhibition. For self-stabilizing kernels, which have a 201 
+
+positive right branch (corresponding to pre-post events), this reduction in correlation reduces the occurrence 202 
+
+of synaptic potentiation events, shifting the balance in favor of synaptic depression. The synapse therefore 203 
+
+depresses, eventually compensating the initial perturbation from equilibrium. Conversely, saturating kernels show 204 
+
+5
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+E      
+
+> −−20
+> −10 010 20
+> −10 010 20 1. 0−0.5 0.00.5 1.0 20 30 70 ... 20 30 70 ...
+> self-stabilizing satura �ng
+
+mutual lateral             
+
+> −150 0150 −15 00150 t (ms)
+> −150 015 0w (a . u.  )
+> −15 00150
+> i nh. f a ct or
+
+0.0 0.5 1.0                                                    
+
+> −1. 0−0.5 0. 00.5 1.0
+> −1. 0−0.5 0.00.5 1.0
+> −20
+> −1. 0−0.5 0. 00.5 1.0 unstable stable, within bounds null saturated
+> analy �c
+> 0.0 0.2 0. 40.6 0. 8in h. w eigh t ( a.  u. )0. 00. 20. 4excitatory weight (a. u.) 0.0 0.2 0. 40.6 0. 8ex  c. ra  t e (  Hz) 103050700. 00.2 0.4 0. 60.80.0 0.2 0.4 0. 00.2 0.4 0. 60.810 30 50 70 0.0 0.20.40.60.80. 00. 20. 40.0 0.20.40.60.810305070
+
+mutual lateral rate-dominated A B
+
+C D
+
+HF GFigure 2: Parametric study of different shapes of iSTDP kernel in the reduced 2D model. A. Representation of four possible shapes of iSTDP kernel, labeled by their effects in the covariance-dominated regime (i.e. with near-zero rate-dependent terms). B. Parametric study based on the analytic solution for each of the four iSTDP kernels, varying 𝛼 post and the net area under the iSTDP kernel, 𝐵 (see Eq. 1). The color map represents the level of inhibition, where 1 indicates that the excitatory neuron is completely silenced, and 0 indicates no inhibition, so that the excitatory firing rate matches the input current C,D,E . Final inhibitory weight as a function of the incoming excitatory weight for three different iSTDP rules. Dots are numerical simulations, gray lines are analytic results (Methods, Eq. 11), color shades indicate different input levels. C. Results for the symmetric, self-stabilizing rule. The green dots represent the same conditions shown in Fig. 1F. D. Results for the antisymmetric, self-stabilizing rule. The green dots represent the same conditions shown in Fig. 1G. E. Results for the symmetric rule in a rate-dominated regime. F,G,H . Corresponding plots showing the rate of the excitatory neuron after convergence. the opposite effect: since their kernel is negative in the pre-post region, a reduction of pre-post correlation results 205 
+
+in fewer synaptic depression events, so the initial balance is further shifted in favor of synaptic potentiation, 206 
+
+amplifying the perturbation and leading the synapse towards saturation. Finally, in rate-dominated rules, the 207 
+
+specific shape of iSTDP kernel becomes less relevant. Weight fluctuations impact the dynamics through the 208 
+
+𝐵 𝑟 pre 𝑟 post term rather than the correlation-dependent 𝑄 term. Consequently, these rules consistently converge 209 
+
+to the classic rate-homeostatic solution ̃ 𝑟 exc ≈ −𝛼 pre /𝐵 (Vogels et al. 2011). In large networks, however, once 210 
+
+these rules reach their homeostatic rate target, they can still promote additional structural organization at slower 211 
+
+timescales (Lagzi and Fairhall 2024). 212 
+
+To further characterize the self-stabilizing rules, we extended our analysis beyond the U and M circuit configura-213 
+
+6
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint tions presented in Fig. 1, exploring a broader range of excitatory-to-inhibitory weights 𝑤 exc and input currents 214 
+
+to the excitatory neuron. For the symmetric kernel, the learned inhibitory weight increases with 𝑤 exc (Fig. 2C), 215 
+
+while for the antisymmetric kernel it decreases (Fig. 2D). Increasing the excitatory external input leads to stronger 216 
+
+inhibitory weights in both cases (Fig. 2C,D), however the rate of the excitatory neuron still scales linearly with the 217 
+
+input strength (Fig. 2F,G). In contrast, the rate-homeostatic rule exhibits a minimal dependence on 𝑤 exc (Fig. 2E) 218 
+
+and a very tight control on the excitatory rate (Fig. 2H), which restricts the dynamic range of the excitatory neuron, 219 
+
+limiting its ability to respond to changes in input. The E/I interactions in the two-neuron circuit allow for the 220 
+
+weights to converge without saturation, differently from a two-neuron circuit with only excitatory neurons (Babadi 221 
+
+and Abbott 2013). 222 
+
+In summary, our analysis of the reduced E/I circuit reveals a spectrum of iSTDP rules with distinct outcomes on 223 
+
+circuit connectivity and dynamics. On the one hand, covariance-dominated rules with self-stabilizing kernels 224 
+
+enable structured stabilization (stable activity and specific connectivity motifs). As a consequence, they selectively 225 
+
+reinforce connectivity motifs based on pre- and post-synaptic correlations, and allow a broader range of excitatory 226 
+
+firing rates. On the other hand, rate-dominated rules prioritize homeostatic control of excitatory activity over 227 
+
+the formation of specific connectivity motifs. Thus, these rules ensure robust dynamical stability, potentially at 228 
+
+the cost of computational flexibility. These results demonstrate a trade-off between the emergence of specific 229 
+
+excitatory-inhibitory motifs and the tight regulation of excitatory rates in the class of iSTDP rules we considered. 230 
+
+2.3 Structured stabilization in randomly connected RNNs 231 
+
+How do our results on structured stabilization from two-neuron E/I circuits translate to large recurrent networks? 232 
+
+We simulated a randomly connected RNN of conductance-based leaky integrate-and-fire (LIF) neurons, with 900 233 
+
+excitatory and 100 inhibitory units. We modeled the excitatory connections (exc-to-exc and exc-to-inh) as fixed 234 
+
+and sparse, while the inh-to-exc connections were modeled as dense and initially small, but subject to iSTDP 235 
+
+(Table 2). In this case the firing rate of each inhibitory neuron was not fixed as in the two-neuron E/I circuit, but 236 
+
+was determined by the total amount of input into each neuron from its presynaptic partners, without any external 237 
+
+constraint. 238 
+
+We first implemented a covariance-dominated plasticity rule with a symmetric kernel (Fig. 3A). Initially, the network 239 
+
+produces a pathological high-firing regime, due to the low inhibitory weights. However, inhibitory plasticity quickly 240 
+
+stabilizes the dynamics, generating an asynchronous irregular firing regime characteristic of balanced networks 241 
+
+(Fig. 3B). To analyze the resulting inhibitory connectivity, we categorized inh-to-exc synaptic weights as either 242 
+
+“mutual” or “unidirectional”. We called an inh-to-exc weight mutual when a reciprocal exc-to-inh connection 243 
+
+exists between the same two neurons, reflecting a bidirectional link. Conversely, a weight is unidirectional in the 244 
+
+absence of such excitatory reciprocal connection. Following the onset of plasticity, we observed that mutual 245 
+
+inhibitory weights increase much more than unidirectional ones, up to the saturation threshold (Fig. 3C). This 246 
+
+selectivity can be directly visualized through the matrix of synaptic weights after learning: the pattern of learned 247 
+
+inh-to-exc weights mirrors the fixed exc-to-inh weights (Fig. 3E,F; see Supporting Information for full weight 248 
+
+matrix). 249 
+
+7
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint density
+> ΔW
+> ΔW
+
+Δtdensity 
+
+unidirec �onal mutual vs B Crandom LIF network network 1 : symmetric iSTDP network with symmetric iSTDP network with asymmetric iSTDP ADG H IEJnetwork 2 : asymmetric iSTDP 
+
+time (min) 0 5 10 15 20 25 r at  e ( Hz  )010 20 30 40 
+
+t im e (m i n) 0 5 10 15 20 25inh. weight (a. u.) 0510 15 
+
+idx post (inh) 0 20 40 60 80 100 i dx p re (exc )020 exc to inh weights (a. u.) time (min) 0 5 10 15 20 25 r at  e ( Hz  )020 40 60 80 
+
+t im e (m i n) 0 5 10 15 20 2 5inh. weight 020 40 60 80 
+
+idx post (inh) 0 20 40 60 80 100 i dx p re (exc )010 20 exc to inh weights 
+
+Δt0.0 1.0 0.0 1.0 
+
+Fid x pos  t (e xc) 0 20 40 6 0 80 1 00id x pre (inh) 010 20 inh to exc weights >w small 
+
+<w small K      
+
+> 020 406080 100020
+
+inh to exc weights >w small 
+
+<w small 
+
+> id x pos  t (e xc)
+
+id x pre (inh) excitatory inhibitory excitatory inhibitory unidirec �onal mutual unidirec �onal mutual   
+
+> corr =-0.79 corr = 0.88 density density density density
+
+Pearson corr. Pearson corr. 
+
+> exc to exc exc to inh inh to exc
+> inh to inh (transposed) exc to exc exc to inh inh to exc
+> inh to inh (transposed)
+
+Figure 3: RNNs of conductance-based LIF neurons self-organize into specific E/I motifs under different iSTDP rules. A left . Representation of the random network with (𝑁 exc = 900, 𝑁 inh = 100) spiking neurons. The inh-to-exc weights form all-to-all connections and are plastic, all other weights are fixed. Exc-to-exc and exc-to-inh connections are sparse. A middle . Kernel of the symmetric, covariance-dominated iSTDP rule used in network 1 (panels B-F). A right . Kernel of the asymmetric, covariance-dominated iSTDP rule used in network 2 (panels G-K). Parameters in Table 2. B. Evolution of population mean firing rates over time, with final distribution of rates over the full populations. C. Evolution of inh-to-exc synaptic weights over time and final distribution. The weights are split into a “mutual” (brown) and a “unidirectional” (light orange) group. Only few weights reach the saturating value, set to 80. D. Example of incoming (blue) and outgoing (red) weights from a single inhibitory neuron, with correlation between them, and distribution of correlations for the full inhibitory populations across 10 random network realizations. E. Random portion of the fixed and sparse exc-to-inh weights (the full matrix, of size 900 ×100 is shown in SI, Fig. S4). F. Portion of the all-to-all and plastic inh-to-exc connections after learning, with indices matching panel E. For clarity the matrix has been binarized, with threshold-value 𝑤 small defined as 0.1 times the 0.9-quantile of the full weight distribution. See SI, Fig. S4, for a continuous representation of synaptic weights. G-K . Equivalent plots in a second network with identical network dynamics and initial conditions, but using the asymmetric iSTDP (see also SI, Fig. S6) 8
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint i dx pr e0 200 400 600 800 idx post  exc 02 0 04 0 06 0 08 0 01 0 01 0 01 0 0 10 0t i me ( mi n)0 5 10 15pop. r  a te (Hz) 02 04 06 0                                          
+
+> tuning ( a.u .)
+> −1.0−0.50.00.5 1. 0
+> −1.0
+> −0.50.00.51.0tu ning(a .u.)
+> −1.0−0.5 0.00.51. 0Pearson co rr. 0.00.10.2
+> tu ning(a .u.)
+> −1.0−0.5 0.00.51. 00.00.51.01.5exc PV to exc SST to exc exc to exc/SST exc to PV exc PV SST
+> normalized weight
+
+B CA DE FFigure 4: Inhibitory self-organization in a spiking RNN topologically organized as a one-dimensional ring. A. Rep-resentation of the model. 800 excitatory neurons are arranged in a one-dimensional ring topology, connected to each other and to their inhibitory counterparts with weights that depend on their distance in tuning space (Methods, Eq. 15). 100 “PV” inhibitory neurons connect all-to-all to the excitatory neurons with plasticity following a symmetric iSTDP rule, 100 “SST” neurons connect all-to-all to excitatory neurons with plasticity following an antisymmetric iSTDP. For both rules 𝐵 = 0 , 𝛼 pre = −0.1 , 𝛼 post = 0 . B. Full weight matrix after weight convergence. The excitatory weights (blue) are fixed, the inh-to-exc weights (red, lower right) are determined by plasticity. See SI, Fig. S4 for full weight matrix. C. Profile of the average outgoing weights as a function of tuning distance. For convenience, the profiles are normalized so that the maximum is either 1 or −1 . D. Average effective interaction profile between the excitatory neurons, as a function of tuning (see Methods). E. Evolution of mean firing rate over time. F. Pearson correlation during spontaneous activity between an excitatory neuron and its neighbors, ordered by tuning distance and averaged over the entire population. Next, we investigated the impact of an asymmetric iSTDP rule within the same random RNN architecture and 250 
+
+neural dynamics. As with the symmetric rule, this asymmetric iSTDP stabilizes the network dynamics (Fig. 3G). 251 
+
+However, it promotes a markedly different connectivity pattern: purely lateral inhibition. In this configuration, 252 
+
+inhibitory neurons strengthen their connections onto excitatory neurons lacking reciprocal connections back 253 
+
+to them, thus forming exclusively unidirectional connections (Fig. 3H). This yields an inhibitory-to-excitatory 254 
+
+connectivity pattern almost perfectly opposite to the previous configuration, so that existing exc-to-inh synapses 255 
+
+carve gaps in the inh-to-exc connections (Fig. 3J,K). Achieving robust lateral inhibition with the asymmetric iSTDP 256 
+
+rule requires the introduction of a small rate-dependent component ( 𝐵 = 0.3 ). This deviation from a purely 257 
+
+covariance-dominated regime introduces characteristics of rate-homeostatic plasticity, such as rapid convergence 258 
+
+to a narrow distribution of excitatory firing rates (Fig. 3G). This requirement is perhaps unsurprising given the 259 
+
+challenges of parameter tuning in large RNNs, where closed-form solutions are unavailable (see Discussion for 260 
+
+further considerations). Both the symmetric and the asymmetric rules converged to stable weight distributions, 261 
+
+except for a very slow tendency for some mutual weights to reach either the upper bound (symmetric) or zero 262 
+
+(asymmetric). These results are also robust to large variations in external input, and are compatible with network 263 
+
+models where asynchronous irregular firing is generated intrinsically, without any external source of random noise 264 
+
+(SI, Section S2 and Fig. S5; see also Mastrogiuseppe and Ostojic 2017). 265 
+
+In sum, our RNN simulations generalize the analytical predictions from the reduced E/I circuit model to larger 266 
+
+networks of recurrently connected integrate-and-fire units. Symmetric iSTDP rules reinforce mutual inhibition, 267 
+
+mirroring pre-existing excitatory connectivity, whereas asymmetric kernels favor lateral inhibition. 268 
+
+9              
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint center full iso iso + contra
+> iso s �m. contra s�m. exc. input inh. input
+> SST PV exc
+> tuning (a.u.)
+> −0.50. 00. 5mean rate (Hz) 010 20
+> 0246805101520
+> −0.50. 00. 5i nput r at  e ( Hz) 0100 200
+> ce nt er res  pon s e ( Hz )center full iso iso+contra ce nt er res  pon s e ( Hz )tuning (a.u.) external input neural rate exc. input inh. input
+
+BCAD E s t i mulu s s i ze ( a . u.)01 02 03 0Figure 5: Response properties of the one-dimensional ring network. A. Representation of the stimuli (black) and of the network’s response (green), as a function of the neuron’s location relative to the stimulus center, averaged over 100 trials. B. Response to the center neuron only as a function of stimulus size. C. Schematics of the iso-contra stimulation protocol. The iso direction corresponds to excitatory inputs to excitatory neurons with matching receptive field. The contra direction generates instead an inhibitory input on the SST population. 
+
+D. Profiles of the center, full iso and contra stimuli to the network. E. Mean response of the center neuron, averaged over 100 trials, for the three stimuli. 
+
+2.4 Response properties of a one-dimensional ring network 269 
+
+Having shown that different forms of iSTDP shape E/I connectivity in large-scale recurrent networks based on 270 
+
+local correlations arising from direct connections, we next explored the functional consequences of structured 271 
+
+stabilization in a recurrent network with a one-dimensional ring architecture. Ring networks are well-suited to 272 
+
+model continuous attractor dynamics, supporting bumps of persistent activity (Amari 1977; Ben-Yishai et al. 273 
+
+1995; Khona and Fiete 2022). This makes them relevant for studying neural computations such as head-direction 274 
+
+encoding ( petruccoNeuralDynamicsArchitecture2023 kimGenerationStableHeading2019 ; Xie et al. 2002; Kim 275 
+
+et al. 2017; Kim et al. 2019) and orientation selectivity in the primary visual cortex (Goldberg et al. 2004). 276 
+
+We built a ring network of 800 excitatory and 200 inhibitory neurons arranged on a circle, with exc-to-exc and 277 
+
+exc-to-inh weights decaying exponentially with the angular distance between neurons, following a rescaled Von 278 
+
+Mises (Fig. 4A,B). We further divided the inhibitory population into two subclasses, governed by distinct iSTDP 279 
+
+rules, but sharing identical neural dynamics. Inspired by experimental results (Lagzi et al. 2021), one population 280 
+
+of “PV” interneurons followed a symmetric kernel, and another population of “SST” interneurons followed an 281 
+
+antisymmetric one, both rules operating in the covariance-dominated regime. Initially, we set both PV-to-exc 282 
+
+and SST-to-exc synapses as all-to-all, weak, and unbiased (see Fig. 4A for schematics, and Methods Table 3 for 283 
+
+numerical parameters). 284 
+
+As the network evolves under the influence of the two plasticity rules, the inhibitory populations develop 285 
+
+specialized roles. PV interneurons, governed by symmetric iSTDP, form strong mutual connections with excitatory 286 
+
+neurons, mirroring the distance-dependent excitatory connectivity (Fig. 4B and Fig. 4C, red). Conversely, SST 287 
+
+interneurons, driven by antisymmetric iSTDP, establish lateral inhibition across the ring (Fig. 4B and Fig. 4C, 288 
+
+orange). This structured stabilization, with both localized and broader components, raises the possibility of 289 
+
+nontrivial effective interactions between excitatory neurons, potentially mediated by the different roles of the PV 290 
+
+and SST interneurons. 291 
+
+To estimate the effective interaction profile between excitatory neurons, we used linear response theory, equiva-292 
+
+lent to a Taylor expansion of the network dynamics around its operating point (Sadeh and Clopath 2020, see 293 
+
+Methods for details). We found an effective connectivity profile resembling a Mexican-hat, with short-range 294 
+
+excitation directly inherited from exc-to-exc connectivity and a broader inhibitory surround resulting from the 295 
+
+combined action of PV and SST interneurons (Fig. 4D). This effective connectivity profile motivated us to explore 296 
+
+the resulting network dynamics and its response to external stimuli. We examined the emergent spontaneous 297 
+
+10 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+activity and observed a complex spatial correlation structure, with periodic oscillations in correlations over 298 
+
+distance (Fig. 4E, see Supporting Information Fig. S8 for full correlation matrix). This emergent dynamics is 299 
+
+reminiscent of the spatial correlation maps observed in the developing cortex of ferrets, and is considered a 300 
+
+signature of modular cortical organization (Smith et al. 2018; Powell et al. 2024). 301 
+
+After identifying aspects of emergent cortical dynamics in our network consistent with early developmental 302 
+
+patterns, we investigated whether it also displays other fundamental computational properties classically measured 303 
+
+in the visual system. A well-established nonlinear phenomenon in the visual cortex is surround suppression, in 304 
+
+which gradually increasing the stimulus size initially amplifies the neuron’s response up to a peak, but then leads 305 
+
+to reduced activation (DeAngelis et al. 1994; Cavanaugh et al. 2002). After inhibitory plasticity self-organized 306 
+
+network connectivity, we drove the network with patterned stimuli in the absence of subsequent plasticity. We 307 
+
+delivered inputs of different strengths and sizes in the form of excitatory spike trains (Fig. 5A). Each stimulus 308 
+
+was presented 100 times in randomized order, with a 0.5 s presentation followed by a 0.5 s blank. We found that 309 
+
+larger stimuli elicited lower peak firing rates in their center region, while the response of neurons with receptive 310 
+
+field closer to the stimulus’ edge was larger (Fig. 5A, raster plot in SI, Fig. S8). Consequently, the center neuron’s 311 
+
+response as a function of stimulus size exhibited a classic surround suppression profile (Fig. 5B, DeAngelis et al. 312 
+
+1994). 313 
+
+We carried out three control experiments to disentangle the contributions of the two interneuron populations with 314 
+
+different plasticity rules to the dynamics of the ring network. A single inhibitory population with rate-dominated 315 
+
+iSTDP can stabilize the system, although the emergent inh-to-exc connectivity does not seem patterned (Fig. S9B). 316 
+
+This network can still produce surround suppression, however the edge effect is reversed, with neurons on 317 
+
+the stimulus edge firing at a lower rate compared to neurons in the center (Fig. S9C, note the convex shape of 318 
+
+the curve for large stimuli). Moreover, the correlations do not exhibit any spatial structure. When considering 319 
+
+networks with a single covariance-dominated PV-like (symmetric iSTDP kernel) or SST-like (asymmetric iSTDP 320 
+
+kernel) plasticity rule, we found only pathological solutions that required careful parameter tuning. The PV-only 321 
+
+network displayed pathological population-wide synchrony (Fig. S10E), while the SST-only network produced 322 
+
+strongly clustered runaway excitation (Fig. S10J). This suggests that the two interneuron populations with different 323 
+
+plasticity rules act synergistically to establish excitatory firing rate stability and specific E/I motifs. 324 
+
+We also investigated whether our model could also reproduce contextual facilitating effects, for example when a 325 
+
+stimulus in the preferred orientation is surrounded by an orthogonal stimulus (Sillito and Jones 1996). These 326 
+
+effects are mediated by a third subclass of interneurons, the vasoactive intestinal peptide (VIP)-expressing 327 
+
+cells, that inhibit the SST population and thereby disinhibit excitatory neurons (Keller et al. 2020). We thus 328 
+
+modeled the iso-oriented stimulus as excitatory spike trains delivered to the excitatory neurons, and introduced a 329 
+
+contra-oriented stimulus as inhibitory inputs from VIP interneurons to the SST population at the corresponding 330 
+
+location (Fig. 5C). We then compared the center-neuron response in three conditions: (1) an iso-oriented stimulus 331 
+
+restricted to the neuron’s receptive field; (2) a broader iso-oriented stimulus; (3) an iso stimulus in the receptive 332 
+
+field combined with a contra stimulus in the distal regions (Fig. 5D). In agreement with experimental results (Keller 333 
+
+et al. 2020), the distal contra stimulus disinhibits the center neuron and facilitates its response in the iso+contra 334 
+
+stimulus conditions (Fig. 5,E). 335 
+
+These results demonstrate how structured stabilization shaped by the interplay of symmetric and antisymmetric 336 
+
+iSTDP rules can give rise to network connectivity which generates activity consistent with both suppressive and 337 
+
+facilitating contextual effects in the primary visual cortex, and to long-range correlation patterns consistent with 338 
+
+spontaneous activity in the developing sensory cortex. 339 
+
+# 3 Discussion 340 
+
+In this work, we have shown that a family of inhibitory STDP rules can simultaneously stabilize excitation at the 341 
+
+circuit level, and drive the formation of specific connectivity patterns among excitatory and inhibitory neurons in 342 
+
+the form of E/I motifs. In the absence of correlated external inputs, or training signals, circuits self-organize purely 343 
+
+through their spontaneous internal dynamics. We found that the shape of the iSTDP rule selectively reinforces 344 
+
+different E/I motifs—blanket inhibition, reciprocal E/I connectivity and, lateral E/I connectivity—based on the 345 
+
+correlations present in the network. 346 
+
+Prior computational studies addressing the self-organized formation of motifs in recurrent networks through 347 
+
+STDP mostly focused on exc-to-exc plasticity (Ocker et al. 2015; Ravid Tannenbaum and Burak 2016; Triplett 348 
+
+et al. 2018; Montangie et al. 2020; Manz and Memmesheimer 2023). Previous work on iSTDP has been largely 349 
+
+11 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+restricted to feedforward circuits and rules dominated by either firing rates or covariance (Kleberg et al. 2014; 350 
+
+Luz and Shamir 2014; Akil et al. 2021; Vignoud and Robert 2022). In contrast, our approach combines both: 351 
+
+recurrence and iSTDP. This combination makes it possible to characterize how different timing-based rules at 352 
+
+inhibitory synapses shape excitatory-inhibitory connectivity in recurrent circuits, and how the resulting E/I motifs 353 
+
+influence circuit dynamics, including rate stabilization, surround modulation, and the structure of spontaneous 354 
+
+activity. 355 
+
+We implemented a generalized iSTDP framework where individual contributions from spike pairs additively 356 
+
+contribute to synaptic change, as in many models of excitatory synaptic plasticity. While many other factors may 357 
+
+also contribute to inhibitory plasticity, including multiplicative effects (Morrison et al. 2007; Kunkel et al. 2011), 358 
+
+synaptic location (Agnes and Vogels 2024) or plasticity on behavioral timescales (Gonzalez et al. 2023), we found 359 
+
+that additive iSTDP can still generate many interesting insights about E/I connectivity in recurrent networks. Our 360 
+
+iSTDP framework combines both rate-dependent and covariance-dependent components in inducing inhibitory 361 
+
+plasticity. The rate-dependent terms guarantee stable neural activity, whereas the covariance-dependent terms 362 
+
+support the emergence of specific E/I motifs, motivated by recent experimental evidence (Znamenskiy et al. 363 
+
+2024). Consequently, our framework provides deeper insight into both the regulatory and structural properties 364 
+
+of generalized iSTDP rules, expanding our understanding of plasticity in closed-loop recurrent circuits. 365 
+
+One strength of our framework is that it clarifies how the iSTDP kernel interacts with other plasticity parameters. 366 
+
+For example, in rate-dominated regime the weight evolution mainly depends on the net area of the STDP kernel 367 
+
+and the rate-dependent terms, and not on the precise kernel shape. In the covariance-dominated regime, the 368 
+
+weight evolution depends on specific spike covariance between pre- and postsynaptic spiking and the iSTDP 369 
+
+kernel shape. The covariance-dominated regime, however, can pose greater challenges for parameter tuning. A 370 
+
+promising way forward is to employ numerical methods, for instance using simulation-based inference and deep 371 
+
+learning, which have already been applied to optimize both excitatory and inhibitory STDP rules in recurrent 372 
+
+circuits (Confavreux et al. 2024). Our analytical approach can guide and complement these efforts, helping clarify 373 
+
+parameter degeneracies and simplifying the parameter search process. 374 
+
+Here we derived analytic solutions for the two-neuron Poisson model, and relied on numerical simulations for 375 
+
+larger networks.By contrast, a recent study showed that iSTDP can stabilize recurrent LIF networks and converge 376 
+
+to stable solutions through a mean-field approach (Akil et al. 2021). To achieve analytical tractability, that work 377 
+
+assumed a regime of weak interactions, where internally generated correlations become negligible as the size 378 
+
+of the neural population grows, and plasticity was driven exclusively by externally-induced correlations. In our 379 
+
+approach, finite network size, strong interactions, and a dominance of correlation-dependent terms together 380 
+
+drive self-organization. It remains an open question whether these two analytic frameworks, based on different 381 
+
+assumptions, can be integrated. 382 
+
+While our analytical approach primarily examined how small E/I circuits self-organize under different iSTDP 383 
+
+rules, neural circuits can also form larger structures, including feedforward firing sequences and assemblies. 384 
+
+Assemblies are groups of strongly connected neurons, often regarded as the fundamental building blocks of neural 385 
+
+computations (Buzsáki 2010; Papadimitriou et al. 2020; Miehl et al. 2023). Previous work has examined how 386 
+
+various iSTDP rules enable the learning, maintenance and self-repair of neural assemblies (Ocker and Doiron 2019; 387 
+
+Lagzi et al. 2021; Bergoin et al. 2023; Bergoin et al. 2025). In particular, recent findings suggest that assemblies 388 
+
+are formed and best preserved when inhibitory neurons are divided into subclasses that combine symmetric 389 
+
+and antisymmetric iSTDP (Lagzi et al. 2021). Here, the first rule can maintain network stability while the second 390 
+
+prevents assemblies from merging through lateral inhibition, as in our work. Related work has also found that 391 
+
+a combination of positive symmetric (Hebbian) and negative symmetric (anti-Hebbian) covariance-based rules 392 
+
+can form and maintain stable assemblies governed by similar principles (Bergoin et al. 2025). These results on 393 
+
+assemblies agree with ours in underscoring the intuition that different rules serve different purposes: some 394 
+
+promote E/I balance and internal network stability, while others introduce competition through lateral inhibition. 395 
+
+In this work we further combined multiple iSTDP rules in a network with a ring topology (Ben-Yishai et al. 1995) to 396 
+
+demonstrate how their interaction stabilizes activity while also supporting specific network computations, such as 397 
+
+contextual input modulation as observed in the visual cortex(DeAngelis et al. 1994; Cavanaugh et al. 2002), and 398 
+
+long-range spatial correlations reminiscent of modular spontaneous activity observed in the developing cortex 399 
+
+(Smith et al. 2018; Powell et al. 2024). The parametrization of iSTDP rules allowed us to explore the entire space 400 
+
+of rules and link them to the emergence of specific E/I connectivity motifs beyond the choice of pre-set, fixed 401 
+
+plasticity rules in existing work (Lagzi et al. 2021; Bergoin et al. 2023; Lagzi and Fairhall 2024; Bergoin et al. 2025). 402 
+
+12 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+Here, we addressed the spontaneous emergence of circuit connectivity at the sub-assembly level and in the 403 
+
+absence of externally patterned inputs. It would be interesting to consider non-stationary inputs, such as input 404 
+
+correlations varying in time and across neurons, or highly structured input such as assembly-activations or 405 
+
+waves spreading across the circuit as observed during cortical development (Smith et al. 2018). Non-stationary 406 
+
+input, jointly with excitatory STDP, might help paint a more complete picture of prolonged cortical development 407 
+
+especially after the onset of sensory experience (Trägenap et al. 2025). Excitatory plasticity can enable circuits to 408 
+
+learn new representations, refine current ones, and recover after lesions. 409 
+
+Overall, our findings highlight how local inhibitory learning rules can both stabilize global network dynamics 410 
+
+and produce specific connectivity motifs in a self-organized manner in recurrent circuits, with implications for 411 
+
+understanding neural development and learning under structured stimuli. 412 
+
+# 4 Methods 413 
+
+4.1 General mean-field solution 414 
+
+We consider a class of pairwise iSTDP rules triggered by spiking events and purely based on spike-timing difference 415 
+
+between pre- and postsynaptic neuron firing, defined by the following expression. 416 
+
+on 𝑡 (pre )𝑘 → Δ𝑊 (pre ) = 𝛼 pre + ∑ 
+
+> 𝑘 ′<𝑘
+
+𝐿 Δ− (𝑡 (pre )𝑘 − 𝑡 (post )𝑘 ′ ) , 
+
+on 𝑡 (post )𝑘 → Δ𝑊 (post ) = 𝛼 post + ∑ 
+
+> 𝑘 ′<𝑘
+
+𝐿 Δ+ (𝑡 (post )𝑘 − 𝑡 (pre )𝑘 ′ ) ; (2) 417 
+
+where 𝑡 (pre )𝑘 and 𝑡 (post )𝑘 represent pre- and postsynaptic spike events, respectively. In our numerical simulations 418 
+
+the instantaneous change of weight is further regulated by a global learning rate 𝐴 0, as in Δ𝑊 ∗ ( pre,post ) =419 
+
+𝐴 0 Δ𝑊 (pre,post ). The scaling by 𝐴 0 is omitted in our equations for simplicity. Each presynaptic spike triggers a 420 
+
+weight change consisting of a fixed component, denoted 𝛼 pre , and a pairwise interaction term. Similarly, each 421 
+
+postsynaptic spike triggers a weight change with a fixed component 𝛼 post and a pairwise interaction term. The 422 
+
+pairwise interaction terms capture the cumulative influence of joint spiking events, incorporating the contribution 423 
+
+of all preceding spikes (𝑘 ′ < 𝑘) weighted by a kernel 𝐿 Δ± (⋅) that depends on the time differences between the 424 
+
+spikes. The two functions 𝐿 Δ− (⋅) and 𝐿 Δ+ (⋅) refer to the post-pre and the pre-post pairwise interaction, and are 425 
+
+merged in a single function, known as the iSTDP pairwise interaction kernel, as follows: 426 
+
+𝐿(𝜏 ) ∶= { 𝐿 Δ+ (𝜏 ) if 𝜏 ≥ 0 𝐿 Δ− (−𝜏 ) if 𝜏 < 0 . (3) 427 
+
+By convention, the 𝜏 > 0 branch of the curve represents pre-post interactions (presynaptic spike preceding the 428 
+
+postsynaptic spike), while the 𝜏 < 0 branch represents post-pre interactions (postsynaptic spike preceding the 429 
+
+presynaptic spike). In our framework, we consider 𝐿(𝜏 ) to be independent of 𝛼 pre and 𝛼 post . This is in contrast 430 
+
+to previous formulations that incorporate these terms into the kernel representation (e.g., Vogels et al. 2011 431 
+
+and Confavreux et al. 2024). We assume that synaptic plasticity operates on a much slower timescale than 432 
+
+neural dynamics, allowing us to treat synaptic weights as constant when calculating first- and second-order 433 
+
+firing statistics (Kempter et al. 1999). We further assume variability in the spike-train statistics, so that it can be 434 
+
+effectively described as a stochastic process. Thus, we can write the evolution of the mean synaptic weights as: 435 
+
+𝑑⟨𝑊 ⟩ 𝑑 𝑡 = 𝛼 pre 𝑟 pre + 𝛼 post 𝑟 post + 𝐵 𝑟 pre 𝑟 post + 𝑄 ,
+
+with 𝐵 ∶= ∫ 
+
+> +∞ −∞
+
+𝑑𝜏 𝐿(𝜏 ) and 𝑄 ∶= ∫ 
+
+> +∞ −∞
+
+𝑑𝜏 𝐿(𝜏 ) 𝐶(𝜏 ) ; 
+
+(4) 436 
+
+where 𝐵 is the integral of the iSTDP kernel, and 𝑄 is the only term that depends on the pairwise covariance 437 
+
+density between pre and post-synaptic spike trains, here denoted 𝐶(𝜏 ) . For a complete derivation see Supporting 438 
+
+Information or Kempter et al. (1999) and Luz and Shamir (2014). 439 
+
+13 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+4.2 Expressions for the symmetric and antisymmetric exponential kernel 440 
+
+Eq. 4 can be applied to any form of iSTDP kernel, including, e.g., kernels with delayed interactions (Babadi and 441 
+
+Abbott 2013). Here, we focus on two specific exponentially decaying shapes: symmetric and antisymmetric, 442 
+
+defined as follows: 443 
+
+𝐿 sy (𝜏 ) = 12 ( 1𝜏 +
+
+𝐴 + 𝑒 −|𝜏|/𝜏 + − 1𝜏 −
+
+𝐴 − 𝑒 −|𝜏|/𝜏 − ) and 𝐿 an (𝜏 ) = { − 𝐴 −
+
+> 𝜏 −
+
+𝑒 𝜏/𝜏 − if 𝜏 < 0 
+
+> 𝐴 +
+> 𝜏 +
+
+𝑒 −𝜏/𝜏 + if 𝜏 ≥ 0 (5) 444 
+
+With this parametrization, 𝐴 + = 𝐴 − implies 𝐵 = 0 , corresponding to covariance-dominated rules, whereas for 445 
+
+𝐴 − = 0 we have 𝐵 = 𝐴 +, a rate-dominated regime. This choice of 𝐿(𝜏 ) allows us to keep track of the entire 446 
+
+spiking history through activity traces updated at every spike time and decaying in time with the same constants 447 
+
+as the iSTDP kernel. These traces will determine the amount of potentiation ( +) or depression ( −) triggered 448 
+
+by each spike. For the antisymmetric rule, the presynaptic and postsynaptic traces are respectively defined as 449 
+
+follows: 450 
+
+𝑑 𝑑𝑡 𝑇 𝑟+ (𝑡) = − 1𝜏 +
+
+𝑇 𝑟+ (𝑡) and 𝑑 𝑑𝑡 𝑇 𝑜− (𝑡) = − 1𝜏 −
+
+𝑇 𝑜− (𝑡) 
+
+update: {𝑇 𝑟+ (𝑡 + 𝜀) = 𝑇 𝑟+ (𝑡) + 1 on 𝑡 = 𝑡 (pre )
+
+𝑇 𝑜− (𝑡 + 𝜀) = 𝑇 𝑜− (𝑡) + 1 on 𝑡 = 𝑡 (post )
+
+(6) 451 
+
+The symmetric rule requires, in addition to 𝑇 𝑟+ (𝑡) and 𝑇 𝑜− (𝑡) , the traces 𝑇 𝑟− (𝑡) and 𝑇 𝑜+ (𝑡) , defined analogously. 452 
+
+The implementation of the asymmetric iSTDP rule is then given by: 453 
+
+{Δ𝑊 an (𝑡) = 𝛼 pre − 𝐴 −
+
+> 𝜏 −
+
+𝑇 𝑜− (𝑡) on 𝑡 = 𝑡 (pre )
+
+Δ𝑊 an (𝑡) = 𝛼 post + 𝐴 +
+
+> 𝜏 +
+
+𝑇 𝑟+ (𝑡) on 𝑡 = 𝑡 (post ) , (7) 454 
+
+and for the symmetric rule: 455 
+
+{Δ𝑊 sy (𝑡) = 𝛼 pre + 𝐴 +
+
+> 2𝜏 +
+
+𝑇 𝑜+ (𝑡) − 𝐴 −
+
+> 2𝜏 −
+
+𝑇 𝑜− (𝑡) on 𝑡 = 𝑡 (pre )
+
+Δ𝑊 sy (𝑡) = 𝛼 post + 𝐴 +
+
+> 2𝜏 +
+
+𝑇 𝑟+ (𝑡) − 𝐴 −
+
+> 2𝜏 −
+
+𝑇 𝑟− (𝑡) on 𝑡 = 𝑡 (post ) . (8) 456 
+
+4.3 Low impact of correlations in rate-dominated rules 457 
+
+To better understand the role of the net area 𝐵 of the iSTDP kernel in the weight dynamics (Eq. 4), and how it 458 
+
+determines whether a rule is rate-dominated or covariance-dominated, we will consider here a simplified scenario, 459 
+
+where 𝐿(𝜏 ) prescribes a +1 increase in weight for coincident pre-post spikes and no increase otherwise. This 460 
+
+choice yields 𝐵 = 𝐴 + = 1 . Consider now a pre and a post-synaptic neuron that fire with Poisson statistics at rates 461 
+
+𝑟 pre = 𝑟 post = 𝑟 = 10 Hz . The term 𝐵 𝑟 pre 𝑟 post in Eq. 4 takes a value of 100 s−2 regardless of the correlation between 462 
+
+the two neurons. But how does it compare to the covariance term 𝑄 in the presence of strong correlations 463 
+
+between pre and post-synaptic activity? We can consider a regime of (unnaturally) high correlations, such that 464 
+
+half of the spikes of the two neurons are synchronous (Pearson correlation 0.5 ). The term 𝑄 , corresponding to 465 
+
+the spike-count covariance, is 5 s−2 . So even for very strong correlations 𝑄 is 20 times smaller than 𝐵 𝑟 pre 𝑟 post .466 
+
+This illustrates that in regimes with strong 𝐵 , the weight dynamics in Eq. 4 are primarily governed by first-order 467 
+
+statistics, with — at best — second-order contributions from correlations in spiking activity. 468 
+
+4.4 The two-dimensional reduced model 469 
+
+Finding a general solution for Eq. 4 can be challenging. For our purposes, we consider a simplified case. First, we 470 
+
+model an excitatory and an inhibitory neuron as mutually interacting Poisson processes (Hawkes 1971; Ocker 471 
+
+et al. 2017). Each time the presynaptic neuron spikes, the firing probability of the postsynaptic neuron increases 472 
+
+(or decreases) proportionally to the excitatory (or inhibitory) post-synaptic potential EPSP (IPSP) kernel: 473 
+
+𝐸 𝑒 (𝜏 ) = 1𝜏 𝑒 
+
+𝑒 −𝜏/𝜏 𝑒 and 𝐸 𝑖 (𝜏 ) = − 1𝜏 𝑖 
+
+𝑒 −𝜏/𝜏 𝑖 with 𝜏 ≥ 0 (9) 474 
+
+We further assume that the input to the inhibitory neuron ℎinh (𝑡) is regulated homeostatically to keep its rate 475 
+
+𝑟 inh constant. Namely, 476 
+
+ℎinh (𝑡) = 𝑟 inh − ℎ exc 𝑤 exc + 𝑟 inh 𝑤 exc 𝑤 inh (𝑡). (10) 477 
+
+14 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+In those conditions, Eq. 4 has an approximate fixed-point closed-form solution for the inhibitory connection 𝑤 inh :478 ̃𝑤 inh = 𝛼 pre 𝑟 inh + ℎ exc Ψ𝑟 inh (Ψ − 𝑀 (10) 𝑒𝑖 ) ;̃ 𝑟 exc = − 𝛼 pre 𝑟 inh + 𝑀 (10) 𝑒𝑖 ℎexc 
+
+Ψ − 𝑀 (10) 𝑒𝑖 
+
+;
+
+with Ψ = 𝛼 post + 𝐵𝑟 inh + 𝑀 (01) 𝑖𝑒 𝑤 exc .
+
+(11) 479 
+
+The coefficients 𝑀 (10) 𝑒𝑖 and 𝑀 (01) 𝑖𝑒 are found through the linear response theory (Hawkes 1971; Ocker et al. 2017), 480 
+
+and depend on the iSTDP kernel and the EPSP / IPSP parameters (refer to the analytic derivation of the SI Text, 481 
+
+Section S1.4). 482 
+
+For the symmetric iSTDP: 483 
+
+𝑀 sy, (10) 𝑒𝑖 = 𝐴 +
+
+𝜏 + + 𝜏 𝑖 
+
+− 𝐴 −
+
+𝜏 − + 𝜏 𝑖 
+
+; 𝑀 sy, (01) 𝑖𝑒 = 𝐴 +
+
+𝜏 + + 𝜏 𝑒 
+
+− 𝐴 −
+
+𝜏 − + 𝜏 𝑒 
+
+(12) 484 
+
+For the antisymmetric iSTDP instead: 485 
+
+𝑀 an, (10) 𝑒𝑖 = 𝐴 +
+
+𝜏 + + 𝜏 𝑖 
+
+; 𝑀 an, (01) 𝑖𝑒 = − 𝐴 −
+
+𝜏 − + 𝜏 𝑒 
+
+(13) 486 
+
+Numerical parameters are in Table 1. 487 
+
+symbol value description 
+
+𝑁 exc 1 number of excitatory neurons 
+
+𝑁 inh 1 number of inhibitory neurons 
+
+𝜏 𝑒 30 ms EPSP kernel time constant 
+
+𝜏 𝑖 30 ms IPSP kernel time constant 
+
+ℎ𝑒 40 Hz excitatory input current 
+
+𝑟 inh 80 Hz inhibitory firing rate 
+
+rate-dominated iSTDP rule 
+
+𝐴 0 5 ⋅ 10 −7 global learning rate 
+
+𝐵 1 net area under the iSTDP kernel 
+
+𝛼 pre −25 constant dependent on presynaptic rate 
+
+𝛼 post 0 constant dependent on postsynaptic rate 
+
+𝜏 + 50 ms iSTDP kernel time constant 
+
+covariance-dominated symmetric iSTDP rule 
+
+𝐴 0 3 ⋅ 10 −6 global learning rate 
+
+𝐵 0 net area under the iSTDP kernel 
+
+𝛼 pre −25 constant dependent on presynaptic rate 
+
+𝛼 post 0 constant dependent on postsynaptic rate 
+
+𝜏 + 50 ms iSTDP kernel time constant for potentiation 
+
+𝜏 − 500 ms iSTDP kernel time constant for depression 
+
+covariance-dominated antisymmetric iSTDP rule 
+
+𝐴 0 3 ⋅ 10 −6 global learning rate 
+
+𝐵 0 net area under the iSTDP kernel 
+
+𝛼 pre −25 constant dependent on presynaptic rate 
+
+𝛼 post 0 constant dependent on postsynaptic rate 
+
+𝜏 + 50 ms iSTDP kernel time constant for potentiation 
+
+𝜏 − 50 ms iSTDP kernel time constant for depression Table 1: Numerical parameters used for Fig. 1. The parameters in Fig. 2 match those of Fig. 1 unless otherwise indicated in the figure caption. 15 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+4.5 Randomly connected recurrent neural network 488 
+
+We built a random network of conductance-based leaky integrate-and-fire (LIF) neurons, with 900 excitatory 489 
+
+units and 100 inhibitory units. The membrane potential obeys the following dynamics: 490 
+
+𝑑 𝑉 (𝑡) 𝑑𝑡 = 1𝐶 membrane 
+
+(−𝑔 leak (𝑉 − 𝑉 L) − 𝑔 AMPA (𝑉 − 𝑉 AMPA ) − 𝑔 GABA (𝑉 − 𝑉 GABA ) + input )𝑑𝑔 AMPA (𝑡) 𝑑𝑡 = − 𝑔 AMPA (𝑡) 𝜏 AMPA 
+
+; 𝑑𝑔 GABA (𝑡) 𝑑𝑡 = − 𝑔 GABA (𝑡) 𝜏 GABA 
+
+(14) 491 
+
+With 𝑔 AMPA (𝑡) and 𝑔 GABA (𝑡) updated for each incoming signal proportionally to the excitatory and inhibitory 492 
+
+synaptic weights. We assigned a probability of connection for all non-plastic connections (excitatory to excitatory, 493 
+
+excitatory to inhibitory, inhibitory to inhibitory). The inhibitory to excitatory connectivity was all-to-all and plastic. 494 
+
+The network received an external input in the form of Poisson spike trains at fixed rate. The excitatory neurons 495 
+
+received a small number of shared spikes, along with spikes generated i.i.d. for each neuron, leading to a small 496 
+
+overall correlated activity. The network displayed high robustness to variations in input strength (see SI, Fig. S11). 497 
+
+Numerical parameters were determined through grid search (Table 2). 498 
+
+4.6 Ring model 499 
+
+The ring model was implemented with the same neural dynamics as the random network (Eq. 14). Here however 500 
+
+both excitatory and inhibitory neurons received a baseline external input, independent for each unit. We used 501 
+
+800 excitatory units and 200 inhibitory units, further divided into a PV and an SST subclass. The synaptic weight 502 
+
+between an excitatory neuron and its neighbors decayed with distance, following a bell-shaped curve modeled as 503 
+
+a rescaled von Mises distribution: 504 
+
+𝑤 (•  e)𝑖𝑗 ∶= 𝐶 • e (exp (𝑘 • e cos (𝜃 𝑖 − 𝜃 𝑗 ))) ; (15) 505 
+
+where 𝜃 𝑖 and 𝜃 𝑗 represent the locations of the post- and presynaptic neuron on the ring, with each population 506 
+
+equally spaced in the [0, 2𝜋) interval. The factor 𝑘 • e regulates the connection range. Finally the scaling factor 507 
+
+𝐶 • e is tuned so that the sum of incoming weights to either exc, PV or SST population is at a desired value 508 
+
+sum 𝑤 • e. All inh-to-inh connections were fixed and dense. We considered two distinct inhibitory populations 509 
+
+with identical dynamics, but different iSTDP rules. The first population had a symmetric iSTDP kernel, the second 510 
+
+an antisymmetric one. The input was different than in the previous model, with a constant external current in the 511 
+
+excitatory population, and independent excitatory spike trains for all units. 512 
+
+To measure the network response to external stimuli (Fig. 5), we froze plasticity after learning, and delivered 513 
+
+stimuli as uncorrelated spike trains. Iso-oriented stimuli took the form of excitatory spikes delivered to the exc 514 
+
+neurons, contra-oriented stimuli were modeled as inhibitory spikes delivered to the SST neurons. Numerical 515 
+
+parameters, determined through grid search, are shown in Table 3. 516 
+
+# 5 Software implementation and code availability 517 
+
+All simulations for the reduced models are based on custom code written in Julia (Bezanson et al. 2017, 518 
+
+https://julialang.org ), also available as separate toolbox. For the large-scale simulations we used Brian2 519 
+
+(Stimberg et al. 2019, https://briansimulator.org ). Finally some of the analytic integrals were solved using 520 
+
+Maple ( https://maplesoft.com ). The code is fully open-source and publicly available on GitHub under the 521 
+
+Creative Commons Attribution 4.0 International (CC BY 4.0) License. 522 
+
+https://github.com/comp-neural-circuits/structured-stabilization-in-recurrent-neural-circuits 523 
+
+16 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+symbol value description 
+
+𝑁 exc 900 number of excitatory neurons 
+
+𝑁 inh 100 number of inhibitory neurons 
+
+𝐶 membrane 200 pF membrane capacitance 
+
+𝜏 AMPA 5 ms glutamatergic synaptic time constant 
+
+𝜏 GABA 10 ms GABAergic synaptic time constant 
+
+𝑔 leak 10 leak conductivity 
+
+𝑉 L −60 mV membrane leak reverse potential 
+
+𝑉 AMPA 0 mV AMPA reverse potential 
+
+𝑉 GABA −80 mV GABA reverse potential 
+
+𝑉 threshold −50 mV firing threshold 
+
+𝑉 reset −60 mV reset membrane potential after firing 
+
+𝑝 e e 0.2 exc-to-exc connection probability 
+
+𝑝 i e 0.1 exc-to-inh connection probability 
+
+𝑝 e i 1.0 inh-to-exc connection probability 
+
+𝑝 i i 1.0 inh-to-inh connection probability 
+
+𝑤 e e 1.0 exc-to-exc synaptic weight 
+
+𝑤 i e 1.0 exc-to-inh synaptic weight 
+
+𝑤 i i 0.3 inh-to-inh synaptic weight 
+
+External input 
+
+𝑁 shared 50 number or shared input neurons for exc and inh 
+
+𝑁 indep.,exc 250 number of independent input neurons for exc 
+
+𝑁 indep.,exc 0 number of independent input neurons for inh 
+
+𝑟 input 50 Hz rate of input neurons 
+
+𝑤 input,ext 1 weight of input synapse to exc 
+
+𝑤 input,inh 0.1 weight of (independent) input synapse to inh 
+
+covariance-dominated symmetric iSTDP rule (panels A-F) 
+
+𝐴 0 2 ⋅ 10 −2 global learning rate 
+
+𝐵 0 net integral of the STDP kernel 
+
+𝛼 pre −0.1 constant dependent on presynaptic rate 
+
+𝛼 post 0 constant dependent on postsynaptic rate 
+
+𝜏 + 30 ms iSTDP kernel time constant 
+
+𝜏 − 600 ms iSTDP kernel time constant 
+
+covariance-dominated asymmetric iSTDP rule (panels G-K) 
+
+𝐴 0 5 ⋅ 10 −3 global learning rate 
+
+𝐵 0.3 net integral of the iSTDP kernel 
+
+𝛼 pre −0.7 constant dependent on presynaptic rate 
+
+𝛼 post 0.2 constant dependent on postsynaptic rate 
+
+𝜏 + 60 ms iSTDP kernel time constant for potentiation 
+
+𝜏 − 30 ms iSTDP kernel time constant for depression Table 2: Numerical parameters for the random RNN in Fig. 3. 
+
+# Acknowledgments 524 
+
+This project has received funding from the European Research Council (ERC StG NeuroDevo, Grant agreement 525 
+
+No. 804824) and Marie Skłodowska-Curie ITN SmartNets (grant agreement No. 860949) under the European 526 
+
+Union’s Horizon 2020 research and innovation program, by the International Human Frontier Science Program 527 
+
+Organization (RGP0062/2021), and by the Technical University of Munich (TUM). Thanks to the “Computation 528 
+
+in Neural Circuits” group for their useful insights and discussions. Special thanks to Alessio Quaresima for his 529 
+
+valuable feedback and for independently testing our results. 530 
+
+17 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+symbol value description 
+
+𝑁 exc 800 number of excitatory neurons 
+
+𝑁 PV 100 number of PV interneurons 
+
+𝑁 SST 100 number of SST interneurons sum 𝑤 • e 145 total incoming exc weights to exc, PV, SST 
+
+𝑘 e e 10 width of exc-to-exc connections 
+
+𝑘 PV  e 5 width of exc-to-pv connections 
+
+𝑘 SST  e 10 width of exc-to-sst connections 
+
+𝑝 PV,SST  PV,SST 0.9 connection probability for PV-PV, SST-SST and PV-SST 
+
+𝑤 PV  PV 2 PV-to-PV synaptic weight 
+
+𝑤 SST  PV 0.5 PV-to-SST synaptic weight 
+
+𝑤 SST  SST 2 SST-to-SST synaptic weight 
+
+𝑤 PV  SST 0.5 SST-to-PV synaptic weight 
+
+External input 
+
+ℎin,exc 1000 pA constant input current to exc population 
+
+𝑁 input 50 number of independent input neurons 
+
+𝑤 input 1.0 weight of input synapse 
+
+𝑟 input,exc 80 Hz rate of input neurons to exc 
+
+𝑟 input,inh 40 Hz rate of input neurons to PV,SST 
+
+symmetric iSTDP rule for the PV population 
+
+𝐴 0 2 ⋅ 10 −3 global learning rate 
+
+𝐵 0 net integral of the iSTDP kernel 
+
+𝛼 pre −0.2 constant dependent on presynaptic rate 
+
+𝛼 post 1 constant dependent on postsynaptic rate 
+
+𝜏 + 30 ms STDP kernel time constant for potentiation 
+
+𝜏 − 600 ms STDP kernel time constant for depression 
+
+antisymmetric iSTDP rule for the SST population 
+
+𝐴 0 1 ⋅ 10 −3 global learning rate 
+
+𝐵 0 net integral of the iSTDP kernel 
+
+𝛼 pre −0.2 constant dependent on presynaptic rate 
+
+𝛼 post 1 constant dependent on postsynaptic rate 
+
+𝜏 + 30 ms iSTDP kernel time constant for potentiation 
+
+𝜏 − 30 ms iSTDP kernel time constant for depression Table 3: Numerical parameters for the one-dimensional ring model. The parameters that regulate neural dynamics are the same as in Table 2. 18 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+# References 531 
+
+Agnes, Everton J. and Tim P. Vogels (Mar. 20, 2024). “Co-Dependent Excitatory and Inhibitory Plasticity Accounts 532 
+
+for Quick, Stable and Long-Lasting Memories in Biological Networks”. In: Nature Neuroscience , pp. 1–11. DOI: 533 
+
+10.1038/s41593-024-01597-4 .534 
+
+Akil, Alan Eric, Robert Rosenbaum, and Krešimir Josić (May 12, 2021). “Balanced Networks under Spike-Time 535 
+
+Dependent Plasticity”. In: PLOS Computational Biology 17.5, e1008958. DOI: 10.1371/journal.pcbi.1008958 .536 
+
+Amari, Shun’ichi (June 1, 1977). “Dynamics of Pattern Formation in Lateral-Inhibition Type Neural Fields”. In: 537 
+
+Biological Cybernetics 27.2, pp. 77–87. DOI: 10.1007/BF00337259 .538 
+
+Babadi, Baktash and L. F. Abbott (Feb. 21, 2013). “Pairwise Analysis Can Account for Network Structures Arising 539 
+
+from Spike-Timing Dependent Plasticity”. In: PLOS Computational Biology 9.2, e1002906. DOI: 10 . 1371 / 540 
+
+journal.pcbi.1002906 .541 
+
+Ben-Yishai, R, R L Bar-Or, and H Sompolinsky (Apr. 25, 1995). “Theory of Orientation Tuning in Visual Cortex.” In: 542 
+
+Proceedings of the National Academy of Sciences 92.9, pp. 3844–3848. DOI: 10.1073/pnas.92.9.3844 .543 
+
+Bergoin, Raphaël, Alessandro Torcini, Gustavo Deco, Mathias Quoy, and Gorka Zamora-López (Apr. 28, 2023). 544 
+
+“Inhibitory Neurons Control the Consolidation of Neural Assemblies via Adaptation to Selective Stimuli”. In: 545 
+
+Scientific Reports 13.1 (1), p. 6949. DOI: 10.1038/s41598-023-34165-0 .546 
+
+– (Apr. 22, 2025). “Emergence and Maintenance of Modularity in Neural Networks with Hebbian and Anti-Hebbian 547 
+
+Inhibitory STDP”. In: PLOS Computational Biology 21.4, e1012973. DOI: 10.1371/journal.pcbi.1012973 .548 
+
+Bezanson, Jeff, Alan Edelman, Stefan Karpinski, and Viral B Shah (2017). “Julia: A fresh approach to numerical 549 
+
+computing”. In: SIAM review 59.1, pp. 65–98. 550 
+
+Bollmann, Yannick et al. (Sept. 2023). “Prominent in Vivo Influence of Single Interneurons in the Developing Barrel 551 
+
+Cortex”. In: Nature Neuroscience 26.9 (9), pp. 1555–1565. DOI: 10.1038/s41593-023-01405-5 .552 
+
+Brunel, N. (2000). “Dynamics of Sparsely Connected Networks of Excitatory and Inhibitory Spiking Neurons”. In: 553 
+
+Journal of computational neuroscience 8.3, pp. 183–208. DOI: 10.1023/A:1008925309027 .554 
+
+Buzsaki, Gyorgy and Kenji Mizuseki (Apr. 2014). “The Log-Dynamic Brain: How Skewed Distributions Affect 555 
+
+Network Operations”. In: Nat Rev Neurosci 15.4, pp. 264–278. DOI: 10.1038/nrn3687 .556 
+
+Buzsáki, György (Nov. 4, 2010). “Neural Syntax: Cell Assemblies, Synapsembles, and Readers”. In: Neuron 68.3, 557 
+
+pp. 362–385. DOI: 10.1016/j.neuron.2010.09.023 .558 
+
+Cavanaugh, James R., Wyeth Bair, and J. Anthony Movshon (Nov. 2002). “Nature and Interaction of Signals 559 
+
+From the Receptive Field Center and Surround in Macaque V1 Neurons”. In: Journal of Neurophysiology 88.5, 560 
+
+pp. 2530–2546. DOI: 10.1152/jn.00692.2001 .561 
+
+Clopath, Claudia, Tim P. Vogels, Robert C. Froemke, and Henning Sprekeler (July 29, 2016). “Receptive Field 562 
+
+Formation by Interacting Excitatory and Inhibitory Synaptic Plasticity”. In: p. 066589. DOI: 10.1101/066589 .563 
+
+Confavreux, Basile, Everton J. Agnes, Friedemann Zenke, Henning Sprekeler, and Tim P. Vogels (June 17, 2024). 564 
+
+“Balancing Complexity, Performance and Plausibility to Meta Learn Plasticity Rules in Recurrent Spiking Net-565 
+
+works”. In: bioRxiv , p. 2024.06.17.599260. DOI: 10.1101/2024.06.17.599260 .566 
+
+D’amour, James A. and Robert C. Froemke (Apr. 22, 2015). “Inhibitory and Excitatory Spike-Timing-Dependent 567 
+
+Plasticity in the Auditory Cortex”. In: Neuron 86.2, pp. 514–528. DOI: 10.1016/j.neuron.2015.03.014 .568 
+
+Dahmen, David et al. (Nov. 4, 2020). “Strong Coupling and Local Control of Dimensionality across Brain Areas”. In: 569 
+
+bioRxiv , p. 2020.11.02.365072. DOI: 10.1101/2020.11.02.365072 .570 
+
+DeAngelis, G. C., R. D. Freeman, and I. Ohzawa (Jan. 1994). “Length and Width Tuning of Neurons in the Cat’s 571 
+
+Primary Visual Cortex”. In: Journal of Neurophysiology 71.1, pp. 347–374. DOI: 10.1152/jn.1994.71.1.347 .572 
+
+Dorrn, Anja L., Kexin Yuan, Alison J. Barker, Christoph E. Schreiner, and Robert C. Froemke (June 17, 2010). 573 
+
+“Developmental Sensory Experience Balances Cortical Excitation and Inhibition”. In: Nature 465.7300, pp. 932– 574 
+
+936. DOI: 10.1038/nature09119 .575 
+
+Duan, Zhe Ran S. et al. (Jan. 8, 2020). “GABAergic Restriction of Network Dynamics Regulates Interneuron 576 
+
+Survival in the Developing Cortex”. In: Neuron 105.1, 75–92.e5. DOI: 10.1016/j.neuron.2019.10.008 .577 
+
+Eckmann, Samuel, Edward James Young, and Julijana Gjorgjieva (June 18, 2024). “Synapse-Type-Specific Com-578 
+
+petitive Hebbian Learning Forms Functional Recurrent Networks”. In: Proceedings of the National Academy of 579 
+
+Sciences 121.25, e2305326121. DOI: 10.1073/pnas.2305326121 .580 
+
+Froemke, Robert C., Michael M. Merzenich, and Christoph E. Schreiner (Nov. 15, 2007). “A Synaptic Memory 581 
+
+Trace for Cortical Receptive Field Plasticity”. In: Nature 450.7168, pp. 425–429. DOI: 10.1038/nature06289 .582 
+
+Goldberg, Joshua A., Uri Rokni, and Haim Sompolinsky (May 13, 2004). “Patterns of Ongoing Activity and the 583 
+
+Functional Architecture of the Primary Visual Cortex”. In: Neuron 42.3, pp. 489–500. DOI: 10.1016/S0896-584 
+
+6273(04)00197-7 .585 
+
+19 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+Gong, Ziyi and Nicolas Brunel (Apr. 10, 2024). “Inhibitory Plasticity Enhances Sequence Storage Capacity and 586 
+
+Retrieval Robustness”. In: bioRxiv , p. 2024.04.08.588573. DOI: 10.1101/2024.04.08.588573 . Pre-published. 587 
+
+Gonzalez, Kevin C., Adrian Negrean, Zhenrui Liao, Franck Polleux, and Attila Losonczy (Oct. 5, 2023). “Synaptic 588 
+
+Basis of Behavioral Timescale Plasticity”. In: bioRxiv , p. 2023.10.04.560848. DOI: 10.1101/2023.10.04.560848 .589 
+
+Pre-published. 590 
+
+Hafizi, Hadi et al. (Aug. 20, 2022). “Inhibition-Dominated Rich-Club Shapes Dynamics in Cortical Microcircuits”. In: 591 
+
+bioRxiv . DOI: 10.1101/2021.05.07.443074 .592 
+
+Hanganu-Opatz, Ileana L. et al. (Feb. 3, 2021). “The Logic of Developing Neocortical Circuits in Health and Disease”. 593 
+
+In: Journal of Neuroscience 41.5, pp. 813–822. DOI: 10.1523/JNEUROSCI.1655-20.2020 .594 
+
+Harth, Philipp et al. (June 21, 2025). “Dissecting Origins of Wiring Specificity in Dense Reconstructions of Neural 595 
+
+Tissue”. In: bioRxiv , p. 2024.12.14.628490. DOI: 10.1101/2024.12.14.628490 .596 
+
+Hawkes, Alan G. (1971). “Spectra of Some Self-Exciting and Mutually Exciting Point Processes”. In: Biometrika 597 
+
+58.1, pp. 83–90. DOI: 10.2307/2334319 .598 
+
+Jiang, Xiaolong et al. (Nov. 27, 2015). “Principles of Connectivity among Morphologically Defined Cell Types in 599 
+
+Adult Neocortex”. In: Science 350.6264, aac9462. DOI: 10.1126/science.aac9462 .600 
+
+Jin, Dezhe (Oct. 2002). “Fast Convergence of Spike Sequences to Periodic Patterns in Recurrent Networks”. In: 601 
+
+Physical Review Letters 89.20. DOI: 10.1103/PhysRevLett.89.208102 .602 
+
+Keller, Andreas J. et al. (Dec. 2020). “A Disinhibitory Circuit for Contextual Modulation in Primary Visual Cortex”. 603 
+
+In: Neuron . DOI: 10.1016/j.neuron.2020.11.013 .604 
+
+Kempter, Richard, Wulfram Gerstner, and J. Leo van Hemmen (Apr. 1, 1999). “Hebbian Learning and Spiking 605 
+
+Neurons”. In: Physical Review E 59.4, pp. 4498–4514. DOI: 10.1103/PhysRevE.59.4498 .606 
+
+Khona, Mikail and Ila R. Fiete (Nov. 3, 2022). “Attractor and Integrator Networks in the Brain”. In: Nature Reviews 607 
+
+Neuroscience . DOI: 10.1038/s41583-022-00642-0 .608 
+
+Kim, Sung Soo, Ann M. Hermundstad, Sandro Romani, L. F. Abbott, and Vivek Jayaraman (Dec. 2019). “Generation 609 
+
+of Stable Heading Representations in Diverse Visual Scenes”. In: Nature 576.7785 (7785), pp. 126–131. DOI: 610 
+
+10.1038/s41586-019-1767-1 .611 
+
+Kim, Sung Soo, Hervé Rouault, Shaul Druckmann, and Vivek Jayaraman (May 26, 2017). “Ring Attractor Dynamics 612 
+
+in the Drosophila Central Brain”. In: Science 356.6340, pp. 849–853. DOI: 10.1126/science.aal4835 .613 
+
+Kleberg, Florence I., Tomoki Fukai, and Matthieu Gilson (May 7, 2014). “Excitatory and Inhibitory STDP Jointly Tune 614 
+
+Feedforward Neural Circuits to Selectively Propagate Correlated Spiking Activity”. In: Frontiers in Computational 615 
+
+Neuroscience 8. DOI: 10.3389/fncom.2014.00053 .616 
+
+Kuan, Aaron T. et al. (Feb. 21, 2024). “Synaptic Wiring Motifs in Posterior Parietal Cortex Support Decision-Making”. 617 
+
+In: Nature , pp. 1–7. DOI: 10.1038/s41586-024-07088-7 .618 
+
+Kunkel, Susanne, Markus Diesmann, and Abigail Morrison (2011). “Limits to the Development of Feed-Forward 619 
+
+Structures in Large Recurrent Neuronal Networks”. In: Frontiers in Computational Neuroscience 4.160. DOI: 620 
+
+10.3389/fncom.2010.00160 .621 
+
+Lagzi, Fereshteh, Martha Canto Bustos, Anne-Marie Oswald, and Brent Doiron (Sept. 7, 2021). “Assembly For-622 
+
+mation Is Stabilized by Parvalbumin Neurons and Accelerated by Somatostatin Neurons”. In: bioRxiv . DOI: 623 
+
+10.1101/2021.09.06.459211 .624 
+
+Lagzi, Fereshteh and Adrienne L. Fairhall (Mar. 20, 2024). “Emergence of Co-Tuning in Inhibitory Neurons as a 625 
+
+Network Phenomenon Mediated by Randomness, Correlations, and Homeostatic Plasticity”. In: Science Advances 626 
+
+10.12, eadi4350. DOI: 10.1126/sciadv.adi4350 .627 
+
+Lakhera, Shreya, Elizabeth Herbert, and Julijana Gjorgjieva (June 10, 2024). “Modeling the Emergence of Circuit 628 
+
+Organization and Function during Development”. In: Cold Spring Harbor Perspectives in Biology , a041511. DOI: 629 
+
+10.1101/cshperspect.a041511 .630 
+
+Luz, Yotam and Maoz Shamir (July 7, 2014). “The Effect of STDP Temporal Kernel Structure on the Learning 631 
+
+Dynamics of Single Excitatory and Inhibitory Synapses ”. In: PLOS ONE 9.7, e101109. DOI: 10.1371/journal. 632 
+
+pone.0101109 .633 
+
+Mackwood, Owen, Laura B Naumann, and Henning Sprekeler (Apr. 26, 2021). “Learning Excitatory-Inhibitory 634 
+
+Neuronal Assemblies in Recurrent Networks”. In: eLife 10. Ed. by Stephanie E Palmer and Richard B Ivry, e59715. 635 
+
+DOI: 10.7554/eLife.59715 .636 
+
+Maes, Amadeus, Mauricio Barahona, and Claudia Clopath (Mar. 25, 2021). “Learning Compositional Sequences 637 
+
+with Multiple Time Scales through a Hierarchical Network of Spiking Neurons”. In: PLOS Computational Biology 638 
+
+17.3, e1008866. DOI: 10.1371/journal.pcbi.1008866 .639 
+
+20 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+Manz, Paul and Raoul-Martin Memmesheimer (Apr. 12, 2023). “Purely STDP-based Assembly Dynamics: Stability, 640 
+
+Learning, Overlaps, Drift and Aging”. In: PLOS Computational Biology 19.4, e1011006. DOI: 10.1371/journal. 641 
+
+pcbi.1011006 .642 
+
+Mastrogiuseppe, Francesca and Srdjan Ostojic (Apr. 24, 2017). “Intrinsically-Generated Fluctuating Activity in 643 
+
+Excitatory-Inhibitory Networks”. In: PLOS Computational Biology 13.4, e1005498. DOI: 10.1371/journal.pcbi. 644 
+
+1005498 .645 
+
+Meissner-Bernard, Claire, Bethan Jenkins, et al. (Mar. 25, 2025). “Computational Functions of Precisely Balanced 646 
+
+Neuronal Microcircuits in an Olfactory Memory Network”. In: Cell Reports 44.3. DOI: 10.1016/j.celrep.2025. 647 
+
+115330 .648 
+
+Meissner-Bernard, Claire, Friedemann Zenke, and Rainer W Friedrich (Jan. 13, 2025). “Geometry and Dynamics 649 
+
+of Representations in a Precisely Balanced Memory Network Related to Olfactory Cortex”. In: eLife 13. Ed. by 650 
+
+Julijana Gjorgjieva and Panayiota Poirazi, RP96303. DOI: 10.7554/eLife.96303 .651 
+
+Miehl, Christoph and Julijana Gjorgjieva (Dec. 2, 2022). “Stability and Learning in Excitatory Synapses by Nonlinear 652 
+
+Inhibitory Plasticity”. In: PLOS Computational Biology 18.12, e1010682. DOI: 10.1371/journal.pcbi.1010682 .653 
+
+Miehl, Christoph, Sebastian Onasch, Dylan Festa, and Julijana Gjorgjieva (2023). “Formation and Computational 654 
+
+Implications of Assemblies in Neural Circuits”. In: The Journal of Physiology 601.15, pp. 3071–3090. DOI: 655 
+
+10.1113/JP282750 .656 
+
+Mongillo, Gianluigi, Simon Rumpel, and Yonatan Loewenstein (Oct. 2018). “Inhibitory Connectivity Defines the 657 
+
+Realm of Excitatory Plasticity”. In: Nature Neuroscience 21.10, pp. 1463–1470. DOI: 10.1038/s41593-018-658 
+
+0226-x .659 
+
+Montangie, Lisandro, Christoph Miehl, and Julijana Gjorgjieva (May 8, 2020). “Autonomous Emergence of Con-660 
+
+nectivity Assemblies via Spike Triplet Interactions”. In: PLOS Computational Biology 16.5, e1007835. DOI: 661 
+
+10.1371/journal.pcbi.1007835 .662 
+
+Morrison, A., M. Diesmann, and W. Gerstner (2008). “Phenomenological Models of Synaptic Plasticity Based on 663 
+
+Spike Timing”. In: Biological cybernetics 98.6, pp. 459–478. DOI: 10.1007/s00422-008-0233-1 .664 
+
+Morrison, Abigail, Ad Aertsen, and Markus Diesmann (2007). “Spike-Timing-Dependent Plasticity in Balanced 665 
+
+Random Networks”. In: Neural Computation 19.6, pp. 1437–1467. DOI: 10.1162/neco.2007.19.6.1437 .666 
+
+Mulholland, Haleigh N, Bettina Hein, Matthias Kaschube, and Gordon B Smith (Dec. 8, 2021). “Tightly Coupled 667 
+
+Inhibitory and Excitatory Functional Networks in the Developing Primary Visual Cortex”. In: eLife 10, e72456. 668 
+
+DOI: 10.7554/eLife.72456 .669 
+
+Ocker, Gabriel K. et al. (Oct. 1, 2017). “From the Statistics of Connectivity to the Statistics of Spike Times in 670 
+
+Neuronal Networks”. In: Current Opinion in Neurobiology . Computational Neuroscience 46, pp. 109–119. DOI: 671 
+
+10.1016/j.conb.2017.07.011 .672 
+
+Ocker, Gabriel Koch and Brent Doiron (Mar. 1, 2019). “Training and Spontaneous Reinforcement of Neuronal 673 
+
+Assemblies by Spike Timing Plasticity”. In: Cerebral Cortex 29.3, pp. 937–951. DOI: 10.1093/cercor/bhy001 .674 
+
+Ocker, Gabriel Koch, Ashok Litwin-Kumar, and Brent Doiron (Aug. 20, 2015). “Self-Organization of Microcircuits 675 
+
+in Networks of Spiking Neurons with Plastic Synapses”. In: PLOS Comput Biol 11.8, e1004458. DOI: 10.1371/ 676 
+
+journal.pcbi.1004458 .677 
+
+Papadimitriou, Christos H., Santosh S. Vempala, Daniel Mitropolsky, Michael Collins, and Wolfgang Maass (June 23, 678 
+
+2020). “Brain Computation by Assemblies of Neurons”. In: Proceedings of the National Academy of Sciences 117.25, 679 
+
+pp. 14464–14472. DOI: 10.1073/pnas.2001893117 .680 
+
+Peng, Yangfan et al. (June 16, 2021). “Spatially Structured Inhibition Defined by Polarized Parvalbumin Interneuron 681 
+
+Axons Promotes Head Direction Tuning”. In: Science Advances 7.25, eabg4693. DOI: 10.1126/sciadv.abg4693 .682 
+
+Powell, Nathaniel J. et al. (Mar. 12, 2024). “Common Modular Architecture across Diverse Cortical Areas in Early 683 
+
+Development”. In: Proceedings of the National Academy of Sciences 121.11, e2313743121. DOI: 10.1073/pnas. 684 
+
+2313743121 .685 
+
+Ravid Tannenbaum, Neta and Yoram Burak (Aug. 12, 2016). “Shaping Neural Circuits by High Order Synaptic 686 
+
+Interactions”. In: PLOS Computational Biology 12.8, e1005056. DOI: 10.1371/journal.pcbi.1005056 .687 
+
+Reimann, Michael W., Daniela Egas Santander, András Ecker, and Eilif B. Muller (Dec. 22, 2023). Specific Inhibition 688 
+
+and Disinhibition in the Higher-Order Structure of a Cortical Connectome . DOI: 10.1101/2023.12.22.573036 .689 
+
+Riquelme, Juan Luis, Mike Hemberger, Gilles Laurent, and Julijana Gjorgjieva (Feb. 13, 2023). “Single Spikes Drive 690 
+
+Sequential Propagation and Routing of Activity in a Cortical Network”. In: eLife 12. Ed. by Peter Latham, Laura L 691 
+
+Colgin, and Abigail Morrison, e79928. DOI: 10.7554/eLife.79928 .692 
+
+Rubin, Ran, L. F. Abbott, and Haim Sompolinsky (Oct. 17, 2017). “Balanced Excitation and Inhibition Are Required 693 
+
+for High-Capacity, Noise-Robust Neuronal Selectivity”. In: Proceedings of the National Academy of Sciences ,694 
+
+p. 201705841. DOI: 10.1073/pnas.1705841114 .695 
+
+21 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+Sadeh, Sadra and Claudia Clopath (Oct. 27, 2020). “Theory of Neuronal Perturbome in Cortical Networks”. In: 696 
+
+Proceedings of the National Academy of Sciences 117.43, pp. 26966–26976. DOI: 10.1073/pnas.2004568117 .697 
+
+– (Nov. 5, 2021). “Excitatory-Inhibitory Balance Modulates the Formation and Dynamics of Neuronal Assemblies 698 
+
+in Cortical Networks”. In: Science Advances 7.45, eabg8411. DOI: 10.1126/sciadv.abg8411 .699 
+
+Schulz, Auguste, Christoph Miehl, Michael J Berry II, and Julijana Gjorgjieva (Oct. 14, 2021). “The Generation of 700 
+
+Cortical Novelty Responses through Inhibitory Plasticity”. In: eLife 10. Ed. by Maria N Geffen, Joshua I Gold, and 701 
+
+Maria N Geffen, e65309. DOI: 10.7554/eLife.65309 .702 
+
+Shao, Shuai, Juan Luis Riquelme, and Julijana Gjorgjieva (Sept. 30, 2024). “Spontaneous Emergence and Drifting 703 
+
+of Sequential Neural Activity in Recurrent Networks”. In: bioRxiv , p. 2024.09.27.615499. DOI: 10.1101/2024. 704 
+
+09.27.615499 .705 
+
+Shulz, D.E. and D.E. Feldman (2013). “Spike Timing-Dependent Plasticity”. en. In: Neural Circuit Development and 706 
+
+Function in the Brain . Elsevier, pp. 155–181. DOI: 10.1016/B978-0-12-397267-5.00029-7 .707 
+
+Sillito, AM and HE Jones (Jan. 1, 1996). “Context-Dependent Interactions and Visual Processing in V1”. In: Journal 708 
+
+of Physiology-Paris 90.3, pp. 205–209. DOI: 10.1016/S0928-4257(97)81424-6 .709 
+
+Smith, Gordon B., Bettina Hein, David E. Whitney, David Fitzpatrick, and Matthias Kaschube (Nov. 2018). “Dis-710 
+
+tributed Network Interactions and Their Emergence in Developing Neocortex”. In: Nature Neuroscience 21.11 711 
+
+(11), pp. 1600–1608. DOI: 10.1038/s41593-018-0247-5 .712 
+
+Song, Sen, Kenneth D. Miller, and L. F. Abbott (2000). “Competitive Hebbian Learning through Spike-Timing-713 
+
+Dependent Synaptic Plasticity”. In: Nature Neuroscience 3.9, pp. 919–926. DOI: 10.1038/78829 .714 
+
+Sreenivasan, Varun et al. (May 17, 2022). “Input-Specific Control of Interneuron Numbers in Nascent Striatal 715 
+
+Networks”. In: Proceedings of the National Academy of Sciences 119.20, e2118430119. DOI: 10.1073/pnas. 716 
+
+2118430119 .717 
+
+Stimberg, Marcel, Romain Brette, and Dan FM Goodman (Aug. 20, 2019). “Brian 2, an Intuitive and Efficient 718 
+
+Neural Simulator”. In: eLife 8. Ed. by Frances K Skinner, Ronald L Calabrese, Frances K Skinner, Fleur Zeldenrust, 719 
+
+and Richard C Gerkin, e47314. DOI: 10.7554/eLife.47314 .720 
+
+Trägenap, Sigrid, David E. Whitney, David Fitzpatrick, and Matthias Kaschube (Feb. 2025). “The Developmental 721 
+
+Emergence of Reliable Cortical Representations”. In: Nature Neuroscience 28.2, pp. 394–405. DOI: 10.1038/ 722 
+
+s41593-024-01857-3 .723 
+
+Tremblay, Robin, Soohyun Lee, and Bernardo Rudy (July 20, 2016). “GABAergic Interneurons in the Neocortex: 724 
+
+From Cellular Properties to Circuits”. In: Neuron 91.2, pp. 260–292. DOI: 10.1016/j.neuron.2016.06.033 .725 
+
+Triplett, Marcus A., Lilach Avitan, and Geoffrey J. Goodhill (Sept. 28, 2018). “Emergence of Spontaneous Assembly 726 
+
+Activity in Developing Neural Networks without Afferent Input”. In: PLOS Computational Biology 14.9, e1006421. 727 
+
+DOI: 10.1371/journal.pcbi.1006421 .728 
+
+Tsodyks, M. V. and T. Sejnowski (May 1995). “Rapid State Switching in Balanced Cortical Network Models”. In: 729 
+
+Network: Computation in Neural Systems 6.2, p. 111. DOI: 10.1088/0954-898X/6/2/001 .730 
+
+Udvary, Daniel et al. (Apr. 12, 2022). “The Impact of Neuron Morphology on Cortical Network Architecture”. In: 731 
+
+Cell Reports 39.2, p. 110677. DOI: 10.1016/j.celrep.2022.110677 .732 
+
+Vignoud, Gaëtan and Philippe Robert (May 10, 2022). “Spontaneous Dynamics of Synaptic Weights in Stochastic 733 
+
+Models with Pair-Based Spike-Timing-Dependent Plasticity”. In: Physical Review E 105.5, p. 054405. DOI: 734 
+
+10.1103/PhysRevE.105.054405 .735 
+
+Vogels, Tim P., H. Sprekeler, F. Zenke, C. Clopath, and W. Gerstner (Nov. 10, 2011). “Inhibitory Plasticity Balances 736 
+
+Excitation and Inhibition in Sensory Pathways and Memory Networks”. In: Science 334.6062, pp. 1569–1573. 737 
+
+DOI: 10.1126/science.1211095 .738 
+
+Van Vreeswijk, C. and H. Sompolinsky (1998). “Chaotic Balanced State in a Model of Cortical Circuits”. In: Neural 739 
+
+Computation 10.6, pp. 1321–1371. DOI: 10.1162/089976698300017214 .740 
+
+Wallenstein, Gene V. and Michael E. Hasselmo (July 1997). “GABAergic Modulation of Hippocampal Popula-741 
+
+tion Activity: Sequence Learning, Place Field Development, and the Phase Precession Effect”. In: Journal of 742 
+
+Neurophysiology 78.1, pp. 393–408. DOI: 10.1152/jn.1997.78.1.393 .743 
+
+Wu, Sherry Jingjing et al. (Sept. 6, 2023). “Cortical Somatostatin Interneuron Subtypes Form Cell-Type-Specific 744 
+
+Circuits”. In: Neuron 111.17, 2675–2692.e9. DOI: 10.1016/j.neuron.2023.05.032 .745 
+
+Xie, Xiaohui, Richard H. R. Hahnloser, and H. Sebastian Seung (Oct. 9, 2002). “Double-Ring Network Model of the 746 
+
+Head-Direction System”. In: Physical Review E 66.4, p. 041902. DOI: 10.1103/PhysRevE.66.041902 .747 
+
+Znamenskiy, Petr et al. (Mar. 20, 2024). “Functional Specificity of Recurrent Inhibition in Visual Cortex”. In: Neuron 748 
+
+112.6, 991–1000.e8. DOI: 10.1016/j.neuron.2023.12.013 .749 
+
+22 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+## Supporting Information for: 750 
+
+# Structured stabilization in recurrent neural circuits through inhibitory 751 
+
+# synaptic plasticity 752 
+
+# S1 Analytic results 753 
+
+S1.1 Mean-field equation for weight dynamics 754 
+
+In this section, we adapt the results introduced by Kempter et al. (1999) to our notation and our specific needs. We 755 
+
+first describe a sufficiently general expression for the pairwise STDP rules. Given two neurons, one presynaptic 756 
+
+and one postsynaptic, an excitatory or inhibitory STDP rule is a weight update triggered by either a pre- or a 757 
+
+postsynaptic spike. The weight update solely depends on the time differences between the previous spike times, 758 
+
+relative to the current spike time: 759 
+
+on 𝑡 = 𝑡 (pre )𝑘 → Δ𝑊 (pre ) = 𝛼 pre + ∑ 
+
+> 𝑘 ′<𝑘
+
+𝐿 Δ− (𝑡 − 𝑡 (post )𝑘 ′ )
+
+on 𝑡 = 𝑡 (post )𝑘 → Δ𝑊 (post ) = 𝛼 post + ∑ 
+
+> 𝑘 ′<𝑘
+
+𝐿 Δ+ (𝑡 − 𝑡 (pre )𝑘 ′ ) , (S1) 760 
+
+where 𝑡 𝑘 (pre ) and 𝑡 𝑘 (post ) represent pre- and postsynaptic spike events, respectively. We can merge the functions 761 
+
+𝐿 Δ− and 𝐿 Δ+ into a single STDP kernel defined as: 762 
+
+𝐿(𝜏 ) ∶= { 𝐿 Δ+ (𝜏 ) if 𝜏 ≥ 0 𝐿 Δ− (−𝜏 ) if 𝜏 < 0 . (S2) 763 
+
+Therefore 𝜏 > 0 (the Δ+ branch) represents pre-post interactions (presynaptic spike preceding the postsynaptic 764 
+
+spike), while 𝜏 < 0 (the Δ− branch) represents post-pre interactions (postsynaptic spike preceding the presynaptic 765 
+
+spike). 766 
+
+It is useful to express each spike train as a sum of Dirac delta functions centered at each spike time: 767 
+
+𝑆 𝑖 (𝑡) ∶= ∑ 
+
+> 𝑘
+
+𝛿(𝑡 − 𝑡 𝑖 𝑘 ) (S3) 768 
+
+where 𝑖 denotes the neuron index. With this notation, the number of spikes in the [𝑡 𝑎 , 𝑡 𝑏 ] interval is: 769 
+
+𝑁 𝑖 [𝑡 𝑎 ,𝑡 𝑏 ] = ∫ 
+
+> 𝑡 𝑏
+> 𝑡 𝑎
+
+𝑑𝑡 𝑆 𝑖 (𝑡) (S4) 770 
+
+Assuming stationary conditions, we can therefore define the firing rate of neuron 𝑖 as: 771 
+
+𝑟 𝑖 ∶= 1𝑇 ∫
+
+> 𝑇 0
+
+𝑑𝑡 𝑆 𝑖 (𝑡) = ⟨𝑆 𝑖 (𝑡)⟩ 𝑡 . (S5) 772 
+
+Using the definition in Eq. S3, we can then rewrite the pairwise interaction terms in Eq. S1 as: 773 
+
+∑
+
+> 𝑘 ′
+
+𝐿 Δ± (𝑡 − 𝑡 𝑖 𝑘 ′ ) = ∫ 
+
+> 𝑡 −∞
+
+𝑑𝜏 𝑆 𝑖 (𝜏 ) 𝐿 Δ± (𝑡 − 𝜏 ) = ∫ 
+
+> ∞0
+
+𝑑𝜏 ∗ 𝑆 𝑖 (𝑡 − 𝜏 ∗) 𝐿 Δ± (𝜏 ∗) (S6) 774 
+
+Where in the last step we performed the change of variable 𝜏 ← 𝑡 − 𝜏 ∗. This leads to the following expression for 775 
+
+the instantaneous change in synaptic weights, numerically equivalent to Eq. S1: 776 
+
+on 𝑡 = 𝑡 (pre )𝑘 → Δ𝑊 (pre )(𝑡) = 𝛼 pre + ∫ 
+
+> ∞0
+
+𝑑𝜏 𝑆 post (𝑡 − 𝜏 ) 𝐿 Δ− (𝜏 ) 
+
+on 𝑡 = 𝑡 (post )𝑘 → Δ𝑊 (post )(𝑡) = 𝛼 post + ∫ 
+
+> ∞0
+
+𝑑𝜏 𝑆 pre (𝑡 − 𝜏 ) 𝐿 Δ+ (𝜏 ) , (S7) 777 
+
+SI, page 1 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+Now, using again the same definition of spike train in Eq. S3, an event-based update can be expressed as an 778 
+
+integral over time over the pre- and post-synaptic spiking events. The total weight change occurring in an interval 779 
+
+[𝑡 𝑎 , 𝑡 𝑏 ] is: 780 
+
+Δ𝑊 [𝑡 𝑎 , 𝑡 𝑏 ] = ∫ 
+
+> 𝑡 𝑏
+> 𝑡 𝑎
+
+𝑑𝑡 𝑆 pre (𝑡) Δ𝑊 (pre )(𝑡) + ∫ 
+
+> 𝑡 𝑏
+> 𝑡 𝑎
+
+𝑆 post (𝑡) Δ𝑊 (post )(𝑡) . (S8) 781 
+
+We can then express the average weight change per second, considering a time interval [0, 𝑇 ] large enough to 782 
+
+ensure precise sampling in second-order firing statistics, but still small compared to the rate of changes in Δ𝑊 .783 
+
+Under this assumption of separation of timescales between neuronal dynamics and plasticity, we can substitute 784 
+
+Eq. S7 into Eq. S8, and write: 785 
+
+⟨Δ𝑊 (𝑡)⟩ 𝑡 = 1𝑇 ∫
+
+> 𝑇 0
+
+𝑑𝑡 𝑆 pre (𝑡) 𝛼 pre + 1𝑇 ∫
+
+> 𝑇 0
+
+𝑑𝑡 𝑆 post (𝑡) 𝛼 post ++ 1𝑇 ∫
+
+> 𝑇 0
+
+𝑑𝑡 ∫ 
+
+> ∞0
+
+𝑑𝜏 𝑆 post (𝑡) 𝑆 pre (𝑡 − 𝜏 ) 𝐿 Δ+ (𝜏 ) + 1𝑇 ∫
+
+> 𝑇 0
+
+𝑑𝑡 ∫ 
+
+> ∞0
+
+𝑑𝜏 𝑆 pre (𝑡) 𝑆 post (𝑡 − 𝜏 ) 𝐿 Δ− (𝜏 ). 
+
+(S9) 786 
+
+Since 𝛼 pre and 𝛼 post are constants, we can factor them out. The first two terms of the r.h.s. of Eq. S9 become: 787 
+
+1𝑇 ∫
+
+> 𝑇 0
+
+𝑑𝑡 𝑆 pre (𝑡)𝛼 pre = 𝑟 pre 𝛼 pre and 1𝑇 ∫
+
+> 𝑇 0
+
+𝑑𝑡 𝑆 post (𝑡)𝛼 post = 𝑟 post 𝛼 post (S10) 788 
+
+The pairwise interaction terms instead can be simplified as follows: 789 
+
+1𝑇 ∫
+
+> 𝑇 0
+
+𝑑𝑡 ∫ 
+
+> ∞0
+
+𝑑𝜏 𝑆 post (𝑡) 𝑆 pre (𝑡 − 𝜏 ) 𝐿 Δ+ (𝜏 ) = 𝑟 pre 𝑟 post ∫
+
+> ∞0
+
+𝑑𝜏 𝐿 Δ+ (𝜏 ) + ∫ 
+
+> ∞0
+
+𝑑𝜏 𝐶 Δ+ (𝜏 )𝐿 Δ+ (𝜏 ), (S11) 790 
+
+and similarly for the last term in Eq. S9. In the above equation, 𝐶 Δ+ (𝜏 ) denotes the covariance density between 791 
+
+the pre- and the postsynaptic neuron, following the convention that Δ+ represents the pre-post order and Δ−792 
+
+the post-pre order: 793 
+
+𝐶 Δ+ (𝜏 ) ∶= 1𝑇 ∫
+
+> 𝑇 0
+
+(𝑆 post (𝑡) − 𝑟 post ) (𝑆 pre (𝑡 − 𝜏 ) − 𝑟 pre ) . (S12) 794 
+
+An analogous definition holds for 𝐶 Δ− (𝜏 ) , with the pre- and post- temporal order inverted. Therefore 795 
+
+⟨Δ𝑊 (𝑡)⟩ 𝑡 = 𝑟 pre 𝛼 pre + 𝑟 post 𝛼 post + 𝑟 pre 𝑟 post ∫
+
+> ∞0
+
+𝑑𝜏 (𝐿 Δ− (𝜏 ) + 𝐿 Δ+ (𝜏 )) + + ∫ 
+
+> ∞0
+
+𝑑𝜏 𝐶 Δ− (𝜏 )𝐿 Δ− (𝜏 ) + ∫ 
+
+> ∞0
+
+𝑑𝜏 𝐶 Δ+ (𝜏 )𝐿 Δ+ (𝜏 ) . 
+
+(S13) 796 
+
+Now using Eq. S2, we can write: 797 
+
+𝑟 pre 𝑟 post ∫
+
+> ∞0
+
+𝑑𝜏 (𝐿 Δ− (𝜏 ) + 𝐿 Δ+ (𝜏 )) = 𝑟 pre 𝑟 post ∫
+
+> ∞−∞
+
+𝑑𝜏 𝐿(𝜏 ) ; (S14) 798 
+
+and given that 𝐶 Δ+ (𝜏 ) = 𝐶 Δ− (−𝜏 ) we can perform the following variable substitution: 799 
+
+∫
+
+> ∞0
+
+𝑑𝜏 𝐶 Δ− (𝜏 )𝐿 Δ− (𝜏 ) = ∫ 
+
+> 0−∞
+
+𝑑𝜏 𝐶 Δ+ (𝜏 )𝐿 Δ+ (𝜏 ) (S15) 800 
+
+Finally, substituting Eq. S14 and Eq. S15 in Eq. S13, and defining 𝐶(𝜏 ) ∶= 𝐶 Δ+ (𝜏 ) , we have: 801 
+
+⟨Δ𝑊 (𝑡)⟩ 𝑡 = 𝛼 pre 𝑟 pre + 𝛼 post 𝑟 post + 𝐵 𝑟 pre 𝑟 post + 𝑄 ,
+
+with 𝐵 ∶= ∫ 
+
+> +∞ −∞
+
+𝑑𝜏 𝐿(𝜏 ) and 𝑄 ∶= ∫ 
+
+> +∞ −∞
+
+𝑑𝜏 𝐿(𝜏 ) 𝐶(𝜏 ) ; (S16) 802 
+
+Corresponding to Eq. 1 in the main text. 803 
+
+SI, page 2 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+S1.2 Derivation of the closed-form solution for the E/I motif 804 
+
+In this section, we derive a closed-form solution for a reduced model of one inhibitory and one excitatory neuron 805 
+
+(Eq. S16). We model the two neurons as mutually interacting Hawkes processes (Main Text, Fig. 1A, Hawkes 1971; 806 
+
+Pernice et al. 2011). The excitatory unit receives a constant input current ℎexc , a plastic inhibitory connection 807 
+
+𝑤 inh (𝑡) and it projects a fixed excitatory connection 𝑤 exc to the inhibitory neuron. For simplicity, we assume that 808 
+
+the inhibitory unit is kept at a constant rate 𝑟 inh by an adaptive external current ℎinh (𝑡) (10) . In this framework, the 809 
+
+average firing rates behave linearly, therefore, the excitatory rate can be written as: 810 
+
+𝑟 exc (𝑡) = ℎ exc − 𝑤 inh (𝑡) 𝑟 inh . (S17) 811 
+
+As we focus on the connection 𝑤 inh (𝑡) from the inhibitory to the excitatory neuron, we rename 𝑟 inh = 𝑟 pre and 812 
+
+𝑟 exc = 𝑟 post in Eq. S16 and we get: 813 
+
+⟨ 𝑑𝑤 inh (𝑡) 𝑑𝑡 ⟩ = 𝛼 pre 𝑟 inh + 𝛼 post (ℎ exc − 𝑤 inh 𝑟 inh ) + 𝐵 𝑟 inh (ℎ exc − 𝑤 inh 𝑟 inh ) + 𝑄 = 𝛼 pre 𝑟 inh − 𝑤 inh 𝑟 inh (𝛼 post + 𝐵 𝑟 inh ) + ℎ exc (𝛼 post + 𝐵 𝑟 inh ) + 𝑄. 
+
+(S18) 814 
+
+The only nontrivial quantity to compute is the term 𝑄 , as it requires the inhibitory-to-excitatory covariance 815 
+
+density curve. To avoid ambiguities, we define the Fourier transform operator acting on a function 𝑓(𝑡) and the 816 
+
+convolution operator acting on two functions 𝑓(𝑡) and 𝑔(𝑡) as follows: 817 ̂𝑓(𝜔) = ∫ 
+
+> +∞ −∞
+
+𝑑𝑡 𝑓(𝑡) 𝑒 −𝑗 𝜔 𝑡 and (𝑓 ∗ 𝑔)(𝜏 ) = ∫ 
+
+> +∞ −∞
+
+𝑑𝑡 𝑓(𝑡) 𝑔(𝜏 − 𝑡) ; (S19) 818 
+
+where 𝑗 denotes the imaginary unit. 819 
+
+Note that the total integral 𝑄 of the product 𝐶(𝜏 ) 𝐿(𝜏 ) (as defined in Eq. S16) is equivalent to its Fourier transform 820 
+
+evaluated at 𝜔 = 0 . But for the inverse convolution theorem, the Fourier transform of the product 𝐶(𝜏 ) 𝐿(𝜏 ) 821 
+
+corresponds to the convolution of the two transforms ̂ 𝐶(𝜔) and ̂ 𝐿(𝜔) . In equations: 822 
+
+𝑄 = ∫ 
+
+> ∞−∞
+
+𝑑𝜏 𝐶(𝜏 ) 𝐿(𝜏 ) =̂ 𝑓 (𝐶(𝜏 ) 𝐿(𝜏 )) (𝜔)∣ 𝜔=0 = 12𝜋 (̂𝐶(̃𝜔) ∗̂ 𝐿(̃𝜔)) (𝜔)∣ 𝜔=0 
+
+== 12𝜋 ∫
+
+> ∞−∞
+
+𝑑̃𝜔̂ 𝐶(̃𝜔)̂ 𝐿(−̃𝜔) . 
+
+(S20) 823 
+
+The advantage of re-defining 𝑄 in the Fourier space is that, for Hawkes processes, the covariance ̂ 𝐶(𝜔) can be 824 
+
+expressed in a closed form as a function of network connectivity and neural activity (Hawkes 1971; Pernice et al. 825 
+
+2011; Trousdale et al. 2012; Jovanović et al. 2015). More specifically, given the matrix of post-synaptic potential 826 
+
+kernels (Eq. 9 in Methods) 827 
+
+E(𝜏 ) = ( 
+
+> 1𝜏 𝑒
+
+𝑒 −𝜏/𝜏 𝑒 00 − 1𝜏 𝑖 
+
+𝑒 −𝜏/𝜏 𝑖 ) (S21) 828 
+
+and the connectivity matrix 829 
+
+W = ( 0 𝑤 inh 
+
+𝑤 exc 0 ) , (S22) 830 
+
+we can first write the vector of firing rates r = [𝑟 exc , 𝑟 inh ]⊺ as 831 
+
+r = h0 + ∫ 
+
+> +∞ −∞
+
+𝑑𝜏 G(𝜏 ) 𝑆(𝜏 − 𝑡), (S23) 832 
+
+where h0 is the baseline input and G(𝜏 ) = E(𝜏 ) W is referred to as the matrix of “interaction kernels”. At the 833 
+
+equilibrium state, 834 
+
+r = h0 + G r , with G ∶= ∫ 
+
+> +∞ −∞
+
+𝑑𝜏 G(𝜏 ), (S24) 835 
+
+SI, page 3 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+where the integral in the r.h.s. corresponds to the Fourier transform evaluated at zero, i.e., ̂ G(𝜔)| 𝜔=0 . Equivalently, 836 
+
+the rate vector can be written in an explicit form: 837 
+
+r = ( I − G)−1 h0, (S25) 838 
+
+where I represents the identity matrix. Moreover, if we write the covariance matrix (cf. Eq. S12) as 839 ̂
+
+C(𝜏 ) = ⟨ S(𝑡) S(𝑡 − 𝜏 ) 𝑇 ⟩ − r r 𝑇 (S26) 840 
+
+then we have the following expression in the Fourier domain, at the equilibrium state: 841 ̂
+
+C(𝜔) = ( I −̂ G(𝜔)) −1 
+
+D (I −̂ G𝑇 (𝜔)) −1 
+
+(S27) 842 
+
+where D is a diagonal matrix with the firing rates on its diagonal. Finally, recall that, for a matrix G with spectral 843 
+
+radius < 1 ,844 
+
+(I − G)−1 =
+
+> ∞
+
+∑
+
+> 𝛼
+
+G𝛼 . (S28) 845 
+
+Therefore, the covariance matrix can be written as the following expansion 846 ̂
+
+C(𝜔) = 
+
+> 𝑁
+
+∑
+
+> 𝛼=0 𝑁
+
+∑
+
+> 𝛽=0
+
+̂
+
+E𝛼 (𝜔)(̂ E𝑇 )𝛽 (−𝜔) [( W𝛼 )D(W𝑇 )𝛽 )] , (S29) 847 
+
+where the indices 𝛼, 𝛽 indicate the number of connections between any spiking neuron in the network to the 848 
+
+post- and to the presynaptic neuron, respectively. This captures the influence of each spike propagated in the 849 
+
+network through existing synaptic connections on the correlated firing of the pre- and postsynaptic neurons. 850 
+
+Within this formalism, in our reduced model we consider only pairwise interactions, that is, 𝛼 + 𝛽 = 1 . The 851 
+
+inhibitory-to-excitatory covariance is the (1, 2) element of ̂ C(𝜔) . We can compute it as: 852 ̂𝐶(𝜔) =̂ 𝐸 𝑒 (𝜔) 𝑤 inh 𝑟 inh +̂ 𝐸 𝑖 (−𝜔) 𝑟 exc 𝑤 exc (S30) 853 
+
+By combining Eq. S20 and Eq. S30, we get the following expression for 𝑄 :854 
+
+𝑄 = 𝑀 (10) 𝑒𝑖 𝑤 inh 𝑟 inh + 𝑀 (01) 𝑖𝑒 𝑤 exc 𝑟 exc 
+
+with 𝑀 (𝛼𝛽) 𝑗𝑘 ∶= ∫ 
+
+> +∞ −∞
+
+𝑑𝜔̂ 𝐸 𝛼 𝑗 (𝜔)̂𝐸 𝛽 𝑘 (−𝜔)̂𝐿(−𝜔). (S31) 855 
+
+The 𝑀 (10) 𝑒𝑖 , 𝑀 (01) 𝑖𝑒 coefficients can be computed analytically depending on the iSTDP rule (see next section). 856 
+
+Considering them as constants, we can then write Eq. S18 as: 857 
+
+⟨ 𝑑𝑤 inh (𝑡) 𝑑𝑡 ⟩ = 𝛼 pre 𝑟 inh − 𝑤 inh 𝑟 inh (𝛼 post + 𝐵 𝑟 inh ) + ℎ exc (𝛼 post + 𝐵 𝑟 inh ) + 𝑀 (10) 𝑒𝑖 𝑤 inh 𝑟 inh + 𝑀 (01) 𝑖𝑒 𝑤 exc 𝑟 exc 
+
+(S32) 858 
+
+or equivalently, 859 
+
+⟨ 𝑑𝑤 inh (𝑡) 𝑑𝑡 ⟩ = 𝛼 pre 𝑟 inh − 𝑤 inh 𝑟 inh (Ψ − 𝑀 (10) 𝑒𝑖 ) + ℎ exc Ψ (S33) 860 
+
+with Ψ ∶= 𝛼 post + 𝐵𝑟 inh + 𝑀 (01) 𝑖𝑒 𝑤 exc .861 
+
+We then find the stationary point (Eq. 11 in Methods) 862 ̃𝑤 inh = 𝛼 pre 𝑟 inh + ℎ exc Ψ𝑟 inh (Ψ − 𝑀 (10) 𝑒𝑖 ) (S34) 863 
+
+The equilibrium point ̃ 𝑤 inh is a stable fixed point attractor, and positive, that is ̃ 𝑤 inh ∈ [0, 𝑤 max ], if the following 864 
+
+conditions hold: 865 
+
+Ψ − 𝑀 (10) 𝑒𝑖 > 0 𝛼 pre 𝑟 inh + Ψ ℎ exc > 0, (S35) 866 
+
+SI, page 4 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+If a solution for ̃ 𝑤 inh exists, we can also express the steady-state postsynaptic rate as follows: 867 ̃𝑟 exc = ℎ exc −̃ 𝑤 inh 𝑟 inh = − 𝛼 pre 𝑟 inh + 𝑀 (10) 𝑒𝑖 ℎexc 
+
+Ψ − 𝑀 (10) 𝑒𝑖 
+
+, (S36) 868 
+
+The solution is valid only for positive rates. This adds one more condition for a stable and positive solution. The 869 
+
+constraints are therefore: 870 
+
+Ψ − 𝑀 (10) 𝑒𝑖 > 0 𝛼 pre 𝑟 inh + Ψ ℎ exc > 0 𝑟 inh > 𝑀 (10) 𝑒𝑖 ℎexc 
+
+−𝛼 pre 
+
+with 𝛼 pre < 0. 
+
+(S37) 871 
+
+S1.3 Circuit motif with unconstrained 𝑟 inh 872 
+
+In the 2D E/I motif presented in the main text, the value of 𝑟 inh was fixed both for in the numerical simulations 873 
+
+and in the analytic expression of the dynamics (Eq. 10). This led to a closed-form expression for the fixed point 874 
+
+solution (Eq. 11 in Methods): 875 ̃𝑤 inh = 𝛼 pre 𝑟 inh + ℎ exc Ψ𝑟 inh (Ψ − 𝑀 (10) 𝑒𝑖 ) ;̃ 𝑟 exc = − 𝛼 pre 𝑟 inh + 𝑀 (10) 𝑒𝑖 ℎexc 
+
+Ψ − 𝑀 (10) 𝑒𝑖 
+
+;
+
+with Ψ = 𝛼 post + 𝐵𝑟 inh + 𝑀 (01) 𝑖𝑒 𝑤 exc 
+
+(S38) 876 
+
+In this section, for completeness, we show how the condition of fixed 𝑟 inh is not required for a stable solution and 877 
+
+can in fact be relaxed at the cost of simplicity in the analytic expression of the fixed-point solution. 878 
+
+Consider the model shown in Fig. S3A. Here both 𝑟 exc and 𝑟 inh are free parameters, given by the net input. Namely: 879 
+
+𝑟 exc = ℎ exc − 𝑤 inh 𝑟 inh 
+
+𝑟 inh = ℎ inh + 𝑤 exc 𝑟 exc 
+
+(S39) 880 
+
+where we dropped the time dependence in the notation for simplicity. We can rewrite the equations above as: 881 
+
+𝑟 exc = ℎexc − 𝑤 inh ℎinh 
+
+1 + 𝑤 exc 𝑤 inh 
+
+; 𝑟 inh = ℎinh + 𝑤 exc ℎexc 
+
+1 + 𝑤 exc 𝑤 inh 
+
+. (S40) 882 
+
+Then, plugging the terms above into (S32), we obtain: 883 
+
+⟨ 𝑑𝑤 inh (𝑡) 𝑑𝑡 ⟩ = 𝛼 pre 
+
+ℎinh + 𝑤 exc ℎexc 
+
+1 + 𝑤 exc 𝑤 inh 
+
+− 𝑤 inh 
+
+ℎinh + 𝑤 exc ℎexc 
+
+1 + 𝑤 exc 𝑤 inh 
+
+(𝛼 post + 𝐵 ℎinh + 𝑤 exc ℎexc 
+
+1 + 𝑤 exc 𝑤 inh 
+
+) + ℎexc (𝛼 post + 𝐵 ℎinh + 𝑤 exc ℎexc 
+
+1 + 𝑤 exc 𝑤 inh 
+
+) + 𝑀 (10) 𝑒𝑖 𝑤 inh 
+
+ℎinh + 𝑤 exc ℎexc 
+
+1 + 𝑤 exc 𝑤 inh 
+
++𝑀 (01) 𝑖𝑒 𝑤 exc 
+
+ℎexc − 𝑤 inh ℎinh 
+
+1 + 𝑤 exc 𝑤 inh 
+
+.
+
+(S41) 884 
+
+We can find a fixed point ̃ 𝑤 inh in the equation above by setting ⟨ 𝑑𝑤 inh (𝑡) 𝑑𝑡 ⟩ = 0 and multiplying by (1 + 𝑤 exc 𝑤 inh )2.885 
+
+The equation becomes a quadratic equation for 𝑤 inh :886 
+
+𝑎 𝑤 2 
+
+> inh
+
++ 𝑏 𝑤 inh + 𝑐 = 0, (S42) 887 
+
+with 888 
+
+𝑎 = 𝑤 exc (𝑀 (10) 𝑒𝑖 (ℎ inh + ℎ exc 𝑤 exc ) − 𝑀 (01) 𝑖𝑒 ℎinh 𝑤 exc − 𝛼 post ℎinh )𝑏 = (ℎ inh + ℎ exc 𝑤 exc ) (𝛼 pre 𝑤 exc − 𝐵 ℎ inh + 𝑀 (10) 𝑒𝑖 ) − 𝛼 post ℎinh (1 − ℎ exc 𝑤 exc ) + 𝑀 (01) 𝑖𝑒 𝑤 exc (ℎ exc 𝑤 exc − ℎ inh )𝑐 = (ℎ inh + ℎ exc 𝑤 exc ) (𝛼 pre + 𝐵 ℎ exc ) + 𝑀 (01) 𝑖𝑒 𝑤 exc ℎexc + 𝛼 post ℎexc 
+
+(S43) 889 
+
+SI, page 5 
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint The solution is then given by 890 ̃𝑤 inh = −𝑏 + √𝑏 2 − 4𝑎𝑐 2𝑎 (S44) 891 
+
+as long as 𝑏 2 − 4𝑎𝑐 ≥ 0 .892 
+
+Figure S3 shows analytic and numeric results for unidirectional and mutually-connected motif configurations for 893 
+
+different iSTDP rules. 894 
+
+S1.4 Derivation of first-order motif coefficients 895 
+
+To calculate the motif coefficients 896 
+
+𝑀 (10) 𝑒𝑖 = ∫ 
+
+> +∞ −∞
+
+𝑑𝜔̂ 𝐿(−𝜔)̂ 𝐸 𝑖 (𝜔) and 𝑀 (01) 𝑖𝑒 = ∫ 
+
+> +∞ −∞
+
+𝑑𝜔̂ 𝐿(−𝜔)̂ 𝐸 𝑒 (−𝜔) (S45) 897 
+
+for the connection 𝑊 , we need to compute the Fourier transform of the postsynaptic potential 𝐸 𝑒 , 𝐸 𝑖 and the 898 
+
+Fourier transform of the iSTDP kernel. 899 
+
+The Fourier transforms of the excitatory and inhibitory postsynaptic potential (Eq. 9 in Methods) are respectively 900 
+
+given by: 901 ̂𝐸 𝑒 (𝜔) = 11 + 𝑗𝜏 𝑒 𝜔 , and ̂ 𝐸 𝑖 (𝜔) = − 11 + 𝑗𝜏 𝑖 𝜔 , (S46) 902 
+
+where 𝑗 is the imaginary unit. 903 
+
+Consider first the Hebbian symmetric STDP kernel, defined via the function 904 
+
+𝐿 sy (𝜏 ) = 12 ( 1𝜏 +
+
+𝐴 + 𝑒 −|𝜏|/𝜏 + − 1𝜏 −
+
+𝐴 − 𝑒 |𝜏|/𝜏 − ) (S47) 905 
+
+with 𝐴 +, 𝐴 − > 0 . The Fourier transform is given by 906 ̂𝐿 sy (𝜔) =̂ 𝐿 sy (−𝜔) = 𝐴 +
+
+1 + 𝜏 2+𝜔 2 − 𝐴 −
+
+1 + 𝜏 2−𝜔 2 . (S48) 907 
+
+By substituting Eq. S46 and Eq. S48 in Eq. S45, we can calculate the first-order motif coefficients 𝑀 sy, (10) 𝑒𝑖 , 𝑀 sy, (01) 𝑖𝑒 :908 
+
+𝑀 sy, (10) 𝑒𝑖 = 𝐴 +
+
+𝜏 + + 𝜏 𝑖 
+
+− 𝐴 −
+
+𝜏 − + 𝜏 𝑖 
+
+; 𝑀 sy, (01) 𝑖𝑒 = 𝐴 +
+
+𝜏 + + 𝜏 𝑒 
+
+− 𝐴 −
+
+𝜏 − + 𝜏 𝑒 
+
+, (S49) 909 
+
+and therefore find an analytical solution for the integral 𝑄 in Eq. S31. 910 
+
+Consider now the antisymmetric iSTDP rule, with kernel: 911 
+
+𝐿 an (𝜏 ) = { − 𝐴 −
+
+> 𝜏 −
+
+𝑒 𝜏/𝜏 − if 𝜏 < 0 
+
+> 𝐴 +
+> 𝜏 +
+
+𝑒 −𝜏/𝜏 + if 𝜏 ≥ 0 (S50) 912 
+
+whose Fourier transform is given by 913 ̂𝐿 an (𝜔) = 𝐴 +
+
+1 + 𝑗𝜏 +𝜔 − 𝐴 −
+
+1 − 𝑗𝜏 −𝜔 . (S51) 914 
+
+Again, we can calculate the first order motif coefficients 𝑀 an, (10) 𝑒𝑖 , 𝑀 an, (01) 𝑖𝑒 for the antisymmetric rule by substituting 915 
+
+Eq. S46 and Eq. S51 in Eq. S45: 916 
+
+𝑀 an, (10) 𝑒𝑖 = 𝐴 +
+
+𝜏 + + 𝜏 𝑖 
+
+; 𝑀 an, (01) 𝑖𝑒 = − 𝐴 −
+
+𝜏 − + 𝜏 𝑒 
+
+. (S52) 917 
+
+These expressions can be included into Eq. S34, leading to the final expression for the symmetric rule: 918 
+
+Ψ = 𝛼 post + 𝐵𝑟 inh + 𝑀 sy, (01) 𝑖𝑒 𝑤 exc 
+
+= 𝛼 post + 𝐵𝑟 inh + ( 𝐴 +
+
+𝜏 + + 𝜏 𝑒 
+
+− 𝐴 −
+
+𝜏 − + 𝜏 𝑒 
+
+) 𝑤 exc ̃𝑤 inh =𝛼 pre 𝑟 inh + ℎ exc (𝛼 post + 𝐵𝑟 inh + ( 𝐴 +
+
+> 𝜏 ++𝜏 𝑒
+
+− 𝐴 −
+
+> 𝜏 −+𝜏 𝑒
+
+) 𝑤 exc )𝑟 inh (𝛼 post + 𝐵𝑟 inh + ( 𝐴 +
+
+> 𝜏 ++𝜏 𝑒
+
+− 𝐴 −
+
+> 𝜏 −+𝜏 𝑒
+
+) (𝑤 exc − 1)) 
+
+(S53) 919 
+
+SI, page 6 
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint And to the final expression for the antisymmetric rule: 920 
+
+Ψ = 𝛼 post + 𝐵𝑟 inh + 𝑀 an, (01) 𝑖𝑒 𝑤 exc 
+
+= 𝛼 post + 𝐵𝑟 inh − 𝐴 −
+
+𝜏 − + 𝜏 𝑒 
+
+𝑤 exc ̃𝑤 inh = 𝛼 pre 𝑟 inh + ℎ exc 𝛼 post + 𝐵𝑟 inh − 𝐴 −
+
+> 𝜏 −+𝜏 𝑒
+
+𝑤 exc 
+
+𝑟 inh (𝛼 post + 𝐵𝑟 inh − 𝐴 −
+
+> 𝜏 −+𝜏 𝑒
+
+𝑤 exc − 𝐴 +
+
+> 𝜏 ++𝜏 𝑖
+
+)
+
+(S54) 921 
+
+# S2 Structured stabilization in spiking networks with intrinsically-generated 922 
+
+# fluctuating activity 923 
+
+Our main numerical results are based on conductance-based spiking RNNs, where excitatory neurons receive 924 
+
+random Poisson inputs, with both a shared and an independent pomponent. To further demonstrate the generality 925 
+
+of our results, we consider a somewhat different but important class of spiking RNNs, where fluctuating activity 926 
+
+is generated completely intrinsically and does not depend on external inputs (Van Vreeswijk and Sompolinsky 927 
+
+1998; Mastrogiuseppe and Ostojic 2017) 928 
+
+We adapted a current-based spiking RNN model that spontaneously generates irregular activity under constant 929 
+
+input currents (Mastrogiuseppe and Ostojic 2017). The single-neuron dynamics is as follows: 930 
+
+𝜏 𝑚 
+
+𝑑𝑉 𝑖 
+
+𝑑𝑡 = −𝑉 𝑖 + 𝑅𝐼 𝑖 (𝑡) + 𝑅 𝐼 0
+
+𝐼 𝑖 (𝑡) = ∑ 
+
+> 𝑗
+
+𝑊 𝑖𝑗 ∑
+
+> 𝑘
+
+𝛿 (𝑡 − 𝑡 (𝑘) 𝑗 − Δ delay ) (S55) 931 
+
+(see Table S1 for the full list of parameters). We selected initial conditions that resulted in a high-firing, nearly 932 
+
+synchronous firing regime (Fig. S5A,B). In line with our previous results, we found that our choices of iSTDP 933 
+
+rules lead to stable dynamics, reducing excitatory firing rates. Moreover, depending on the profile of correlation 934 
+
+kernel, the network converged to either a prevalence of reciprocal E/I connections Fig. S5E, or lateral connectivity, 935 
+
+expressed by unidirectional connections Fig. S5F. 936 
+
+These observations underscore the robustness of our proposed iSTDP mechanisms in shaping network connectivity 937 
+
+beyond specific network architectures. The consistent emergence of either reciprocal or lateral connections, 938 
+
+depending on the iSTDP rule, highlights a general principle by which local plasticity can shape E/I circuit structure. 939 
+
+SI, page 7 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+symbol value description 
+
+𝑁 exc 800 number of excitatory neurons 
+
+𝑁 inh 200 number of inhibitory neurons 
+
+𝜏 𝑚 20 ms membrane time constant 
+
+𝑉 threshold 20 mV firing threshold 
+
+𝑉 reset 10 mV reset membrane potential 
+
+𝜏 refractory 0.5 ms refractory period 
+
+Δdelay 0.55 ms synaptic transmission delay 
+
+𝑅 𝐼 0 0.23 mV constant external input 
+
+𝑝 e e 0.1 exc-to-exc connection probability 
+
+𝑝 i e 0.1 exc-to-inh connection probability 
+
+𝑝 e i 1.0 inh-to-exc connection probability 
+
+𝑝 i i 1.0 inh-to-inh connection probability 
+
+𝑤 e e 0.2 exc-to-exc weight 
+
+𝑤 i e 0.2 exc-to-inh weight 
+
+𝑤 i i 0.1 inh-to-inh weight 
+
+symmetric iSTDP rule 
+
+𝐴 0 4 ⋅ 10 −3 global learning rate 
+
+𝐵 0 net integral of the STDP kernel 
+
+𝛼 pre −0.05 constant dependent on presynaptic rate 
+
+𝛼 post 0 constant dependent on postsynaptic rate 
+
+𝜏 + 30 ms iSTDP kernel time constant 
+
+𝜏 − 600 ms iSTDP kernel time constant 
+
+asymmetric iSTDP rule 
+
+𝐴 0 5 ⋅ 10 −5 global learning rate 
+
+𝐵 0.3 net integral of the iSTDP kernel 
+
+𝛼 pre −0.7 constant dependent on presynaptic rate 
+
+𝛼 post 0.2 constant dependent on postsynaptic rate 
+
+𝜏 + 60 ms iSTDP kernel time constant for potentiation 
+
+𝜏 − 30 ms iSTDP kernel time constant for depression Table S1: Numerical parameters for the spiking RNN with intrinsically-generated fluctuating activity (Eq. S55) SI, page 8 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+# S3 Supporting Figures 940 unidirec �onal mutual circuit dynamics A B Ccov. density cov. density    
+
+> −300 0300 600
+> −300 300 0
+> −300 0300 600
+> −300 300 0t (ms) t (ms)
+
+promotes mutual connec �vity discourages mutual connec �vity 
+
+> poten �a�on
+
+D E       
+
+> −300 0300 600
+> −300 300 0t (ms)
+> 150 −150 0
+> cov. density
+> −300 0300 600
+> −300 300 0t (ms)
+> 150 −150 0
+> depression
+> t (ms) t (ms)
+> cov. -dominated, symmetric cov. density cov. -dominated, symmetric
+
+Figure S1: Schematics of the reduced circuit model and of interactions between covariance density and iSTDP kernel. A. Representation of the model used for Fig. 1 in main text. Two time-varying coupled Poisson units, one excitatory and one inhibitory, are connected by a non-plastic excitatory weight 𝑤 exc and a plastic inhibitory weight 
+
+𝑤 inh . The instantaneous rates, here shown as traces, are computed as the convolution between each incoming spike and an exponential synaptic kernel that either increases (exc) or decreases (inh) the instantaneous firing probability. The input to the excitatory neuron ℎexc is fixed, whereas the inhibitory input changes dynamically, keeping the inhibitory neuron at a fixed rate 𝑟 inh . Only the inhibitory synapse (dashed line) is plastic. B. Unidirectional configuration. Here 𝑤 exc = 0 and the covariance density between the pre (inh) and post (exc) neuron can only be negative in the pre-post ( Δ𝑡 > 0 ) section of the curve, due to the inhibitory interaction given by 𝑤 inh . C. Mutual configuration, 𝑤 exc = 0.5 . Here the covariance density is positive in the post-pre ( Δ𝑡 < 0 ) section of the curve due to 𝑤 exc , and negative for ( Δ𝑡 > 0 ) for the effect of 𝑤 inh . D. Effect of a symmetric, covariance-dominated iSTDP kernel on a circuit in the M configuration: the positive left branch of the covariance density interacts with the kernel, resulting in a positive 𝑄 factor in the weight update. (Eq. 1). E. Effect of an antisymmetric iSTDP kernel. Here the positive covariance density interacts with the negative branch of the kernel, resulting into synaptic depression. Hence, the 𝑄 term is negative, and mutual connections are discouraged. SI, page 9 
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint B = 2 = -50.0 = 0 = 50 ms = n.a. t (ms)   
+
+> −150 0150 w ( ar  b. u.)
+
+B = 0 = -0.14 = 7.95 = 50 ms = 50 ms     
+
+> −1500150
+
+cov.-dom i nated symmetric cov.-dominated an �symmetric 
+
+B = 0 = -0.12 = 1.45 = 50 ms = 0.5 s    
+
+> −150 0150
+
+t (ms) t (ms) w ( a. u.)  w ( a. u.) t (ms) B = 0 = -1 = 0 = 0.5 s = 50 ms    
+
+> −150 0150
+
+t (ms) B = 0 = -3.3 = 0 = 50 ms = 50 ms     
+
+> −1500150
+
+cov.-dominated an �symmetric inverted cov.-dominated symmetric inverted 
+
+> w ( a. u.)  w ( a. u.)
+
+0.5 0= (mutual) (unidirec �onal) = 40 
+
+ACEBDF
+
+= 80 0 .0 0.1 0.2 0.3                          
+
+> −0.02 0.00 0.02
+> 0.00. 10. 20.3
+> −0. 02 0.00 0.02
+> 0.00.10.20.3
+> −0.020.000.02
+> 0.00.1 0.2 0.3
+> −0.0 20.0 00.0 2
+
+rate-dominated symmetric        
+
+> 0.0 0.1 0.2 0.3
+> −0.2 0.0 0.2
+
+Figure S2: Analytic fixed point solutions for different iSTDP interaction kernels (complements Fig. 2 in main text). 
+
+A. Representation of the model (see also Fig. 1A). B-E . iSTDP rules, represented by their kernel and their additional parameters (left panels) and study of the associated weight dynamics as a one-dimensional differential equation (right panels), black dots represent fixed points. B Rate-dominated iSTDP rule. C-E . covariance dominated rules presented in the same order as in Fig. 2A, main text. Note that the configurations in E and F produce unstable fixed points. SI, page 10 
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint H JIK ML
+
+E F Gcov.-dom i nated symm. cov.-dominated an �symm. rate-dominated Acircuit model 
+
+cov.-dom i nated symm.  
+
+> 150 −150 0
+
+selects U 
+
+cov.-dominated an �symm.  
+
+> 150 −150 0
+
+selects M CB Drate-dominated  
+
+> w ( a. u.)
+> 150 −150 0
+
+blanket STDP rules 
+
+> t (ms) unidirec �onal mutual unidirec �onal mutual
+
+Figure S3: Effects of plasticity for E/I motifs in a reduced model with unconstrained 𝑟 inh . See Section S1.3 for model description and details on the analytic calculation. A. Model schematics. Unlike the model in Fig. 1A, the inhibitory rate 𝑟 inh is unconstrained and determined by the net inhibitory input ℎinh . B-J. Corresponding to the respective panels in Fig. 1, for the model with unconstrained 𝑟 inh . K-L. Value of 𝑟 inh during the simulation. Note that in the U configuration (dark green) 𝑟 inh is stationary and corresponds to ℎinh .SI, page 11 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+Figure S4: Full weight matrix for the random sparse RNN simulation with symmetric iSTDP (see Main Text, Fig. 3B-F). SI, page 12 
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint 100 ms 100 ms 3 s rate = 24Hz rate = 24Hz 1 s  
+
+> rate = 0.46Hz rate = 3.1Hz unidirec �onal mutual
+
+# A BC DE FFigure S5: Randomly connected spiking RNN with intrinsically-generated fluctuating asynchronous irregular activity. See Table S1 for numerical parameters. A-B. Spiking activity of a subset 100 excitatory neurons (left) and distribution of Fano factors of excitatory neurons (right) before plasticity. C-D. Spiking activity and Fano factor distribution after weight convergence, using either a symmetric ( C) or an antisymmetric ( D) iSTDP kernel. 
+
+E-F. Change of mutual and unidirectional inhibitory-to-excitatory weights during learning in the circuit. Equivalent to Fig. 3C and H in Main Text. SI, page 13 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+Figure S6: Full weight matrix for the random sparse RNN simulation with antisymmetric iSTDP (see Main Text, Fig. 3G-K). SI, page 14 
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint Figure S7: Full weight matrix for the recurrent network with 1D ring connectivity structure after weight conver-gence with two inhibitory populations. SI, page 15 
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint AB
+
+t im e (s) 0 1 2 3 4 5 6 7 8 9 10 neuro n20 030 040 050 060 0
+
+s�mulus on Figure S8: A. Full matrix of Pearson correlations between excitatory neurons in the one-dimensional ring model during spontaneous activity, after convergence of plastic weights. B Spike raster showing the response of the 1D ring model to localized stimuli (see Fig. 4 in main text). SI, page 16 
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint null s�m. size: 
+
+> 2510 20 40 80
+
+B C DE FA
+
+> PV
+> rate-dominated
+> tw
+> 0.5
+> exc tuning distance -0.5 0
+
+Figure S9: Spontaneous and evoked activity in a 1D ring structure with rate-dominated iSTDP. A. Model schematics, compare with Fig. 4A. The excitatory component is identical to the previous case, but the inhibitory population follows a single, rate-dominated iSTDP. B. Full weight matrix after weight convergence, compare with Fig. 4B. 
+
+C. Mean responses of the excitatory population to stimuli of different sizes, averaged over 100 trials (compare withFig. 5A). D. Response of the center neuron to stimuli of different sizes (compare withFig. 5B). E. Pearson correlation during spontaneous activity between an excitatory neuron and its neighbors, ordered by tuning distance and averaged over the entire population (compare withFig. 4F). F. Pearson correlation of spontaneous activity for every pair of excitatory neurons (compare withFig. S8A). SI, page 17 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+idx post (exc) 0 100 200 idx pre (inh) 0200 400 600 800 
+
+> 020 40 60 80
+> exc. neuron idx 0400 800 1 s
+
+ti me (min) 0 10 20 30 pop. rate (Hz) 020 40 60 80 excitatory inhibitory 
+
+time (min)    
+
+> 010 20 30 inh. weight (arb. u.) 0510 15
+
+tuning (a.u.)     
+
+> −1.0 −0.5 0.0 0.5 1.0 norm. weight
+> −1.0
+> −0.5 0.0 0.5 1.0 PV to exc exc to exc exc to PV
+
+EB CA Dti me (min) 0 10 20 30 pop. rate (Hz) 020 40 60 80 
+
+time (min)    
+
+> 010 20 30 inh. weight (a.u.) 0510 15
+
+tuning (a.u.)     
+
+> −1.0 −0.5 0.0 0.5 1.0 norm. weight
+> −1.0
+> −0.5 0.0 0.5 1.0
+
+idx post (exc) 0 100 200 idx pre (inh) 0200 400 600 800 
+
+> 020 40 60 80
+> exc. neuron idx 0400 800 1 s
+
+excitatory inhibitory SST to exc 
+
+G HF IJ
+
+> exc to exc
+
+Figure S10: One-dimensional ring structure with only one inhibitory population (either PV or SST). A-E. The RNN has 800 excitatory neurons, 200 “PV” neurons and no “SST” neurons. The network evolves under a PV-like covariance-dominated iSTDP rule with 𝐵 = 0, 𝛼 pre = −1.0, 𝛼 post = 1.0 . A. Evolution of population mean firing rates over time. B. Evolution of inh-to-exc synaptic weights over time. C. Profile of the average outgoing weights as a function of tuning distance. For convenience, the profiles are normalized so that the maximum is either 1 or −1. D. Inhibitory to excitatory weight matrix after weight convergence. E. Raster plot of excitatory neurons. F-J.Same but for a RNN with 800 excitatory neurons, 200 “SST” neurons and no “PV” neurons. The network evolves under a SST-like covariance-dominated iSTDP rule with 𝐵 = 0, 𝛼 pre = −1.0, 𝛼 post = 1.5 .SI, page 18 
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint 0 20 40 60 80 pop. rate (Hz) 040 80 120 
+
+ti me (min) 0 20 40 60 80 pop. rate (Hz) 040 80 120 0 20 40 60 80 inh. weight (a.u.) 020 40 60 
+
+time (min) 0 20 40 60 80 inh. weight (a.u.) 020 40 60     
+
+> 020 40 60 80 density
+
+inh. weight (a.u.) 0 20 40 60 80 density 
+
+Δt
+
+> ΔW
+
+# B CA D
+
+# F GE H
+
+Δt
+
+> ΔW
+
+unidir ectional mutual 
+
+unidir ectional mutual 
+
+unidir ectional mutual 
+
+unidir ectional mutual 
+
+excitatory inhibitory excitatory inhibitory Figure S11: Effects of plasticity for different levels of mean inhibitory input. A. Symmetric kernel. B. Evolution of population mean firing rates over time. The green vertical lines represent sequential increases of the mean input by a factor of 1.5, 2.0, 2.5, 3 . C. Evolution of inh-to-exc synaptic weights over time. D. Final distribution of weights, split into a “mutual” (brown) and a “unidirectional” (light orange) group. E-H . Same as above but for asymmetric iSTDP. SI, page 19 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted April 5, 2026. ;https://doi.org/10.1101/2024.10.12.618014 doi: bioRxiv preprint
+
+# References for Supporting Information 941 
+
+Hawkes, Alan G. (1971). “Spectra of Some Self-Exciting and Mutually Exciting Point Processes”. In: Biometrika 942 
+
+58.1, pp. 83–90. DOI: 10.2307/2334319 .943 
+
+Jovanović, Stojan, John Hertz, and Stefan Rotter (Apr. 7, 2015). “Cumulants of Hawkes Point Processes”. In: Physical 944 
+
+Review E 91.4, p. 042802. DOI: 10.1103/PhysRevE.91.042802 .945 
+
+Kempter, Richard, Wulfram Gerstner, and J. Leo van Hemmen (Apr. 1, 1999). “Hebbian Learning and Spiking 946 
+
+Neurons”. In: Physical Review E 59.4, pp. 4498–4514. DOI: 10.1103/PhysRevE.59.4498 .947 
+
+Mastrogiuseppe, Francesca and Srdjan Ostojic (Apr. 24, 2017). “Intrinsically-Generated Fluctuating Activity in 948 
+
+Excitatory-Inhibitory Networks”. In: PLOS Computational Biology 13.4, e1005498. DOI: 10.1371/journal.pcbi. 949 
+
+1005498 .950 
+
+Pernice, Volker, Benjamin Staude, Stefano Cardanobile, and Stefan Rotter (May 19, 2011). “How Structure 951 
+
+Determines Correlations in Neuronal Networks”. In: PLOS Computational Biology 7.5, e1002059. DOI: 10.1371/ 952 
+
+journal.pcbi.1002059 .953 
+
+Trousdale, James, Yu Hu, Eric Shea-Brown, and Krešimir Josić (Mar. 22, 2012). “Impact of Network Structure and 954 
+
+Cellular Response on Spike Time Correlations”. In: PLoS Comput Biol 8.3, e1002408. DOI: 10.1371/journal. 955 
+
+pcbi.1002408 .956 
+
+Van Vreeswijk, C. and H. Sompolinsky (1998). “Chaotic Balanced State in a Model of Cortical Circuits”. In: Neural 957 
+
+Computation 10.6, pp. 1321–1371. DOI: 10.1162/089976698300017214 .958 
+
+SI, page 20

@@ -1,0 +1,118 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-001.webp",
+      "caption": "Figure 4: Controlled injection at the placeholder token X, evaluated on instances where the entity-present prompt is already correct under pass@5 (109 examples). Mean-entity initialization and wrong-cell injection are control conditions; correct-cell injection shows the expected directional gain.",
+      "page": 6,
+      "index": 1,
+      "width": 419,
+      "height": 299
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-002.webp",
+      "caption": "Figure 3: Entity-specific amnesia under negative ablation for the localized Obama cell (L2-N10941). Target (Obama) recall drops substantially as α decreases, while control (Trump) remains near baseline.",
+      "page": 6,
+      "index": 2,
+      "width": 419,
+      "height": 290
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-003.webp",
+      "caption": "Table 2: Attack prompts (A1–A4) and preservation prompts (P1–P6) used for factual modification. Preservation prompts include an expected next token.",
+      "page": 11,
+      "index": 3,
+      "width": 459,
+      "height": 877
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-004.webp",
+      "caption": "Figure 1: We identify sparse, entity-selective MLP neurons, termed entity cells, that act as stable anchors for factual retrieval in Qwen2.5-7B. Concentrated primarily in early layers (0–5), these cells provide access to canonical identity representations that are robust to aliases, misspellings, and multilingual variants. These neurons serve as causally actionable access points: suppressing them induces entity-specific amnesia, while activating a single localized neuron is often sufficient to steer the model toward entity-consistent factual recall. Across the other six models in our suite, early-layer candidates also appear, though the causal validation is weaker.",
+      "page": 2,
+      "index": 4,
+      "width": 617,
+      "height": 369
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-005.webp",
+      "caption": "Figure 5: Variant robustness for “Barack Obama”: most spelling and phrasing perturbations keep the same localized cell (L2-N10941).",
+      "page": 7,
+      "index": 5,
+      "width": 422,
+      "height": 465
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-006.webp",
+      "caption": "Figure 7: Multilingual robustness (Paris): variants localize to the same top-ranked cell (L1-N231).",
+      "page": 7,
+      "index": 6,
+      "width": 421,
+      "height": 465
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-007.webp",
+      "caption": "Figure 12: Qwen2.5-7B-Instruct replication of Figure 5. Most variants of “Barack Obama” preserve the same top cell as in the base model, indicating that the localized handle remains stable under post-training.",
+      "page": 14,
+      "index": 7,
+      "width": 481,
+      "height": 531
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-008.webp",
+      "caption": "Figure 11: Qwen2.5-7B-Instruct replication of Figure 4. On the trusted set, correct-cell injection again outperforms both the mean-entity initialization and wrong-cell controls, indicating that the same localized cells remain causally useful after instruction tuning.",
+      "page": 14,
+      "index": 8,
+      "width": 419,
+      "height": 300
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-009.webp",
+      "caption": "Figure 10: Qwen2.5-7B-Instruct replication of Figure 3. Negative ablation of the localized entity cell again causes a strong drop for the target entity while leaving the control entity comparatively stable, supporting preservation of the same causal pattern after post-training.",
+      "page": 14,
+      "index": 9,
+      "width": 419,
+      "height": 291
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-010.webp",
+      "caption": "Figure 24: OLMo-7B cross-family replication of Figure 3. Negative ablation reduces the target-entity curve, but the control curve is also affected, so this is not the same clean entity-specific amnesia pattern seen in Qwen2.5. This suggests that OLMo’s localized cells may participate in retrieval differently, or less selectively, than the Qwen-family cells.",
+      "page": 18,
+      "index": 10,
+      "width": 419,
+      "height": 290
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-011.webp",
+      "caption": "Figure 22: Controlled injection on trustworthy cells (top-5, alpha search). Left: causal separation ∆ = RelProb(Correct Cell)− RelProb(Wrong Cell), where probabilities are normalized by the entity-present prompt. Right: entity-level success rate, defined as the fraction of trustworthy entities that satisfy all three criteria: RelProb(Correct Cell) ≥ 0.30, improvement over no-injection ≥ 0.05, and improvement over wrong-cell injection ≥ 0.05.",
+      "page": 17,
+      "index": 11,
+      "width": 434,
+      "height": 277
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-012.webp",
+      "caption": "Figure 21: Cross-model localization depth profiles (2×2) for four non-Qwen-family models, formatted for single-column display. Each panel shows the distribution of top-neuron layers over PopQA-200 entities for one model. Relative to the main-paper localization result in Figure 2, these families are generally broader and deeper.",
+      "page": 17,
+      "index": 12,
+      "width": 439,
+      "height": 464
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-013.webp",
+      "caption": "Figure 20: Qwen3-8B within-family replication of Figure 7. Cross-script forms continue to recover similar top cells, though the pattern is noisier than in Qwen2.5.",
+      "page": 16,
+      "index": 13,
+      "width": 492,
+      "height": 530
+    },
+    {
+      "url": "assets/figures/arxiv/2604.01404v1/fig-014.webp",
+      "caption": "Figure 17: Qwen3-8B within-family replication of Figure 4. Correct-cell injection improves over the control conditions, but the separation is weaker and less consistent than in Qwen2.5, matching the more mixed withinfamily result described in the text.",
+      "page": 16,
+      "index": 14,
+      "width": 420,
+      "height": 297
+    }
+  ]
+}
