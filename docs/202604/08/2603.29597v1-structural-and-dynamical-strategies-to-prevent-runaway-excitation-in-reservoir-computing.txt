@@ -1,0 +1,415 @@
+Title: Structural and dynamical strategies to prevent runaway excitation in reservoir computing
+
+URL Source: https://arxiv.org/pdf/2603.29597v1
+
+Published Time: Wed, 01 Apr 2026 00:54:22 GMT
+
+Number of Pages: 26
+
+Markdown Content:
+# Structural and dynamical strategies to prevent runaway excitation in reservoir computing 
+
+# Claus Metzner 1, Achim Schilling 1,2,3,4 , Andreas Maier 1, Thomas Kinfe 2, and Patrick Krauss 1,2,3,4 1Cognitive Computational Neuroscience Group, Pattern Recognition Lab, Friedrich-Alexander-University Erlangen-N¨ urnberg (FAU), Germany 
+
+> 2Neuromodulation and Neuroprosthetics, University Hospital Mannheim, University Heidelberg, Germany
+> 3Neuroscience Lab, University Hospital Erlangen, Germany
+> 4BGU Ludwigshafen, Germany
+
+# April 1, 2026 
+
+> Abstract
+
+# Reservoirs, typically implemented as recurrent neural networks with fixed random connection weights, can be combined with a simple trained readout layer to perform a wide range of computational tasks. However, increasing the magnitude of reservoir connection weights to exploit nonlinear dy-namics can cause the network to develop strong spontaneous activity that drives neurons into saturation, dramatically degrading performance. In this work, we investigate two distinct countermeasures against such run-away excitation. The first approach introduces a subtle non-homogeneous structure into the matrix of connection weigths wij , without altering the overall probability distribution p(w). We identify several favorable struc-turing principles, such as creating a small subset of neurons with weaker-than-average input connections. Even if the rest of the reservoir falls into runaway saturating behavior, this weakly coupled subset remains in a mildly nonlinear regime whose dynamics can still be exploited by the readout layer. The second approach implements a form of automatic gain control, in which a dedicated control unit dynamically regulates the reser-voir’s average global activation toward an optimal setpoint. Although the control unit modulates the excitability of the reservoir only via a global gain factor, this mechanism substantially enlarges the dynamical regime favorable for computation and renders performance largely independent of the underlying connection statistics. 
+
+> 1
+> arXiv:2603.29597v1 [q-bio.NC] 31 Mar 2026
+
+# 1 Introduction 
+
+Deep learning has made substantial progress in recent years [1, 2], partly propelled by the emergence of large language models [3]. These models primarily depend on feedforward architectures, where information flows unidirectionally from input to output. Recurrent neural networks (RNNs), in contrast, feature feedback connections that enable them to function as self-sustaining dynamical systems [4], maintaining internal activity without requiring continuous external input. Several universal capabilities characterize RNNs, including their theoretical capacity to approximate arbitrary mappings [5] and replicate general dynamical systems [6]. These properties, along with their practical advantages, have generated sustained interest in understanding the internal mechanisms of these networks. RNNs can integrate information over prolonged temporal intervals [7, 8, 9, 10, 11, 12], and they possess the ability to construct compact yet rich internal representations through a balance of dimensional compression and expansion [13]. Research has also examined how RNN dynamics can be controlled and stabilized, especially when subjected to noise from both internal and external sources [14, 15, 16, 17, 18, 19, 20, 21]. RNNs have additionally attracted interest as computational frameworks for brain-like information processing [22]. Sparse RNNs with limited connections per unit, which mirror the structural organization of biological neural circuits [23], have demonstrated benefits for memory retention and representational efficiency [24, 25, 26, 27]. Our earlier work established a systematic investigation into how structural features influence RNN dynamics, beginning with small three-neuron motifs [28]. Extending this foundation, we showed how large autonomous networks can be controlled through three critical parameters: weight distribution width w, connection density d, and excitation/inhibition balance b [29, 21]. We further explored how these systems respond to noise, uncovering resonance-like phenomena and stochastic stabilization effects [20, 30, 31, 19, 32, 33, 34]. Our more recent research has investigated how particular dynamical characteristics and structural regularities affect reservoir computing system performance. In [35], we systematically manipulated the degree of neuronal nonlinearity and the intensity of re-current coupling to examine their effects on classification accuracy in synthetic tasks. Remarkably, even ’quiet’ reservoirs exhibiting minimal internal dynamics and extremely weak nonlinearity demon-strated the capacity to produce linearly separable representations for the readout layer, provided that subtle high-dimensional state features were leveraged. Although task performance generally declined under highly chaotic dynamics, accuracy frequently peaked near transition regions between chaotic and oscillatory or fixed-point regimes, providing support for the ”edge of chaos” hypothesis. In [36], we examined how biologically motivated structural regularities influence both the autonomous dynamics of RNNs and their functional performance in reservoir computing. These regularities included Dale’s principle, the creation of stronger and weaker patches in the connection weight matrix to create local heterogeneity [37, 38], as well as reciprocal symmetry similar to Hopfield networks [39]. Our findings indicated that Dale-conforming output weights and heterogeneous connectivity patches tend to improve task accuracy, whereas strong reciprocal symmetry proved detrimental, frequently pushing the system toward premature saturation and diminishing its ability to discriminate between inputs. Collectively, these results already hint at potential advantages of incorporating organizational structure into randomly connected networks. In the present work, we focus on the problem of runaway excitations in strongly connected reservoir networks, which can arise independently of the present input. These excitations drive neurons deep into the saturation of their sigmoidal activation functions and manifest at the network level as global synchronous oscillations, chaotic fluctuations, or global fixed points. In any of these cases, the computational performance of the reservoir computer typically degrades dramatically because the dynamics is no longer predominantly determined by the present input. To address this problem, we test two different approaches. 2Our first approach is to start with a statistically homogeneous connection weight matrix and then to re-distribute its elements in order to create heterogeneous structure in the matrix, yet without altering the global probability density distribution of the elements. The idea is that runaway excitations can often be interpreted as a herding effect driven by strong negative or positive feedback between all neurons in the reservoir. By creating diverse subsets of neurons with different statistical properties, such global herding effects may be suppressed. Our second approach is a direct dynamical regulation of network activity. We compute a running average of the overall network activation level, measured as the root-mean-squared activation of all reservoir neurons. A control unit then regulates a global prefactor of the weight matrix to keep the activity close to a setpoint that has been optimized for computation. Although highly simplified, this mechanism bears a conceptual resemblance to global regulatory processes in biological neural systems, where overall excitability and effective coupling strength are modulated by neuromodulators, hormones, or glial interactions. While our model does not attempt to capture such mechanisms in detail, it illustrates how a coarse-grained, global control signal can stabilize network dynamics and expand the regime of useful computation. 
+
+# 2 Methods 
+
+# 2.1 Generation of a Homogeneous Weight Matrix 
+
+The weight matrix W of the reservoir’s recurrent connections is random but controlled by three statistical parameters: the density d of non-zero connections, the excitatory/inhibitory balance b,and the recurrent coupling strength w, which is defined by the standard deviation of the Gaussian distribution of weight magnitudes. The density d ranges from d = 0 (isolated neurons) to d = 1 (fully connected network). The balance 
+
+b ranges from b = −1 (purely inhibitory connections) to b = +1 (purely excitatory connections), with 
+
+b = 0 corresponding to a perfectly balanced system. The coupling strength w can take any positive value, where w = 0 corresponds to unconnected reservoir neurons. The bias terms bw applied to the reservoir neurons are also drawn from a Gaussian distribution with zero mean and a fixed variance, ensuring that the reservoir operates in a dynamic regime suitable for information processing. In order to construct an N × N weight matrix with given parameters ( b, d, w ), we proceed as follows: First, we generate a matrix M(magn ) of weight magnitudes by drawing the N 2 matrix elements independently from a zero-mean normal distribution with standard deviation w and then taking the absolute value. Next, we generate a random binary matrix B(nonz ) ∈ { 0, 1}N ×N , where the probability of a matrix element being 1 is given by the density parameter d, that is, p1 = d.We then generate another random binary matrix B(sign ) ∈ {− 1, +1 }N ×N , in which the probability of a matrix element being +1 is given by 
+
+p+1 = 1 + b
+
+2 (1) where b is the balance parameter. Finally, the weight matrix is constructed by element-wise multiplication: 
+
+Wmn = M (magn ) 
+
+> mn
+
+· B(nonz ) 
+
+> mn
+
+· B(sign ) 
+
+> mn
+
+(2) Note that throughout this paper, the density parameter is always set to the maximum value of d = 1. The biases bw,n of the reservoir are drawn independently from a zero-mean normal distribution with a standard deviation of w′. Note that throughout this paper, the strength of the reservoir bias is 3always set to w′ = 0 .1. Thus, even for an uncoupled reservoir with w = 0 and zero input, the neurons will have non-zero resting values due to the random biases. 
+
+# 2.2 Generation of a Structured Weight Matrix 
+
+Starting from a statistically homogeneous weight matrix W of size N × N , generated under fixed parameters width w, density d, and balance b, our goal is to introduce controlled heterogeneity and structural organization without altering the overall distribution of weight values. To this end, we apply a three-step procedure consisting of mask generation, element sorting, and structured reassembly. In the first step, a binary mask of the same shape as W is constructed. The mask entries take values 0 or 1, and their spatial arrangement is determined by a mode parameter mskMod . In random mode, a fraction oneFrc of all matrix elements is selected uniformly at random and marked with 1. In rows 
+
+mode, a fraction oneFrc of all rows is randomly selected and entirely marked with 1. In cols mode, a fraction oneFrc of all columns is randomly selected and entirely marked with 1. In diagBlocks mode, the mask consists of a chain of contiguous S × S blocks of ones arranged along the main diagonal; this requires W to be square and its dimension to be divisible by S. In this latter case, the parameter 
+
+oneFrc is not used. In the second step, all elements of W are collected into a one-dimensional list and sorted according to a mode parameter srtMode . Sorting can be performed with respect to the raw weight values or their absolute magnitudes, each in either ascending or descending order. This step establishes a controlled ranking of weights while preserving the original multiset of values and hence the distribution implied by w, d, and b.In the final step, the sorted list of weight values is redistributed over the matrix positions according to the previously generated mask. The number of elements assigned to mask entries equal to 1 and 0 is determined by their respective counts in the mask. The sorted list is split accordingly into two subsets, which are randomly permuted within themselves to avoid introducing unintended fine-scale order. The shuffled subsets are then placed into the matrix positions corresponding to mask entries 1 and 0, respectively. The overall procedure thus preserves the global weight distribution exactly, while introducing struc-tured heterogeneity at the level specified by mskMod , oneFrc , S, and srtMode . This allows us to generate systematically structured weight matrices from an initially homogeneous ensemble without modifying the underlying statistics of the weights. 
+
+# 2.3 Design of Reservoir Computer (RC) 
+
+The RC consists of an input layer, a recurrent reservoir, a readout layer and optionally, a control unit. The input data comprises E consecutive episodes, each representing, for example, a pattern to be classified, or a priming sequence triggering the output of a specific target response. This data stream is fed into the reservoir and circulates through the system while propagating toward the output. At each time step t, the input layer receives M parallel signals x(t) 
+
+> m
+
+∈ [−1, +1]. These are linearly transformed by the input matrix I of size N × M and injected into the reservoir, as described by Eq. 3. Each input episode spans T time steps. The input layer consists solely of the matrix I and is therefore purely linear. Its elements Imn are drawn independently from a normal distribution with zero mean and standard deviation wI . To study autonomous RNN dynamics, we set wI = 0, effectively decoupling the reservoir from external input. The reservoir comprises N recurrently connected neurons with tanh activation. At each time step, all neuron states yn are updated in parallel. Each neuron receives a bias term bw,n , input from 4the external signals via I, and recurrent input via the weight matrix W (see Eq. 3), which can be dynamically modulated by a gain factor g from the control unit. In settings without control, we set 
+
+g = 1. Initial states y(0)  
+
+> n
+
+are drawn uniformly from [ −1, +1] and kept fixed for repeated simulations of the same reservoir. Different weight matrices receive independent initial states. The readout layer performs an affine-linear transformation of the reservoir states yn using a K × N
+
+output matrix O and a bias vector bo, as in Eq. 4. These parameters are trained via the pseudoinverse method (see below). In the sequence generation task, which serves as the main information processing benchmark in this work, the continuous outputs zk of the readout layer directly form the vectors of the output sequence. In classification tasks, by contrast, the zk represent soft votes that are converted into discrete predicted class labels c using the argmax function. This final step introduces a nonlinearity that sharpens the class boundaries in the output space. In summary, the RC is governed by the following equations: 
+
+y(t) 
+
+> n
+
+= tanh bw,n + X
+
+> m
+
+Inm x(t−1)  
+
+> m
+
++ g(t) X
+
+> n′
+
+Wnn ′ y(t−1) 
+
+> n′
+
+!
+
+(3) 
+
+z(t) 
+
+> k
+
+= bo,k + X
+
+> n
+
+Okn y(t) 
+
+> n
+
+(4) 
+
+c(t) = arg max 
+
+n
+
+z(t)
+
+> k
+
+o
+
+(5) 
+
+# 2.4 Unit for Automatic Gain Control (AGC) 
+
+The control unit computes a running average A(t) of the reservoir’s momentary root-mean-square activation A(t):
+
+A(t) =
+
+s 1
+
+N
+
+X
+
+> n
+
+
+
+y(t)
+
+> n
+
+2
+
+(6) 
+
+A(t) = μA (t) + (1 −μ)A(t−1) (7) (8) At time zero, we set A(0) = 0. The mixing factor μ, ranging between 0 and 1, controls how strongly the present network activation is weighted compared to the past average. The running average A(t) is compared to an activity setpoint α, which in our system has a range from 0 to 1. Depending on whether the difference is positive or negative, the current gain factor g is multiplied with an exponential function that is smaller or larger than one, respectively: 
+
+g(t) = g(t−1) exp 
+
+
+
+−ϵ (A(t) − α)
+
+
+
+(9) At time zero, we set g(0) = 1. The small positive feedback parameter ϵ determines the sensitivity of the gain control mechanism. In the special case ϵ = 0, the automatic gain control is effectively switched off. The results with AGC shown in this paper were based on the following parameter settings: μ = 0 .1, 
+
+α = 0 .25 and ϵ = 0 .25. 52.5 Sequence Generation Task 
+
+In this task, the reservoir computer functions as a deterministic system that maps an input sequence 
+
+X of real-valued vectors onto a corresponding output sequence Z:
+
+X ∈ [−1, +1] T I ×M −→ Z ∈ [−1, +1] T O ×K
+
+Here, T I and T O denote the temporal lengths of the input and output sequences, and M and K
+
+their respective vector dimensions. At the beginning of each episode, a randomly chosen input sequence X from one of NDC discrete classes is fed into the network, driving it into a class-specific internal configuration or ‘priming state’. After the input ends, the reservoir evolves autonomously through a sequence of internal states Y ,which the linear readout layer is trained to map onto the corresponding target sequence Z.Since the system is strictly deterministic, it will always produce the same trajectory for each distinct priming state. Provided that the induced trajectory is not a cyclic attractor with a period shorter than T O , the readout should in principle be able to convert the trajectory into the desired output sequence. However, because the reservoir is not reset at the beginning of each episode, residues of previous states may persist, such that the priming state is not exactly identical every time a given class is selected. If the reservoir operates in a chaotic regime, these small differences can be amplified, producing an effectively unpredictable trajectory that cannot be mapped to the correct target. In practice, the target mapping also fails if the reservoir neurons enter the saturated ‘digital’ state, since the resulting trajectory is insufficiently rich and lacks the necessary high-dimensional diversity. Successful performance therefore requires a balance between stability and richness: the reservoir must forget prior excitation rapidly enough to respond reproducibly to identical inputs, while still maintaining sufficient temporal and spatial diversity across neurons. To systematically explore the influence of network parameters under controlled conditions, we employ a minimal task configuration with M = K = 2, T I = 1, T O = 2, and NDC = 2. The class-specific input sequences Xc and their target sequences Zc are predefined, with all vector components drawn independently from a uniform distribution over [ −1, +1]. In each episode, one of the NDC cases is selected at random. 
+
+# 2.6 Optimal Readout Layer Using Pseudoinverse 
+
+The optimal weights and biases of the readout layer can be efficiently computed with the method of the pseudoinverse, based on the sequence of reservoir states and the target output (Compare, for example, section 3.4. in [40]). Following these ideas, we proceed as follows: Let Y ∈ R(E−1) ×N be the matrix of reservoir states directly after each input episode, where E is the total number of episodes and N is the number of reservoir neurons. Let Z ∈ R(E−1) ×K be the matrix of target output states, where K is the number of output units. To account for biases in the readout layer, a column of ones is appended to Y , resulting in the matrix 
+
+Ybias ∈ R(E−1) ×(N +1) :
+
+Ybias = Y 1E−1
+
+
+
+where 1E−1 ∈ R(E−1) ×1 is a column vector of ones. The weights and biases of the readout layer are computed by solving the following equation using the pseudoinverse of Ybias :
+
+Wbias = Y +bias Z (10) where Y +bias is the Moore-Penrose pseudoinverse of Ybias , and Wbias ∈ R(N +1) ×K contains both the readout weights and the biases. 6To compute the pseudoinverse, we first perform a singular value decomposition (SVD) of Ybias :
+
+Ybias = U SV ⊤
+
+where U ∈ R(E−1) ×(E−1) is a unitary matrix, S ∈ R(E−1) ×(N +1) is a diagonal matrix containing the singular values, and V ⊤ ∈ R(N +1) ×(N +1) is the transpose of a unitary matrix. The pseudoinverse of Ybias is computed as: 
+
+Y +bias = V S +U ⊤
+
+where S+ ∈ R(N +1) ×(E−1) is the pseudoinverse of the diagonal matrix S. The pseudoinverse S+ is obtained by taking the reciprocal of all non-zero singular values in S and leaving zeros unchanged. Finally, after inserting Y +bias into Eq. 10, the optimal readout weights W ∈ RK×N and biases b ∈ RK
+
+are extracted from the extended matrix Wbias as 
+
+W =  W ⊤
+
+> bias
+
+ 
+
+> 1: N, :
+
+bw =  W ⊤
+
+> bias
+
+  
+
+> N+1 ,:
+
+where the first N rows of W ⊤ 
+
+> bias
+
+define the readout weights and the last row defines the biases. 
+
+# 2.7 Fluctuation Measure 
+
+The neural fluctuation measure F quantifies the average temporal variability of reservoir activations. For each neuron n, we compute the standard deviation σn of its activation time series y(t) 
+
+> n
+
+. The global fluctuation is defined as the mean over the standard deviations of the individual neurons: 
+
+F = ⟨σn⟩n
+
+Since tanh-neurons produce outputs in [ −1, +1], the fluctuation F lies in [0 , 1]. A value of F = 0 indicates a resting or fixed point state, while F = 1 corresponds to perfect two-state oscillation (e.g., alternating between +1 and −1). 
+
+# 2.8 Covariance Measure 
+
+To assess temporal covariances, we compute the average product of the activation of neuron m at time t and neuron n at time t + 1: 
+
+Cmn = y(t) 
+
+> m
+
+· y(t+1)  
+
+> nt
+
+Unlike the Pearson correlation coefficient, we deliberately avoid subtracting the mean or normalizing by the standard deviations. This ensures that the matrix elements Cmn remain well-defined even when one or both signals are constant, as in a fixed point state. The global covariance measure is defined as the average over all neuron pairs, without differentiating between diagonal and off-diagonal elements: 
+
+C = ⟨Cmn ⟩mn 
+
+Owing to the bounded output of the tanh neurons, the covariance values C always lie within the range [ −1, +1]. 72.9 Nonlinearity Measure 
+
+The shape of the activation distribution p(y) reflects whether the reservoir operates in a linear or nonlinear regime. A central peak at y = 0 indicates a linear regime; two peaks near ±1 indicate saturation and thus nonlinearity. We define a nonlinearity measure 
+
+N = fA − fB + fC
+
+based on the fractions of neural activations falling into the following intervals: 
+
+fA ∈ [−1, −0.5) 
+
+fB ∈ [−0.5, +0 .5] 
+
+fC ∈ (+0 .5, +1] The resulting measure N ∈ [−1, +1] distinguishes three regimes: N ≈ − 1 for linear operation, N ≈ 0for intermediate or flat activation, and N ≈ +1 for saturated, digital-like behavior. This intuitive yet robust definition proved most effective among several tested alternatives. It cap-tures the essential qualitative transition in p(y) from unimodal (linear) to bimodal (nonlinear) dis-tributions, as highlighted in earlier studies. 
+
+# 2.10 Accuracy Measure 
+
+In the sequence generation task, we evaluate performance by comparing the actual output sequences 
+
+Zact of the readout layer with the corresponding target sequences Ztar , and compute the root-mean-square error ERMS . This error is normalized by the standard deviation ∆ Ztar of the target sequences. To obtain an accuracy measure A ∈ [0 , 1], we define: 
+
+A = 11 + ( ERMS /∆Ztar )Note that A ≈ 0.5 when the RMS error is comparable to the variability of the target data, and A = 1 when the output Zact matches the target Ztar exactly. In classification tasks, the accuracy A is simply defined as the fraction of correctly predicted class labels. 83 Results 
+
+# 3.1 Naming Conventions and Essential Methods 
+
+In the following section, we briefly introduce the naming conventions as well as the tools for control, visualization, and analysis that are used throughout the paper. Further details are provided in the Methods section. 
+
+Framework: We consider a Reservoir Computer (RC) consisting of an input matrix, a Recurrent Neural Network (RNN) serving as the reservoir, and a readout layer trained using the pseudoinverse method. To make multiple runs feasible for many parameter combinations, we restrict ourselves to reservoirs with only 50 neurons. This choice also allows us to draw on experience from our previous publications, where the same reservoir size was mostly used. 
+
+Statistical Control Parameters: The elements wij of the weight matrix describing the recurrent connections among the reservoir neurons are random, but obey three statistical control param-eters . The density d ∈ [0 , 1] denotes the fraction of non-zero elements. In this work we restrict ourselves to fully connected networks with d = 1. The coupling strength w is defined as the standard deviation of the normally distributed weight matrix elements (in a balanced system). The 
+
+balance b ∈ [−1, +1] characterizes the relative predominance of excitatory and inhibitory connec-tions: b = −1 corresponds to exclusively negative weights, b = 0 to a balanced system, and b = +1 to exclusively positive weights. A reservoir described by these three parameters and without further modification is called homogeneous , because all matrix elements follow the same statistical rule. 
+
+Weight Matrix Structuring: Without changing its global weight distribution p(w), a homoge-neous weight matrix can be structured by redistributing its elements across the matrix in various semi-regular ways. For example, a geometrically defined subset of the matrix, such as a small random fraction f1 of all matrix rows, may preferentially receive more extreme elements from the distribution 
+
+p(w), such as those with the weakest or strongest magnitudes, or those with the most negative or most positive values. Instead of selecting random rows as the f1 subset, one can also use columns or quadratic blocks of size S along the matrix diagonal. We refer to this distribution-conserving method of patterning the weight matrix as ’Permutative Structuring’ . Some examples of homogeneous and structured matrices are shown in Fig.2. 
+
+Neural Activity Vizualization: The dynamical processes in the reservoir can be most directly visualized by plotting the individual activations of all neurons over successive time steps (compare Fig.1(b)). Since the neurons use tanh activation functions, their continuous outputs are always in the range from −1 to +1. However, when the system develops strong spontaneous dynamics and runaway excitations drive the neurons deep into saturation, it becomes impossible to see the very small input-related perturbations that may still be superimposed on the spontaneous activity and that could nevertheless be exploited by the readout layer. 
+
+Principal Component Analysis: For this reason, we also perform a Principal Component Anal-ysis (PCA) on the entire temporal evolution of the reservoir states and then plot the dominant PCA components as a function of time (compare Fig.3). The different PCA components can vary in magnitude by many orders of magnitude. Since the readout layer is insensitive to these differences, we normalize all components individually within the displayed time window to the range from −1 to +1. This normalization makes even weak patterns visible that are clearly related to the input signals (rather than to the spontaneous dynamics), because they change in synchrony with the pulses of the input episodes. 9Dynamical Measures: For a more quantitative analysis, we compute four aggregating dynamical measures from the entire, multi-episode temporal evolution of the reservoir states: The fluctuation 
+
+F ∈ [0 , 1] quantifies the global level of change in the neural activations, averaged both over the neural population and over time. Two covariances C0 and C1, both ranging from −1 to +1, measure the (non-normalized) degree of correlation between neurons, averaged over all neuron pairs. Here, C0 denotes the instantaneous correlation and C1 the correlation at lag time one. Finally, the 
+
+nonlinearity N , ranging from −1 to +1, quantifies whether the neurons operate predominantly in the linear or in the nonlinear, saturated part of their sigmoidal activation function. Values close to 
+
+−1 indicate linear behavior, whereas values close to +1 indicate saturated behavior. Together, these four measures allow us to classify the reservoir’s dynamical state into four broad regimes, which we refer to as ’oscillatory’, ’chaotic’, ’calm’, and ’fixed point’. It is particularly instructive to plot these measures as functions of some control parameter that is swept through its range and to observe how the RNN is switching between dynamical regimes accordingly (compare Fig.4). 
+
+Task and Accuracy: We are primarily interested in the question of how structural properties of the weight matrix (or regulating control mechanisms) influence the dynamical regime of the RNN and which of these regimes are suitable for task-related information processing. The quality of information processing, in turn, is most directly assessed through the accuracy achieved in specific tasks. This poses a challenge, however, because it is nearly impossible to take into account all possible types of tasks with their different information-processing requirements. In this work, we therefore consider only a single pseudo-task, called ’Sequence Generation’. The RC receives sequences of input vectors belonging to distinct classes and has to respond with predefined output sequences that are specific to the respective input class. The components of both input and output vectors are continuous numbers between −1 and +1. Although this task may not be particularly useful for real-world applications, it provides a clear test of whether the reservoir dynamics are mainly determined by the most recent input sequence, by remnants of earlier input episodes, or by spontaneous dynamics with the potential for runaway excitation. To assess performance in the task, we first compute the root-mean-squared error between the target and the actual output vectors and then convert this error into an accuracy 
+
+A. This accuracy is approximately 0 .5 at chance level and approaches 1 when performance is near perfect (compare black lines in Fig.4). 
+
+# 3.2 Problem of Runaway Excitation 
+
+Weakly Coupled Reservoirs: It is instructive to first consider a reservoir with relatively weak recurrent connections, such as in the case of a coupling strength w = 0 .1 (compare Fig.4(a)). In this situation, the dynamical regime of the RNN depends on the balance parameter b.When b is close to zero, corresponding to a balanced weight matrix with equal amounts of negative and positive entries, the weakly coupled RNN operates in a calm regime. This regime is characterized by vanishing covariances C0, C 1, small fluctuations F , and a nonlinearity parameter N close to −1, indicating that neurons operate mainly in the linear regime. The dynamics are primarily determined by the most recent input, there is no spontaneous activity, and consequently the accuracy A reaches nearly perfect values. However, when the balance is tuned too far into the positive range, so that most connections become excitatory, herd effects emerge and positive feedback drives the system into a global fixed-point attractor. In this regime, fluctuations F nearly vanish, both covariances approach +1, and all neurons are driven into saturation, indicated by a nonlinearity parameter N approaching +1. In general, such saturated, locked-in neurons are not well suited for information processing, because the trajectory of the reservoir state should be able to reflect changes in the input signals. Nevertheless, in the weakly coupled RNN, tiny input-related differences in neural activations remain present even in the saturated neurons. The readout layer can still exploit these differences and, remarkably, the accuracy A remains close to perfect even in the fixed-point regime. 10 Another herd effect occurs when the balance is tuned too far into the negative range, so that most connections become inhibitory. In this case, negative feedback drives the system into global oscil-lations with period two, in which all neurons alternately switch between negatively and positively saturated states. Again, this situation would normally be detrimental for information processing, but due to the weak coupling the accuracy remains close to perfect even in this oscillatory regime. 
+
+Strongly Coupled Reservoirs: The ability to perform input-related information processing col-lapses almost completely when the coupling strength is increased to w = 1 (compare Fig.4(b)). Even when the balance b is around zero, the RNN is no longer calm. Instead, the strong recurrent bipolar connections lead to spontaneous chaotic fluctuations (compare Fig.1(b), middle plot), which are not related to the momentary external input. In this chaotic regime, both covariances C0 and 
+
+C1 are close to zero, whereas the fluctuation F and the nonlinearity N approach the upper limit +1. As a consequence, the accuracy A drops to chance level 0 .5. In the vicinity of b = −1 and b = +1, we again observe saturating oscillatory or fixed-point behavior (compare Fig.1(b), upper and lower plot), respectively. In contrast to the weakly coupled RNN, however, the accuracy now remains close to chance level also in these highly unbalanced systems. This leaves the two regions between chaos and oscillatory behavior, as well as between chaotic and fixed-point behavior, as the only transitional regimes in which the accuracy A can rise to moderately satisfactory levels. This confirms the well-known hypothesis that the ’edge of chaos’ constitutes a sweet spot for information processing. In practical applications, however, this would require careful tuning of the balance parameter in order to achieve optimal performance. Note that in the vicinity of b = −1 and b = +1, the four dynamical measures F , C0, C1, and N
+
+have very similar values in the weakly and strongly coupled RNN (compare Fig.4(a,b)). Direct plots of the neural activations also appear identical (as in the upper and lower plots of Fig.1(b)) in strongly unbalanced systems, both in the weakly and strongly coupled case. Yet the accuracy 
+
+A reaches perfection in one case and remains at chance level in the other. This clearly indicates that our dynamical measures and direct activation plots are not sensitive enough to reveal the presence or absence of tiny input-related perturbations superimposed on the global herd behavior. For this reason, we use in the following sections Principal Component Analysis with visual magnitude enhancement to reveal these subtle effects. 
+
+Statement of the Problem: We are now in a position to formulate the problem and research goal addressed in this work: In strongly coupled RNNs, herd effects prevent information processing both in strongly unbalanced systems and in the perfectly balanced system. How can this limitation be overcome without fine-tuning the balance parameter to the narrow sweet spot at the edges of chaos? 
+
+# 3.3 Permutative Structuring of the Weight Matrix 
+
+Previous Work: In a previous publication ([36]) we demonstrated that Dale’s principle (requiring that every output column in the weight matrix should be either strictly positive or strictly negative) has a small performance-enhancing effect, whereas the reciprocal symmetry of Hopfield networks (requiring that wij should be similar to wji ) generally tends to degrade performance. 
+
+Leptokurtic Weight Distributions: In the same paper we also observed a modest performance gain when introducing quadratic patches into the weight matrix, some of which contained larger-than-average magnitudes and others smaller-than-average magnitudes. Although the overall standard deviation was strictly conserved in that investigation, the patch-like patterning made the overall distribution more leptokurtic, thereby increasing the fraction of near-zero weights. As it turned out after publication, this effective reduction of the connection density d was mainly responsible for the observed performance enhancement. 11 Improved Patterning Method: For this reason, we have now developed a new method of matrix patterning that strictly conserves the entire weight distribution, because it is based on a controlled permutation of the existing weights across the matrix (see Methods section for details). 
+
+Comparing Types of Structuring: We apply four different kinds of modifications (weaker-than-average magnitudes, stronger magnitudes, more negative values, and more positive values) to a small subset of the matrix elements, arranged in three different geometric patterns (rows, columns, and diagonal blocks), thus creating twelve different combinations of permutative structuring. For each combination, we compute a global performance measure GP, defined as the accuracy averaged over nine equally spaced balance values b in the range from −1 to +1. The baseline is the GP obtained for the non-structured, homogeneous matrix, which is 0.527. The results are summarized in Fig.1(c). 
+
+Weak Rows: We find the strongest performance enhancement (raising the GP from 0.527 to 0.813) when weaker-than-average weight magnitudes are assigned to 20 percent of randomly selected rows in the weight matrix. Consequently, the remaining 80 percent of rows contain larger-than-average magnitudes. Since the matrix rows represent the input weights of the neurons, this best-performing RNN contains a subpopulation of 20 percent of neurons that receive particularly weak inputs from the rest of the network. In situations where the network suffers from herd effects that generate runaway excitations and lead to performance-degrading saturation, this subpopulation can remain partially decoupled from the global network dynamics and still provide useful input-related information to the readout layer. 
+
+Unipolar blocks: The next best performance enhancement (raising the GP from 0.527 to 0.666 or 0.681, respectively) is observed when all defined diagonal blocks of linear size 10 receive preferentially negative or preferentially positive values. A positive block, for example, corresponds to a kind of module with predominantly excitatory internal connections that is embedded in a larger surrounding network with the opposite polarity of connections. 
+
+Overview and Visualization: Of the 12 investigated combinations of matrix structuring, 8 lead to an enhancement of the GP. The top three combinations are shown for different bias values b in Fig.2(a). The four combinations that do not increase performance are shown in Fig.2(b). 
+
+# 3.4 Effect of Weak Rows 
+
+We next investigate the effect that a small subset of neurons with weak input weights has on the dynamics of the reservoir and how this influences its information-processing capability. 
+
+Dynamics as a function of bias: For this purpose, we again perform a scan of the bias parameter 
+
+b over its entire range and compute the four dynamical measures as functions of b (compare Fig.2(c)). When compared to the corresponding homogeneous system (Fig.2(b)), the quantities F , C0, C1, and 
+
+N exhibit very similar behavior. Only in the chaotic regime around b = 0 do the weak rows lead to a significant reduction of the fluctuation F and the nonlinearity N , which is reflected in an increase of the accuracy A to slightly above chance level. Remarkably, in the strongly unbalanced regimes close to b = −1 and b = +1, the weak rows allow the accuracy A to rise to nearly the perfect level of 1, even though no difference is visible in the four dynamical measures. This again demonstrates that these measures are well suited for assessing the dynamical regime of the reservoir, but not for evaluating its information-processing capabilities. 
+
+PCA-Analysis of the Weak Row Effect: To gain further insight into the effect of weak rows, we next compare the time dependence of the reservoir’s lowest PCA components with those of the corresponding homogeneous system (Fig.2, left and middle columns of plots). Here, we are 12 mainly interested in the balance regions that are unsuitable for information processing in the ho-mogeneous system. We therefore restrict this PCA analysis to five representative balance values 
+
+b ∈ {− 1, −0.9, 0, +0 .9, +1 }.
+
+PCA-Components in the Homogeneous RNN: In the homogeneous RNN at b = −1 and b =
+
+−0.9, we observe the typical period-two global oscillation in all of the lowest eight PCA components (Fig.2, left column, upper two plots). Recall that the time series of each component is separately rescaled to the range from −1 to +1 for better visibility. Nevertheless, the plot reveals that the values within each time series flip in a strictly regular way between only two binary states and therefore do not provide the input-dependent differences required by the readout layer. In the balanced case at b = 0, all components exhibit chaotic behavior (left column, middle plot). These fluctuations are likewise not sufficiently determined by the input signals. Finally, at b = +0 .9 and b = +1, we have seen before that the RNN resides in a global fixed point, in which all neuron activations remain at the same constant, highly saturated value. Since this constant activation vector — corresponding to the mean or ‘center point’ of the high-dimensional ‘cloud’ of momentary activation vectors — is subtracted in the PCA analysis, all components take the value zero (left column, lower two plots). Clearly, this again provides no useful information for the readout layer. 
+
+PCA-Components in the RNN with Weak Rows: The introduction of a few weak rows in the weight matrix does not prevent the PCA components from appearing chaotic in the perfectly balanced system at b = 0 (Fig.2, middle column, center plot). Nevertheless, recall that even in this chaotic regime the accuracy is now slightly above chance level, meaning that some input-related information must be hidden within these irregular fluctuation of the PCA components. The situation changes much more dramatically for the other four considered bias values (middle col-umn, upper and lower plots). The momentary values of the PCA components are no longer restricted to only three possible values ( −1, 0, and +1, after rescaling). At least some of the higher components can now choose from a broader and more informative domain of values. Moreover, in some compo-nents one can observe a quasi-periodic, regular pulsing with a period of three, corresponding to the length of each input episode. Closer inspection reveals two broad categories of pulses, reflecting the two classes of input vectors in the Sequence Generation task. Even within pulses of the same cate-gory, however, the values differ slightly. This richer, input-related information content in the PCA components enables the readout layer to produce the target output sequences with high accuracy, even when the system is globally in an oscillatory or fixed-point regime. 
+
+# 3.5 Effect of Automatic Gain Control (AGC) 
+
+Motivation of AGC: As we have seen, suitable patterning of the weight matrix, without altering the distribution of its elements, can make a strongly coupled reservoir capable of information process-ing even in cases of large imbalance between excitatory and inhibitory connections. In the chaotic regime, the patterning also slightly increases the accuracy to values above chance level. Neverthe-less, in a practical setting one would still attempt to keep the balance away from the chaotic regime in order to maximize information-processing performance. We therefore seek additional extensions of the reservoir computer that make its performance less dependent on the detailed statistical and structural properties of the weight matrix. 
+
+Inspiration by the Brain: In particular, we consider an external control unit that continuously monitors the dynamical state of the reservoir and, if necessary, sends back regulatory feedback signals in order to keep the network dynamics close to a desired target state (Fig.1(a), top). Inspired by biological neural systems, where the overall excitability and effective coupling strength of neurons are 13 modulated by neuromodulators, hormones, or glial interactions, we allow only global (not neuron-specific) signals to be exchanged between the control unit and the reservoir of neurons. 
+
+Implementation of AGC: As described in more detail in the Methods section, we aim to regulate the global activity of the reservoir, quantified as a running time average of the momentary root-mean-squared activation across all neurons, to a predefined target value. To allow the control unit to influence this global activity, we do not modify the entries of the weight matrix individually, but instead modulate a single global prefactor of that matrix according to the deviation between the actual and the target activation. This mechanism can also be interpreted as a dynamical regulation of the effective coupling strength w.
+
+Dynamics and Performance with AGC: We apply this method of AGC to the strongly coupled system with w = 1 and again scan the balance parameter b across its entire domain (Fig.4(d)). We find that all four dynamical parameters F , C0, C1, and N now exhibit behavior that qualitatively resembles that of the weakly coupled ( w = 0 .1) reservoir in the calm ( b = 0) regime, but now across the entire range of balance values b. Fluctuations F remain close to 0.25 (the chosen target value of the reservoir activation) and the nonlinearity N remains close to −1, indicating that neurons operate mainly in a linear or only weakly nonlinear region of the activation function. Both covariances C0
+
+and C1 remain small in magnitude, indicating that both oscillatory and fixed-point behavior are strongly suppressed by the continuous dynamical regulation of reservoir activity. Most importantly, the accuracy A remains very high for all values of b, although slightly below perfect performance. A visualization of the time-dependent PCA components (Fig.3, right column) reveals that the reservoir now produces a set of diverse states that appear even richer in information than those of the system with weak rows (Fig.3, middle column). Again, many of the PCA components show the pulsing behavior with period three, indicating the representation of input-related content. This remains true even in the balanced system at ( b = 0), because due the AGC there is no chaotic regime any longer. 
+
+# 4 Conclusions 
+
+# 4.1 Summary 
+
+In the context of reservoir computing (RC), we address in this paper the problem of runaway exci-tations in recurrent neural networks (RNNs). These excitations arise from herd effects, particularly in dense neural networks with unbalanced excitatory and inhibitory connections. As a result, the network is driven into global oscillatory or fixed-point attractors in which all neurons are pushed into the flat, saturating region of their sigmoidal activation functions—an operating regime that is largely insensitive to external input signals. As long as the overall coupling strength of the neural network remains sufficiently small, tiny input-related perturbations can still “ride on top” of these high-amplitude global attractors, allowing the readout layer to exploit these perturbations for the task at hand. However, in strongly coupled networks the neurons are driven so deeply into saturation that processing of input-related information becomes impossible, and the performance of the reservoir computer degrades drastically. A related problem also emerges in balanced systems when the coupling strength becomes too large. In weakly coupled balanced RNNs, the dynamics is calm, quasi-linear, and primarily driven by external input, which is ideal for many information-processing tasks. In contrast, strongly coupled balanced RNNs transition from this calm regime into a chaotic regime that is also detrimental to input-related information processing. Consequently, in strongly coupled reservoir computers the performance (for example in a task such as sequence generation), when plotted as a function of the balance parameter, remains close to chance level across most of the parameter range. Only two narrow peaks appear at the so-called “edges 14 of chaos,” making practical operation difficult because it requires careful fine-tuning of the network parameters. As a first countermeasure to these runaway excitations, we explored subtle ways of structuring the weight matrix without altering the overall distribution of its elements. In particular, we introduced a small random fraction of rows whose elements have smaller-than-average magnitudes. This mod-ification corresponds to a subpopulation of neurons that receive only relatively weak input signals from the rest of the network, and it proved to be a particularly effective stabilization mechanism. As a result of this “minimally invasive,” permutative modification of connectivity, the accuracy be-comes excellent even in the largely unbalanced regimes characterized by oscillatory and fixed-point attractors, whereas it shows little improvement in the chaotic regime. Besides the introduction of “weak rows,” the performance of strongly coupled systems could also be slightly enhanced by introducing other types of patterns into the weight matrix, such as preferentially negative or positive diagonal blocks. By contrast, we also demonstrated that several other possible forms of patterning had no performance-enhancing effect. Our ultimate goal, however, was to develop a countermeasure against runaway excitations that en-ables the RNN to perform meaningful information processing regardless of the excitatory/inhibitory balance. This was achieved by augmenting the reservoir computer with an additional unit that imple-ments an Automatic Gain Control (AGC). Although this control unit receives only a global activity signal from the reservoir and sends back only a global modulatory signal into it, the resulting dynamic regulation keeps the RNN in a calm, input-receptive state, irrespective of the balance parameter. Accordingly, the accuracy remains at a very good level across the entire range of balances. 
+
+# 4.2 Outlook 
+
+In future work, it would be interesting to test structural and dynamical countermeasures against runaway excitations across a broader range of tasks with different demands on information processing in the reservoir. Another open question concerns which kinds of tasks actually require strong coupling in the first place. In our previous publications, we have already identified several tasks that require only mildly nonlinear dynamics and would therefore also work in weakly coupled RNNs. On the other hand, there are tasks such as the prediction of binary systems that may work best in strongly coupled RNNs, where neurons operate in the saturated part of their activation functions and behave more like binary logic gates. This paper has focused on situations in which runaway excitations arise because the statistical control parameters of the weight matrix—such as the density d, the coupling strength w, and the balance 
+
+b—are not optimally chosen. A practically even more relevant scenario would involve an RNN whose control parameters are optimized for processing typical inputs, but which can occasionally be pushed into a computationally unfavorable attractor by rare “bad” inputs. For example, the RNN might be tuned close to one of the edges of chaos and normally remain in a healthy dynamical regime, but transition into chaos when exposed to occasional inputs with very large amplitudes. In such cases, it would be particularly interesting to examine whether the AGC mechanism can restore the dynamics to the desired regime within a sufficiently short time interval. 
+
+# 4.3 Discussion 
+
+The results of the present study connect to several lines of research in reservoir computing, nonlinear dynamical systems, and computational neuroscience. In particular, they highlight how structural het-erogeneity and dynamical regulation can influence the operating regime of recurrent neural networks and thereby affect their ability to perform input-related information processing. A central concept in reservoir computing is the so-called echo state property, which requires that the internal state of the network should eventually become determined primarily by the recent input 15 history rather than by arbitrary initial conditions [7]. In practice, this property is often ensured by constraining the spectral radius of the recurrent weight matrix or by otherwise limiting the effective coupling strength within the reservoir. Subsequent work has further clarified the mathematical conditions under which this property holds and how it relates to the stability of the underlying dynamical system [41, 42]. Our results suggest an alternative perspective: instead of enforcing a fixed structural constraint on the network parameters, it may be possible to achieve a similar stabilizing effect through dynamical regulation. The automatic gain control mechanism implemented here continuously adjusts the effective coupling strength of the network in response to its momentary activity level. In this way, the system is actively maintained in a dynamical regime that remains sensitive to external input, even when the underlying connection statistics would normally push the network into chaotic or saturating attractor states. This idea of regulating network dynamics through feedback mechanisms also resonates with obser-vations from biological neural systems. Neural circuits in the brain are not static networks with fixed operating parameters but are subject to multiple forms of homeostatic regulation that main-tain their activity within a functional range. Examples include synaptic scaling and other forms of activity-dependent plasticity that adjust the overall excitability of neural populations [43]. Inhibitory plasticity has also been proposed as a mechanism that dynamically stabilizes excitation–inhibition balance in cortical circuits [44]. More generally, neuronal circuits exhibit a variety of regulatory processes that compensate for parameter variability and maintain stable functional regimes [45]. Although the gain control mechanism explored in this work is intentionally simple and operates through a single global control signal, it illustrates how even coarse-grained feedback can stabilize a large recurrent network and extend the regime in which useful computation is possible. In this sense, the mechanism can be interpreted as a minimal computational analogue of biological homeostatic regulation. The structural countermeasure investigated in this work—the introduction of a small subset of neu-rons receiving weaker-than-average inputs from the rest of the reservoir—offers a complementary perspective. In strongly coupled networks, runaway excitation typically arises from collective feed-back loops that synchronize the activity of large parts of the network. The presence of neurons with weaker incoming connections effectively creates a subpopulation that remains partially decoupled from these global herd effects. Even when the majority of neurons are driven into oscillatory or fixed-point behavior, this weakly coupled subset can still respond to input-related perturbations and thereby preserve useful information in the reservoir state. The results therefore suggest that small degrees of structural heterogeneity can substantially enhance the robustness of reservoir dynamics. More generally, this observation relates to a broader theme in the study of complex networks: het-erogeneous connectivity patterns can prevent the emergence of overly synchronized global dynamics and thereby promote richer dynamical behavior. In biological neural networks, connectivity is known to exhibit pronounced heterogeneity and modular organization [37, 38]. Such structural diversity has often been associated with enhanced computational flexibility and the coexistence of multiple dy-namical regimes within the same network. Although the present study does not attempt to reproduce detailed biological connectivity patterns, the beneficial effect of weakly coupled neuron subsets il-lustrates how even simple forms of structural diversity can influence the dynamical landscape of recurrent networks. Another aspect of our findings concerns the frequently discussed hypothesis that optimal information processing occurs near the so-called “edge of chaos.” Early studies in reservoir computing and re-current neural networks suggested that computational capability can peak near transitions between ordered and chaotic dynamical regimes [46, 47, 48]. Our results confirm that such transition regions can support useful computation in strongly coupled networks. However, they also show that reliance on these narrow parameter regions may not be necessary if regulatory mechanisms are available that actively stabilize the network dynamics. The automatic gain control mechanism explored here effectively replaces the need for precise parameter tuning by maintaining the system in a favorable operating regime over a wide range of structural parameters. From a practical perspective, this sug-16 gests that adaptive regulation may represent an alternative design principle for reservoir computers that reduces the sensitivity of the system to the precise choice of network parameters. Finally, the present results also raise several questions for future research. One important direc-tion concerns the interaction between stabilization mechanisms and the specific computational tasks performed by the reservoir. As discussed above, some tasks may benefit from strongly nonlinear dynamics or even from saturated neuron states that resemble binary logic elements. Other tasks, particularly those requiring faithful representation of input signals over time, may perform best in calmer, quasi-linear regimes. Understanding how different forms of structural heterogeneity or dynamical regulation influence the trade-off between stability and nonlinear computational power remains an open problem. In this context it may also be informative to relate the present observa-tions to studies showing that trained recurrent networks often operate on low-dimensional dynamical manifolds embedded in the high-dimensional state space [49]. Another interesting question concerns the scalability of the observed effects. The experiments pre-sented here were performed with relatively small reservoirs in order to allow systematic exploration of the parameter space. In larger networks, collective dynamical phenomena may become even more pronounced, potentially increasing the importance of stabilization mechanisms such as those explored here. It would therefore be valuable to investigate how the proposed structural and dynamical coun-termeasures perform in much larger reservoirs and in more complex information-processing tasks. In addition, recent work on physical and neuromorphic implementations of reservoir computing suggests that adaptive regulatory mechanisms could play an important role in making such systems robust to parameter variability and environmental fluctuations [50]. Taken together, the present study demonstrates that runaway excitation in strongly coupled recur-rent neural networks can be mitigated either by introducing subtle structural heterogeneity or by implementing a simple form of global dynamical regulation. Both strategies substantially enlarge the dynamical regime in which reservoir computers remain sensitive to input signals and capable of reliable information processing. These findings suggest that combining structural diversity with adaptive regulation may represent a promising direction for the design of robust reservoir computing systems. 
+
+# 5 Additional Information 
+
+# 5.1 Author contributions 
+
+CM conceived the study, implemented the methods, evaluated the data, and wrote the paper. AS discussed the results and acquired funding. AM and TK discussed the results and provided resources. PK conceived the study, discussed the results, acquired funding and wrote the paper. 
+
+# 5.2 Funding 
+
+This work was funded by the Deutsche Forschungsgemeinschaft (DFG, German Research Founda-tion): grants KR 5148/3-1 (project number 510395418), KR 5148/5-1 (project number 542747151), KR 5148/10-1 (project number 563909707) and GRK 2839 (project number 468527017) to PK, and grants SCHI 1482/3-1 (project number 451810794) and SCHI 1482/6-1 (project number 563909707) to AS. 
+
+# 5.3 Competing interests statement 
+
+The authors declare no competing interests. 
+
+# 5.4 Data availability statement 
+
+The complete data and analysis programs will be made available upon reasonable request. 17 5.5 Third party rights 
+
+All material used in the paper are the intellectual property of the authors. 18 References 
+
+[1] Yann LeCun, Yoshua Bengio, and Geoffrey Hinton. Deep learning. nature , 521(7553):436–444, 2015. [2] Laith Alzubaidi, Jinglan Zhang, Amjad J Humaidi, Ayad Al-Dujaili, Ye Duan, Omran Al-Shamma, Jos´ e Santamar´ ıa, Mohammed A Fadhel, Muthana Al-Amidie, and Laith Farhan. Re-view of deep learning: Concepts, cnn architectures, challenges, applications, future directions. 
+
+Journal of big Data , 8(1):1–74, 2021. [3] Bonan Min, Hayley Ross, Elior Sulem, Amir Pouran Ben Veyseh, Thien Huu Nguyen, Oscar Sainz, Eneko Agirre, Ilana Heintz, and Dan Roth. Recent advances in natural language pro-cessing via large pre-trained language models: A survey. ACM Computing Surveys , 56(2):1–40, 2023. [4] Niru Maheswaranathan, Alex H Williams, Matthew D Golub, Surya Ganguli, and David Sussillo. Universality and individuality in neural dynamics across large populations of recurrent networks. 
+
+Advances in neural information processing systems , 2019:15629, 2019. [5] Anton Maximilian Sch¨ afer and Hans Georg Zimmermann. Recurrent neural networks are univer-sal approximators. In International Conference on Artificial Neural Networks , pages 632–640. Springer, 2006. [6] Miguel Aguiar, Amritam Das, and Karl H Johansson. Universal approximation of flows of control systems by recurrent neural networks. In 2023 62nd IEEE Conference on Decision and Control (CDC) , pages 2320–2327. IEEE, 2023. [7] Herbert Jaeger. The “echo state” approach to analysing and training recurrent neural networks-with an erratum note. Bonn, Germany: German National Research Center for Information Technology GMD Technical Report , 148(34):13, 2001. [8] Jannis Schuecker, Sven Goedeke, and Moritz Helias. Optimal sequence memory in driven random networks. Physical Review X , 8(4):041029, 2018. [9] Lars B¨ using, Benjamin Schrauwen, and Robert Legenstein. Connectivity, dynamics, and memory in reservoir computing with binary and analog neurons. Neural computation , 22(5):1272–1311, 2010. [10] Joni Dambre, David Verstraeten, Benjamin Schrauwen, and Serge Massar. Information process-ing capacity of dynamical systems. Scientific reports , 2(1):1–7, 2012. [11] Edward Wallace, Hamid Reza Maei, and Peter E Latham. Randomly connected networks have short temporal memory. Neural computation , 25(6):1408–1439, 2013. [12] Lukas Gonon and Juan-Pablo Ortega. Fading memory echo state networks are universal. Neural Networks , 138:10–13, 2021. [13] Matthew Farrell, Stefano Recanatesi, Timothy Moore, Guillaume Lajoie, and Eric Shea-Brown. Gradient-based learning drives robust representations in recurrent neural networks by balancing compression and expansion. Nature Machine Intelligence , 4(6):564–573, 2022. [14] Kanaka Rajan, LF Abbott, and Haim Sompolinsky. Stimulus-dependent suppression of chaos in recurrent neural networks. Physical Review E , 82(1):011903, 2010. [15] Herbert Jaeger. Controlling recurrent neural networks by conceptors. arXiv preprint arXiv:1403.3369 , 2014. 19 [16] Doron Haviv, Alexander Rivkind, and Omri Barak. Understanding and controlling memory in recurrent neural networks. In International Conference on Machine Learning , pages 2663–2671. PMLR, 2019. [17] Lutz Molgedey, Johannes Schuchhardt, and Heinz Georg Schuster. Suppressing chaos in neural networks by noise. Physical review letters , 69(26):3717, 1992. [18] Shuhei Ikemoto, Fabio DallaLibera, and Koh Hosoda. Noise-modulated neural networks as an application of stochastic resonance. Neurocomputing , 277:29–37, 2018. [19] Patrick Krauss, Karin Prebeck, Achim Schilling, and Claus Metzner. Recurrence resonance” in three-neuron motifs. Frontiers in computational neuroscience , 13, 2019. [20] Florian B¨ onsel, Patrick Krauss, Claus Metzner, and Marius E Yamakou. Control of noise-induced coherent oscillations in time-delayed neural motifs. arXiv preprint arXiv:2106.11361 ,2021. [21] Claus Metzner and Patrick Krauss. Dynamics and information import in recurrent neural net-works. Frontiers in Computational Neuroscience , 16, 2022. [22] Omri Barak. Recurrent neural networks as versatile tools of neuroscience research. Current opinion in neurobiology , 46:1–6, 2017. [23] Sen Song, Per Jesper Sj¨ ostr¨ om, Markus Reigl, Sacha Nelson, and Dmitri B Chklovskii. Highly nonrandom features of synaptic connectivity in local cortical circuits. PLoS biology , 3(3):e68, 2005. [24] Nicolas Brunel. Is cortical connectivity optimized for storing information? Nature neuroscience ,19(5):749–755, 2016. [25] Sharan Narang, Erich Elsen, Gregory Diamos, and Shubho Sengupta. Exploring sparsity in recurrent neural networks. arXiv preprint arXiv:1704.05119 , 2017. [26] Richard C Gerum, Andr´ e Erpenbeck, Patrick Krauss, and Achim Schilling. Sparsity through evolutionary pruning prevents neuronal networks from overfitting. Neural Networks , 128:305– 312, 2020. [27] Viola Folli, Giorgio Gosti, Marco Leonetti, and Giancarlo Ruocco. Effect of dilution in asym-metric recurrent neural networks. Neural Networks , 104:50–59, 2018. [28] Patrick Krauss, Alexandra Zankl, Achim Schilling, Holger Schulze, and Claus Metzner. Analysis of structure and dynamics in three-neuron motifs. Frontiers in Computational Neuroscience ,13:5, 2019. [29] Patrick Krauss, Marc Schuster, Verena Dietrich, Achim Schilling, Holger Schulze, and Claus Met-zner. Weight statistics controls dynamics in recurrent neural networks. PloS one , 14(4):e0214541, 2019. [30] Achim Schilling, Richard Gerum, Claus Metzner, Andreas Maier, and Patrick Krauss. Intrinsic noise improves speech recognition in a computational model of the auditory pathway. Frontiers in Neuroscience , 16:908330, 2022. [31] Patrick Krauss, Konstantin Tziridis, Claus Metzner, Achim Schilling, Ulrich Hoppe, and Holger Schulze. Stochastic resonance controlled upregulation of internal noise after hearing loss as a putative cause of tinnitus-related neuronal hyperactivity. Frontiers in neuroscience , 10:597, 2016. 20 [32] Achim Schilling, Konstantin Tziridis, Holger Schulze, and Patrick Krauss. The stochastic res-onance model of auditory perception: A unified explanation of tinnitus development, zwicker tone illusion, and residual inhibition. Progress in Brain Research , 262:139–157, 2021. [33] Achim Schilling, William Sedley, Richard Gerum, Claus Metzner, Konstantin Tziridis, Andreas Maier, Holger Schulze, Fan-Gang Zeng, Karl J Friston, and Patrick Krauss. Predictive coding and stochastic resonance as fundamental principles of auditory phantom perception. Brain ,146(12):4809–4825, 2023. [34] Claus Metzner, Achim Schilling, Andreas Maier, and Patrick Krauss. Recurrence resonance-noise-enhanced dynamics in recurrent neural networks. Frontiers in Complex Systems ,2:1479417, 2024. [35] Claus Metzner, Achim Schilling, Andreas Maier, and Patrick Krauss. Nonlinear neural dynamics and classification accuracy in reservoir computing. Neural Computation , 37(8):1469–1504, 2025. [36] Claus Metzner, Achim Schilling, Andreas Maier, and Patrick Krauss. Organizational regularities in recurrent neural networks. Frontiers in Complex Systems , 3:1636222, 2025. [37] Olaf Sporns and Richard F Betzel. Modular brain networks. Annual Review of Psychology ,67:613–640, 2016. [38] David Meunier, Renaud Lambiotte, and Edward T Bullmore. Modular and hierarchically mod-ular organization of brain networks. Frontiers in Neuroscience , 4:200, 2010. [39] John J Hopfield. Neural networks and physical systems with emergent collective computational abilities. Proceedings of the national academy of sciences , 79(8):2554–2558, 1982. [40] Matteo Cucchi, Steven Abreu, Giuseppe Ciccone, Daniel Brunner, and Hans Kleemann. Hands-on reservoir computing: a tutorial for practical implementation. Neuromorphic Computing and Engineering , 2(3):032002, 2022. [41] G. Manjunath and Herbert Jaeger. Echo state property linked to an input: Exploring a funda-mental characteristic of recurrent neural networks. Neural Computation , 25(3):671–696, 2013. [42] I¸ sık B. Yildiz, Herbert Jaeger, and Stefan J. Kiebel. Re-visiting the echo state property. Neural Networks , 35:1–9, 2012. [43] Gina Turrigiano. Homeostatic synaptic plasticity: Local and global mechanisms for stabilizing neuronal function. Cold Spring Harbor Perspectives in Biology , 4(1):a005736, 2012. [44] Tim P. Vogels, Henning Sprekeler, Friedemann Zenke, Claudia Clopath, and Wulfram Gerst-ner. Inhibitory plasticity balances excitation and inhibition in sensory pathways and memory networks. Science , 334(6062):1569–1573, 2011. [45] Eve Marder and Jean-Marc Goaillard. Variability, compensation and homeostasis in neuron and network function. Nature Reviews Neuroscience , 7(7):563–574, 2006. [46] Nils Bertschinger and Thomas Natschl¨ ager. Real-time computation at the edge of chaos in recurrent neural networks. Neural computation , 16(7):1413–1436, 2004. [47] Robert Legenstein and Wolfgang Maass. Edge of chaos and prediction of computational perfor-mance for neural circuit models. Neural networks , 20(3):323–334, 2007. [48] Joschka Boedecker, Oliver Obst, Joseph T Lizier, N Michael Mayer, and Minoru Asada. Informa-tion processing in echo state networks at the edge of chaos. Theory in Biosciences , 131(3):205– 213, 2012. 21 [49] David Sussillo and Omri Barak. Opening the black box: Low-dimensional dynamics in high-dimensional recurrent neural networks. Neural Computation , 25(3):626–649, 2013. [50] Gouhei Tanaka, Takashi Yamane, Jean-Baptiste H´ eroux, Ryosuke Nakane, Naoki Kanazawa, Shinsuke Takeda, Hiroki Numata, Daisuke Nakano, and Akira Hirose. Recent advances in physical reservoir computing: A review. Neural Networks , 115:100–123, 2019. 22 Figure 1: Overview . • (a) Reservoir computer consisting of a recurrent neural network (RNN with 
+
+N neurons, central circle with blue dots), an input layer (left box with green dots), and a readout layer (right box with orange dots). A control unit for dynamic gain regulation can optionally be placed on top of the RNN. The colored grids symbolize sequences of input and output vectors. 
+
+• (b) Three direct plots of neural activations (color coded) over time in a densely connected RNN of 50 neurons with tanh activation functions. Because the coupling strength is large ( w = 1), the system develops global oscillations for strongly negative balance parameters such as b = −0.9, chaotic fluctuations for highly balanced systems such as b = 0, and global fixed points for strongly positive balance parameters such as b = +0 .9. All these attractor regimes are detrimental to task-related information processing. • (c) The Global Performance (GP, color coded) measure, defined as the accuracy averaged over nine bias values spanning the full range from −1 to +1, evaluated for 3 × 5different types of permutative matrix structuring that all preserve the global weight distribution (compare main text and 2). The best GP is obtained when 20 percent of the rows in the weight matrix (representing neural inputs) have a weaker-than-average magnitude. 23 Figure 2: Structuring of the weight matrix . • (a) Three examples of GP-enhancing types of permutative matrix structuring, shown for three different balance values b. In each case, the full reservoir connection matrix is displayed with color-coded weights. • (b) Four examples of permuta-tive matrix structuring that do not lead to an improvement in global performance. • (c) Probability distributions of connection weights for four different types of permutative matrix structuring. The distributions remain unchanged. The four curves have been slightly shifted vertically to improve visibility. 24 Figure 3: Principal Component Analysis (PCA) of reservoir activations. . Each of the 5 × 3plots represents the lowest eight principal components of the reservoir activation states as a function of time. The magnitudes of these components differ greatly. Since the readout layer is insensitive to absolute magnitude, we normalize the values within the observation window to the full range from 
+
+−1 to +1 to improve visibility. • The first column of plots shows the homogeneous (non-structured) system. In the range of strongly negative bias ( b = −1 and b = −0.9), all PCA components reflect the reservoir’s global oscillations with a period of two. In the balanced case ( b = 0), the components fluctuate chaotically. In the range of strongly positive bias ( b = +0 .9 and b = +1), where the reservoir resides in a global fixed-point attractor, all PCA components are zero because the mean is subtracted in the PCA analysis. • The second column of plots shows the structured system with some rows of reduced magnitude in the weight matrix. In the balanced case ( b = 0), we again observe chaotic behavior. However, in all strongly unbalanced cases ( b = −1, b = −0.9, b = +0 .9 and b = +1), the PCA components exhibit much richer dynamics. Some display a quasi-periodic pattern with a period of three, corresponding to the length of each input episode. These components therefore encode input-related information that can be exploited by the readout layer. • The third column of plots shows the system equipped with a unit for automatic gain control. Here, the information encoded in the PCA components is even more diverse and more strongly aligned with the pulses of input. 25 Figure 4: Scan of dynamical properties and accuracy over the excitatory/inhibitory bal-ance parameter b. • (a) Non-structured system with the coupling strength reduced to w = 0 .1. Even in this weakly coupled reservoir, three distinct dynamical regimes appear. In the globally os-cillating regime at strongly negative b, the fluctuation F (blue), the nonlinearity N (red), and the instantaneous covariance C0 (orange) approach the value +1, whereas C1 (green), the covariance at lag time one, approaches −1. In the calm regime around b = 0, fluctuations F are small, the nonlinearity parameter N is close to −1 (indicating that neurons operate in the linear regime of the activation function), and both covariances are close to zero. In this calm regime, the reservoir dynam-ics are mainly determined by the external input signals. In the global fixed-point regime at strongly positive b, the nonlinearity N and both covariances C0 and C1 approach +1, whereas the fluctuation 
+
+F becomes zero. Although the neurons are saturated in the oscillatory and fixed-point regimes, the accuracy A remains close to 1 for all balances b, due to the weak coupling strength w = 0 .1. In weakly coupled reservoirs, information-processing activity can ”ride on top” of these large activations, as we have shown previously. • (b) Non-structured system with the coupling strength increased to w = 1. Within the oscillatory and fixed-point regimes, the dynamical properties F , C0, C1, and N behave qualitatively as in the weakly coupled reservoir. However, in the balanced system around b = 0, the calm system state is now replaced by high-amplitude chaotic spontaneous fluctuations. This leads to vanishing covariances C0 = C1 = 0 and values close to one for the fluctuation F and the nonlinearity 
+
+N (indicating operation in the saturation regime of the activation function). The accuracy A is now close to chance level A = 0 .5 in the oscillatory, chaotic, and fixed-point regimes. Only at the two ”edges of chaos” does the accuracy rise to levels of good performance. • (c) Structured system with 20 percent weak rows. Here, the dynamical quantities appear qualitatively similar to case (b), but in the chaotic regime the fluctuation F and the nonlinearity N are significantly reduced. Most impor-tantly, however, the accuracy A is now close to one for all balances b except in the chaotic regime, where it remains only slightly above chance level. • (d) System with automatic gain control. Here, the nonlinearity parameter N is relatively close to −1, indicating predominantly linear operation of the neurons. Fluctuations F are small and mainly input-driven. The covariances are very small. Together, the dynamical quantities resemble those of the weakly coupled reservoir in panel (a) within the calm regime around b = 0, yet this calm state now extends over the full range of balance values between −1 and +1. The accuracy is also close to perfect across this full balance range. 26

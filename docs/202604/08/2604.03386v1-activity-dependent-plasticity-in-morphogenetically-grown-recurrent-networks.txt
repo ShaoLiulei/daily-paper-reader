@@ -1,0 +1,411 @@
+Title: Activity-Dependent Plasticity in Morphogenetically-Grown Recurrent Networks
+
+URL Source: https://arxiv.org/pdf/2604.03386v1
+
+Published Time: Tue, 07 Apr 2026 00:06:11 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# Activity-Dependent Plasticity in Morphogenetically-Grown Recurrent Networks 
+
+## Sergii Medvid 
+
+National University of Kyiv-Mohyla Academy Kyiv, Ukraine s.medvid@ukma.edu.ua 
+
+## Andrii Valenia 
+
+National University of Kyiv-Mohyla Academy Kyiv, Ukraine a.valenia@ukma.edu.ua 
+
+## Mykola Glybovets 
+
+National University of Kyiv-Mohyla Academy Kyiv, Ukraine glib@ukma.edu.ua 
+
+Abstract 
+
+Developmental approaches to neural architecture search grow func-tional networks from compact genomes through self-organisation, but the resulting networks operate with fixed post-growth weights. We characterise Hebbian and anti-Hebbian plasticity across 50,000 morphogenetically grown recurrent controllers (5M+ configura-tions on CartPole and Acrobot), then test whether co-evolutionary experiments—where plasticity parameters are encoded in the geno-me and evolved alongside the developmental architecture—recover these patterns independently. Our characterisation reveals that (1) anti-Hebbian plasticity significantly outperforms Hebbian for competent networks (Cohen’s 𝑑 = 0.53 –0.64 ), (2) regret (fraction of oracle improvement lost under the best fixed setting) reaches 52–100%, and (3) plasticity’s role shifts from fine-tuning to genuine adaptation under non-stationarity. Co-evolution independently dis-covers these patterns: on CartPole, 70% of runs evolve anti-Hebbian plasticity ( 𝑝 = 0.043 ); on Acrobot, evolution finds near-zero 𝜂 with mixed signs—exactly matching the characterisation. A random-RNN control shows that anti-Hebbian dominance is generic to small recurrent networks, but the degree of topology-dependence is developmental-specific: regret is 2–6 × higher for morphogeneti-cally grown networks than for random graphs with matched topol-ogy statistics. 
+
+CCS Concepts 
+
+• Computing methodologies → Neural networks ; Bio-inspired approaches .
+
+Keywords 
+
+developmental neural networks, synaptic plasticity, morphogenetic self-organisation, neuroevolution, indirect encoding 
+
+1 Introduction 
+
+Developmental approaches to neural architecture search—including Neural Developmental Programs (NDP) [ 8], HyperNCA [ 7], and MorphoNAS [ 3]—encode compact genomes that unfold into func-tional neural networks through developmental processes. These systems demonstrate that self-organising developmental rules can produce effective controllers from far fewer parameters than direct weight specification, echoing the genomic bottleneck observed in biological brains [18]. In MorphoNAS, as in NDP and HyperNCA, the network topology and weights are fixed once development completes. This contrasts with biological neural circuits, where activity-dependent synap-tic plasticity enables within-lifetime adaptation [ 4]. Recent work on Hebbian neuroevolution [ 6] has shown that evolving plastic-ity rules can produce adaptive agents, but this work operates on fixed-topology networks rather than developmentally grown archi-tectures. Palm et al. [ 10 ] tested the genomic bottleneck hypothesis with Hebbian meta-learning but found that naive bottleneck appli-cation to plasticity rules leads to poor performance, suggesting a difficult joint optimisation problem. Two fundamental questions arise. First, can post-development-al plasticity meaningfully improve morphogenetically grown networks, and if so, under what conditions? Second, can evo-lutionary optimisation discover the right plasticity param-eters for each architecture, and does this interaction differ between developmental and random networks? These ques-tions are central to evolving self-organising systems: structural self-organisation (development) and functional self-organisation (plasticity) may interact in ways that neither uniform parameter tuning nor isolated analysis can reveal. We present a systematic characterisation of synaptic plasticity in developmental networks at population scale, followed by co-evolutionary experiments that test whether evolutionary optimisa-tion recovers the characterisation patterns. We use MorphoNAS [ 3 ]as our experimental platform. Its reaction-diffusion dynamics [ 17 ]produce structurally diverse topologies from compact genomes, making it a suitable testbed for the broader class of developmental encodings. We evaluate Hebbian and anti-Hebbian plasticity across 50,000 morphogenetically grown CartPole controllers under three task conditions (static, 10 × pole mass, 2 × gravity), replicate key findings on 5,000 Acrobot controllers, then test whether co-evolving plasticity parameters alongside the developmental genome recovers the characterisation patterns. A random-RNN control disentangles developmental from generic network effects. Our contributions are: 
+
+• A stratified characterisation across 3.75M evaluations re-vealing anti-Hebbian dominance (Cohen’s 𝑑 = 0.53 –0.64 ), topology-dependent regret (52–100%), and a functional role-shift from fine-tuning to genuine within-lifetime adaptation under non-stationarity. 
+
+• Co-evolutionary validation: when plasticity parameters are encoded in the genome and evolved, evolution inde-pendently discovers anti-Hebbian dominance on CartPole (𝑝 = 0.043 ) and the correct 𝜂 scale on both benchmarks. 
+
+• A random-RNN control showing that anti-Hebbian domi-nance is generic to small RNNs, but the degree of topology-dependence (regret) is 2–6 × higher for developmental net-works, confirming that morphogenetic structure creates uniquely diverse plasticity interactions. 
+
+> arXiv:2604.03386v1 [cs.RO] 3 Apr 2026 Sergii Medvid, Andrii Valenia, and Mykola Glybovets
+
+2 Related Work 
+
+Developmental neural networks. Indirect encodings that grow neural networks through developmental processes have a rich history in evolutionary computation. Stanley’s NEAT [ 15 ] com-plexifies topology through mutation, while HyperNEAT [ 14 ] uses compositional pattern-producing networks to exploit geometric regularities. Neural Cellular Automata (NCA) [ 5 ] demonstrated that self-organising update rules can grow complex patterns from local interactions; Neural Developmental Programs (NDP) [ 8] and HyperNCA [ 7] extend this to grow functional neural networks through self-assembling developmental processes. MorphoNAS [ 3]takes a complementary developmental path, using Turing-type reaction-diffusion morphogen dynamics [ 17 ] rather than learned update rules. Nisioti et al. [ 9] showed that maintaining neuronal diversity during NDP growth—via intrinsic hidden states and lat-eral inhibition—is essential for producing functional controllers, providing independent evidence that the developmental process shapes the structural heterogeneity of the resulting networks. In all these systems, weights are typically fixed during task execution. 
+
+Plasticity in neuroevolution. Soltoggio et al. [13] survey the field of evolved plastic networks, identifying Hebbian and neu-romodulated plasticity as the dominant paradigms. Najarro and Risi [ 6] demonstrated that Hebbian learning rules evolved via meta-learning can produce agents that adapt within their lifetime—but on fixed-topology random networks, not developmentally grown ones. Plantec et al. [ 11 ] introduced the Lifelong Neural Developmental Program (LNDP), combining graph-transformer-based development with experience-dependent structural plasticity, enabling networks to add and prune connections during task execution. García Núñez et al. [ 2] proposed time-modulated Hebbian learning (tm-HL) for classic control tasks, introducing a decay term 𝜇 𝑡 = 𝑒 −𝜆𝑡 that transi-tions networks from high plasticity to fixed weights over the agent’s lifetime; they used 𝜆 = 0.01 —the same value we find effective for weight decay. However, their work uses fixed feedforward architec-tures and does not test anti-Hebbian rules. Our work complements theirs by characterising plasticity across 50,000 developmentally grown topologies, revealing that the interaction between plasticity and network structure—rather than plasticity parameters alone—is the dominant factor. 
+
+The genomic bottleneck. Zador [ 18 ] argued that biological brains leverage compact genomic encodings that specify wiring rules rather than individual weights, with experience fine-tuning pre-wired circuits. Palm et al. [ 10 ] tested whether a genomic bot-tleneck improves Hebbian meta-learning but found the joint opti-misation problem difficult under their approach. Our work takes a different approach: we first characterise how simple plasticity inter-acts with the topology already compressed through morphogenetic development, then test whether encoding plasticity parameters in the genome and co-evolving them alongside the developmental architecture can exploit this interaction. 
+
+3 Experimental Design 3.1 MorphoNAS Developmental System 
+
+We use MorphoNAS [ 3], a morphogenetic neural architecture search system where a compact genome (54 parameters for 3 morphogens) 1N, 0C 
+
+Step 2 
+
+> 6N, 7C
+
+Step 10 
+
+> 7N, 13C
+
+Step 200 (final) 
+
+Figure 1: Developmental dynamics of a MorphoNAS network on a 10 × 10 grid. Background colour encodes morphogen concentrations (RGB = 3 morphogens); white squares = neu-rons; white lines = connections. From a single progenitor cell (Step 2), reaction-diffusion dynamics drive cell division, differentiation, and chemotactic axon growth, producing a 7-neuron, 13-connection recurrent controller by Step 200. 
+
+encodes morphogen secretion rates, diffusion tensors, cross-inhibi-tion coefficients, cell-fate thresholds, and axon growth rules. Start-ing from a single progenitor cell on a 2D toroidal grid, each de-velopmental iteration involves morphogen secretion, spatial diffu-sion, competitive cross-inhibition (producing reaction-diffusion dy-namics and symmetry breaking), local cell-fate decisions (division, differentiation, or quiescence), and chemotactic axon growth with distance-dependent weight initialisation ( 𝑤 = max (0.01 , 𝑐 /( 1+𝑑 )) ). After a genome-specified number of iterations, the process yields a recurrent neural network (RNN) whose topology and weights emerge entirely from local chemical interactions (Figure 1). The process is fully deterministic: the same genome always produces the same network. Crucially, the 54 parameters do not specify indi-vidual neurons or connections—they encode morphogen dynamics whose self-organising interactions constrain the phenotype space to morphogenetically plausible topologies. Different genomes pro-duce structurally distinct networks, and it is these structural differ-ences that make the interaction with plasticity topology-dependent (Section 4). See [3] for full details. 
+
+3.2 Task and Network Pool 
+
+The resulting networks are evaluated as controllers on CartPole-v1 (OpenAI Gymnasium [ 16 ]), where the objective is to balance a pole on a cart for up to 500 timesteps. CartPole is deliberately chosen as a minimal substrate: its simplicity isolates the development-plasticity interaction from task complexity, while mid-episode physics per-turbations (Section 4.3) reveal how plasticity’s role changes with environmental demands. We generated 50,000 networks from randomly sampled genomes (no evolutionary selection; each genome drawn independently from the MorphoNAS parameter space). We stratified networks by base-line CartPole performance (mean reward over 20 episodes without plasticity): 
+
+• Weak (𝑟 < 200 ): 𝑁 = 47 ,638 (95.3%) 
+
+• Low-mid (200 ≤ 𝑟 < 350 ): 𝑁 = 1,235 
+
+• High-mid (350 ≤ 𝑟 < 450 ): 𝑁 = 256 
+
+• Near-perfect (450 ≤ 𝑟 < 475 ): 𝑁 = 102 
+
+• Perfect (𝑟 ≥ 475 ): 𝑁 = 769 Activity-Dependent Plasticity in Morphogenetically-Grown Recurrent Networks 
+
+That 95.3% of random genomes produce Weak networks indi-cates that, in our setting, viable topology is the primary determinant of performance : while 15% of Weak networks show marginal im-provement, the developmental process must produce a functional architecture before plasticity can contribute substantially. 
+
+3.3 Plasticity Protocol 
+
+We apply a Hebbian plasticity rule after development completes. At each propagation timestep during task execution, weights are updated according to: 
+
+Δ𝑤 𝑖 𝑗 = 𝜂 · 𝑥 𝑖 · 𝑥 𝑗 − 𝜆 · 𝑤 𝑖 𝑗 (1) where 𝜂 is the learning rate (positive for Hebbian, negative for anti-Hebbian), 𝑥 𝑖 , 𝑥 𝑗 are pre- and post-synaptic activations, and 𝜆 
+
+is a weight decay coefficient that acts as a stability mechanism. Each network is evaluated under a rigorous protocol: (1) baseline measurement with plasticity disabled, (2) plasticity-enabled evalua-tion over 20 episodes with fixed seeds (42–61), (3) fitness compari-son. The improvement Δ𝑟 is the difference in mean reward between the plasticity-enabled and baseline evaluations. All experiments ran on AWS c6i.4xlarge instances (16 vCPU, Intel Xeon 8375C); the full experimental programme (characterisation, co-evolution, and random-RNN control) required approximately 7,700 core-hours. 
+
+3.4 Parameter Sweeps 
+
+We conducted three CartPole experimental phases at increasing resolution, followed by an Acrobot replication. 
+
+Primary sweep (CartPole): 50,000 networks × 75 parameter combinations ( 𝜂 ∈ [− 0.05 , +0.05 ], 15 non-uniform levels; 𝜆 ∈{0, 10 −5, 10 −4, 10 −3, 10 −2 }) = 3,750,000 evaluations. 
+
+Extended validation (CartPole): 2,862 non-Weak networks (in-cluding borderline cases near stratum boundaries) × 248-point grid (𝜂 ∈ [− 0.5, +0.5], 31 levels; 𝜆 ∈ { 0, . . . , 0.1}, 8 levels) = 709,776 evaluations. Used for cross-validated regret estimation. 
+
+Non-stationarity sweep (CartPole): 2,362 non-Weak networks 
+
+× 22-point grid (anti-Hebbian range only), evaluated on two vari-ants where physics change abruptly at timestep 200 with no signal to the network: (a) pole mass increases 10 × (0.1 →1.0 kg), affecting inertial dynamics, and (b) gravity doubles (9.8 →20.0 m/s 2), uni-formly scaling forces. Together: 103,928 evaluations. 
+
+Adaptation control (CartPole): To isolate genuine adaptation from robustness, we evaluated the same 2,362 networks with plas-ticity disabled during Phase 1 (pre-switch) and enabled only at the switch point (OFF →ON protocol), on both non-stationary variants. A dose-response experiment varied the switch time (100, 200, 300, 400) under heavy-pole to test whether more post-switch adaptation time yields larger benefits. Together: 155,892 evaluations. 
+
+Acrobot replication : To test cross-task generalisation, we re-peated the analysis on Acrobot-v1 (6-dimensional observations, 3 discrete actions) using a 20 × 20 developmental grid. We sampled 5,000 random genomes; 513 non-Weak networks were evaluated on a coarse 22-point grid followed by an extended 248-point micro-
+
+𝜂 grid ( |𝜂 | ∈ [ 5 × 10 −5, 0.1]; 𝜆 ∈ [ 0, 0.1]), under both static and non-stationary conditions (2 × lower-link mass at step 50). Across all characterisation experiments, the total evaluation budget exceeds 5 million plasticity configurations. 
+
+Table 1: CartPole plasticity impact by performance stratum under per-network oracle parameters. Regret: fraction of oracle improvement lost when using the single best fixed parameter pair instead.                                 
+
+> Stratum 𝑁 Oracle Δ𝑟 % Impr. Best 𝜂 Regret Weak 47,638 +2.215% +0.05 59% Low-mid 1,235 +35 .750% −0.05 52%
+> High-mid 256 +60 .693% −0.05 86%
+> Near-perf. 102 +22 .584% −0.005 89% Perfect 769 +7.720% —100%
+
+3.5 Co-Evolutionary Validation 
+
+To test whether evolutionary optimisation independently recovers the characterisation findings, we ran a genetic algorithm evolving MorphoNAS genomes under three conditions (30 independent runs each, population 50, 200 generations): 
+
+• Condition A (no plasticity): standard MorphoNAS GA, fitness evaluated with frozen weights. 
+
+• Condition B (fixed plasticity): same GA, but fitness evalu-ated with fixed anti-Hebbian plasticity ( 𝜂 = −0.01 , 𝜆 = 0.01 
+
+for CartPole; 𝜂 = −0.001 , 𝜆 = 0.05 for Acrobot—the recom-mended defaults from the characterisation). 
+
+• Condition C (co-evolved plasticity): the genome is ex-tended with two plasticity parameters ( 𝜂 , 𝜆 ) that are mu-tated and crossed over alongside the developmental genome. On CartPole: 𝜂 ∈ [− 0.5, +0.5], 𝜆 ∈ [ 0, 0.1]; on Acrobot: 
+
+𝜂 ∈ [− 0.1, +0.1], 𝜆 ∈ [ 0, 0.1].CartPole experiments used a 10 × 10 grid (matching the character-isation), and Acrobot used 20 × 20 . Selection: top-20%; elitism: 2; mutation rate: 0.3. Total: 180 GA runs (90 per benchmark), each 10,050 fitness evaluations. 
+
+3.6 Random-RNN Control 
+
+To disentangle developmental from generic network effects, we generated 11,810 random directed graphs matched to the topol-ogy statistics (neuron count, connection count) of 2,362 compe-tent MorphoNAS CartPole networks (5 random RNNs per source network). Weights were drawn from Uniform [0.01 , 1.0], matching MorphoNAS’s 𝑤 = max (0.01 , 𝑐 /( 1+𝑑 )) range but without distance-dependent structure. We applied the same 75-point plasticity grid as the primary characterisation sweep to all competent random RNNs. 
+
+4 Characterisation Results 4.1 Stratified Plasticity Impact 
+
+Table 1 presents the per-stratum impact of plasticity under oracle 
+
+tuning—exhaustive per-network grid search for the best (𝜂, 𝜆 ) pair, representing an upper bound on achievable benefit. Three key patterns emerge. First, plasticity cannot rescue weak topologies : networks with non-functional architectures show negli-gible improvement regardless of plasticity parameters. In our ex-periments, topology produced by morphogenetic development is the primary determinant of viability. Second, competent networks Sergii Medvid, Andrii Valenia, and Mykola Glybovets 
+
+benefit substantially : up to 93% of High-mid networks improve un-der oracle tuning, with mean gains of +60.6 reward points. Third, 
+
+per-network parameter heterogeneity is large : regret under fixed pa-rameters ranges from 52% (Low-mid) to 100% (Perfect), indicating that no single parameter setting captures the oracle potential. Table 1 reports conservative estimates from the 75-point pri-mary sweep; the best 𝜂 for Low-mid and High-mid falls at the grid boundary ( |𝜂 | = 0.05 ). The extended 248-point validation grid, which widens the range to |𝜂 | ≤ 0.5, yields higher oracle improve-ments: +73 .4 for Low-mid and +86 .3 for High-mid. Split-half cross-validation (oracle selected on odd-numbered episodes, evaluated on even) confirmed that 74–92% of the oracle advantage reflects genuine per-network heterogeneity, not overfitting to noise. Un-der ceiling-corrected normalisation (gain as fraction of available headroom), High-mid networks capture 87% of their improvement room and Near-perfect 78%, indicating that oracle plasticity nearly saturates the performance gap. The magnitude of oracle gains enables stratum transitions : under per-network tuning, a majority of High-mid and Near-perfect net-works reach the Perfect stratum ( 𝑟 ≥ 475 ), suggesting that plasticity can close the gap between “competent but imperfect” and “fully functional” controllers—a qualitative shift in behaviour, not merely a marginal improvement. However, plasticity carries asymmetric risk. Harm rates increase with baseline competence: 1.3% (Weak), 18.5% (Low-mid), 42.0% (High-mid), 48.5% (Near-perfect). The worst-case configurations (𝜂 > 0, 𝜆 = 0) produce severe degradation, with mean normalised harm of −0.17 to −0.24 (−85 to −120 raw reward points) for com-petent strata. This asymmetry—where the networks most likely to benefit are also most vulnerable to harm—further motivates per-network parameter selection over fixed configurations. 
+
+4.2 Anti-Hebbian Dominance 
+
+Anti-Hebbian plasticity ( 𝜂 < 0) significantly outperforms Hebbian (𝜂 > 0) for all competent strata (Figure 3). On the extended 248-point grid, the effect is substantial: Cohen’s 𝑑 = 0.53 for Low-mid, 
+
+𝑑 = 0.64 for High-mid, and 𝑑 = 0.56 for Near-perfect (all 𝑝 < 0.001 ). The effect reverses for Weak ( 𝑑 = −0.14 ) and Perfect ( 𝑑 = −0.07 )networks, though with small absolute magnitudes. Kruskal-Wallis variance decomposition on the extended parame-ter grid [ 1] reveals that learning rate ( 𝜂 ) explains 22–35% of variance in competent strata ( 𝜀 2 = 𝐻 /( 𝑁 −1)), while decay ( 𝜆 ) explains less than 5%. This indicates that the sign and magnitude of 𝜂 is the critical design choice , while decay acts primarily as a safety mechanism. The sweet spot of 𝜆 = 0.01 reduces harm rates by 3–8 × compared to 𝜆 = 0 with minimal reduction in peak benefit. What drives the anti-Hebbian advantage? We tested two mech-anistic hypotheses. First, that anti-Hebbian plasticity acts as a decorrelation mechanism; we found no relationship between initial weight magnitude and anti-Hebbian preference ( 𝑝 = 0.56 , Mann-Whitney). Second, that Hebbian updates overshoot by reinforcing existing correlations too aggressively; correlational evidence is con-sistent: networks whose optimal 𝜂 is positive (Hebbian) exhibit 2.6 ×
+
+larger per-step weight changes than anti-Hebbian-preferring net-works ( 𝑝 < 10 −25 ; per-stratum 𝑑 = 0.34 –0.87 ). The lowest weight-change quintile shows 93% anti-Hebbian preference versus 64% in 0 1e-05 1e-04 1e-03 0.01 0.02 0.05 0.1 
+
+λ (decay)                                                                                                                                                                                                                          
+
+> -0.5
+> -0.4
+> -0.3
+> -0.2
+> -0.15
+> -0.1
+> -0.07
+> -0.05
+> -0.04
+> -0.03
+> -0.025
+> -0.02
+> -0.015
+> -0.01
+> -0.005
+> 0
+> +0.005
+> +0.01
+> +0.015
+> +0.02
+> +0.025
+> +0.03
+> +0.04
+> +0.05
+> +0.07
+> +0.1
+> +0.15
+> +0.2
+> +0.3
+> +0.4
+> +0.5
+> η (learning rate)
+> -0.362 -0.359 -0.342 -0.226 -0.044 -0.016 -0.004 -0.001
+> -0.309 -0.307 -0.290 -0.188 -0.025 -0.006 0.002 0.002
+> -0.259 -0.257 -0.239 -0.153 -0.011 0.002 0.008 0.003
+> -0.155 -0.154 -0.145 -0.090 0.005 0.010 0.014 0.004
+> -0.104 -0.103 -0.097 -0.055 0.012 0.015 0.014 0.007
+> -0.050 -0.050 -0.047 -0.025 0.021 0.019 0.016 0.006
+> -0.024 -0.024 -0.022 -0.007 0.026 0.017 0.014 0.003
+> -0.011 -0.011 -0.010 -0.001 0.017 0.017 0.012 0.003
+> -0.006 -0.006 -0.006 0.001 0.013 0.015 0.013 0.002
+> -0.003 -0.003 -0.002 0.003 0.011 0.014 0.011 0.000
+> -0.002 -0.002 -0.001 0.002 0.011 0.015 0.010 -0.002
+> 0.000 0.000 0.000 0.003 0.013 0.015 0.007 -0.003
+> -0.001 -0.001 -0.001 0.002 0.014 0.014 0.007 -0.002
+> 0.003 0.003 0.003 0.006 0.014 0.011 0.003 -0.001
+> 0.011 0.011 0.011 0.011 0.009 0.005 0.002 -0.000
+> 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000
+> -0.025 -0.025 -0.024 -0.023 -0.015 -0.010 -0.004 -0.002
+> -0.046 -0.046 -0.046 -0.045 -0.032 -0.022 -0.010 -0.002
+> -0.063 -0.063 -0.063 -0.061 -0.048 -0.037 -0.017 -0.005
+> -0.079 -0.079 -0.079 -0.077 -0.059 -0.048 -0.026 -0.010
+> -0.106 -0.106 -0.106 -0.103 -0.082 -0.058 -0.035 -0.014
+> -0.105 -0.105 -0.105 -0.101 -0.082 -0.068 -0.043 -0.019
+> -0.149 -0.149 -0.149 -0.145 -0.115 -0.083 -0.056 -0.029
+> -0.153 -0.153 -0.152 -0.148 -0.116 -0.099 -0.067 -0.040
+> -0.217 -0.217 -0.217 -0.211 -0.167 -0.125 -0.090 -0.058
+> -0.277 -0.277 -0.276 -0.269 -0.211 -0.157 -0.116 -0.079
+> -0.353 -0.353 -0.352 -0.344 -0.277 -0.208 -0.150 -0.109
+> -0.409 -0.409 -0.408 -0.400 -0.328 -0.249 -0.182 -0.133
+> -0.479 -0.479 -0.478 -0.473 -0.411 -0.318 -0.232 -0.175
+> -0.477 -0.477 -0.477 -0.473 -0.429 -0.373 -0.276 -0.208
+> -0.507 -0.508 -0.507 -0.504 -0.469 -0.419 -0.308 -0.236
+
+Figure 2: CartPole High-mid stratum: mean Δ𝑟 across the 𝜂 ×𝜆 
+
+grid (248-point extended grid). Anti-Hebbian ( 𝜂 < 0) with moderate decay ( 𝜆 = 0.01 ) yields the best results. Hebbian (𝜂 > 0) is consistently harmful. −0.75 −0.50 −0.25 0.00 0.25 0.50 0.75 1.00 
+
+Cohen's d (positive = anti-Hebbian advantage) 
+
+Weak 
+
+Low-mid 
+
+High-mid 
+
+Near-perf. 
+
+Perfect 
+
+-0.14 
+
+0.53 
+
+0.64 
+
+0.56 
+
+-0.07 
+
+Figure 3: CartPole: Cohen’s 𝑑 (anti-Hebbian − Hebbian) by stratum. Anti-Hebbian significantly outperforms Hebbian for competent strata ( 𝑑 = 0.53 –0.64 , all 𝑝 < 0.001 ). The effect reverses for Weak and Perfect networks with small magni-tudes. 
+
+the highest quintile. While not dispositive, this pattern is consis-tent with magnitude moderation —anti-Hebbian updates counteract co-activation rather than amplifying it, preventing the runaway weight growth that makes Hebbian updates harmful for competent networks. 
+
+4.3 Within-Lifetime Adaptation 
+
+To test whether plasticity can serve a qualitatively different role than static fine-tuning—genuine adaptation to changed dynamics— we evaluated 2,362 non-Weak networks on two non-stationary Activity-Dependent Plasticity in Morphogenetically-Grown Recurrent Networks Low-mid High-mid Near-perf. Perfect 
+
+> −30
+> −20
+> −10
+> 0
+> 10
+> 20
+> Adaptation premium (reward)
+> -29.0 ***
+> -20.1 ***
+> +8.8 ***
+> -5.2 ns
+> +18.7 ***
+> ns
+> +8.6 ***
+> -2.8 ns
+> Gravity 2×
+> Heavy pole 10×
+
+Figure 4: CartPole adaptation premium (non-stationary plas-ticity benefit minus static plasticity benefit) for two perturba-tion types. Gravity-2 × yields significant positive premiums for competent strata (*** 𝑝 < 0.001 ), indicating genuine adap-tation beyond static fine-tuning. Heavy-pole shows near-zero premiums (n.s.). 
+
+CartPole variants where physics change abruptly at timestep 200: pole mass ×10 and gravity ×2. Under both variants, 88–90% of High-mid networks benefit from plasticity in Phase 2 (post-perturbation). The gravity-2 × variant yields a significant adaptation premium (non-stationary benefit minus static benefit): +8.8 to +18 .7 mean reward for competent strata ( 𝑝 < 0.001 , Wilcoxon; Figure 4), while heavy-pole shows near-zero premiums. Weight-change dynamics differ accordingly: under gravity-2 ×, mean |Δ𝑤 | increases post-switch (ratio 1.13), consistent with active adaptation; under heavy-pole, it decreases (ratio 0.82–0.93), suggesting robustness rather than new adaptation. 
+
+Causal confirmation via OFF →ON. To isolate adaptation from robustness, we disabled plasticity during Phase 1 and enabled it only at the switch point. OFF →ON retains 66–69% of the always-on benefit: 84–86% of High-mid networks still improve, with oracle gains of +53 .9 (heavy-pole) and +59 .9 (gravity-2 ×), representing 
+
+pure within-lifetime adaptation. A dose-response experiment vary-ing switch time (100–400 steps) under heavy-pole confirms: benefit scales monotonically with post-switch duration (Spearman 𝜌 = 1.0,all strata), from +6.1 at 100 steps to +74 .2 at 400. 
+
+4.4 Replication on Acrobot 
+
+To test whether these findings generalise beyond CartPole, we repeated the analysis on Acrobot-v1, a harder control task with 6-dimensional observations and 3 discrete actions. We sampled 5,000 random genomes on a 20 × 20 developmental grid; 89.7% were non-functional, leaving 513 networks across four performance strata, of which 87 (1.7%) meet Gymnasium’s solved threshold. Under per-network oracle tuning across a combined parameter grid (coarse 22-point + extended micro-𝜂 dense sweep), 93–97% of networks per stratum improve with plasticity (Table 2). Acrobot requires substantially smaller learning rates than CartPole: the optimal |𝜂 | is 
+
+Table 2: Acrobot-v1 plasticity characterisation. % Impr.: per-network oracle improvement rate on the combined grid (coarse + micro-𝜂 ). Cohen’s 𝑑 : anti-Hebbian vs Hebbian (coarse grid). NS: non-stationary oracle rate (combined grid). Regret is 100% under any fixed (𝜂, 𝜆 ).                         
+
+> Stratum 𝑁 % Impr. Cohen’s 𝑑 NS % Helped Low-mid 71 95.8% +0.48 *** 88.7% High-mid 74 93.2% +0.31 *** 95.9% Near-perf. 281 93.6% +0.15 *** 86.8% Perfect 87 96.6% +0.09 *95.4%
+> *** 𝑝 <0.001 , * 𝑝 <0.05
+
+10 −4–10 −3 with high decay ( 𝜆 = 0.05 –0.1), roughly 10–100 × smaller than CartPole’s sweet spot. Yet regret under any fixed parameter is 100%: no single (𝜂, 𝜆 ) improves the average network, even on the extended grid. Plasticity is beneficial but entirely topology-dependent. The anti-Hebbian picture is more nuanced on Acrobot (Table 2). Cohen’s 𝑑 favours anti-Hebbian across all strata ( 𝑑 = 0.09 –0.48 ), but the per-network optimal 𝜂 splits roughly evenly between signs (151 anti-Hebbian vs 185 Hebbian). Under non-stationarity (2 × lower-link mass at step 50) with the combined grid, 87–96% of networks per stratum benefit from per-network oracle plasticity—again with 100% regret under any fixed setting. Plasticity accelerates solving across all strata (Figure 5): the fraction of unsolved episodes at step 300 drops from 66% to 40% (High-mid) and from 31% to 18% (Near-perfect) compared to the no-plasticity baseline. These results show that the development-plasticity interaction is not benchmark-specific: topology-dependent plasticity holds on a task with richer dynamics, though the non-stationary benefit requires per-network tuning on the current grid. 
+
+5 Evolutionary Validation and Controls 5.1 Co-Evolution Recovers Characterisation Findings 
+
+On CartPole, all three conditions converge to perfect fitness (re-ward 500) within 1–2 generations—the benchmark is too easy to differentiate conditions on final fitness ( 𝑝 = 1.0, Mann-Whitney). However, the evolved plasticity parameters reveal a clear signal. Starting from a uniform prior over [− 0.5, +0.5], 21/30 (70%) of Con-dition C runs evolve negative 𝜂 (binomial sign test 𝑝 = 0.043 ), with median evolved 𝜂 = −0.117 and population-mean 𝜂 drifting below zero within ∼10 generations (Figure 6). Evolution indepen-dently discovers anti-Hebbian dominance. Co-evolution also pro-duces sparser networks than no-plasticity evolution (median 277 vs 328 connections, 𝑝 = 0.10 , Mann-Whitney; neuron count identical at 100). The trend is stronger against fixed-plasticity evolution (277 vs 357, 𝑝 = 0.004 ), hinting at a Baldwin-like effect where lifetime plasticity relaxes structural requirements. On static Acrobot, no condition breaks through the architectural ceiling: all plateau at fitness ≈ 0.84 (reward ≈ − 78 ), with all 90 runs in the High-mid stratum ( 𝑝 ≥ 0.72 , all pairwise comparisons). The critical finding is in the evolved 𝜂 distribution, which is qual-itatively different from CartPole : median 𝜂 = −0.0045 , mean Sergii Medvid, Andrii Valenia, and Mykola Glybovets 0 100 200 300 400 500 
+
+Timestep 
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Fraction unsolved
+> Low-mid
+> High-mid
+> Near-perf.
+> Perfect
+> Plasticity
+> No plasticity
+
+Figure 5: Acrobot fraction of episodes unsolved over time under non-stationarity (2 × link mass at step 50). Solid: per-network oracle plasticity; dashed: no plasticity. Lower is bet-ter. Oracle plasticity accelerates solving across all strata— most visibly for High-mid and Near-perfect, where the un-solved fraction at step 300 drops from 66%/31% (no plasticity) to 40%/18% (oracle plasticity). 
+
+≈ 0, with 18/30 (60%) negative ( 𝑝 = 0.36 , n.s.). Evolved |𝜂 | clusters in [10 −3, 5 × 10 −2]—the Acrobot sweet spot from the characteri-sation (Section 4.4). The cross-task contrast is itself informative: evolution finds different answers for different tasks, exactly as the characterisation predicts. Under non-stationarity (2 × lower-link mass at step 50), co-evolu-tion is counterproductive : Condition C (median fitness 0.775) is marginally worse than Condition A (0.786; 𝑑 = 0.60 , 𝑝 = 0.033 
+
+uncorrected, 𝑝 = 0.10 after Bonferroni) and converges 3× slower (median generation 10 vs 3 to reach fitness 0.75). The larger search space (56 vs 54 parameters) slows exploration without compen-sating fitness gains. The GA finds topologies that handle the per-turbation through structure alone—Condition A matches Condi-tion B—confirming that evolutionary architecture search absorbs non-stationarity without needing plasticity. 
+
+5.2 Random-RNN Control 
+
+The random-RNN control (Section 3.6) yields three results that disambiguate developmental from generic network effects. 
+
+Developmental competence advantage. Of 11,810 random RNNs matched to competent MorphoNAS topologies, only 65 (0.56%) are themselves competent (Low-mid: 17, High-mid: 18, Near-perfect: 4, Perfect: 26), compared to MorphoNAS’s 4.7%—an 8.4× difference. Morphogenetic development provides a genuine structural induc-tive bias beyond topology statistics alone. 
+
+Anti-Hebbian dominance is generic. Anti-Hebbian plasticity dominates for competent random RNNs even more strongly than for MorphoNAS networks: Cohen’s 𝑑 = 1.67 [95% bootstrap CI: 1.57, 1.78] for High-mid and 𝑑 = 1.79 [1.69, 1.90] for Low-mid, vs 
+
+𝑑 = 0.64 and 𝑑 = 0.53 for MorphoNAS. The magnitude-moderation mechanism operates regardless of how the network was wired; −0.3         
+
+> −0.2
+> −0.1
+> 0.0
+> 0.1
+> 0.2
+> η
+> CartPole: best individual η
+> −0.3
+> −0.2
+> −0.1
+> 0.0
+> 0.1
+> η
+> CartPole: population mean η
+> 050 100 150 200
+> Generation
+> −0.06
+> −0.04
+> −0.02
+> 0.00
+> 0.02
+> η
+> Acrobot: best individual η
+> 050 100 150 200
+> Generation
+> −0.03
+> −0.02
+> −0.01
+> 0.00
+> 0.01
+> 0.02
+> η
+> Acrobot: population mean η
+
+Figure 6: Co-evolution (Condition C) evolved 𝜂 over 200 gen-erations on CartPole (top) and Acrobot (bottom). Left: best individual’s 𝜂 ; right: population mean 𝜂 (median ± IQR across 30 runs). CartPole: strong anti-Hebbian drift ( 𝜂 < 0). Acrobot: 
+
+𝜂 hovers near zero with mixed signs, matching the character-isation finding. 
+
+anti-Hebbian dominance is a property of small recurrent networks on CartPole, not of developmental topology specifically. 
+
+Topology-dependence is developmental-specific. Regret un-der fixed parameters is substantially higher for MorphoNAS net-works: 86% (High-mid) vs 40% for random RNNs, and 89% (Near-perfect) vs 14%. Morphogenetic development creates more diverse topology-plasticity interactions, making per-network tuning—or co-evolution—more important for developmental systems than for random architectures. 
+
+6 Discussion and Conclusion 
+
+The combination of characterisation, co-evolutionary validation, and random-RNN control allows us to separate general from deve-lopmental-specific findings with unusual precision. 
+
+Separating general from developmental-specific findings. 
+
+The random-RNN control (Section 5.2) resolves a question that the characterisation alone could not answer. Anti-Hebbian dominance turns out to be a generic property of small recurrent networks—the magnitude-moderation mechanism operates regardless of wiring origin. This recontextualises the characterisation finding: practi-tioners should default to anti-Hebbian plasticity not because of anything specific to developmental topology, but because it pre-vents runaway weight growth in any small RNN. By contrast, the 
+
+degree of topology-dependence is genuinely developmental: the 
+
+2–6× higher regret for MorphoNAS networks means that morpho-genetic development creates a uniquely diverse phenotype space where per-network tuning (or co-evolution) is far more important than for random architectures. 
+
+Co-evolution recovers characterisation patterns but does not improve fitness. On no benchmark or condition does co-evolution improve fitness over no-plasticity evolution (Section 5.1). Under non-stationarity, co-evolution is marginally worse (𝑑 = 0.60 ): the two extra parameters slow convergence without payoff, because the GA finds topologies robust to the perturbation through structure Activity-Dependent Plasticity in Morphogenetically-Grown Recurrent Networks 
+
+alone. This reinforces a central finding: topology is the primary determinant of performance —plasticity improves a given topology (characterisation) but does not help the evolutionary search for topology. The scientific contribution is methodological: evolution independently recovers the characterisation findings (anti-Hebbian on CartPole, mixed-sign near-zero on Acrobot, correct 𝜂 scale) without prior knowledge. The 8.4× developmental competence advantage (Section 5.2) further underscores that reaction-diffusion development provides structural inductive bias beyond topology statistics alone. 
+
+Implications for evolving self-organisation. Our findings connect structural self-organisation (development) with functional self-organisation (plasticity) through evolution. In NDP [ 8 ] and HyperNCA [ 7], development is driven by learned update rules; Plantec et al. [ 11 ] showed that structural plasticity can extend development into the lifetime. Our results demonstrate that even simple synaptic plasticity provides substantial benefits on top of morphogenetic development, and that evolutionary optimisation can discover the appropriate plasticity parameters for each task. The sparser architectures evolved under co-evolution on CartPole (277 vs 357 connections compared to fixed-plasticity evolution, 
+
+𝑝 = 0.004 ; Section 5.1) suggest a Baldwin-like effect where lifetime plasticity relaxes the structural requirements on the genome—a direction worth pursuing on harder benchmarks. 
+
+Practical guidelines. (1) Default to anti-Hebbian plasticity (𝜂 < 0) with moderate decay ( 𝜆 ≈ 0.01 )—this is both the char-acterisation recommendation and what evolution discovers inde-pendently. (2) Invest in per-network parameter tuning: regret under fixed parameters is 52–100% for MorphoNAS networks, far higher than for random architectures. (3) When targeting non-stationary environments, the OFF →ON protocol shows that adaptation alone accounts for 66–69% of the total benefit. 
+
+Limitations. Both benchmarks are classic control tasks; gener-alisation to continuous-action or high-dimensional environments remains open. Co-evolution never outperforms no-plasticity evolu-tion, and is marginally counterproductive under non-stationarity—a stronger test would use a benchmark where the GA cannot find ro-bust topologies within 200 generations, forcing reliance on within-lifetime adaptation. The random-RNN sample is small (65 com-petent networks), and the weight distribution differs from Mor-phoNAS (uniform vs distance-dependent), introducing a poten-tial confound. The plasticity rule (Eq. 1) is deliberately simple; richer mechanisms [ 13 ] may interact differently with developmen-tal topologies. 
+
+Broader context. Zador [ 18 ] argued that biological brains lever-age both genomic encoding and environmental interaction. Shu-vaev et al. [ 12 ] confirmed this computationally, showing that small genomic networks can compress weight matrices by orders of mag-nitude while retaining substantial task performance. Our findings extend this picture with empirical evidence: the morphogenetic genome provides the compressed architectural scaffold (with an 
+
+8.4× competence advantage over random wiring), plasticity pro-vides within-lifetime adaptation, and evolution can discover appro-priate plasticity parameters for each task. Across all experiments, the primary determinant of performance remains the developmen-tal topology itself. 
+
+Acknowledgments 
+
+AI-assisted tools (Claude, Anthropic) were used to write and debug experimental and analysis code under author direction, and to edit and polish the manuscript text. All scientific decisions—including experimental design, data interpretation, and conclusions—are the authors’ own. Source code and data are available at https://github. com/ukma-morphonas-lab/MorphoNAS-PL. 
+
+References 
+
+[1] Joaquín Derrac, Salvador García, Daniel Molina, and Francisco Herrera. 2011. A practical tutorial on the use of nonparametric statistical tests as a methodology for comparing evolutionary and swarm intelligence algorithms. Swarm and Evolutionary Computation 1, 1 (2011), 3–18. doi:10.1016/j.swevo.2011.02.002 [2] Daniel García Núñez, Fergal Stapleton, and Edgar Galván. 2025. Time-Modulated Hebbian Learning for Classic Control Tasks. In GECCO ’25 Companion: Proceed-ings of the Genetic and Evolutionary Computation Conference Companion . ACM, 2119–2126. doi:10.1145/3712255.3734322 [3] Mykola Glybovets and Sergii Medvid. 2026. MorphoNAS: Embryogenic Neural Architecture Search Through Morphogen-Guided Development. Kibernetyka i Systemnyj Analiz (Cybernetics and Systems Analysis) 62, 2 (2026). doi:10.34229/ KCA2522-9664.26.2.3 Preprint: arXiv:2507.13785. [4] Donald O Hebb. 1949. The Organization of Behavior: A Neuropsychological Theory .Wiley. [5] Alexander Mordvintsev, Ettore Randazzo, Eyvind Niklasson, and Michael Levin. 2020. Growing Neural Cellular Automata. Distill 5, 2 (2020), e23. doi:10.23915/ distill.00023 [6] Elias Najarro and Sebastian Risi. 2020. Meta-Learning through Hebbian Plasticity in Random Networks. In Advances in Neural Information Processing Systems ,Vol. 33. 20719–20731. [7] Elias Najarro, Shyam Sudhakaran, Claire Glanois, and Sebastian Risi. 2022. Hy-perNCA: Growing Developmental Networks with Neural Cellular Automata. In 
+
+From Cells to Societies: Collective Learning Across Scales (ICLR 2022 Workshop) .[8] Elias Najarro, Shyam Sudhakaran, and Sebastian Risi. 2023. Towards Self-Assembling Artificial Neural Networks through Neural Developmental Programs. In Proceedings of the 2023 Artificial Life Conference (ALIFE) , Vol. 35. MIT Press, 80. doi:10.1162/isal_a_00693 [9] Eleni Nisioti, Erwan Plantec, Milton Montero, Joachim Winther Pedersen, and Sebastian Risi. 2024. Growing Artificial Neural Networks for Control: the Role of Neuronal Diversity. In GECCO ’24 Companion: Proceedings of the Genetic and Evolutionary Computation Conference Companion . ACM, 175–178. doi:10.1145/ 3638530.3654356 [10] Rasmus Berg Palm, Elias Najarro, and Sebastian Risi. 2021. Testing the Genomic Bottleneck Hypothesis in Hebbian Meta-Learning. In Proceedings of Machine Learning Research , Vol. 148. 100–110. [11] Erwan Plantec, Joachim Winther Pedersen, Milton Llera Montero, Eleni Nisioti, and Sebastian Risi. 2024. Evolving Self-Assembling Neural Networks: From Spontaneous Activity to Experience-Dependent Learning. In Proceedings of the 2024 Conference on Artificial Life . MIT Press. [12] Sergey Shuvaev, Divyansha Lachi, Alexei Koulakov, and Anthony Zador. 2024. Encoding innate ability through a genomic bottleneck. Proceedings of the National Academy of Sciences 121, 38 (2024), e2409160121. doi:10.1073/pnas.2409160121 [13] Andrea Soltoggio, Kenneth O Stanley, and Sebastian Risi. 2018. Born to learn: the inspiration, progress, and future of evolved plastic artificial neural networks. 
+
+Neural Networks 108 (2018), 48–67. doi:10.1016/j.neunet.2018.07.013 [14] Kenneth O Stanley, David B D’Ambrosio, and Jason Gauci. 2009. A Hypercube-Based Encoding for Evolving Large-Scale Neural Networks. Artificial Life 15, 2 (2009), 185–212. [15] Kenneth O Stanley and Risto Miikkulainen. 2002. Evolving Neural Networks through Augmenting Topologies. Evolutionary Computation 10, 2 (2002), 99–127. [16] Mark Towers, Ariel Kwiatkowski, Jordan Terry, John U Balis, Gianluca De Cola, Tristan Deleu, Manuel Goulão, Andreas Kallinteris, Arjun KG, Markus Krimmel, Rodrigo Perez-Vicente, Andrea Pierré, Sander Schulhoff, Jun Jet Tai, Andrew Tan, and Omar G Younis. 2024. Gymnasium . https://github.com/Farama-Foundation/ Gymnasium [17] Alan M Turing. 1952. The Chemical Basis of Morphogenesis. Philosophical Transactions of the Royal Society of London. Series B, Biological Sciences 237, 641 (1952), 37–72. doi:10.1098/rstb.1952.0012 [18] Anthony M Zador. 2019. A critique of pure learning and what artificial neural networks can learn from animal brains. Nature Communications 10, 1 (2019), 3770. doi:10.1038/s41467-019-11786-6
