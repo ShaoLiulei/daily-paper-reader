@@ -1,0 +1,247 @@
+Title: Grokking as Dimensional Phase Transition in Neural Networks
+
+URL Source: https://arxiv.org/pdf/2604.04655v1
+
+Published Time: Tue, 07 Apr 2026 01:44:04 GMT
+
+Number of Pages: 5
+
+Markdown Content:
+## Grokking as Dimensional Phase Transition in Neural Networks 
+
+Ping Wang 1
+
+> 1
+
+Institute of High Energy Physics, Chinese Academy of Science, 100049 Beijing, China ∗
+
+(Dated: April 7, 2026) Neural network grokking—the abrupt memorization-to-generalization transition—challenges our understanding of learning dynamics. Through finite-size scaling of gradient avalanche dynamics across eight model scales, we find that grokking is a dimensional phase transition : effective dimen-sionality D crosses from sub-diffusive (subcritical, D < 1) to super-diffusive (supercritical, D > 1) at generalization onset, exhibiting self-organized criticality (SOC). Crucially, D reflects gradient field geometry , not network architecture: synthetic i.i.d. Gaussian gradients maintain D ≈ 1regardless of graph topology, while real training exhibits dimensional excess from backpropagation correlations. The grokking-localized D(t) crossing—robust across topologies—offers new insight into the trainability of overparameterized networks. 
+
+The training dynamics of deep neural networks re-main poorly understood despite their remarkable empiri-cal success. A striking example is “grokking” [1]: during training on algorithmic tasks, models exhibit an abrupt transition from memorization to generalization—training accuracy reaches near-perfect levels while test accuracy remains at chance, then suddenly jumps to perfect gener-alization. This sharp phase transition is puzzling: stan-dard learning theory does not predict why a network that already fits the training data perfectly [2] should later improve further on a test set, let alone why this improvement occurs abruptly rather than gradually. Acommon thread across proposed explanations is an abrupt learning transition —a sudden reorganization of internal representations—whose underlying gradient-level mech-anism remains uncharacterized. Several explanations have been proposed, including circuit formation [3], representation learning [4], circuit efficiency [5], and phase-transition-like training dynam-ics [6], but these remain qualitative. We address this by investigating quantitatively whether grokking behaves as a dimensional phase transition governed by SOC [7, 8]— a universal mechanism for phase transitions in com-plex systems ranging from earthquakes to brain net-works [9, 10]. Our key finding: effective dimension-ality reflects gradient field geometry , not network architecture. Real training exhibits a dimensional phase transition : the effective dimensionality D—the FSS ex-ponent in smax ∼ N D , measuring how avalanche extent scales with system size—extracted via finite-size scaling (FSS) of gradient avalanche dynamics across multiple model sizes, evolves from sub-diffusive ( D < 1) to super-diffusive ( D > 1) states, crossing the random-diffusion baseline ( D = 1) during generalization; synthetic i.i.d. Gaussian gradients maintain D ≈ 1 invariant to topol-ogy, confirming dimensional evolution reflects backprop-agation’s correlations. We present evidence in three stages, with D(t) as the unifying quantity: (1) Time-resolved evolution 
+
+(Fig. 1)— D(t) evolves from sub-diffusive ( D ≈ 0.90) through the random-diffusion baseline D ≈ 1 to super-diffusive ( D ≈ 1.20) during generalization, spanning a 30% dynamic range; (2) Aggregate scaling analysis 
+
+(Fig. 2)—heavy-tailed, scale-dependent distributions col-lapse across eight model scales with D ≈ 1.0 and γ ≈ 1.15 (R2 > 0.99); (3) Phase-resolved validation (Fig. 3)— bootstrap analysis reveals two statistically distinct scal-ing regimes ( Dpre = 0 .90, Dpost = 1 .20), demonstrat-ing that grokking induces a crossover from sub-diffusive to super-diffusive cascade dynamics; topology invariance (coefficient of variation, CV < 0.3%) confirms dimension-ality reflects gradient field geometry, not network archi-tecture. Cross-task validation on modular arithmetic and ungrokked-run negative controls (both from companion study [11]) further confirm criticality is grokking-specific. Rigorous FSS requires systematic variation of system size—analogous to studying phase transitions via lattice sizes in Ising models [12, 13]. We use the XOR boolean function as a controlled minimal testbed: its small dataset enables dense temporal sampling and precise grokking-epoch identification across eight model scales (N = 81–2001, spanning 1.4 decades). We note that XOR lacks a separate test split—training and evalua-tion use the same four patterns—so the transition we observe is an abrupt learning transition in gradient geom-etry rather than canonical delayed generalization. This is a methodological feature, not a limitation: it isolates the gradient-level phase transition from behavioral con-founds. A companion study [11] independently confirms the identical D(t) signature in canonical grokking (Trans-former on ModAdd-59, 80/20 train/test split), establish-ing that the gradient mechanism generalizes to the clas-sical setting. During backpropagation, gradients across different pa-rameters acquire correlations through shared loss land-scape structure and the chain rule [14, 15]. If these cor-relations are strong, a perturbation in one gradient com-ponent propagates to many others—analogous to how the correlation length diverges at phase transitions in spin systems [13]. To quantify this correlation struc-ture, we introduce the Threshold-based Diffusion Up-date inspired by the Olami-Feder-Christensen earthquake 
+
+> arXiv:2604.04655v1 [cs.LG] 6 Apr 2026
+
+20.0 
+
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Accuracy
+
+(a)          
+
+> Train Accuracy
+> Test Accuracy
+> Grokking (h=21, epoch 27)
+> 0100 200 300 400 500
+> Training Epoch
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> 1.1
+> 1.2
+> 1.3
+> 1.4
+> Effective Dimensionality  D
+> Pre-grokking
+> D≈0.90
+> Post-grokking
+> D≈1.20
+
+(b)         
+
+> Multi-scale critical window
+> Effective dimensionality D
+> Aggregated D= 1 .00
+> Single-scale grokking (h=21)
+> 0100 200 300 400 500
+> Training Epoch
+> 0.30
+> 0.35
+> Weight Conc.
+
++25% (c)         
+
+> Critical Reorganization Window
+> Weight Concentration
+> 0100 200
+> Epoch
+> 0.0
+> 0.5
+> 1.0
+> Test Acc.
+> Multi-scale Grokking
+> h=20
+> h=50
+> h=100
+> h=200
+> h=500
+> 0250 500
+> 0.95
+> 1.00
+> R 2
+> Mean R2>0.98
+
+FIG. 1. Grokking as transient SOC and dimensional phase transition. (a) Training (blue) and evaluation (purple) accuracies for representative XOR case (h=21, N=85; train and evaluation share the same four patterns), showing a synchronized abrupt transition at epoch 27. Inset: multi-scale analysis across h=20–500 reveals scale-dependent grokking timing spanning epochs 12–134. (b) Time-resolved FSS analysis shows effective dimensionality D evolves continuously during training. Yellow region: multi-scale grokking window. Orange line: single-scale grokking. Red line: time-averaged D = 1 .00 ± 0.02. Inset: FSS fit quality R2 > 0.98. (c) Representative example: Weight concentration (Gini coefficient of |θ|; teal) exhibits transient peak coinciding with grokking. Multi-seed statistical validation (1000 seeds) described in text. 
+
+model [16, 17] (TDU-OFC) as an in-line measurement probe : real training gradients are injected as initial con-ditions into a threshold-driven diffusion process, the re-distributed gradients feed into each parameter update, and we measure how far perturbations cascade. This is analogous to tracer diffusion in fractal media, where effec-tive spatial dimension is extracted from diffusion scaling through the system’s own response to perturbations. Al-though TDU-OFC introduces significant local modifica-tions to gradient geometry, a companion study [11] with shadow-probe controls ( αtrain = 0, diffusion excluded from training entirely) confirms that the D(t) crossing persists unchanged. The macroscopic observable D is therefore insensitive to these local perturbations: the ob-served transition reflects the underlying training dynam-ics, not an artifact of the probe. Standard stochastic gradient descent (SGD) updates parameters independently: θ′ 
+
+> i
+
+= θi − η∇iL. In TDU-OFC, all N trainable parameters (concatenated without layer distinction into a single index array) are mapped onto a diffusion graph—here a Barab´ asi-Albert (BA) scale-free network [18] ( m = 2, ⟨k⟩ = 4), chosen for computational convenience—and gradients exceeding a self-organizing threshold τ = Q90 (|∇ L|) (90th percentile, computed per epoch; robust across Q80 –Q95 ) trigger dif-fusion to neighbors, generating avalanches —cascades of parameter updates. At each diffusion step, for nodes i
+
+with |gi| > τ , gradients redistribute via 
+
+g′ 
+
+> i
+
+= (1 − α) gi, g′ 
+
+> j
+
+= gj + α g i
+
+ki
+
+for all j ∼ i, (1) where ki is the degree (number of neighbors) of node i,
+
+α = 0 .3 is diffusion strength (robust across α = 0 .1– 0.5, CV < 0.4%), and j ∼ i denotes graph neighbors. Degree normalization ensures quasi-conservative dynam-ics. Iteration continues (max 20 steps; real training typically requires <10) until no nodes exceed threshold. The avalanche size s counts total triggered updates— measuring how far gradient perturbations propagate. Larger avalanches indicate more parameters are effec-tively coupled; This implements the condensed matter paradigm of probing internal correlations through relax-ation response : the avalanche is the system’s relaxation to above-threshold perturbations, and its size quantifies the spatial extent of this relaxation. The mean avalanche size serves as a generalized susceptibility [19, 20] whose growth with system size signals criticality. We extract effective dimensionality D—the FSS ex-ponent in smax ∼ N D across system sizes N . For i.i.d. Gaussian gradients, mean total cascade size ⟨S⟩ ∼ 
+
+N Dsynth yields Dsynth = 0 .99 ± 0.01 ≈ 1 (distinct from the per-epoch peak-cascade statistic used for training data); ∆ D ≡ D − 1 quantifies the excess for real train-ing gradients. Although TDU-OFC introduces substan-tial local modifications to gradient geometry—the redis-tributed gradient vector deviates ∼ 30 ◦ from the origi-310 0 10 1 10 2 10 3   
+
+> Sepoch
+> 10 3
+> 10 2
+> 10 1
+> 10 0
+> P(Sepoch  > s )
+
+(a) h=20 (N=81 )                       
+
+> h=30 (N=121 )
+> h=50 (N=201 )
+> h=70 (N=281 )
+> h=100 (N=401 )
+> h=120 (N=481 )
+> h=200 (N=801 )
+> h=500 (N=2001 )
+> 10 12 × 10 13 × 10 14 × 10 16 × 10 1
+> Rescaled Size s/N D
+> 10 3
+> 10 2
+> 10 1
+> 10 0
+> P(Sepoch  > s )
+> D= 1 .00 (from fit)
+
+(b)           
+
+> N= 81
+> N= 121
+> N= 201
+> N= 281
+> N= 401
+> N= 481
+> N= 801
+> N= 2001
+> 10 210 3
+> System Size N
+> 10 2
+> 10 3
+> Maximum Avalanche  smax
+
+(c) smax ∼ N D, D = 1 .00 ± 0.02        
+
+> 10 1
+> 10 2
+> Mean Avalanche  〈s〉
+> 〈s〉∼Nγ,γ= 1 .15 ±0.06
+
+FIG. 2. Finite-size scaling analysis of avalanche dynamics. (a) Complementary cumulative distributions (CCDF) of avalanche sizes across eight model scales ( h = 20– 500), showing heavy-tailed, scale-dependent behavior with systematic cutoff growth. (b) X-only data collapse: plot-ting P (> s ) vs s/N D collapses all scales toward a common curve using a single exponent D, validating the FSS exponent without additional fitting parameters. (c) FSS of maximum (smax ∼ N D , left axis) and mean ( ⟨s⟩ ∼ N γ , right axis) avalanche sizes, yielding D = 1 .00 ± 0.02 ( R2 = 1 .00) and 
+
+γ = 1 .15 ± 0.06 ( R2 = 0 .99) across eight scales. 
+
+nal in parameter space— D remains topology-invariant, confirming it captures macroscopic correlation structure rather than probe artifacts. We study the XOR boolean function (4 samples, 2 inputs → 1 output) via multilayer perceptrons (In-put[2] → Hidden[ h] → Output[1], N = 4 h + 1 param-eters) with binary cross-entropy loss and SGD (learn-ing rate η = 0.5, 500 epochs). Hidden sizes h ∈{20 , 30 , 50 , 70 , 100 , 120 , 200 , 500 } with 51 gradient snap-shots recorded at 10-epoch intervals are used, and 6 in-dependent seeds per scale. Our central finding is that grokking manifests as a 
+
+dimensional phase transition : the effective dimensional-ity D, extracted via FSS of gradient avalanche dynam-ics, evolves continuously during training and crosses the random-diffusion baseline D ≈ 1 at generalization onset. We present this evidence in three stages—time-resolved evolution (Fig. 1), aggregate scaling analysis (Fig. 2), and phase-resolved validation (Fig. 3)—with D(t) as the unifying quantity. Figure 1a shows a representative XOR trajectory ( h =21, N = 85): training and evaluation accuracies jump abruptly at epoch 27. Multi-scale analysis (inset) reveals scale-dependent grokking timing spanning epochs 12– 134—a scale-dependent reorganization process that mo-tivates dimensional analysis via FSS. Time-resolved FSS across eight model scales and six seeds [12, 13] reveals systematic evolution of the effec-tive dimensionality D (defined via smax ∼ N D ). Fig-ure 1b shows D transitions from D ≈ 0.90 pre-grokking— 
+
+below the i.i.d. Gaussian baseline ( D ≈ 1.0)—through continuous rise during the multi-scale grokking window (yellow region), to D ≈ 1.20 post-grokking, represent-ing a 30% dynamic range. This gradual evolution re-frames grokking as a geometric phase transition where the system crosses from sub-diffusive gradient dynam-ics to super-diffusive coordination. Concurrent with this dimensional transition, weight concentration (Gini coef-ficient of |θ|; Figure 1c) exhibits a transient +25% peak lasting ∼50 epochs at the generalization transition, pro-viding an independent structural signature of reorganiza-tion. Validated across 1000 seeds, peak timing synchro-nizes tightly with grokking (within ±10 epochs), distin-guishing this as brief critical reorganization rather than sustained criticality. To test whether the observed criticality corresponds to self-organized criticality, we analyze avalanche size distributions using complementary cumulative distribu-tion functions (CCDF) across eight model scales [19]. Figure 2a reveals heavy-tailed, scale-dependent distribu-tions for all hidden sizes, with systematic cutoff growth 
+
+smax ∼ N D characteristic of finite-size SOC systems. The progressive rightward shift of the cutoff with in-creasing system size provides direct visual evidence for scale-invariant dynamics: larger systems sustain larger avalanches, a hallmark of criticality. Cross-task valida-tion via ModAdd-59 (a companion study [11]) confirms similar heavy-tailed scaling over broader dynamic range (∼120k parameters, ∼60 × our largest XOR scale), sup-porting universality of the underlying SOC mechanism. Strict MLE power-law fitting [21] of individual CCDFs is unreliable at our per-scale dynamic range ( <1.5 decades); finite-size scaling across system sizes is the appropriate rigorous test [19]. The scaling relations smax ∼ N D and ⟨s⟩ ∼ N γ across eight model scales spanning 1.4 decades (Figure 2c) yield 
+
+D = 1 .00 ± 0.02 and γ = 1 .15 ± 0.06 with excellent fits (R 2 ≥ 0.99). These near-unity exponents reveal a quasi-1D cascade geometry, fundamentally different from the spatially extended, two-dimensional avalanches observed in sandpile-type SOC models [7, 19], reflecting how gra-4dient correlations guide updates along low-dimensional solution manifolds [14, 22]. Data collapse (Figure 2b) confirms this: plotting P (> s ) vs s/N D collapses all eight scales toward a common curve using only the single expo-nent D, without requiring any additional fitting parame-ter. The residual tail spread reflects the non-stationarity revealed in Fig. 1b: because D evolves from 0.90 to 1.20, the aggregate D ≈ 1.0 is a time-average of two distinct scaling regimes, not a single stationary exponent. This motivates phase-resolved analysis. Bootstrap validation (Figure 3a, 10,000 resamples) re-solves the non-stationarity: each run is phase-split at its own grokking epoch (consistent with the per-scale tim-ing in Fig. 1b), yielding three narrow, non-overlapping peaks at Dpre = 0 .90 ± 0.02, Dpost = 1 .20 ± 0.02, and 
+
+Dsynth = 0 .99 ± 0.01 demonstrate that pre- and post-grokking dynamics occupy statistically distinct scaling regimes. The synthetic baseline ( Dsynth = 0 .99 ≈ 1) serves as a gold-standard control—confirming that D is not an algorithmic artifact—while the 30% separation be-tween Dpre and Dpost establishes that grokking induces a crossover from sub-extensive ( D < 1, spatially confined cascades) to super-extensive ( D > 1, collectively ampli-fied cascades) gradient dynamics. Leave-one-out analysis (Figure 3b) confirms both phases are internally self-consistent and robust, ruling out that the separation arises from a particular N in-terval. Furthermore, control experiments with synthetic i.i.d. Gaussian gradients ( gi ∼ N (0 , 0.52)) across 30 con-figurations (five network topologies × six seeds) demon-strate perfect topology invariance: all architectures— spanning 1D rings to random graphs—collapse to D ≈
+
+0.99 (CV < 0.3%). This invariance persists across diffu-sion strengths α = 0 .1–0 .5 (CV ≲ 1%), confirming that effective dimensionality reflects gradient field geometry ,not network architecture. Our results reframe grokking as a measurable di-mensional phase transition in gradient space, placing neural network generalization within the SOC family of threshold-driven critical phenomena including sand-piles [7] and earthquakes [16, 17]. This connection is genuine: topology invariance across graph configurations confirms the dimensional evolution reflects gradient field geometry, not measurement artifacts. In critical phenom-ena, the physically significant quantity is the trajectory 
+
+through a critical manifold, not a static exponent. The precise universality class of this dimensional crossover re-mains an open question [20]. Recent work has identified genuine critical phenom-ena in deep networks: quasi-critical avalanche dynamics with distinct universality classes (including directed per-colation) during training [23], and tunable universality classes controlled by activation function choice [24]. Our work is complementary: while these studies probe sig-nal propagation criticality, we measure gradient dynam-ics criticality during training, capturing how dimensional 0.9 1.0 1.1 1.2                                
+
+> Effective Dimensionality D
+> 0
+> 10
+> 20
+> 30
+> 40
+> 50
+> 60
+> Probability Density
+> Pre: D= 0 .90 (μ= 0 .90 ±0.02 )
+> Post: D= 1 .20 (μ= 1 .20 ±0.02 )
+> Synth: D= 0 .99 (μ= 0 .99 ±0.01 )
+> (a) Pre-grokking
+> Post-grokking
+> Synthetic (i.i.d. Gaussian)
+> 10 210 3
+> Excluded Scale N
+> 0.8
+> 1.0
+> 1.2
+> 1.4
+> 1.6
+> 1.8
+> 2.0
+> Leave-One-Out  D
+> (b) Global Dpre = 0.90
+> Global Dpost = 1.20
+> Global Dsynth = 0.99
+> D= 1.00 (exact 1D)
+> Pre-grokking (LOO)
+> Post-grokking (LOO)
+> Synthetic (LOO)
+> Ring SW
+> p=0.05
+> SW
+> p=0.2
+> Scale
+> Free
+> Random
+> 1.00
+> 1.25
+> D
+
+FIG. 3. Gradient Geometry Determines Dimension-ality. (a) Bootstrap distributions (10,000 resamples) of the FSS exponent D, where each run is phase-split at its own grokking epoch: pre-grokking real gradients (green, 
+
+D = 0.90 ± 0.02, sub-diffusive), post-grokking real gradi-ents (red, D = 1 .20 ± 0.02, super-diffusive), and synthetic i.i.d. Gaussian gradients (blue, D = 0.99 ± 0.01). Three non-overlapping peaks confirm statistically distinct scaling regimes. (b) Leave-One-Out FSS analysis: removing any single scale preserves D, confirming scale invariance across 
+
+N = 81–2001. Inset: Five network topologies collapse to 
+
+D ≈ 0.99 for synthetic gradients, demonstrating topology in-variance. 
+
+structure emerges at the generalization transition. To-gether, these results point to rich critical phenomenology in neural network dynamics, with universality class set by the specific dynamical mechanism. Beyond characterizing grokking, D(t) provides a quan-tifiable geometric diagnostic for optimization dynamics. The quasi-1D cascade geometry complements theoret-ical frameworks demonstrating that learning proceeds through low-dimensional subspaces [14], now with direct measurements in trained models at the gradient dynam-ics level. Since D reflects gradient field geometry rather than architecture, gradient preprocessing and optimizer design may more directly influence trainability than ar-chitectural choices [15, 25]. Extending these measure-ments to modern large-scale architectures and diverse tasks—to test whether dimensional transitions predict generalization broadly—is an important direction for fu-ture work. P.W. acknowledges support from the National Key R&D Program of China (grant Nos. 2024YFA1611701, 52024YFA1611700).  
+
+> ∗
+
+pwang@ihep.ac.cn [1] A. Power, Y. Burda, H. Edwards, I. Babuschkin, and V. Misra, arXiv preprint arXiv:2201.02177 (2022). [2] C. Zhang, S. Bengio, M. Hardt, B. Recht, and O. Vinyals, Communications of the ACM 64 , 107 (2021). [3] N. Nanda, L. Chan, T. Lieberum, J. Smith, and J. Stein-hardt, arXiv preprint arXiv:2301.05217 (2023). [4] Z. Liu, O. Kitouni, N. Nolte, E. Michaud, M. Tegmark, and M. Williams, Advances in Neural Information Pro-cessing Systems 35 (2022). [5] V. Varma, R. Shah, Z. Kenton, J. Kram´ ar, and R. Ku-mar, arXiv preprint arXiv:2309.02390 (2023). [6] N. Rubin, I. Seroussi, and Z. Ringel, in The Twelfth Inter-national Conference on Learning Representations (2024). [7] P. Bak, C. Tang, and K. Wiesenfeld, Physical Review Letters 59 , 381 (1987). [8] P. Bak, C. Tang, and K. Wiesenfeld, Physical Review A 
+
+38 , 364 (1988). [9] J. M. Beggs and D. Plenz, Journal of Neuroscience 23 ,11167 (2003). [10] D. R. Chialvo, Nature Physics 6, 744 (2010). [11] P. Wang (2026), submitted to APS OPEN SCIENCE. [12] L. Onsager, Physical Review 65 , 117 (1944). [13] N. Goldenfeld, Lectures on phase transitions and the renormalization group (Addison-Wesley, 1992). [14] A. M. Saxe, J. L. McClelland, and S. Ganguli, arXiv preprint arXiv:1312.6120 (2014). [15] A. Jacot, F. Gabriel, and C. Hongler, in Advances in Neural Information Processing Systems , Vol. 31 (2018) arXiv:1806.07572. [16] K. Christensen and Z. Olami, Physical Review A 46 , 1829 (1992). [17] Z. Olami, H. J. S. Feder, and K. Christensen, Physical Review Letters 68 , 1244 (1992). [18] A.-L. Barab´ asi and R. Albert, Science 286 , 509 (1999). [19] J. P. Sethna, K. A. Dahmen, and C. R. Myers, Nature 
+
+410 , 242 (2001). [20] G. Pruessner, Self-organised criticality: Theory, mod-els and characterisation (Cambridge University Press, 2012). [21] A. Clauset, C. R. Shalizi, and M. E. Newman, SIAM Review 51 , 661 (2009). [22] G. Gur-Ari, D. A. Roberts, and E. Dyer, arXiv preprint arXiv:1812.04754 (2018). [23] A. Ghavasieh, M. Vila-Minana, A. Khurd, J. Beggs, G. Ortiz, and S. Fortunato, arXiv preprint arXiv:2509.22649 (2025). [24] A. Ghavasieh, arXiv preprint arXiv:2512.00168 (2025). [25] S. Fort and S. Ganguli, arXiv preprint arXiv:1910.05929 (2019).

@@ -1,0 +1,383 @@
+Title: Using predefined vector systems to speed up neural network multimillion class classification
+
+URL Source: https://arxiv.org/pdf/2604.00779v2
+
+Published Time: Tue, 07 Apr 2026 01:30:01 GMT
+
+Number of Pages: 12
+
+Markdown Content:
+# Using predefined vector systems to speed up neural network multimillion class classification 
+
+Nikita Gabdullin 1 and Ilya Androsov 1
+
+> 1
+
+Joint Stock "Research and production company "Kryptonite" 
+
+E-mail: n.gabdullin@kryptonite.ru, i.androsov@kryptonite.ru 
+
+Abstract 
+
+Label prediction in neural networks (NNs) has O(n) complexity proportional to the number of classes. This holds true for classification using fully connected layers and cosine similarity with some set of class prototypes. In this paper we show that if NN latent space (LS) geometry is known and possesses specific properties, label prediction complexity can be significantly reduced. This is achieved by associating label prediction with the 
+
+O(1) complexity closest cluster center search in a vector system used as target for latent space configuration (LSC). The proposed method only requires finding indexes of several largest and lowest values in the embedding vector making it extremely computationally efficient. We show that the proposed method does not change NN training accuracy computational results. We also measure the time required by different computational stages of NN inference and label prediction on multiple datasets. The experiments show that the proposed method allows to achieve up to 11.6 times overall acceleration over conventional methods. Furthermore, the proposed method has unique properties which allow to predict the existence of new classes. 
+
+Keywords : Neural network classification, fast label prediction, prototype similarity search, vector systems, latent space configuration. 
+
+# 1 Introduction 
+
+Conventional neural networks (NNs) used in computer vision (CV) tasks are trained to distinguish multitudes of specific objects or their categories. Furthermore, it is becoming essential for NNs to be able to correctly identify different object categories (like animals or vehicles) and their subcategories (like cat breeds or vehicle types) at the same time. This results in extremely large number of classes in classification tasks, which can reach tens and hundreds of millions. This topic is relevant for various application areas which include retail, image and video analysis systems, recommendation systems, etc. Class or label prediction is achieved by performing some operation on NN outputs called representations or embeddings, with the space of all possible embeddings referred to as latent space (LS). Typically, NNs learn representations of input data with no external guidance with respect to the resulting embedding cluster distribution in LS and the overall LS geometric structure. However, in recent years many researches have been focusing on identifying LS properties desired for high NN performance and ways to ensure that they are obtained during 1
+
+> arXiv:2604.00779v2 [cs.LG] 6 Apr 2026
+
+training [ 1, 2]. It has recently been shown that one can use predefined system of vectors to train NNs with a method called latent space configuration (LSC) to obtain LS with known structure and the desired set of properties [3]. It was previously noted that the knowledge of the structure of vector system used for LSC allows to achieve O(1) complexity for closest center vector search operation, which is necessary to predict labels [ 4]. In this paper we experimentally verify this for specific family of configurations described in Section 2.1. This allows to achieve the astounding (up to 11.6 times in our experiments) speed up over conventional inference process when the number of classes ( nclasses ) is huge and GPU memory budget is limited. The proposed method also has unique properties which potentially can assist in tasks which require new class prediction. The rest of the paper is organized as follows: Section 2 outlines the methodology of the new search method, Section 3 provides its experimental verification, Section 4 discusses possibility of new class prediction, and Section 5 concludes the paper. 
+
+# 2 Closest center vector search in preconfigured LS 
+
+2.1 Vector systems for latent space configurations 
+
+Conventionally NNs develop embeddings during training along with their distribution in LS with number of dimensions ndim . However, researchers noticed that properties of embedding distribution significantly affect the NN performance [ 1, 2]. They proposed different loss functions that improve the separation of clusters of embeddings. However, these methods do not guarantee that specific LS geometry will be reached during training. It has recently been shown that this can be achieved with LSC [ 3 , 5 ]: vector systems which have desired properties can be used as configuration targets to ensure that LS has these properties, too [6]. In this study we focus on specific family of vector systems with base vectors consisting only of ones, negative ones, and zeroes. Such systems are referred to as V Dn with the first digit in D being the number of ones, the second being the number of negative ones, and n being the LS dimension (so n=ndim ). The choice of vector system index D and the dimension n
+
+determines the number of vectors nvects in that system [ 6 ]. Since these vectors act as center vectors for clusters of class embeddings during training, D and n determine the maximum possible number of classes that NN can be trained to distinguish. Therefore, when nclasses is known in advance, ndim should be chosen so that nvects ≥ nclasses . In case of V 22  
+
+> n
+
+the number of vectors is 
+
+nvects = n(n − 1)( n − 2)( n − 3) 4 , (1) where in context of NN LSC training n = ndim . Hence, the maximum possible number of classes nclasses = nvects ~ ndim 4, or ndim ~ 4
+
+√nclasses . This allows to accommodate a huge number of well-separated vectors in LS of conventional NN models. It has also been shown in [ 6] that training with the minimum possible ndim required to accommodate the desired number of classes yields the best results. This criterion is used to choose ndim with (1) in all experiments in Sections 3. 2Algorithm 1 Finding the closest center in V mk n and label prediction (PyTorch-style pseu-docode) 
+
+Require: NN model, batch of inputs x, embeddings z = model (x), center vectors C of vector system V mk n , label dictionary {labels i : Ci} with i = 0 . . . n classes − 1
+
+Preliminary step  
+
+> 1:
+
+cmaxes ← sort (topk (C, m, largest=True )) ▷ find indexes of m largest values for vectors in 
+
+C 
+
+> 2:
+
+cmins ← sort (topk (C, k, largest=False )) ▷ find indexes of k lowest values for vectors in C 
+
+> 3:
+
+csorted ← (cmaxes , c mins ) ▷ make a tuple of sorted maxes and sorted mins  
+
+> 4:
+
+center_dict ← { csorted : labels } ▷ replace center vectors Ci in label dictionary with csorted 
+
+and rearrange 
+
+Inference step  
+
+> 5:
+
+zmaxes ← sort (topk (z, m, largest=True )) ▷ find indexes of m largest values for vectors in z 
+
+> 6:
+
+zmins ← sort (topk (z, k, largest=False )) ▷ find indexes of k lowest values for vectors in z 
+
+> 7:
+
+zidxs ← (zmaxes , z mins ) ▷ make tuple of sorted maxes and sorted mins  
+
+> 8:
+
+predicted_labels ← center_dict [zidxs ] if zidxs ∈ center_dict else − 1 ▷ find label using sorted indexes; if closest center not in center dict return -1  
+
+> 9:
+
+▷ (optional) reconstruct the closest center vector using zidxs or C[predicted_labels ]
+
+2.2 Vector system closest center search 
+
+In conventional classifiers the predicted label is determined by the output of the final fully connected layer. This layer performs matrix multiplication of NN embeddings with weight matrix which size depends on nclasses . This can become a problem when nclasses is huge since NN inference is the fastest if the entire weight matrix is stored on GPU. Alternatively, a similarity search with some set of precomputed or predefined prototype embedding vectors can be used [ 7]. However, the complexity of such search is still proportional to nclasses which can make it extremely costly for large databases. In this paper we mainly compare our proposed method with the cosine similarity ( cossim ) label prediction approach. However, our reasoning still holds for conventional classification due to O(nclasses ) complexity of the final matrix multiplication operation. In this paper we consider the task of finding the closest prototype vector to the input vector (query). In context of LSC this also allows to predict labels, since prototype vectors represent center vectors for class embedding clusters [ 3]. Finding the closest prototype vector requires comparing the query vector with nclasses prototype vectors. However, with the predefined internal structure of vector system, this task can be significantly simplified by taking advantage of vector system properties. It has previously been noted that O(1) complexity search for closest center vectors is possible when root systems are used as targets for LSC [ 4 ]. In this paper we propose simple and computationally efficient search procedure that can be used upon specific family of vector systems, as shown in Algorithm 1. These vector systems are obtained as permutations of elements of base vectors with coordinates consisting of ones, negative ones, and zeroes. It should be stressed that for Algorithm 1 to be applicable, NN should be trained with angular metric ( e.g. , cosine loss), and its LS has to be configured with V Dn discussed below as a target, 
+
+i.e. training should be performed using the methodology proposed in [3]. 3At heart of the proposed approach is the fact that when all center vectors have exactly m
+
+ones and k negative ones (so V Dn = V mk n ), one can find the closest center vector by finding the indexes of m largest and k lowest values in query’s embedding. A center vector with ones in indexes of maximums and negative ones in indexes of minimums will be the closest possible to query’s embedding. Thus, the closest center search complexity is reduced to O(ndim ) requiring only two search operations, which can be performed for batches of inputs using, for instance, ‘topk’ function in PyTorch [8]. Since for all NN use cases ndim is a constant during inference, the O(1) complexity search is achieved by taking advantage of the known V Dn structure used for NN training. The proposed structure of center_dict in Algorithm 1 ensures O(1) hash map search for fast inference. However, this implementation is only possible when center_dict can be stored in RAM, and chunking may be required when data structures become too large. It should also be noted that while the proposed method is not equivalent to cossim , its closest center prediction always coincides with the cossim prediction. This is proven by the following theorem. 
+
+Theorem 1. Let V mk n be the set of all vectors in Rn having exactly m entries equal to 1, k
+
+entries equal to −1, and n − m − k ≥ 0 zero entries. Let W mk n be the set of all vectors x ∈ Rn
+
+such that, after rearranging the coordinates in the non-decreasing order, 
+
+x1 ≤ · · · ≤ xn,
+
+one has 
+
+xk < x k+1 and xn−m < x n−m+1 .
+
+Define a mapping f : W mk n → V mk n by assigning to each w the vector f (w) is obtained by placing 1 at the positions of the m largest coordinates of w, placing −1 at the positions of the 
+
+k smallest coordinates of w, and placing 0 at all remaining positions. Let w ∈ W mk n ,
+
+cossim( v, w ) = ⟨v, w ⟩∥v∥∥ w∥ .
+
+Then 
+
+arg max  
+
+> v∈Vmk n
+
+cossim( v, w ) = f (w),
+
+Proof. Let x1, . . . , x m be the m largest coordinates of w, arranged in the nonincreasing order, and let y1, . . . , y k be the k smallest coordinates of w, arranged in the non-decreasing order. Let v = f (w). Observe that for every v ∈ V mk n one has 
+
+∥v∥ = √m + k. 
+
+Suppose that there exists v′ ∈ V mk n such that 
+
+cossim( v, w ) < cossim( v′, w ).
+
+Since ∥v∥ = ∥v′∥, this implies 
+
+⟨v, w ⟩ < ⟨v′, w ⟩.
+
+The scalar product ⟨v′, w ⟩ is the sum of m coordinates of w taken with the sign + and k
+
+coordinates taken with the sign −. Thus 
+
+⟨v′, w ⟩ = z1 + · · · + zm − t1 − · · · − tk,
+
+4where zi are some m coordinates of w arranged in the nonincreasing order and ti are some k
+
+coordinates of w arranged in the nondecreasing order. Hence 
+
+x1 + · · · + xm − y1 − · · · − yk < z 1 + · · · + zm − t1 − · · · − tk,
+
+which implies m∑
+
+> i=1
+
+(xi − zi) + 
+
+> k∑
+> j=1
+
+(tj − yj ) < 0.
+
+However, each term in this sum is nonnegative by construction. This contradiction completes the proof. 
+
+2.3 Handling unlabeled center vectors 
+
+As mentioned in Section 2.1, the number of vectors nvects in V Dn is determined by ndim and D.Then nclasses vectors are chosen as targets for class center vectors during NN training (hereafter called labeled centers), so nclasses ≤ nvects . Thus, in most cases there are several vectors present in V Dn which do not correspond to any class (hereafter called unlabeled centers) 
+
+nuc = nvects − nclasses , (2) 
+
+kl = nclasses 
+
+nvects 
+
+, (3) The proposed approach returns the closest possible vector in V Dn , whether it is labeled or not. Returning unlabeled centers is only possible when the label coefficient (3) is less than one. One can see that kl is the closest to one when the minimum possible ndim for desired 
+
+nclasses is chosen using (1). However, when ndim is large relative to nclasses , kl gets smaller, indicating that more unlabeled centers are present in LS. While a special case of the unlabeled centers usage is discussed in Section 4, Algorithm 2 provides a procedure for finding the closest labeled center to return its label in the conventional label prediction setting. Let U ⊂ V mk n . To find arg max v∈U cossim (v, w ), where w is such that the arg max function is well-defined (i.e., the maximum element is unique), one can use the following approach. Let x = ( x1, . . . , x n) be the vector obtained from w by arranging its coordinates such that 
+
+xi ≤ xi+1 . Then σw = x, where σ is the permutation that sorts the coordinates accordingly. For each vector v ∈ V mk n , we define a basic permutation of its coordinates to be a permutation that either swaps -1 with the preceding entry (if it exists) or swaps 1 with the following entry (if it exists), provided that the resulting vector differs from the original one. Let G be directed graph without loops whose vertex set is the set V mk n . There is directed edge from v1 to v2 if and only if v2 is obtained from v1 by basic permutation of coordinates. Define a vector x′ = ( x′
+
+> 1
+
+, . . . , x ′
+
+> n
+
+) ∈ Rn by 
+
+x′ 
+
+> i
+
+= xi − xi+1 .
+
+Note that x′ 
+
+> i
+
+≤ 0.We now define weighted graph Gx, obtained from G by assigning weights to its edges as follows. If v1 and v2 differ by swapping the coordinates with indices i and i + 1 , then the weight of the edge equals x′ 
+
+> i
+
+= ⟨x, v 1 − v2⟩ in the case of a swap of 1 or -1 with 0, and equals 
+
+2x′ 
+
+> i
+
+= ⟨x, v 1 − v2⟩ in the case of a swap of -1 and 1. 5Lemma 1. The weighted directed graph Gx posesses the following properties: 1. All edge weights are nonnegative. 2. Every vertex v̸ = ( −1, . . . , −1, 0, . . . , 0, 1, . . . , 1) has at least one outgoing edge. 3. For any vertices v1 and v2, the sum of weights of any directed path from v1 to v2 is independent of the choice of the path and equal to ⟨x, v 1 − v2⟩.Proof. 1. This follows immediately from the fact that x′ 
+
+> i
+
+≤ 0 for all i.2. Indeed, any vertex different from (−1, . . . , −1, 0, . . . , 0, 1, . . . , 1) admits either a shift of at least one occurrence of -1 to the left or of at least one occurrence of 1 to the right, which produces an outgoing edge. 3. This follows from the definition of the edge weights together with the linearity of the scalar product in the second argument. Thus, the problem of finding a vector arg max v∈U cossim( v, w ) reduces to finding 
+
+v∗ = σ−1 ˆv∗,
+
+where ˆv∗ ∈ σU is a vertex closest to (1 , . . . , 1, 0, . . . , 0, −1, . . . , −1) with respect to the path metric on Gσw , that is, minimizing the total weight of a path connecting these vertices. Based on this lemma, the search for the optimal vector in a constrained subset U can be formulated as follows. 
+
+Algorithm 2 Finding the closest labeled center. 
+
+Require: Vector w ∈ Rn, constraint subset U ⊂ V mk n .
+
+Ensure: v∗ = arg max v∈U cossim( v, w ). 
+
+> 1:
+
+σ ← permutation such that coordinates of σw = x are non-decreasing.  
+
+> 2:
+
+ˆU ← σU . 
+
+> 3:
+
+S ← ∅. ▷ set of candidate vertices  
+
+> 4:
+
+v ← (1 , . . . , 1, 0, . . . , 0, −1, . . . , −1) . 
+
+> 5:
+
+procedure DFS (current, S) 
+
+> 6:
+
+if current ∈ ˆU or current = −(1 , . . . , −1, 0, . . . , 0, 1, . . . , 1) then  
+
+> 7:
+
+S ← S ∪ { current }. 
+
+> 8:
+
+else  
+
+> 9:
+
+for vertex ← each outgoing edge from current in G do  
+
+> 10:
+
+DFS(vertex, S)  
+
+> 11:
+
+end for  
+
+> 12:
+
+end if  
+
+> 13:
+
+end procedure  
+
+> 14:
+
+DFS( v, S) 
+
+> 15:
+
+ˆv∗ ← arg max v∈S cossim( v, w ). 
+
+> 16:
+
+v∗ ← σ−1 ˆv∗.6Table 1. The comparison of training accuracy calculation results with cossim and the proposed method. exp. ndim nclasses Dataset size Acc. cossim, % Acc. new, % 1. 10 1000 1281k 94.5 94.5 2. 23 50k 50k 98.3 98.3 3. 48 300k 300k 96.2 96.2 .
+
+2.4 Comparison with the advanced similarity search algorithms 
+
+Cosine similarity search is the primary method for similarity search in NN applications and databases with its O(n) complexity being its well-known drawback. Various methods which can significantly reduce its complexity have been proposed over last decades. These methods usually involve combining cosine similarity search with other techniques which include database clustering, an approximate k-means nearest neighbor search, vector quantization techniques, etc. [ 9 , 10 , 11 , 12 ]. Unfortunately, most of them trade accuracy for speed while still being very computationally intensive. Furthermore, these algorithms still have O(n1/b ) complexity, where 
+
+b is method-dependent, and in most cases 1 ≤ b ≤ 2. Hence, while indeed being faster than the original similarity search, their complexity remains proportional to n.
+
+# 3 Experiments 
+
+The experimental procedure in this study follows the one described in Section 5.3 in [ 3]. That is, the datasets used for NN inference were created from ImageNet-1K (i1k) by assigning a unique class to every image. The datasets with over 1 million classes were obtained using multiple image copies with different labels. However, only 1 million images from each dataset were used in experiments in Section 3.2 to remove the dependence of computational time on dataset size. All experiments use the same preprocessing procedure which includes input image resizing, center crop, conversion to PyTorch tensors, and application of conventional i1k normalization. Small visual transformer (ViT-S) [ 13 ] NN models with V 22  
+
+> n
+
+LS configuration are used for all experiments. The experiments are conducted using Intel(R) Xeon(R) Gold 6230R CPU and a single 40GB NVIDIA A100 GPU. All PyTorch CPU operations that can be run in parallel are limited to two CPU threads. There are two types of experiments: with a fixed batch size of 256, and the largest batch size that can fit in 40GB of GPU memory. The main purpose of the conducted experiments is to compare the time required to obtain the predicted label for query images with conventional cosine similarity and Algorithm 1. In order to avoid ambiguity regarding whether or not the preprocessing time should be included in model inference time, we explicitly refer to all preliminary operations including data loading and preprocessing as td, and to the time required for NN model computations as forward time 
+
+tf. We also refer to the time required to obtain label from NN embedding with cossim and the new method as tc and tn, respectively. Measured time intervals are used to compute the search and the total acceleration coefficients as 
+
+Ks = tc
+
+tn
+
+, (4) 7Table 2. The time required by different computational stages of model inference on 1m images with cossim and the proposed method with maximum possible batch size for 40GB GPU memory. exp. nclasses ndim Batch size td, s tf, s tc, s tn, s Ks Kt
+
+1 1m 47 3584 4536 6 20 1.6 12 1.003 2 5m 69 2560 4439 4 175 2.3 76 1.04 3 10m 82 1024 4325 8.6 805 3.4 238 1.18 4 20m 97 256 4444 33 7350 4 1836 2.64 5 30m 107 64 4334 126 47244 8.2 6050 11.57 Table 3. The time required by different computational stages of model inference on 1m images with cossim and the proposed method with fixed batch size of 256. Dash symbol indicates that cossim can no longer be used. exp. nclasses ndim Batch size td, s tf, s tc, s tn, s Ks Kt
+
+1 1m 47 256 4411 33 97 3.1 31 1.02 2 5m 69 256 4235 33 1258 3.1 403 1.29 3 10m 82 256 4232 33 1825 3.7 485 1.43 4 20m 97 256 4444 33 7350 4 1836 2.64 5 30m 107 256 4421 33 - 3.7 - -6 50m 121 256 4290 31 - 3.6 - -7 100m 143 256 4347 32.5 - 3.8 - -
+
+Kt = td + tf + tc
+
+td + tf + tn
+
+, (5) 
+
+3.1 Accuracy comparison of cossim and the proposed method 
+
+Table 1 shows training dataset classification accuracy calculation results on i1k and two datasets with large nclasses . The accuracy is computed as a ratio of correct predictions to all predictions (dataset size). Table 1 shows the exact agreement between the results obtained with cossim and the new method. 
+
+3.2 Large n classes dataset processing speed comparison 
+
+The main experimental results of this study are summarized in Tables 2 and 3. Table 2 shows that the overall speed-up is negligible when large GPU batches are used even for rather large 1-5 million class datasets. Whereas in these cases Ks is already considerable, Kt is small because other operations take significantly more time than search operations. However, Kt
+
+starts to grow as nclasses increases and batch size reduces due to GPU memory limitations. For the 20 million classes experiment, the batch size can no longer be increased over the baseline size of 256, which being combined with the growing cost of cossim operations results in a 2.64 times speedup when changing to the proposed method. Furthermore, Ktreaches the astounding value of 11.6 in the 30 million classes experiment when the batch size has to be further reduced to 64. 8Figure 1: (a) The total time required to obtain labels for 1m images depending on nclasses 
+
+with cossim and the proposed method (dashed line indicates where batch size becomes too small for cossim to be applicable), and (b) the total acceleration coefficient Kt as function of 
+
+nclasses (see Table 2). Table 3 shows that with fixed batch size, the advantage of using the proposed method becomes apparent even at 5 million classes. Furthermore, it illustrates the possibility of conducting extremely large nclasses inference since GPU memory requirements do not depend on nclasses . This allows conducting experiments in cases beyond the cossim capabilities, as shown by 50 and 100 million classes experiments. These observations are illustrated by Figure 1. It should be noted that in Table 2 tn increases between experiments mainly due to batch size reduction, while in Table 3 tn slightly varies due to changes in ndim . Tables 2 and 3 also show that in these experiments the most time-consuming operations are data loading and preprocessing. Hence, the advantage of using the proposed method increases in cases where td
+
+can be decreased by reducing image size, using faster preprocessing, etc. Equations (4) and (5) show that Kt tends towards Ks as td and tf become smaller, and Ks can reach tremendous values, as shown in Tables 2 and 3. This illustrates significant potential of using the proposed method combined with fast I/O and small NN models. 
+
+# 4 Discussions 
+
+4.1 Closest vector search in configurations obtained by combining multiple vector systems 
+
+When NN embeddings are normalized, all possible embedding vectors form n-dimensional hypersphere. However, V Dn vectors are located on a ( n-1 )-dimensional hyperplane within this hypersphere (see Section 3.2.1 in [ 3] and Section 2.1 in [ 6 ] for details). Therefore, vectors of single V Dn can have a relatively poor hypersphere occupation. Whereas this is not necessarily a disadvantage due to the tendency of NNs to form low-dimensional manifold solutions in 
+
+n dimensions [ 14 ], there might be applications that require a better hypersphere occupation than single V Dn can provide. It has previously been proposed in [ 3] that in case of An, n-dimensional vectors with 9Figure 2: A “toy” example of the dog-only detection system receiving cat queries: red arrows represent labeled centers, black arrow represents the unlabeled center, red digits represent data labels, black roman numerals represent center indexes, dog images are example classes 1-3, cat images correspond to example queries q1-q3. Blue lines correspond to decision boundaries, or angles where closest centers change. better hypersphere occupation can be obtained by projecting (n+1) -dimensional vectors of the original root system back to n dimensions. This adds some degree of non-uniformity to the vector distribution, which has also been found to be beneficial for NN training in case of 
+
+An configuration. The same operation can be applied to any V Dn system. Resulting systems, denoted p for projected, can be expressed as combinations of original systems 
+
+V mk np = πn
+
+> (
+
+V mk n+1 
+
+> )
+
+= V mk n ∪ V ´mk n ∪ V m´kn , (6) where πn is a projection operator which drops the (n+1) th coordinate of all vectors in 
+
+V mk n+1 , ´m = m − 1 and ´k = k − 1. One can see that searching for the closest vector in this case can be done by separately searching each V Dn and then comparing the obtained center vectors. Whereas this is longer than performing a search in single V Dn , the combined system search complexity is still O(1) since it does not depend on nclasses . This example also illustrates that different LS configurations can have different properties, and recommendations for choosing LS configurations for specific tasks will be formulated in the future. 
+
+4.2 Using unlabeled centers for new class prediction 
+
+It has previously been discussed in Section 2.3 that the proposed method can return an unlabeled center and how the next closest labeled center can be found to predict the label. However, the ability to return unlabeled centers in Algorithm 1 is a feature which can have other uses. Finding multiple samples belonging to the same unlabeled center can imply that there is a class previously unseen by NN during training. This point is illustrated by a toy example in Figure 2. Typical NNs with classification layers are bound to return a label from nclasses 
+
+set for any, however absurd, input. This is also true for systems which check against nclasses 
+
+10 prototypes. This means that all queries q, while being closer to the unlabeled center IV, will receive either label 1 of center I, or label 3 of center III. However, the proposed method can help to identify the anomaly in the stream of inputs and suggest that such queries are evidence of the presence of a new class at the unlabeled center IV (which, for this example, are cats). Hence, this can act as a message for human operator that there is something unexpected about queries rather than returning classes from a predefined set of options. This fact, combined with the possibility to easily change the number of classes with LSC during training and inference (see Section 5.1.1 in [ 3]), can be applied to areas where the number of classes is inherently not constant. It was previously suggested that lifelong learning and few-shot learning were promising application areas for LSC [ 3 ]. This natural capability to identify new classes by analyzing inference output reinforces the usefulness of proposed method even further. However, it should be stressed that the capability to identify new classes does not guarantee this behavior, and further research must be conducted to verify these assumptions. This topic will be studied in greater detail in the future. 
+
+# 5 Conclusions 
+
+This paper verifies the possibility to conduct O(1) complexity closest cluster center search for NN embeddings in a vector system used for LSC. This in turn leads to very fast and computationally efficient NN label prediction. Experimental results show the exact agreement in accuracy between the proposed and cossim methods. The time measurement experiments show that the advantage of using the proposed method becomes notable when the number of classes exceeds 10 million, especially when GPU memory is limited. In latter scenario the proposed method allows to achieve up to 11.6 times acceleration due to the forcibly reduced batch size and the overall growth in computational cost of label prediction operation in conventional methods. The proposed method also allows to conduct inference when the number of classes is extremely large and beyond the conventional methods’ capabilities, as illustrated by 100 million classes experiment. An additional capability to return information about presence of unlabeled nearest vector, which can help to identify new classes, can be very promising for LSC application in lifelong and few-shot learning. 
+
+# Acknowledgement 
+
+The authors would like to thank their colleagues Dr Igor Netay and Dr Anton Raskovalov for fruitful discussions, and Vasily Dolmatov for discussions and project supervision. 
+
+# References 
+
+[1] H. Wang, Y. Wang, Z. Zhou, X. Ji, D. Gong, J. Zhou, Z. Li, and W. Liu, “Cosface: Large margin cosine loss for deep face recognition,” 2018. [Online]. Available: https://arxiv.org/abs/1801.09414 [2] Y. Wen, K. Zhang, Z. Li, and Y. Qiao, “A discriminative feature learning approach for deep face recognition,” in ECCV 2016 , 2016, pp. 499–515. 11 [3] N. Gabdullin, “Using predefined vector systems as latent space configuration for neural network supervised training on data with arbitrarily large number of classes,” 2025. [Online]. Available: https://arxiv.org/abs/2510.04090 [4] I. V. Netay, “Series of quasi-uniform scatterings with fast search, root systems and neural network classifications,” 2025. [Online]. Available: https://arxiv.org/abs/2512.04865 [5] N. Gabdullin, “Latent space configuration for improved generalization in supervised autoencoder neural networks,” 2025. [Online]. Available: https://arxiv.org/abs/2402.08441 [6] N. Gabdullin, “Exploring possible vector systems for faster training of neural networks with preconfigured latent spaces,” 2025. [Online]. Available: https://arxiv.org/abs/2512.07509 [7] J. Snell, K. Swersky, and R. S. Zemel, “Prototypical networks for few-shot learning,” 2017. [Online]. Available: https://arxiv.org/abs/1703.05175 [8] PyTorch, “torch.topk — pytorch 2.0 documentation,” https://docs.pytorch.org/docs/ stable/generated/torch.topk.html, accessed: 2026-03-31. [9] A. Andoni, P. Indyk, T. Laarhoven, I. Razenshteyn, and L. Schmidt, “Practical and optimal lsh for angular distance,” 2015. [Online]. Available: https://arxiv.org/abs/1509.02897 [10] J. Johnson, M. Douze, and H. Jégou, “Billion-scale similarity search with gpus,” 2017. [Online]. Available: https://arxiv.org/abs/1702.08734 [11] Y. A. Malkov and D. A. Yashunin, “Efficient and robust approximate nearest neighbor search using hierarchical navigable small world graphs,” 2018. [Online]. Available: https://arxiv.org/abs/1603.09320 [12] H. Jégou, M. Douze, and C. Schmid, “Product quantization for nearest neighbor search,” 
+
+IEEE Transactions on Pattern Analysis and Machine Intelligence , vol. 33, no. 1, pp. 117–128, 2011. [13] A. Dosovitskiy, L. Beyer, A. Kolesnikov, D. Weissenborn, X. Zhai, T. Unterthiner, M. Dehghani, M. Minderer, G. Heigold, S. Gelly, J. Uszkoreit, and N. Houlsby, “An image is worth 16x16 words: Transformers for image recognition at scale,” 2021. [Online]. Available: https://arxiv.org/abs/2010.11929 [14] C. Li, H. Farkhoor, R. Liu, and J. Yosinski, “Measuring the intrinsic dimension of objective landscapes,” 2018. [Online]. Available: https://arxiv.org/abs/1804.08838 12

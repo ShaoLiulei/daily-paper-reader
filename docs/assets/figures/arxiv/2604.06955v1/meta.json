@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2604.06955v1/fig-001.webp",
+      "caption": "Fig. 5. Time-resolved SRAM occupancy for two workloads executed on the same accelerator with a 128 MiB shared SRAM. Left: GPT-2 XL with MHA (48 layers). Right: DS-R1D Q-1.5B with GQA (28 layers). DS-R1D Q-1.5B exhibits lower peak SRAM requirement with more room for optimization.",
+      "page": 6,
+      "index": 1,
+      "width": 1076,
+      "height": 227
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06955v1/fig-002.webp",
+      "caption": "Fig. 8. Inferred bank activity timeline for DS-R1D Q-1.5B at 64 MiB with B=4 under different values of α. The black curve shows total SRAM occupancy over time. The red region represents the effective data-placement overhead induced by α, which reduces the usable per-bank capacity and models conservative assumptions about non-ideal data packing. Blue segments indicate banks that must remain active. Smaller α values increase the modeled overhead, resulting in more active banks and fewer gate-eligible intervals.",
+      "page": 6,
+      "index": 2,
+      "width": 529,
+      "height": 433
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06955v1/fig-003.webp",
+      "caption": "TABLE II ENERGY/AREA TRADE-OFFS FOR SRAM BANKING CANDIDATES AT α=0.9. ENERGY (E) IN MJ, AREA (A) IN MM2 , VARYING THE NUMBER OF BANKS (B); ∆ VALUES ARE RELATIVE TO B=1 FOR EACH MEMORY CAPACITY (C). FOR DS-R1D Q-1.5B, BANKING REDUCES SRAM ENERGY ACROSS ALL CAPACITIES, WITH THE STRONGEST REDUCTIONS AT B ∈ {8, 16} (BOLD), WHILE FURTHER BANKING YIELDS DIMINISHING ENERGY RETURNS AND AREA OVERHEAD. GPT-2 XL SHOWS SIMILAR TRENDS BUT IS EVALUATED ONLY AT LARGER CAPACITIES DUE TO ITS HIGHER SRAM REQUIREMENT.",
+      "page": 7,
+      "index": 3,
+      "width": 1076,
+      "height": 223
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06955v1/fig-004.webp",
+      "caption": "Fig. 3. Two-stage workflow for on-chip memory sizing, banking, and power-gating analysis. Stage I (blue) uses TransInferSim to simulate inference for a given workload and accelerator configuration, producing performance statistics and a time-resolved on-chip memory occupancy trace; the blue loop indicates iterative adjustment of the memory configuration until a target SRAM capacity is reached. Stage II (orange) reuses the Stage-I trace and statistics to evaluate banked SRAM organizations and power-gating policies using CACTI 7 characterization, yielding energy trends across bank counts. The power-gating policies include (i) a baseline without power gating, (ii) an aggressive policy that gates idle-eligible banks using minimal headroom (α≈1), and (iii) a conservative policy that reserves per-bank headroom (α<1) and avoids gating across short idle intervals to reduce wake-up overhead.",
+      "page": 4,
+      "index": 4,
+      "width": 1076,
+      "height": 218
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2604.02552v1/fig-001.webp",
+      "caption": "Figure 4. Chaos-controlled reservoir computing. (a) Chaos control strategy: a low-amplitude triangular modulation (1 Hz, 100% duty cycle, 10% of input intensity) is superimposed during training and testing. Modulation starts 40 seconds before pattern onset to suppress initial transients. (b) Burst-timing regularization. Raster plots without (top) and with (bottom) modulation; orange dots indicate burst onset. Modulation aligns spontaneous bursting with input patterns, and entrains burst-interval variance within ±1.5ms over 60 minutes of training. (c) Representative latent trajectories without and with modulation (no pattern input). Modulation improves phase alignment and trajectory consistency. (d) cc-RC accuracy over 12 hours for Type C and D. Stabilized dynamics preserve separable pattern trajectories and extend useful performance, yielding 350% longer time above the 60% accuracy threshold, and 250% higher accuracy at 5 hours.",
+      "page": 6,
+      "index": 1,
+      "width": 1168,
+      "height": 689
+    },
+    {
+      "url": "assets/figures/arxiv/2604.02552v1/fig-002.webp",
+      "caption": "Figure 1. Overview of cc-RC setup. (a) ChR2-transfected mESCs are expanded, formed into embryoid body (EB) in suspension culture, and differentiated into motoneurons. On day 7, differentiated EBs are dissociated and plated on the MEA at a density of 5,000cells per mm2. Cultures mature by day 14. See SI for details. (b) Living neural networks plated on 128-electrodes MEAs realize integrated neural chips. (c) MiV platforms enable the recording of electric local field potentials (LFPs) via PCB-MEA interfaces connected to Intan-RHS2116 chips. Optical inputs are delivered by a 473nm laser (Doric). MiV platform and hosted cultures sit in an incubator for environmental control (temperature, humidity, CO2) and Faraday shielding. Acquisition system is placed outside to reduce degradation and signal noise. (d) LFPs show rich spatiotemporal dynamics: global avalanches, local bursts, and individual spikes. Neural activities are interpreted through state-space embedding to identify attractors and transitions, enabling cc-RC and comparison across preparations/conditions. (e) Neural cultures serve as a reservoirs driven by temporally encoded light pulses. Evoked firing rates are measured and processed through a readout map (linear vector) for task-specific operations.",
+      "page": 2,
+      "index": 2,
+      "width": 1180,
+      "height": 698
+    },
+    {
+      "url": "assets/figures/arxiv/2604.02552v1/fig-003.webp",
+      "caption": "Figure 5. Knowledge Transplant. (a) KT workflow. An expert reservoir is fully trained to obtain 𝑊e out. Alignment via transformation T allows to transplant 𝑊e out to a student sample 𝑊s out = T −1𝑊e out (b) Attractors’ alignment. Student’s attractor in latent space (estimated via few input-evoked trajectories) is mapped onto the expert’s attractor (estimated via thousands of trajectories) via ridge-regularized regression to obtain the geometric transformation T . (c) Learning curves from-scratch versus KT. For both approaches, accuracy at each time point is computed using a 70%–30% train–test split. For KT, the readout is updated over time using only the training partition, with evaluation on the held-out test set, ensuring fair comparison. Score values normalized to final from-scratch accuracy: * 𝑝 < 0.05, ** 𝑝 < 0.01, *** 𝑝 < 0.001. (d) Representative KT cases. (top) KT sustained learning and drift-resistance vs. from-scratch learning where performance degrades after 15 minutes. (bottom) KT bootstrapping and performance ceiling enhancement vs. from-scratch learning.",
+      "page": 7,
+      "index": 3,
+      "width": 1086,
+      "height": 638
+    },
+    {
+      "url": "assets/figures/arxiv/2604.02552v1/fig-004.webp",
+      "caption": "Figure 3. Performance of (naive) reservoir computing. (a) Ten temporally encoded input patterns. Pattern N contains N light pulses (15ms each) within 900ms, followed by 100ms rest (1s total pattern window). Firing rates are measured at the end of each pattern window. (b) Training protocol. During 1 hour, patterns are presented in random order and multichannel firing rates are recorded. A ridge-classification readout 𝑊out is fit with 10-fold cross-validation. (c) Test protocol. After 15 minutes rest, each round presents patterns over 3 minutes (180 patterns), followed by 12 minutes rest. The fixed readout 𝑊out is evaluated over 12 hours (47 rounds). (d) Accuracy by culture Type (A–D): first hour (left) and full 12-hour test (right). Accuracy declines over time, after the first 1–2 hours. Black line indicates best performing samples (95th percentile). Insets show early and late latent trajectories corresponding to pattern 1, 2, 3: trajectories are initially well-separates, then collapse into overlapping clusters.",
+      "page": 4,
+      "index": 4,
+      "width": 1086,
+      "height": 697
+    }
+  ]
+}
