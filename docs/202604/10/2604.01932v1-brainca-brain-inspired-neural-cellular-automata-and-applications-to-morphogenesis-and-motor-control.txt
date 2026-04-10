@@ -1,0 +1,373 @@
+Title: BraiNCA: brain-inspired neural cellular automata and applications to morphogenesis and motor control
+
+URL Source: https://arxiv.org/pdf/2604.01932v1
+
+Published Time: Fri, 03 Apr 2026 00:51:00 GMT
+
+Number of Pages: 10
+
+Markdown Content:
+# BraiNCA: brain-inspired neural cellular automata and applications to morphogenesis and motor control 
+
+# L´ eo Pio-Lopez 1, Benedikt Hartl 1, Michael Levin 1,2
+
+> 1
+
+Allen Discovery Center at Tufts University, Medford, MA, USA 
+
+> 2
+
+Wyss Institute for Biologically Inspired Engineering at Harvard University, Boston, MA, USA Corresponding Author: michael.levin@tufts.edu 
+
+Abstract 
+
+Most of the Neural Cellular Automata (NCAs) defined in the literature have a common theme: they are based on regular grids with a Moore neighborhood (one-hop neighbour). They don’t take into account long-range connections and more complex topologies as we can find in the brain. In this pa-per, we introduce BraiNCA, a brain-inspired NCA with an at-tention layer, long-range connections and complex topology. BraiNCAs shows better results in terms of robustness and speed of learning on the two tasks compared to Vanilla NCAs establishing that incorporating attention-based message se-lection together with explicit long-range edges can yield more sample-efficient and damage-tolerant self-organization than purely local, grid-based update rules. These results support the hypothesis that, for tasks requiring distributed coordina-tion over extended spatial and temporal scales, the choice of interaction topology and the ability to dynamically route in-formation will impact the robustness and speed of learning of an NCA. More broadly, BraiNCA provides brain-inspired NCA formulation that preserves the decentralized “local up-date” principle while better reflecting non-local connectivity patterns, making it a promising substrate for studying collec-tive computation under biologically-realistic network struc-ture and evolving cognitive substrates. 
+
+Submission type: Full Paper 
+
+Data/Code available at: https://github.com/ LPioL/BraiNCA 
+
+# Introduction 
+
+NCAs extend classical cellular automata by introducing learnable, adaptive local rules, typically implemented by Ar-tificial Neural Networks (ANNs). They are spatially dis-tributed computational systems where individual cells main-tain internal states and coordinate through message pass-ing with their neighbors Mordvintsev et al. (2020); Hartl et al. (2025a). The collective decision-making can give rise to system-level outcomes and NCAs excel at model-ing tasks like development and regeneration Mordvintsev et al. (2020); Pio-Lopez et al. (2023); Hartl et al. (2024); 
+
+©Published under a Creative Commons Attribution 4.0 Inter-national (CC BY 4.0) license. 
+
+Figure 1: Schematic illustration of the BraiNCA model. 
+
+Every cell i not only integrates its local neighborhood Ni
+
+via attention, but also long-range signals from sparsely con-nected distant cells j, k ∈ L i for recurrent state updates. Flexible topologies are allowed, departing from NCAs with regular, e.g., square grid-layouts. Guichard et al. (2025a); Bielawski et al. (2024); Pande and Grattarola (2023), aging Pio-Lopez et al. (2025); Cavuoti et al. (2022), but can also be efficiently used as robotic con-trollers Hartl et al. (2025b); Horibe et al. (2022, 2021). Re-cently, they even have shown competitive results at abstrac-tion and reasoning tasks on challenging benchmarks like the ARC corpus Guichard et al. (2025b); Xu and Miikkulainen (2025). Overall, this architecture makes the bridge between biological principles based on the multi-competency archi-tecture Levin (2022, 2023); Fields and Levin (2022); Dodig-Crnkovic (2022); Ermentrout and Edelstein-Keshet (1993), and modern artificial intelligence Hartl et al. (2025a). Historically, NCAs are a modern extension of classical cellular automata (CA) Kari (2005) in which the discrete, hand-designed local transition rule is replaced by a learn-able update function, typically implemented as a small ANN 
+
+> arXiv:2604.01932v1 [cs.AI] 2 Apr 2026
+
+shared across all cells. Like standard cellular automata, an NCA consists of many simple units arranged on a grid that update their states over discrete time steps using only lo-cal information, yet can collectively generate rich global dy-namics. The key difference is that the update rule is opti-mized from data (e.g., by gradient-based learning or evo-lution), allowing the system to acquire adaptive local in-teraction policies that realize a desired macroscopic behav-ior such as self-assembly, morphogenesis, or robust pattern maintenance. More formally, each cell maintains a vector-valued state and updates it by applying the same parame-terized function to its own state and the states of its neigh-bors, commonly in a Moore neighborhood on a 2D lattice Hartl et al. (2025a). In widely used NCA formulations, the cell state is partitioned into visible channels (for instance, RGB plus an opacity/liveness channel) and additional hid-den channels that support distributed computation, memory, and coordination during iterative development from a small seed. As described above, this paradigm has shown impres-sive capabilities on tasks requiring robustness and gener-alization in open-ended, dynamic environments, biological applications and many other sub-domains of machine learn-ing Hartl et al. (2025a); Guichard et al. (2025b); Xu and Miikkulainen (2025). Most of the NCA defined in the literature have a com-mon theme: they are based on regular grids with a Moore neighborhood (one-hop neighbour). They don’t take into ac-count long-range connections and more complex topologies as we can find in the brain. Accordingly, recent extensions of CA and NCAs replace the lattice with an arbitrary inter-action graph, where each node updates from its adjacency-defined neighborhood using permutation-invariant aggrega-tion in the spirit of graph neural networks, thereby support-ing non-Euclidean substrates and heterogeneous connectiv-ity, e.g. Graph-CA, Graph-NCA and GNCAs Grattarola et al. (2021); Gala et al. (2023); Moyo et al. (2025). This graph formulation can naturally express long-range connec-tions (via explicit edges) and complex topologies, while re-taining the same decentralized “local rule, global behav-ior” principle that underlies grid-based/Vanilla NCAs. Later work extended GNCA to E(n)-equivariant GNCA formula-tions Gala et al. (2023), supporting more faithful interac-tion modeling on continuous or spatially embedded graphs. Complementary approaches incorporate a self-organizing GNCA with the interaction graph itself adaptive by learn-ing that can reorganize edges over time, so that information flow can change as a function of the evolving node states and thereby support history-dependent computation Moyo et al. (2025). Another study focused on growing the graph structure itself from a seed, effectively treating morphogen-esis as the construction of a computational substrate over developmental time Barandiaran and Stovold (2025). While GNCAs introduces a powerful extension to NCAs by for-mulating them with a graph approach, they have not been compared to Vanilla NCA on biological and motor tasks nor have explored different long-range connectivity patterns to resolve these tasks. The proponents of brain-inspired AI argue that progress will come not only from more data or computational re-sources but from embedding neurobiological constraints on connectivity and organization into model design (e.g., sparse, structured, and physically grounded wiring rather than unconstrained dense graphs) Hassabis et al. (2017); Li et al. (2024). Brain-inspired AI seeks to incorporate orga-nizing principles of nervous systems—where computation emerges from constrained connectivity, distributed dynam-ics, and continual adaptation—rather than relying solely on generic dense architectures trained end-to-end. A recur-ring principle is wiring economy, which frames brain net-works as optimizing function under constraints on connec-tion length and material/energy cost Bullmore and Sporns (2012), motivating machine architectures that explicitly reg-ularize or constrain connectivity instead of assuming all-to-all communication. Related work in network science formalizes how sparse long-range “shortcuts” can coexist with strong local clustering (small-world structure), improv-ing global integration without sacrificing local specializa-tion Watts and Strogatz (1998), and connectome studies fur-ther highlight hub-like “rich-club” cores that support effi-cient communication across modules Van Den Heuvel and Sporns (2011). Another core principle is topographic or-ganization—classically modeled by self-organizing maps that preserve neighborhood relations in learned represen-tations Kohonen (1982)—and grounded in somatotopic or-ganization observed in human cortex Penfield and Bol-drey (1937), together motivating AI architectures that em-bed spatial/topographic inductive biases when mapping sen-sory or body-related variables. For learning and inference, predictive-processing theories propose hierarchical gener-ative models in which feedback conveys predictions and feedforward pathways transmit residual errors Rao and Bal-lard (1999), and the free-energy/predictive-coding frame-work connects these error signals to learning and perceptual phenomena at the cortical level Friston et al. (2016). In this paper, we introduce BraiNCA, a brain-inspired NCA with an attention layer, long-range connections and non-grid-based topologies , see Fig. 1. Building on the GNCA paradigm of learned, message passing over arbitrary graphs, BraiNCA replaces purely local aggregation with attention-weighted neighborhood integration, allowing each node to dynamically select and gate information from its neighbors as a function of context. In addition, we explicitly model long-range interactions by augmenting the underly-ing connectivity (e.g., via multi-hop edges or explicit long-range connections), thereby enabling information flow be-yond one-hop neighborhoods as in Vanilla NCAs and better matching the heterogeneous, non-local wiring patterns char-acteristic of brain networks. Concretely, BraiNCA main-tains node-wise hidden channels to store latent state and up-date history, while the attention mechanism modulates both short- and long-range messages to support flexible, state-dependent coordination across the graph. We tested this ar-chitecture on a morphogenetic task and a motor task (lunar lander). BraiNCAs shows better results in terms of speed of learning for morphogenesis, and in robustness and speed of learning for the lunar lander compared to Vanilla NCAs. This establishes that incorporating attention-based message selection together with explicit long-range connectivity and new topologies can yield more sample-efficient and robust self-organization than purely local, grid-based update rules. More broadly, BraiNCA provides a brain-inspired NCA formulation that preserves the decentralized “local update” principle while better reflecting non-local connectivity pat-terns, making it a promising substrate for studying collec-tive computation under biologically-realistic network struc-ture and self-evolving cognitive substrates. 
+
+# BraiNCA Model 
+
+BraiNCA supercharges the purely self-organizied state-update dynamics of an NCA with a flexible integration of both local and long-range neighborhoods via attention and message-passing mechanisms. While short-range connec-tions integrate information locally, scale-free hub connec-tions can bypass communication globally. A BraiNCA consists of N localized cells that are dis-tributed on—but not restricted to—an L × M regular grid. Each cell i ∈ { 1, . . . , N } maintains a C-dimensional state 
+
+cti ∈ RC across contiguous timesteps t, and might option-ally be conditioned by environmental input ρti. Formally, the extended state sti = [ cti; ρti] ∈ RS concatenates cell state cti
+
+and conditional input ρti. The local neighborhood of cell i is 
+
+Ni = {iν }Ni
+
+> ν=0
+
+, defining a set of Ni neighboring cell states 
+
+{ctk}k∈N i ; ν = 1 , . . . , N i iterates over the local neighbors of cell i (typically—but not restricted to—a Moore neigh-borhood), k = iν represents the global grid index of cell i’s neighbor iν , and ν = 0 expresses cell identity i ≡ i0. Analo-gously, every cell i aggregates state-information {ctk′ }k′∈L i
+
+from distant neighbors k′ = iμ from a sparse long-range neighborhood Li = {iμ}Li
+
+> μ=0
+
+, see Fig.1. Cell-state updates are formally given by 
+
+ct+1  
+
+> i
+
+= fθ
+
+ {ctk}k∈N i , {ctk′ }k′∈L i , ut, ot
+
+ (1) and contextualize cell-states over time t by aggregating local 
+
+{ctk}k∈N i , long-range {ctk′ }k′∈L i , and (optionally) system-level feedbak ut and external information ot via an update function fθ (·), i.e., an ANN parametrized with parameters θ.Both local and long-range neighborhoods are aggregated via respective attention mechanisms before being jointly pro-cessed by the state update module that employs a Gated Re-current Unit (GRU), see Fig. 2. For each cell i we compute the aggregated local, nti, and 
+
+Figure 2: Flow-diagram of the BraiNCA architecture. 
+
+Each cell’s state is updated by aggregating information from both local and long-range neighborhoods through attention-based context encoding. The combined signals are pro-cessed via a recurrent update function (GRU + MLP), en-abling spatially distributed coordination in morphogenesis experiments and sensory-motor control of RL agents. long-range neighborhoods, lti, at every timestep t via 
+
+atij = f (N ) 
+
+> attn
+
+([ sti; stj ]) , btij = f (L) 
+
+> attn
+
+([ sti; stj ]) , (2) 
+
+αtij = exp( atij )   
+
+> P
+> k∈N iexp( atik )
+
+, βtij = exp( btij )
+
+P 
+
+> k′∈L i
+
+exp( btik ′ ) ,(3) 
+
+nti = P 
+
+> k∈N i
+
+αtik htk, lti = X
+
+> k′∈L i
+
+βtik ′ htk′ , (4) where f (N ) 
+
+> attn
+
+(·), f (L) 
+
+> attn
+
+(·) : R2S → RA are multilayer per-ceptron networks (MLPs) that operate on concatenated ex-tended state pairs [sti; stj ] ∈ R2S for local, Ni, and long-range neighbors, Li, respectively; atij and btij ∈ RA are pair-wise attention scores, and αtij and βtij are the normal-ized attention weights for local and long-range neighbors, respecivelty. The extended state information sti along-side the aggre-gated local and long-range neighborhoods nti and lti are first combined into an interaction vector zti before being con-verted into the input mti for the downstream update function: 
+
+zti = fZ (sti, nti, lti), mti = fmsg (zti; ut, ot). (5) 
+
+fZ (·) denotes a generic composition operator that combines 
+
+sti, nti, and lti into zti; the specific form of fZ (·) is delib-erately left unspecified to maintain generality, but will be defined in the examples below. fmsg (·) is an MLP that pro-cesses the interaction vector zti, and optionally puts it in context of system-level feedback ut and external input ot.While sti may act as a residual, long-range integration is achieved via concatenation or additive combination of nti
+
+and lti, for instance. In contrast, a purely local (Vanilla) NCA is recovered by omitting long-range contributions. The state update mechanism employs a GRU followed by a feedforward refinement network, frefine , with refinement connection to yield cti 7 → ct+1  
+
+> i
+
+:
+
+hti = fGRU (mti, ht−1 
+
+> i
+
+), rti = frefine (hti) (6) 
+
+ct+1  
+
+> i
+
+= hti + rti. (7) 
+
+fGRU (·) represents the GRU which operates on a message input mti ∈ RM to maintain a hidden state hti ∈ RC across time t, rti ∈ RC is the refinement update, and ct+1  
+
+> i
+
+∈ RC is the updated cell state. 
+
+# Experimental Setup 
+
+Task 1: Morphogenesis 
+
+Problem Formulation In the morphogenesis task, a pop-ulation of N = 256 cells arranged on a 16×16 grid must collectively organize from random initial states into a target spatial pattern. The target pattern is a smiley face consisting of three discrete cell types: background cells, face bound-ary cells, and facial feature cells, c.f., Fig. 2. We chose it as is it similar to the bioelectrical prepattern we can observe during frog embryogenesis Vandenberg et al. (2011) and es-tablishing this pattern is key in (frog) development. During simulations, each cell must autonomously determine its type based solely on interactions with neighboring cells, without access to global positional information or external supervi-sion during the self-organization process. The task contrasts the system’s ability to achieve robust pattern formation through purely local interactions (Vanilla NCA) and long-range connectivity (long-range BraiNCA). Success is defined as reaching 98% or greater pixel-wise accuracy in matching the target pattern, measured after a fixed developmental period of T = 35 cellular update steps. Training consists of repeated developmental episodes, each beginning from a random initialization, with network pa-rameters updated via gradient descent to minimize the dis-crepancy between achieved and target patterns. 
+
+Architecture Specification For morphogenesis, each cell maintains a state cti = ( cti, 0, . . . , c ti,C −1) with C = 9 ; no other input is used, uti = ot = ∅, and cti ≡ sti. The first 
+
+three dimensions encode a probability distribution over the three cell types via softmax transformation, serving as the cell’s visible phenotype. The remaining six dimensions con-stitute the hidden states, i.e., latent memory or communica-tion channels used for coordination and computation with any connected cells; in contrast to the visible states, hidden states do not contribute to the loss directly. For both Vanilla and long-range conditions, we choose a local Moore neighborhood N . For the BraiNCA, long-range connections L are initialized with task-based con-straints. Long-range connectivity is generated using a scale-free-inspired random procedure, with Zipf-distributed hub degree capped at a maximum of six outgoing connections per hub. Both local and long-range attention maps atij and 
+
+btij , Eq. (2), use a two-layer MLP (64 hidden units, GELU), 
+
+Figure 3: Morphogenesis conditions . Left: target pat-tern and cell labeling for the 3×3 neighborhood condition. Middle: target pattern for the 5×5 neighborhood condition. Right: example of long-range connections used in long-range variants. We made it sparse to mimic scale-free net-works connectivity as we can find in the brain. respectively. For the Vanilla NCA, long-range inputs are entirely dismissed in the interaction vector zti = [ cti; nti],c.f., Eq. (5), while for the long-range case we use zti =[cti; nti +lti]; here, nti and lti are the attention-aggregated local and long-range neighborhoods defined in Eq. (4). For both Vanilla and long-range conditions, the state up-date mechanism cti 7 → ct+1  
+
+> i
+
+is given by Eq. (7), but using their respective interaction vectors zti. The GRU fGRU (·)
+
+has C = 9 hidden units and the refinement MLP frefine (·)
+
+has two dense layers ( C = 9 units, intermediate GELU). The visible phenotype ˆsti is decoded from the first three channels of the hidden state, cti, vis = ( cti0, c ti1, c ti2) as 
+
+ˆsti = arg max  
+
+> k∈{ 0,1,2}
+
+cti, vis [k], (8) and the cell-type probability p(sti = k) for k ∈ { 0, 1, 2} is 
+
+p(sti = k) = exp( cti, vis [k]) 
+
+P2 
+
+> k′=0
+
+exp( cti, vis [k′]) . (9) 
+
+Training Procedure Training employs supervised learn-ing with cross-entropy loss, Lmorph , computed over all visi-ble cell types at the final timestep of each episode: 
+
+Lmorph = − 1
+
+N
+
+> N
+
+X
+
+> i=1 2
+
+X
+
+> k=0
+
+1[starget  
+
+> i
+
+= k] log p(sTi = k) (10) where T = 35 denotes the final timestep and 1[·] is the indicator function, i.e., 1[A] = 1 if condition A is true and 0
+
+otherwise (so only the target class contributes at each cell). Each training episode initializes all cell states by sampling from a Gaussian distribution: c0 
+
+> i
+
+∼ N (0 , 0.1 · I), where I
+
+is the C × C identity matr T = 35 update steps, after which the loss is computed and parameters updated via backpropa-gation through time using the Adam optimizer with learning rate α = 10 −3, β1 = 0 .9, and β2 = 0 .999 .Training continues for up to 5,000 episodes per run, with early stopping when accuracy reaches or exceeds the 98% threshold. Network parameters (weights and biases in at-tention networks, message network, GRU, and refinement network) are initialized using Xavier uniform initialization for weights and zeros for biases. 
+
+Experimental Conditions We evaluated four architec-tural variants: local neighborhood size (3×3 Moore neigh-borhood providing 8 neighbors per cell, versus 5×5 Moore neighborhood providing 24 neighbors) and connectivity structure (Vanilla with only local connections, versus long-range augmented with additional distant connections as de-scribed in Section 2.1.3). This yields four conditions: 3×3 Vanilla, 3×3 + Long-Range, 5×5 Vanilla, and 5×5 + Long-Range connections. Each condition was trained for 50 inde-pendent runs using random seeds 42 through 91. 
+
+Task 2: Lunar Lander 
+
+Problem Formulation The Lunar Lander task requires learning a control policy for landing a spacecraft on a designated landing pad using discrete thruster commands. The environment, provided by Gymnasium LunarLander-v3, presents a control problem where an agent receives 8-dimensional observations ot ∈ R8 (horizontal and vertical position, horizontal and vertical velocity, angle, angular ve-locity, left leg ground contact, right leg ground contact) and must select one of four discrete actions at each timestep: no operation, fire left orientation engine, fire main engine, or fire right orientation engine (NOOP/LEFT/MAIN/RIGHT). The objective is to maximize cumulative reward over an episode, with positive rewards for approaching the landing pad and negative rewards for fuel consumption and crashes. Episodes terminate upon landing and cumulative reward has been reached or in case of crash or when the configured time limit is reached. To increase task difficulty and test ro-bustness, we enable environmental perturbations with wind power 5.0 and turbulence power 1.5, introducing stochastic forces on the lander. Success is defined as achieving cumu-lative reward of at least 260 on a single evaluation episode. 
+
+Architecture Specification We employ BraiNCA as a de-centralized controller for a single lunar lander agent. Each cell maintains a persistent state cti ∈ RC=12 , and besides updating their state cti 7 → ct+1  
+
+> i
+
+, outputs a logit whether or not to fire, ℓti = ( ℓti, noop , ℓ ti, fire ). For a grid of L × M
+
+distributed agents to trigger one particular system level ac-tion in the context of an external environment, every cell (1) perceives the lander’s state ot, and (2) feeds its binary activation ℓti = arg max( ℓti) ∈ {0, 1} into a majority-vote mechanism: we compartmentalize the grid into four 
+
+zones, associate every zone with one of the four actions (NOOP/LEFT/MAIN/RIGHT), and select the system-level action ut ∈ R4 from cellular activations ℓti, fire weighted over the respective zones. Local aggregation either operates over a Moore neighbor-hood Ni, and both the grid topology and layout for long-range connections Li are chosen manually, see Fig. 4. At-tention scores atij and and btij , defined by Eq. (2), incor-porate cell states cti and cell-specific previous activations 
+
+ℓt−1 
+
+> i
+
+and normalized 2D positional encodings ρi via the ex-tended cell state sti = [ cti; ℓt−1 
+
+> i
+
+; ρi] ∈ RS=15 . Both atten-tion maps f N
+
+> attn
+
+(·) and f L
+
+> attn
+
+(·) are two-layer MLPs (64 hidden units, GELU activation), respectively. We consider four different BraiNCA conditions: either a 
+
+3 × 3 or 5 × 5 Moore Neighborhood Ni, with or without long-range connections Li, respectively; the case without long-range connections is again referred to as Vanilla NCA. The long-range conditions concatenate cell state, local ag-gregate, and long-range contribution into the interaction vec-tor zti = [ cti; nti; lti], c.f., Eq. (5), while the Vanilla NCA simply uses zti = [ cti; nti; lti = 0]. The full per-cell RNN input, mti = [ zti; ot; ut−1] ∈ RM , appends observation ot
+
+and previous global action ut−1, with M = 53 in our case. At each NCA substep, the following sequence is applied for each cell: First, the GRU’s transient state hti is updated according to Eq. (7). Second, the refinement output rti =
+
+frefine (hti ) is split into two readout heads, one implementing the state update cti 7 → ct+1  
+
+> i
+
+= WC hti and the other one providing the per-cell action logit ℓti = ( ℓti, noop , ℓ ti, fire ) = 
+
+fact (hti) ∈ R2; WC is an M ×C linear projection and fact (·)
+
+is a two-layer MLP ( M → M → 2, GELU). The learning architecture is identical across conditions; only spatial topology and long-range wiring differ. 
+
+Spatial action selection Rather than producing a single global action vector, we distribute action selection spatially across the cellular grid using four dedicated action regions (NOOP, LEFT, MAIN, RIGHT) similarly to brain regions involved in motor control. In the Vanilla configuration, the 16×16 grid ( N = 256 ) is partitioned into four quadrants, and each action logit is read from its corresponding quad-rant. In the T-shape topology, we partitioned four distinct 8×8 quandrants too arranged in a T-shaped pattern, and each action logit is read from the corresponding zone (see Fig. 4). This spatial distribution serves multiple purposes. First, it creates a naturally interpretable mapping between spa-tial patterns of neural activity and behavioral outputs, analo-gous to motor cortex organization in biological brains where the spatial layout of neurons reflects the spatial organiza-tion of motor outputs. Second, it introduces an induc-tive bias that different regions of the network may special-ize for different action computations, potentially facilitating learning through functional modularity. Third, the explicit spatial-action mapping with the T-shape topology may re-duce the search space for effective policies by constraining the network to explore action representations that are already aligned with the task structure. Action selection uses a softmax-weighted mean of the Figure 4: LunarLander connectivity schematics for the four conditions . Vanilla: 16 ×16 grid with quadrant action regions (NOOP/LEFT/MAIN/RIGHT). Vanilla+LR: same grid with additional long-range links under the selected long-range architecture. T-Shape: 24 ×16 grid with four ac-tive 8 ×8 zones in a T-shape. T-Shape+LR: same topology with patch-based cross-zone long-range messaging. Dots in-dicate individual cells in action regions (shaded blocks. fire logit within the region/quadrant. More specifically, at each environment timestep t, the NCA executes nsteps =3 internal updates. After these updates, each cell i pro-duces two logits: ℓti = (ℓti, noop , ℓ ti, fire ). From these two logits, we compute the cell’s fire probability: wti =softmax  (ℓti, noop , ℓ ti, fire )
+
+> fire
+
+. For each action region r ∈{NOOP , LEFT , MAIN , RIGHT }, let Rr be the set of cells in that region. The region logit Ltr is: 
+
+Ltr =
+
+P 
+
+> i∈R r
+
+wti ℓti, fire 
+
+P 
+
+> i∈R r
+
+wti + ε , ε = 10 −8. (11) This yields four environment-action logits 
+
+Lt = [ Lt
+
+> NOOP
+
+, L t
+
+> LEFT
+
+, L t
+
+> MAIN
+
+, L t
+
+> RIGHT
+
+]. (12) Action selection then uses a 4-way categorical policy: 
+
+π(at = r | ot) = softmax( Lt)r ,r ∈ { NOOP , LEFT , MAIN , RIGHT }. (13) The sampled action is mapped directly to the Gym action index {0, 1, 2, 3} ↔ { NOOP , LEFT , MAIN , RIGHT }, exe-cuted in the environment, and then rebroadcast as one-hot previous-action memory ut for the next GRU perception cy-cle. 
+
+Training Procedure Learning employs the REINFORCE policy gradient algorithm with entropy regularization Williams (1992). Each training episode proceeds as follows. The environment and NCA are reset to initial states (cell states initialized to zeros). At each environment step, the current observation is broadcast to all cells, the NCA exe-cutes nsteps internal updates, action proposals are aggregated and an action is sampled from the policy distribution, and the action is executed in the environment yielding a reward and next observation. This continues until episode termina-tion (landing or timeout). The policy gradient loss is computed as: 
+
+Lpolicy = −
+
+> T
+
+X
+
+> t=0
+
+log π(at | ot) ˆRt − β
+
+> T
+
+X
+
+> t=0
+
+H(πt). (14) where ˆRt is the discounted return from timestep t (option-ally normalized), γ = 0 .99 , and β is the entropy coefficient. During training, Gaussian noise ξ ∼ N (0 , 0.125) is added to the action logits. Network parameters are updated with Adam (learning rate 10 −3, weight decay 10 −4) and gradi-ent clipping. Training continues for up to 10,000 episodes with early stopping when evaluation performance reaches or exceeds the success threshold. 
+
+Long-Range Connectivity Variants Unlike the morpho-genesis task where long-range links are random scale-free connections, the Lunar Lander long-range connections are structured by the spatial topology of the action zones. In both topologies the connections use a patch-based scheme: a 3×3 patch of cells is defined at the center of each motor zone (LEFT, RIGHT, MAIN; NOOP is excluded from long-range wiring), and each patch cell receives attention-weighted sig-nals from randomly sampled cells in the patches of the other motor zones. Each source patch cell draws 6 random tar-gets per other zone, giving 12 long-range neighbors per con-nected cell. 
+
+Experimental Conditions We evaluated four conditions with identical learning architecture and action aggre-gation (Vanilla NCA, Vanilla+Long-Range, T-Shape, T-Shape+Long-Range). Each condition was trained for around 
+
+1000 independent runs. For both tasks, we measured success rate (proportion of runs achieving performance threshold within training bud-get), episodes to success (number of training episodes re-quired to first reach threshold, computed only for success-ful runs), and convergence variance (standard deviation of episodes-to-success across successful runs). For Lunar Lan-der specifically, we also recorded best evaluation reward (maximum reward achieved on evaluation episodes during training). Results 
+
+Long-range connections and size of neighborhood integration increase accuracy and speed of learning on the morphogenetic task 
+
+We evaluated convergence using survival analysis on episodes-to-success, treating unsuccessful runs as right-censored at 10,000 episodes. Across the four morpho-genetic conditions (3 ×3 Vanilla, 3 ×3 Long-Range, 5 ×5Vanilla, and 5 ×5 Long-Range), all runs reached the suc-cess criterion (100% success), but convergence speed dif-fered significantly. Compared with 3 ×3 Vanilla, 3 ×3 Long-Range reduced RMST from 658.4 to 454.2 episodes (re-duction: 204.2 episodes, 31.0%; log-rank one-sided p =5.48 × 10 −6; RMST permutation p = 3 .20 × 10 −4). Com-pared with 5 ×5 Vanilla, 5 ×5 Long-Range reduced RMST from 383.6 to 301.2 episodes (reduction: 82.4 episodes, 21.5%; log-rank one-sided p = 4 .22 × 10 −4; RMST per-mutation p = 4 .80 × 10 −4). Increasing grid size in the Vanilla setting (3 ×3 → 5×5) reduced RMST from 658.4 to 383.6 episodes (reduction: 274.8 episodes, 41.7%; log-rank one-sided p = 3.28 × 10 −10 ; RMST permutation 
+
+p = 2 .00 × 10 −5). The best configuration (5 ×5 Long-Range) vs baseline (3 ×3 Vanilla) reduced RMST from 658.4 to 301.2 episodes (reduction: 357.2 episodes, 54.3%; 2.19 ×
+
+speedup; log-rank one-sided p = 9 .46 × 10 −20 ; RMST per-mutation p = 2 .00 × 10 −5). These results demonstrate that both architectural modifications—long-range connections and larger grid sizes—contribute independently and synergistically to improved learning efficiency (see Figure 5). 
+
+Somatotopic topology increase robustness and speed of learning 
+
+We evaluated four NCA architectures on the LunarLander task: (1) Vanilla (baseline, n = 1300 ), (2) Long-Range with quadrant-patch connections ( n = 1250 ), (3) T-Shape Vanilla with T-shaped topology but no long-range connec-tions ( n = 1279 ), and (4) T-Shape + Long-Range, combin-ing the T-shaped topology with quadrant-patch long-range connections ( n = 1344 ) (see Figure 6). Across conditions, success rates were 84 .3% for Vanilla, 
+
+77 .4% for Long-Range, 88 .4% for T-Shape Vanilla, and 
+
+85 .4% for T-Shape + Long-Range. Vanilla was signifi-cantly more robust than Long-Range (Fisher’s exact one-sided test, p = 3 .90 × 10 −6). T-Shape Vanilla showed a significantly higher success rate than Vanilla (Fisher’s ex-act one-sided test, p = 0.00137 ) and than Long-Range (p = 1 .01 × 10 −13 ). T-Shape + Long-Range also achieved a significantly higher success rate than Long-Range ( p =1.05 × 10 −7), whereas it did not significantly improve ro-bustness relative to Vanilla. Survival analysis over all runs, with unsuccessful runs right-censored at 10 ,000 episodes, further showed that Vanilla converged faster than Long-Range (log-rank one-sided p = 1 .35 × 10 −6; RMST per-mutation p ≈ 0). T-Shape Vanilla also converged faster than Vanilla (log-rank one-sided p = 0 .00666 ; RMST permuta-tion p = 0 .0251 ) and than Long-Range (log-rank one-sided 
+
+p = 3 .72 × 10 −13 ; RMST permutation p = 2 .00 × 10 −5). T-Shape + Long-Range also converged faster than Long-Range (log-rank one-sided p = 1 .71 × 10 −6; RMST per-mutation p = 6 .00 × 10 −5), but did not significantly dif-fer from Vanilla. The corresponding restricted mean sur-vival times were 5248 .0 episodes for Vanilla, 5768 .6 for Long-Range, 5018 .1 for T-Shape Vanilla, and 5316 .3 for T-Shape + Long-Range, indicating that Vanilla learned 520 .6
+
+episodes faster than Long-Range, while T-Shape Vanilla re-duced mean time-to-success by 229 .9 episodes relative to Vanilla and by 750 .5 episodes relative to Long-Range. The higher success rates and speed of learning in the T-Shape conditions highlight the benefits of the somatotopic regionalization and topology. In all conditions, action selec-tion is spatially aggregated, but T-Shape explicitly partitions the grid into four zones (LEFT, RIGHT, MAIN, NOOP), mirroring the spatial-functinal relationshipp with the lunar lander. This is similar to the somatotopic organization in motor cortex like spatial-functional relationships Schieber (2001). This spatial specialization appears to yield more ro-bust task performance and faster speed of learning relative to standard Vanilla, suggesting that NCA regionalization and new topologies contribute to improved learning. Interest-ingly on this task, the long-range connections present a neg-ative effect on robustness and speed of learning compared to the Vanilla condition. One possible reason may be the simplicity of the patch organization of the long-range con-nection and future studies will explore the learning of the optimal connectivity for a BraiNCA. We can conclude that new architectural modifications, e.g. topology with a spatial/functional organization improve ro-bustness and learning speed. 
+
+# Discussion 
+
+In this paper, we introduce BraiNCA, an NCA model equipped with an attention layer, long-range connections, and a novel topology design. BraiNCA replaces purely lo-cal aggregation with attention-weighted neighborhood in-tegration, allowing each node to dynamically select and gate information from its neighbors and long-range ones based on contextual relevance. Beyond this, we explicitly model long-range interactions by augmenting the underly-ing connectivity (e.g., through multi-hop edges or dedicated long-range connections), enabling information flow that ex-tends beyond one-hop (Moore) neighborhoods as in Vanilla NCAs. And to further capture spatial–functional relation-ships reminiscent of neural architectures like in somatotopy, we introduce a new T-shaped topology that mimics struc-tured, spatially grounded connectivity patterns for the lu-nar lander task. This design departs from the standard grid topology traditionally used in NCAs, offering a more ex-Figure 5: Long-range connec-tions and size of neighborhood integration increase accuracy and speed of learning . A) Vi-olin plots of the episodes to suc-cesses in the different conditions (3 ×3 Vanilla, 3 ×3 Long-Range, 5×5 Vanilla, and 5 ×5 Long-Range). B) Mean episodes to success in the different con-ditions. C) Relative speedup compared to the baseline (3 ×3Vanilla). 
+
+Figure 6: Somatotopy increase robustness and speed of learn-ing to the task . Left. Suc-cess rate in the different condi-tions (Vanilla, Long-Range with quadrant-patch connections, and T-Shape topology). Right. Mean survival time in the dif-ferent conditions. *: p < 0.05 ,**: p < 0.01 , ***: p < 0.001 
+
+pressive substrate to emulate heterogeneous and function-ally specialized wiring, such as those observed in biologi-cal systems. We benchmark the BraiNCA architecture on two tasks, morphogenesis and motor control experiments. BraiNCAs learn faster and show improved robustness com-pared to Vanilla NCAs in the two tasks. The morphogenetic experiment suggests that long-range information increases survival in development and morpho-genesis. Cells benefited from long-range signalling in our framework via two mechanisms, long-range connections and increase in neighborhood integration – both found in biology: (i) Tunneling nanotubes (TNTs), for example, can form cytoplasmic bridges for long-range, directed commu-nication and have been reported to reach distances up to 300 μm Ariazi et al. (2017). (ii) Gap-junction–coupled cell net-works provide a natural substrate for multi-hop propagation of ionic and small-molecule signals, allowing locally sensed perturbations to influence a larger neighborhood or distant cells. Bioelectrical networks may allow long-range commu-nication during morphogenesis Levin (2014, 2021). Mechanistically, long-range information can act like a su-pervisory layer: it stabilizes attractor states in gene regula-tory networks, coordinates timing across fields of cells, and aligns growth with target morphology. These observations motivate a view in which developmental control is imple-mented not only by diffusible morphogen gradients or lo-cal gradients, but also by intercellular communication archi-tectures that can transmit state information across multiple cells/neighbors and across many different tissues. In partic-ular, this kind of long-range coordination may be especially critical during periods of rapid proliferation or remodeling, when local noise is high and the cost of developmental error rises. The current model imposes a fixed long-range (and multi-hop) topology, and thus puts an inductive bias on the BraiNCA model. Future work will be dedicated to em-ploy developmental principles to “grow” a per-cell long-range affinity matrix across the entire multicellular grid alongside the typical cell-state updates that govern NCA dy-namics. This will enable a joint development of morphol-ogy and long-range connectivity akin to a virtual organ-ism with a plastic digital nervous system. More broadly, BraiNCA provides brain-inspired NCA formulation that preserves the decentralized “local update” principle while better reflecting non-local connectivity patterns, making it a promising substrate for studying collective computation under biologically-realistic network structure and evolving cognitive substrates. Acknowledgements 
+
+We thank members of the Levin Lab for helpful discussions. We gratefully acknowledge support for this work provided through a sponsored research agreement with Astonishing Labs and from the Templeton World Charity Foundation, Inc. (Grant ID: TWCF-2021-20606). The opinions ex-pressed in this publication are those of the authors and do not necessarily reflect the views of the funding agencies. 
+
+# References 
+
+Ariazi, J., Benowitz, A., De Biasi, V., Den Boer, M. L., Cherqui, S., Cui, H., Douillet, N., Eugenin, E. A., Favre, D., Goodman, S., et al. (2017). Tunneling nan-otubes and gap junctions–their role in long-range in-tercellular communication during development, health, and disease conditions. Frontiers in molecular neuro-science , 10:333. Barandiaran, M. and Stovold, J. (2025). Growing reservoirs with developmental graph cellular automata. In Arti-ficial Life Conference Proceedings 37 , volume 2025, page 26. MIT Press One Rogers Street, Cambridge, MA 02142-1209, USA journals-info . . . . Bielawski, K., Gaylinn, N., Lunn, C., Motia, K., and Bon-gard, J. (2024). Evolving hierarchical neural cellular automata. In Proceedings of the Genetic and Evolu-tionary Computation Conference , GECCO ’24, page 78–86, New York, NY, USA. Association for Comput-ing Machinery. Bullmore, E. and Sporns, O. (2012). The economy of brain network organization. Nature reviews neuroscience ,13(5):336–349. Cavuoti, L., Sacco, F., Randazzo, E., and Levin, M. (2022). Adversarial takeover of neural cellular automata. vol-ume ALIFE 2022: The 2022 Conference on Artificial Life of ALIFE 2022: The 2022 Conference on Artificial Life , page 38. MIT Press. Dodig-Crnkovic, G. (2022). Cognition as morphologi-cal/morphogenetic embodied computation in vivo. En-tropy , 24(11):1576. Ermentrout, G. B. and Edelstein-Keshet, L. (1993). Cellular automata approaches to biological modeling. Journal of theoretical Biology , 160(1):97–133. Fields, C. and Levin, M. (2022). Competency in navigating arbitrary spaces as an invariant for analyzing cognition in diverse embodiments. Entropy , 24(6):819. Friston, K., FitzGerald, T., Rigoli, F., Schwartenbeck, P., O’Doherty, J., and Pezzulo, G. (2016). Active inference and learning. Neuroscience & Biobehavioral Reviews ,68:862–879. Gala, G., Grattarola, D., and Quaeghebeur, E. (2023). E(n)-equivariant graph neural cellular automata. arXiv preprint arXiv:2301.10497 .Grattarola, D., Livi, L., and Alippi, C. (2021). Learning graph cellular automata. Advances in Neural Informa-tion Processing Systems , 34:20983–20994. Guichard, E., Reimers, F., Kvalsund, M., Lepperød, M., and Nichele, S. (2025a). Engramnca: a neural cellular au-tomaton model of memory transfer. In Artificial Life Conference Proceedings 37 , volume 2025, page 3. MIT Press One Rogers Street, Cambridge, MA 02142-1209, USA journals-info . . . . Guichard, E., Reimers, F., Kvalsund, M., Lepperød, M., and Nichele, S. (2025b). Arc-nca: Towards developmental solutions to the abstraction and reasoning corpus. Hartl, B., Levin, M., and Pio-Lopez, L. (2025a). Neural cellular automata: applications to biology and beyond classical ai. Physics of Life Reviews .Hartl, B., Levin, M., and Z¨ ottl, A. (2025b). Neuroevolu-tion of decentralized decision-making in n-bead swim-mers leads to scalable and robust collective locomotion. 
+
+Communications Physics , 8(1):194. Hartl, B., Risi, S., and Levin, M. (2024). Evolutionary implications of self-assembling cybernetic materials with collective problem-solving intelligence at multi-ple scales. Entropy , 26(7):532. Hassabis, D., Kumaran, D., Summerfield, C., and Botvinick, M. (2017). Neuroscience-inspired artificial intelli-gence. Neuron , 95(2):245–258. Horibe, K., Walker, K., Berg Palm, R., Sudhakaran, S., and Risi, S. (2022). Severe damage recovery in evolving soft robots through differentiable program-ming. Genetic Programming and Evolvable Machines ,23(3):405–426. Horibe, K., Walker, K., and Risi, S. (2021). Regenerating soft robots through neural cellular automata. In Eu-ropean Conference on Genetic Programming (Part of EvoStar) , pages 36–50. Springer. Kari, J. (2005). Theory of cellular automata: A survey. The-oretical computer science , 334(1-3):3–33. Kohonen, T. (1982). Self-organized formation of topolog-ically correct feature maps. Biological cybernetics ,43(1):59–69. Levin, M. (2014). Endogenous bioelectrical networks store non-genetic patterning information during devel-opment and regeneration. The Journal of physiology ,592(11):2295–2305. Levin, M. (2021). Bioelectric signaling: Reprogrammable circuits underlying embryogenesis, regeneration, and cancer. Cell , 184(8):1971–1989. Levin, M. (2022). Technological approach to mind every-where: an experimentally-grounded framework for un-derstanding diverse bodies and minds. Frontiers in sys-tems neuroscience , 16:768201. Levin, M. (2023). Darwin’s agential materials: evolution-ary implications of multiscale competency in develop-mental biology. Cellular and Molecular Life Sciences ,80(6):142. Li, G., Deng, L., Tang, H., Pan, G., Tian, Y., Roy, K., and Maass, W. (2024). Brain-inspired computing: A sys-tematic survey and future trends. Proceedings of the IEEE , 112(6):544–584. Mordvintsev, A., Randazzo, E., Niklasson, E., and Levin, M. (2020). Growing neural cellular automata. Distill ,5(2). Moyo, T., Chiurunge, P., and Mazusa, A. (2025). Self-organizing dynamic graph neural cellular automata for history-dependent computation. Pande, R. and Grattarola, D. (2023). Hierarchical neural cel-lular automata. In Artificial Life Conference Proceed-ings 35 , volume 2023, page 20. MIT Press One Rogers Street, Cambridge, MA 02142-1209, USA journals-info . . . . Penfield, W. and Boldrey, E. (1937). Somatic motor and sensory representation in the cerebral cortex of man as studied by electrical stimulation. Brain: A journal of neurology .Pio-Lopez, L., Bischof, J., LaPalme, J. V., and Levin, M. (2023). The scaling of goals from cellular to anatom-ical homeostasis: an evolutionary simulation, experi-ment and analysis. Interface Focus , 13(3):20220072. Pio-Lopez, L., Hartl, B., and Levin, M. (2025). Aging as a loss of goal-directedness: An evolutionary simulation and analysis unifying regeneration with anatomical re-juvenation. Advanced Science , page e09872. Rao, R. P. and Ballard, D. H. (1999). Predictive coding in the visual cortex: a functional interpretation of some extra-classical receptive-field effects. Nature neuroscience ,2(1):79–87. Schieber, M. H. (2001). Constraints on somatotopic organi-zation in the primary motor cortex. Journal of neuro-physiology , 86(5):2125–2143. Van Den Heuvel, M. P. and Sporns, O. (2011). Rich-club or-ganization of the human connectome. Journal of Neu-roscience , 31(44):15775–15786. Vandenberg, L. N., Morrie, R. D., and Adams, D. S. (2011). V-atpase-dependent ectodermal voltage and ph region-alization are required for craniofacial morphogenesis. 
+
+Developmental Dynamics , 240(8):1889–1904. Watts, D. J. and Strogatz, S. H. (1998). Collective dynamics of ‘small-world’networks. nature , 393(6684):440–442. Williams, R. J. (1992). Simple statistical gradient-following algorithms for connectionist reinforcement learning. 
+
+Machine learning , 8(3):229–256. Xu, K. and Miikkulainen, R. (2025). Neural cellular automata for arc-agi. In Artificial Life Conference Proceedings 37 , volume 2025, page 16. MIT Press One Rogers Street, Cambridge, MA 02142-1209, USA journals-info . . . .

@@ -1,0 +1,264 @@
+Title: MTLSI-Net: A Linear Semantic Interaction Network for Parameter-Efficient Multi-Task Dense Prediction
+
+URL Source: https://arxiv.org/pdf/2604.01995v1
+
+Published Time: Fri, 03 Apr 2026 01:04:38 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# MTLSI-Net: A Linear Semantic Interaction Network for Parameter-Efficient Multi-Task Dense Prediction 
+
+Chen Liu 1, Hengyu Man 1⋆, Xiaopeng Fan 1,2,3, Debin Zhao 1
+
+> 1
+
+Harbin Institute of Technology, 2Peng Cheng Laboratory, 3Harbin Institute of Technology SuZhou Research Institute 
+
+Abstract —Multi-task dense prediction aims to perform mul-tiple pixel-level tasks simultaneously. However, capturing global cross-task interactions remains non-trivial due to the quadratic complexity of standard self-attention on high-resolution features. To address this limitation, we propose a Multi-Task Linear Se-mantic Interaction Network (MTLSI-Net), which facilitates cross-task interaction through linear attention. Specifically, MTLSI-Net incorporates three key components: a Multi-Task Multi-scale Query Linear Fusion Block, which captures cross-task dependencies across multiple scales with linear complexity using a shared global context matrix; a Semantic Token Distiller that compresses redundant features into compact semantic tokens, distilling essential cross-task knowledge; and a Cross-Window Integrated attention Block that injects global semantics into local features via a dual-branch architecture, preserving both global consistency and spatial precision. These components collectively enable the network to capture comprehensive cross-task inter-actions at linear complexity with reduced parameters. Extensive experiments on NYUDv2 and PASCAL-Context demonstrate that MTLSI-Net achieves state-of-the-art performance, validating its effectiveness and efficiency in multi-task learning. 
+
+Index Terms —multi-task learning, dense prediction, linear attention, semantic interaction, parameter-efficient 
+
+I. I NTRODUCTION 
+
+In computer vision, multi-task dense prediction [1] has emerged as a paradigm for training a unified model that simultaneously tackles multiple pixel-level tasks, such as se-mantic segmentation, depth estimation, and surface normal estimation. Compared with separate single-task models, multi-task learning (MTL) offers significant advantages in both efficiency and performance. The unified model substantially reduces parameter redundancy and computational overhead, while enabling different tasks to benefit from shared represen-tations and cross-task knowledge transfer. While techniques such as meta learning mechanisms [2], data-driven structured modeling [3], and graph-based relational reasoning [4], [5] have advanced neural network design for individual visual tasks, the key challenge in multi-task learning lies in how to effectively model cross-task interactions. Cross-task interaction [6]–[14] plays a crucial role in multi-task learning for capturing global dependencies and rela-tionships across tasks. Early approaches model cross-task relationships with Convolutional Neural Networks (CNNs) [6], 
+
+© 2026 IEEE. Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses, in any current or future media, including reprinting/republishing this material for advertising or promotional purposes, creating new collective works, for resale or redistribution to servers or lists, or reuse of any copyrighted component of this work in other works. 
+
+[10], [15] or Multilayer Perceptrons (MLPs) [16] for each task. However, their performance is inherently constrained by the local receptive context, limiting the capture of long-range cross-task dependencies. The advent of Transformers intro-duces Multi-Head Self-Attention (MHSA) [17], which offers a powerful mechanism for modeling global relationships. DeMT [18] directly applies MHSA to capture interactions across 
+
+T task features. However, dense prediction tasks typically operate on high-resolution feature maps, containing tens of thousands of tokens, which makes the O(N 2) complexity of standard attention computationally prohibitive. To address this challenge, existing methods adopt different strategies. Some prior works [13], [19] first decrease feature resolutions to establish spatial and cross-task interaction via attention com-putation, then progressively upsample the multi-task features at different scales to save complexity. While this makes global attention feasible, performing interaction on low-resolution features inevitably leads to the loss of spatial details. Other approaches utilize a limited number of learnable parameters to aggregate cross-task context. For instance, TaskPrompter [9] employs prompts to learn task-specific representations, and models the cross-task relationships through the interactions between task prompts. Similarly, the cross-task query module in [20] focus on query-level interactions, thereby reducing complexity. While these methods are efficient, the sparse information flow hinders the modeling of dense pixel-to-pixel correlations. Another line of work [14] explores the features at lower scales with MHSA, and propagates global relationships from low-level to high-level scales. Despite these efforts, existing methods still rely on quadratic attention mechanisms and ultimately sacrifice either spatial resolution or the density of cross-task interaction. This underscores the need for a lightweight yet effective approach to cross-task interaction. Linear attention [21]–[23] offers a theoretically attractive alternative by replacing softmax normalization with kernel-based approximations, achieving linear complexity with re-spect to sequence length in segmentation [24] and compression [25] tasks. In a similar spirit, other sub-quadratic sequence models such as RWKV [26] have demonstrated strong ca-pability in learning compact visual representations, while bio-inspired spiking architectures [27] and efficient genera-tive frameworks [28] further validate the broad potential of lightweight neural designs. However, existing linear attention methods are primarily designed for single-task scenarios, lim-iting their ability to leverage cross-task semantic dependencies 
+
+> arXiv:2604.01995v1 [cs.CV] 2 Apr 2026
+
+on multi-task learning. To address the aforementioned challenges, we propose a novel framework named Multi-Task Linear Semantic 
+
+Interaction Net work (MTLSI-Net), which preserves dense cross-task semantic interaction while enriching task-specific features with cross-task semantic information. To capture comprehensive cross-task semantic dependencies without sac-rificing spatial resolution or interaction density, we introduce the Multi-Task Multi-scale Query Linear Fusion Block (MT-MQLFB), which employs an efficient linear attention mech-anism architecture. Specifically, MT-MQLFB uses convolu-tional kernels of different sizes to generate multi-scale queries across tasks and constructs a shared global context matrix. Although MT-MQLFB leverages linear attention mechanism to model cross-task dependencies, high-resolution multi-task features inevitably contain spatial redundancy. Therefore, we introduce a Semantic Token Distiller module to extract the effective cross-task context. By reducing sequence length, the Distiller adaptively aggregates the fused sequence into com-pact semantic tokens, distilling the most relevant cross-task semantic dependencies. To ensure these high-level semantics effectively guide the dense prediction tasks, we propose the 
+
+Cross-Window Interaction Block (CWIB) that bridges the gap between global semantics and local details via a dual-branch architecture. Specifically, CWIB explicitly injects the distilled semantic tokens into local features through cross-attention for global guidance, while maintaining local spatial coherence via window-based self-attention. Extensive experiments on NYUDv2 [29] and PASCAL-Context [30] demonstrate that our method achieves state-of-the-art performance while main-taining superior parameter efficiency. II. M ETHOD 
+
+A. Framework Overview 
+
+As illustrated in Fig. 1, the proposed MTLSI-Net follows a coarse-to-fine paradigm [15], [19], and primarily consists of three main components: a shared backbone with preliminary decoders, a Multi-task Multi-scale Query Linear Fusion Block (MT-MQLFB), and semantic decoders. Initially, the shared backbone extracts multi-scale features for all tasks. Subse-quently, preliminary decoders generate initial task-specific representations (P1, ..., Pt) from these features and produce corresponding coarse predictions. However, these coarse pre-dictions often suffer from suboptimal performance due to the lack of effective cross-task interactions. To mitigate this limitation, the MT-MQLFB is designed to capture cross-task semantic dependencies across different tasks. Specifically, for each task, the input feature Fi is obtained by concatenating 
+
+Pi with its corresponding coarse prediction, and is then projected to a unified size (H, W, d ). Finally, the semantic decoders, which consist of the Semantic Token Distiller and Cross-Window Integrated attention Block (CWIB), enhance the initial task-specific features with the cross-task semantics captured by MT-MQLFB, producing pixel-level predictions for all tasks. Detailed descriptions of these modules are provided in the following sections. 
+
+B. Multi-task Multi-scale Query Linear Fusion Block 
+
+Existing multi-task methods typically incorporate special-ized self-attention modules to model diverse cross-task de-pendencies. However, the quadratic complexity incurs pro-hibitive computational overhead when modeling cross-task interactions on high-resolution feature maps. To overcome this limitation, we propose the Multi-Task Multi-scale Query Linear Fusion Block (MT-MQLFB). MT-MQLFB leverages the O(N ) complexity of the linear attention mechanism to efficiently fuse task-specific features across multiple scales, while simultaneously capturing rich cross-task semantic inter-action information. In contrast to standard self-attention, linear attention [21] substitutes the softmax normalization with a kernel-based ap-proximation and alters the matrix multiplication order, thereby achieving linear complexity with respect to sequence length: 
+
+O = ϕ(Q)  ϕ(K)⊤V
+
+ϕ(Q) P 
+
+> j
+
+ϕ(K)⊤
+
+> j
+
+, (1) where ϕ(·) denotes a kernel function that ensures non-negative outputs. However, directly applying (1) to multi-task learning is suboptimal, as it cannot model the complex cross-task interactions with task-specific receptive field requirements. In multi-task dense prediction, different tasks inherently prefer different receptive fields [11], [31]. For instance, edge de-tection emphasizes fine-grained local patterns, while semantic segmentation relies on broader regional context. Consequently, we extend the kernelized approximation ϕ(Q)ϕ(K)⊤ to multi-task scenarios with multi-scale queries. As depicted in Fig. 2, to capture cross-task semantic de-pendencies at different granularities, we generate multi-scale queries for each task using convolutional kernels of varying sizes in Scale s. Specifically, for scale s we construct features 
+
+Gs :
+
+Gs = Concat( {Re(Conv s×s(Fi)) }Ti=1 ), s ∈ { 1, 3, 5}, (2) where Fi ∈ RH×W ×d denotes the input features for the 
+
+i-th task. Conv s×s represents a composite block consisting of a depth-wise convolution with kernel size s, followed by Batch Normalization and ReLU activation. Re( ·) denotes the reshaping of spatial dimensions from (d, H/ 2, W/ 2) into a sequence of tokens of size (HW/ 4, d ). The processed features across all tasks at specific scale s are then concatenated along the token dimension. The query Qs is projected from Gs
+
+through a linear layer, utilizing ELU (·) + 1 as the kernel function. Simultaneously, to construct a shared global context, the keys K and values V are derived from the feature M:
+
+M = Concat( {Re(Pool( Fi)) }Ti=1 ),
+
+K = LN( M)WK , V = LN( M)WV , Qs = LN( Gs)WQs ,
+
+(3) C  
+
+> Loss
+> Backbone PD 1MT-MQ Linear Fusion Block Semantic Decoder
+> C-A W-MSA
+> P
+> DCWIB LMLP PD 2PD t
+> 𝐏 ଵ𝐏 ଶ𝐏 ୲𝐅 ଵ𝐅 ଶ𝐅 ୲𝐈 ୲′C
+> Loss
+> C
+> Loss TD Preliminary Decoder t PD t
+
+: D Semantic Token Distiller : Concat Operation  
+
+> C
+
+: P Position Embedding :TD Task Decoder :
+
+> 𝐈 ୲
+> Loss Loss Loss
+
+Fig. 1. Overview of the proposed coarse-to-fine multi-task learning framework. Given an input image, a shared backbone first extracts multi-scale features. Subsequently, preliminary decoders generate initial task-specific representations and coarse predictions. Next, to enable cross-task interaction, the MT-MQLFB processes the concatenated features and predictions. Finally, semantic decoders, incorporating the Semantic Token Distiller and Cross-Window Integrated Attention Block (CWIB), refine these features to produce fine-grained predictions for all tasks. Scale ଵScale ଶScale ୱ𝐾𝑒𝑟𝑛𝑒𝑙 LLProj 𝐾𝑒𝑟𝑛𝑒𝑙 LLLReshape Concat &L : Layernorm & Linear Layer : Matrix Multiplication 
+
+> Global Context Matrix
+
+……         
+
+> 𝑇𝐻𝑊 4𝑇 𝐻 𝑊 𝑆 ⋅ 𝑑 𝑑 𝑑 𝑑 AvgPool 𝐎 𝜙ሺ𝐐 ଵሻ𝜙ሺ𝐐 ଶሻ𝜙ሺ𝐐 ୱሻ𝜙ሺ𝐊ሻ 𝐕
+
+Fig. 2. Architecture of the Multi-task Multi-scale Query Linear Fusion Block. 
+
+where Pool denotes 2D pooling and LN represents layer normalization. Following the linear attention mechanism, the output Os is computed as (4): 
+
+Os = ϕ (Qs)  ϕ(K)⊤V
+
+ϕ (Qs) P 
+
+> j
+
+ϕ(K)⊤
+
+> j
+
+= ϕ  WQs Gs
+
+   ϕ(WK M)⊤WV M
+
+ϕ
+
+
+
+WQs Gs
+
+ P 
+
+> j
+
+ϕ(WK M)⊤
+
+> j
+
+.
+
+(4) Note that the term ϕ(WK M)⊤WV M  
+
+> P
+> jϕ(WKM)⊤
+> j
+
+in (4), which represents global context matrix, is independent of the queries Qs.Consequently, it needs to be computed only once and is shared across different scales. Finally, the outputs Os from different scales are projected to the same dimensional space and aggregated via MLP to generate final fused features I:
+
+Oagg = Concat( O1, ..., Os)WO ,
+
+I = Oagg + MLP( Oagg ). (5) In the T dense prediction tasks with S scales setting, the computational complexity of MT-MQLFB is linear with respect to the feature resolution (H, W ), specifically O(S · 
+
+> T HW
+> 4
+
+· d2). Given that ST ≪ HW , the complexity is sub-stantially lower than that of the standard multi-head attention, which incurs a quadratic complexity of O(( T HW )2 · d) [13], [18], [19], [32]. The linear efficiency allows MT-MQLFB to process more tokens across tasks and scales, thereby facili-tating more comprehensive cross-task interactions for dense prediction. 
+
+C. Semantic Token Distiller 
+
+Although fused feature I encapsulates the required cross-task interactions, the feature aggregation inevitably contains task-irrelevant components from other tasks that interferes with task-specific predictions. Therefore, we introduce a Se-mantic Token Distiller to eliminate the redundancy while preserving task-relevant cross-task dependencies. Additionally, the distillation compresses the sequence length, thereby allevi-ating computation and memory overhead in the subsequent de-coding process. Distinct from knowledge distillation involving teacher-student models, our module distills the token sequence by condensing I into a compact set of representative semantic tokens via learned soft assignment. Specifically, the task-specific Semantic Token Distiller learns a compact representation for each task t, mapping the fused feature I into K representative tokens with K ≪ N .We first employ a lightweight MLP, composed of batch normalization and 1D convolutions, to project I into a semantic assignment matrix At ∈ RK×N . A Softmax function is then applied along the token dimension of At to normalize the weights, characterizing the contribution of all original tokens to the K semantic tokens. Finally, the distilled features 
+
+I′ 
+
+> t
+
+∈ RK×d are generated by computing the weighted sum of the linearly projected I according to At:
+
+At = Softmax (MLP t(I⊤)) ∈ RK×N ,
+
+I′ 
+
+> t
+
+= At · Proj t(I) ∈ RK×d, (6) where Proj t denotes a linear layer and d represents the feature dimension. D. Cross-Window Integrated attention Block 
+
+Preliminary features preserve local structural patterns, while the absence of cross-task context in MTL constrains their representational capability. To address this limitation, we pro-pose the Cross-Window Integrated Attention Block (CWIB), which explicitly incorporates cross-task semantic guidance I′
+
+> t
+
+,derived from the Semantic Token Distiller, into the preliminary features Pt. For brevity, we omit the task subscript t in the following formulations, using I′ and P to denote I′ 
+
+> t
+
+and Pt,respectively. The CWIB consists of two parallel branches: a Window-based Self-Attention (W-MSA) branch to preserve spatial coherence with low computational complexity, and a Cross-Attention (CA) branch to inject semantic information. For the W-MSA, the feature P is projected into query Q′, key Kw
+
+and value Vw as: 
+
+Q′ = LN( P)W′, Kw = LN( P)WKw , Vw = LN( P)WVw ,
+
+(7) where LN denotes layer normalization. The window attention 
+
+Ow is then computed as: 
+
+Ow = W -MSA( Q′, Kw, Vw), (8) in which standard non-overlapping windows of size (Hw, W w)
+
+are employed. For cross-attention, the key Kc and the value 
+
+Vc are projected from the cross-task semantic I′ with task-specific learnable positional embedding E:
+
+Kc = LN( I′ + E)WKc , Vc = LN( I′ + E)WVc . (9) The cross attention Oc is derived via Multi-Head Attention: 
+
+Oc = CA( Q′, Kc, Vc). (10) Subsequently, the outputs from both branches are concatenated and linearly projected, followed by a residual connection. This integration complements the local spatial coherence preserved by W-MSA with the cross-task semantic context captured by 
+
+CA , yielding representations that incorporate both fine-grained spatial structures and beneficial cross-task dependencies. Fol-lowing standard Transformer design, a Feed-Forward Network (FFN) is employed to produce the integrated features X:
+
+Z = Linear(Concat( Ow, Oc)) + P,
+
+X = Z + FFN(LN( Z)) . (11) The complexity of the proposed attention mechanism is 
+
+O(HW (HwWw + K) · d), linear with respect to the task-specific feature map size. The integrated features X are then passed to a task-specific output decoder, structurally similar to the preliminary decoder, to generate the final predictions. III. E XPERIMENTS 
+
+A. Experimental Setup 
+
+Datasets and Metrics . We evaluate our method on two multi-task dense prediction benchmarks: NYUDv2 [29] and PASCAL-Context [30]. NYUDv2 comprises four tasks: semantic segmentation (Seg.), monocular depth estimation (Depth), surface normal estimation (Normal), and object boundary detection (Boundary). PASCAL-Context includes Seg., Boundary, Normal, human parsing (Parsing), and saliency detection (Sal.). We adopt mean Intersection over Union (mIoU) for Seg. and Parsing, Root Mean Square Error (RMSE) for Depth, mean Error (mErr) for Normal, maximal F-measure (maxF) for Sal. and optimal-dataset-scale F-measure (odsF) for Boundary. 
+
+Implementation Details . Following [18], [33], input images are resized to 448 × 576 for NYUDv2 and 512 × 512 for PASCAL-Context. We employ the ℓ1 loss for both Depth and Normal, and apply cross-entropy loss for the remaining tasks. The loss weights for each task are consistent with [33]. We utilize the Swin Transformers [34], pre-trained on ImageNet-22K [35], as the backbones. The multi-scale queries use kernel size {1, 3, 5}. The window size is set to 14 × 16 in CWIB on NYUDv2 and 16 × 16 on PASCAL-Context. The model is optimized using the AdamW optimizer with a polynomial learning rate scheduler, starting with an initial learning rate of 2 × 10 −5. Training is conducted for 40,000 iterations, with batch sizes of 4 and 8 for PASCAL-Context and NYUDv2, respectively. 
+
+B. Comparison with State-of-the-art Methods 
+
+In this section, we compare the performance of MTLSI-Net with recent state-of-the-art approaches on the NYUDv2 and PASCAL-Context benchmarks. 
+
+Results on NYUDv2. As shown in Table I, “ ↑” denotes higher values are better, while “ ↓” indicates lower values are better. The reported parameter counts exclude the backbone network. We compare our method against both CNN-based and Transformer-based approaches across different back-bone architectures. With the HRNet18 backbone, our method achieves substantial improvements over CNN-based methods, surpassing ATRC by 3.99 mIoU on Seg. and improving by 0.36 mErr on Normal. When using Swin-T as the backbone, our method outperforms InvPT++ by 1.85 mIoU on Seg. and 0.61 on Normal, while achieving the second-best performance on Depth and Boundary. Notably, compared to DeMT, which captures cross-task dependencies with standard self-attention, our method achieves superior performance on most tasks while using only approximately 54% of the parameters (17.45M vs. 32.07M). With the Swin-L backbone, our method also achieves state-of-the-art performance with 38.27M parameters, demonstrating parameter efficiency. 
+
+Results on PASCAL-Context. Table II reports the results obtained with large Transformer backbones across all methods. Our method achieves the best performance on Seg. (80.86 mIoU) and Parsing (69.90 mIoU), and the second-best on Normal (13.71 mErr), with a marginal gap of 0.15 from the best. Although slightly behind MQTransformer and InvPT++ on Boundary, our method maintains superior overall perfor-mance. While our FLOPs are higher due to operating on high-resolution intermediate features, MTLSI-Net uses 44% fewer parameters (234M) than TaskExpert (420M) and remains more parameter-efficient than other MTL approaches while achiev-TABLE I PERFORMANCE COMPARISON WITH SOTA METHODS USING DIFFERENT BACKBONES ON NYUD V2. Method Backbone Seg.(mIoU ↑) Depth(RMSE ↓) Normal(mErr ↓) Boundary(odsF ↑) Params(M) PAD-Net [15] HRNet-18 36.70 0.6264 20.85 76.50 5.02 PSD [12] HRNet-18 36.69 0.6246 20.87 76.42 4.71 ATRC [33] HRNet-18 38.90 0.6010 20.48 76.34 5.06 Ours HRNet-18 42.89 0.5892 20.12 76.40 13.94 MQTransformer [20] Swin-T 43.61 0.5979 20.05 76.20 32.91 DeMT [18] Swin-T 46.36 0.5871 20.65 76.90 32.07 InvPT++ [13] Swin-T 44.94 0.5554 20.43 76.20 -Ours Swin-T 46.79 0.5766 19.82 76.60 17.45 InvPT [19] ViT-L 53.56 0.5183 19.04 78.10 97.96 TaskPrompter [9] ViT-L 55.30 0.5152 18.47 78.20 88.00 TaskExpert [32] ViT-L 55.35 0.5157 18.54 78.40 -TIF [14] Swin-L 56.80 0.5023 19.21 79.52 32.91 Ours Swin-L 57.22 0.4904 18.26 78.60 38.27 TABLE II PERFORMANCE COMPARISON WITH SOTA METHODS ON 
+
+PASCAL-C ONTEXT .Method Seg. Parsing Sal. Normal Boundary Params FLOPs mIoU ↑ mIoU ↑ maxF ↑ mErr ↓ odsF ↑ M GPAD-Net [15] 78.01 67.12 79.21 14.37 72.60 330 773 MTI-Net [11] 78.31 67.40 84.75 14.67 73.00 851 774 ATRC [33] 77.11 66.84 81.20 14.23 72.10 340 871 MQTransformer [20] 78.93 67.41 83.58 14.21 73.90 - -TaskExpert [32] 80.64 69.42 84.87 13.56 73.30 420 622 InvPT++ [13] 80.22 69.12 84.74 13.73 73.50 421 667 Ours 80.86 69.90 84.52 13.71 73.40 234 772 Seg. mIoU↑ Boundary odsF↑  
+
+> Depth RMSE↓ Normal mErr↓
+
+Fig. 3. Ablation study on the number of semantic tokens K on NYUDv2. 
+
+ing similar or better accuracy. This demonstrates the parameter efficiency of our multi-task dense prediction framework. 
+
+C. Effect of token count K in Semantic Token Distiller 
+
+To obtain compact cross-task representations, the Semantic Token Distiller aggregates the integrated features I′ with 
+
+K semantic tokens. We conduct ablation studies with the Swin-T backbone on the NYUDv2 dataset to investigate the impact of varying the token count K. Specifically, we evaluate 
+
+TABLE III ABLATION STUDY ON THE EFFECT OF MULTI -SCALE QUERY CONFIGURATIONS IN MT-MQLFB. Dataset scale Seg Depth Normal Boundary mIoU ↑ RMSE ↓ mErr ↓ odsF ↑
+
+NYUDv2 (K = 1024 )1 44.17 0.6254 20.51 76.00 3 44.10 0.5985 20.35 76.02 5 43.85 0.6014 20.34 75.96 (1,3,5) 46.03 0.5968 20.10 76.34 Dataset scale Seg. Parsing Sal. Normal Boundary mIoU ↑ mIoU ↑ maxF ↑ mErr ↓ odsF ↑
+
+PASCAL-Context (K = 512 )1 71.62 57.54 83.84 15.34 71.92 3 71.52 58.93 84.23 14.76 72.00 5 71.38 58.96 84.00 14.64 72.01 (1,3,5) 72.96 60.63 84.34 14.37 72.26 
+
+K ∈ { 256 , 512 , 1024 , 2048 }. For comparison, we establish baselines using only Preliminary Decoders (PD) with Swin-T and InvPT++. As illustrated in Fig. 3, our proposed method outperforms both PD and InvPT++ across most tasks for all values of K,with the sole exception of Depth, where the performance gap is marginal. This validates the effectiveness of the Semantic Token Distiller. Notably, a larger K does not guarantee better performance. When K increases from 512 to 2048, the Seg-mentation drops by 0.79 mIoU and Boundary decreases by 0.30 odsF. Among the four configurations, K = 512 yields the best overall performance, achieving 46.79 mIoU on Seg., 19.82 mErr on Normal, and 76.60 odsF on Boundary. This observation suggests that while a sufficient number of tokens is necessary to capture semantic details, an excessive number may introduce redundancy into the semantic representation rather than contributing beneficial cross-task semantic depen-dencies. 
+
+D. Ablation of multi-scale queries in MT-MQLFB 
+
+To investigate the impact of multi-scale queries within our proposed MT-MQLFB, we conduct an ablation study on different scale configurations using a Swin-T backbone. As de-ATRC InvPT++ GT Ours Input Seg. Depth Normal Boundary Fig. 4. Visual comparison on the NYUDv2 dataset. 
+
+scribed in section II-B, our multi-task multi-scale query linear attention maintains queries with distinct receptive fields. We compare individual single-scale configurations s ∈ { 1, 3, 5}
+
+against the proposed multi-scale query strategy s = {1, 3, 5}.Notably, when s = 1 , the module degenerates to standard linear attention. Table III presents the quantitative comparisons. The results demonstrate that the multi-scale configuration yields superior performance across all tasks compared to any single-scale counterpart. Single-scale settings struggle to balance perfor-mance across tasks. For example, Scale 1 performs adequately on Seg (44.17 mIoU). but poorly on Depth (0.6254 RMSE) in NYUDv2 dataset, whereas Scale 5 favors Normal but compromises Seg. accuracy in the PASCAL-Context dataset. We attribute the success of the aggregated strategy to our multi-query attention. By treating different scales as distinct queries, the model can simultaneously capture cross-task inter-actions at varying receptive fields. Consequently, the combined configuration {1, 3, 5} achieves the overall best results on both datasets, validating that fusing multi-scale queries is essential for cross-task representation in linear attention mechanism. 
+
+E. Qualitative Study 
+
+To better understand the performance of our MTLSI-Net, we provide qualitative visualizations of multi-task predictions in Fig. 4. We compare our method, using Swin-L as the backbone, with ATRC and InvPT++ on the NYUDv2 dataset. For Seg., our results exhibit sharper object boundaries and more precise object delineation. We attribute the improvement to the effective integration of the Boundary task, which pro-vides explicit structural cues that refine segmentation borders. For Depth, MTLSI-Net accurately captures the details of nearby objects (typically shown in blue) while maintaining high consistency in the outlines of the distant field (shown in red). The Normal prediction shows smooth orientations within planar regions, and Boundary captures both salient and subtle edges. IV. C ONCLUSION 
+
+In this paper, we tackle the challenge of modeling global cross-task dependencies on high-resolution features for multi-task dense prediction. We present MTLSI-Net, a frame-work that shifts the paradigm from computationally expen-sive quadratic self-attention to a linear-complexity alternative without compromising representation capability. The effective-ness stems from three components: the MT-MQLFB captures multi-scale cross-task dependencies via linear attention; the Semantic Token Distiller eliminates spatial redundancy to form compact representations; and the CWIB seamlessly integrates these global semantics with local features. Comprehensive evaluations demonstrate that MTLSI-Net achieves state-of-the-art results with superior parameter efficiency. Future work will explore extending this linear interaction paradigm to video-based multi-task learning. REFERENCES [1] V. Simon, G. Stamatios, V. Wouter, et al., “Multi-task learning for dense prediction tasks: A survey,” TPAMI , vol. 44, no. 7, pp. 3614–3633, 2022. [2] H. Man, X. Fan, C. Lu, R.and Yu, and D. Zhao, “Metaip: Meta-network-based intra prediction with customized parameters for video coding,” 
+
+TCSVT , vol. 34, no. 10, pp. 9591–9605, 2024. [3] H. Man, X. Fan, R. Xiong, and D. Zhao, “Tree-structured data clustering-driven neural network for intra prediction in video coding,” 
+
+TIP , vol. 32, pp. 3493–3506, 2023. [4] W. Li, W. Han, H. Man, W. Zuo, X. Fan, and Y. Tian, “Language-guided graph representation learning for video summarization,” TPAMI ,vol. 48, no. 3, pp. 3216–3232, 2026. [5] W. Li, W. Han, L. Deng, R. Xiong, and X. Fan, “Spiking variational graph representation inference for video summarization,” TIP , vol. 34, pp. 5697–5709, 2025. [6] I. Misra, A. Shrivastava, A. Gupta, and M. Hebert, “Cross-stitch networks for multi-task learning,” in CVPR , 2016. [7] L. Zhang, X. Liu, and H. Guan, “Automtl: A programming framework for automating efficient multi-task learning,” in NIPS , 2022. [8] Y. Gao, H. Bai, Z. Jie, et al., “Mtl-nas: Task-agnostic neural architecture search towards general-purpose multi-task learning,” in CVPR , 2020. [9] H. Ye and D. Xu, “Taskprompter: Spatial-channel multi-task prompting for dense scene understanding,” in ICLR , 2023. [10] Z. Zhang, Z. Cui, C. Xu, et al., “Pattern-affinitive propagation across depth, surface normal and semantic segmentation,” in CVPR , 2019. [11] V. Simon, G. Stamatios, and V. Luc, “Mti-net: Multi-scale task interaction networks for multi-task learning,” in ECCV , 2020. [12] L. Zhou, Z. Cui, C. Xu, et al., “Pattern-structure diffusion for multi-task learning,” in CVPR , 2020. [13] H. Ye and D. Xu, “Invpt++: Inverted pyramid multi-task transformer for visual scene understanding,” TPAMI , vol. 46, no. 12, pp. 7493–7508, 2024. [14] S. Sirejiding, B. Bayramli, Y. Lu, et al., “Task-interaction-free multi-task learning with efficient hierarchical feature representation,” in ACM MM , 2024. [15] D. Xu, W. Ouyang, X. Wang, and N. Sebe, “Pad-net: Multi-tasks guided prediction-and-distillation network for simultaneous depth estimation and scene parsing,” in CVPR , 2018. [16] X. Xu, H. Zhao, V. Vibhav, et al., “Mtformer: Multi-task learning via transformer and cross-task reasoning,” in ECCV , 2022. [17] A. Vaswani, N. Shazeer, N. Parmar, et al., “Attention is all you need,” in NIPS , 2017. [18] Y. Xu, Y. Yang, and L. Zhang, “Demt: Deformable mixer transformer for multi-task learning of dense prediction,” in AAAI , 2023. [19] H. Ye and D. Xu, “Inverted pyramid multi-task transformer for dense scene understanding,” in ECCV , 2022. [20] Y. Xu, X. Li, H. Yuan, et al., “Multi-task learning with multi-query transformer for dense prediction,” TCSVT , vol. 34, no. 2, pp. 1228– 1240, 2024. [21] A. Katharopoulos, A. Vyas, N. Pappas, and F. Fleuret, “Transformers are RNNs: Fast autoregressive transformers with linear attention,” in 
+
+ICML , 2020. [22] H. Cai, J. Li, M. Hu, and S. Han, “Efficientvit: Lightweight multi-scale attention for high-resolution dense prediction,” in ICCV , 2023. [23] K. Ahn, X. Cheng, M. Song, et al., “Linear attention is (maybe) all you need (to understand transformer optimization),” in ICLR , 2024. [24] Z. Zhang, H. Cai, and S. Han, “Efficientvit-sam: Accelerated segment anything model without performance loss,” in CVPR , 2024. [25] J. Chen, C. Han, J. Chen, et al., “Deep compression autoencoder for efficient high-resolution diffusion models,” in ICLR , 2025. [26] H. Liu, H. Man, X. Wang, W. Li, and D. Zhao, “Mrt: Learning compact representations with mixed rwkv-transformer for extreme image compression,” in AAAI , 2026. [27] W. Li, P. Wang, R. Xiong, and X. Fan, “Spiking tucker fusion transformer for audio-visual zero-shot learning,” TIP , vol. 33, pp. 4840– 4852, 2024. [28] Z. Wang, H. Man, W. Li, X. Wang, X. Fan, and D. Zhao, “T-gvc: Trajectory-guided generative video coding at ultra-low bitrates,” in 
+
+AAAI , 2026. [29] P. Kohli N. Silberman, D. Hoiem and R. Fergus, “Indoor segmentation and support inference from rgbd images,” in ECCV , 2012. [30] R. Mottaghi, X. Chen, X. Liu, et al., “The role of context for object detection and semantic segmentation in the wild,” in CVPR , 2014. [31] J. Wang, K. Sun, T. Cheng, et al., “Deep high-resolution representation learning for visual recognition,” IEEE Transactions on Pattern Analysis and Machine Intelligence , vol. 43, no. 10, pp. 3349–3364, 2021. [32] H. Ye and D. Xu, “Taskexpert: Dynamically assembling multi-task representations with memorial mixture-of-experts,” in ICCV , 2023. [33] D. Br¨ uggemann, M. Kanakis, A. Obukhov, et al., “Exploring relational context for multi-task dense prediction,” in ICCV , 2021. [34] Z. Liu, Y. Lin, Y. Cao, et al., “Swin transformer: Hierarchical vision transformer using shifted windows,” in ICCV , 2021. [35] D. Jia, D. Wei, R. Socher, et al., “Imagenet: A large-scale hierarchical image database,” in ICCV , 2009.

@@ -1,0 +1,670 @@
+Title: Towards Identification and Intervention of Safety-Critical Parameters in Large Language Models
+
+URL Source: https://arxiv.org/pdf/2604.08297v1
+
+Published Time: Fri, 10 Apr 2026 01:28:45 GMT
+
+Number of Pages: 20
+
+Markdown Content:
+# Towards Identification and Intervention of Safety-Critical Parameters in Large Language Models 
+
+Weiwei Qi 1, *, Zefeng Wu 1, *, Tianhang Zheng 1,2, †, Zikang Zhang 1,Xiaojun Jia 3, Zhan Qin 1,2 , Kui Ren 1,2 
+
+> 1
+
+The State Key Laboratory of Blockchain and Data Security, Zhejiang University 
+
+> 2
+
+Hangzhou High-Tech Zone (Binjiang) Institute of Blockchain and Data Security 
+
+> 3
+
+Nanyang Technological University, Singapore 
+
+{weiweiqi, zthzheng, zzikang, qinzhan, kuiren}@zju.edu.cn zefengwu183@gmail.com, jiaxiaojunqaq@gmail.com 
+
+Abstract 
+
+Ensuring Large Language Model (LLM) safety is crucial, yet the lack of a clear understand-ing about safety mechanisms hinders the de-velopment of precise and reliable methodolo-gies for safety intervention across diverse tasks. To better understand and control LLM safety, we propose the Expected Safety Impact (ESI) framework for quantifying how different pa-rameters affect LLM safety. Based on ESI, we reveal distinct safety-critical patterns across different LLM architectures: In dense LLMs, many safety-critical parameters are located in value matrices (V) and MLPs in middle layers, whereas in Mixture-of-Experts (MoE) models, they shift to the late-layer MLPs. Leveraging ESI, we further introduce two targeted inter-vention paradigms for safety enhancement and preservation, i.e. , Safety Enhancement Tun-ing (SET) and Safety Preserving Adaptation (SPA). SET can align unsafe LLMs by updat-ing only a few safety-critical parameters, ef-fectively enhancing safety while preserving original performance. SPA safeguards well-aligned LLMs during capability-oriented inter-vention ( e.g. , instruction tuning) by prevent-ing disruption of safety-critical weights, al-lowing the LLM to acquire new abilities and maintain safety capabilities. Extensive eval-uations on different LLMs demonstrate that SET can reduce the attack success rates of unaligned LLMs by over 50% with only a 100-iteration update on 1% of model weights. SPA can limit the safety degradation of aligned LLMs within 1% after a 1,000-iteration in-struction fine-tuning on different tasks.Our code is available at: https://github.com/ ZJU-LLM-Safety/SafeWeights-ACL .
+
+1 Introduction 
+
+Despite advances in safety alignment techniques for Large Language Models (LLMs) (Ouyang et al., 
+
+> *Equal contribution.
+> †Corresponding author.
+
+2022; Rafailov et al., 2023; Ethayarajh et al., 2024; Guan et al., 2024), safeguarding LLMs during adap-tation to various tasks remains a fundamental chal-lenge (Fraser et al., 2025; Qi et al., 2025). This challenge is particularly pressing given the esca-lating arms race in adversarial attacks and defense mechanisms across diverse AI systems and large language models (Ren et al., 2020; Zheng et al., 2019; Huang et al., 2025b,a; Xiu et al., 2025; Qi et al., 2026; Li et al., 2026). The difficulty in mit-igating these vulnerabilities stems primarily from insufficient knowledge of the internal safety mech-anisms. On the one hand, it is essential but still dif-ficult to rapidly enhance LLM safety without alter-ing the LLM’s core knowledge or structures (Tou-vron et al., 2023; Wei et al., 2023). On the other hand, although safety alignment techniques such as Reinforcement Learning from Human Feedback (RLHF) (Ouyang et al., 2022) can instill founda-tional safeguards into pretrained LLMs, the aligned safety behaviors exhibit significant fragility dur-ing subsequent task-specific tuning (Lermen et al., 2023; Qi et al., 2024; Zhan et al., 2024; Zheng et al., 2026). All these challenges underscore the urgent need for a better understanding of LLM safety mechanisms and lightweight intervention methodologies to improve or maintain LLM safety in various downstream tasks (Li et al., 2024a; Yang et al., 2025c; Li et al., 2025c; Hao et al., 2025). To better understand the LLM safety mecha-nism, we propose a framework called Expected Safety Impact (ESI) to identify which parameters, modules, and layers of LLMs are safety-critical. Under ESI, we first formulate a metric called ex-pected safety value, defined as the expectation of safety scores over the harmful input distribu-tion 1, i.e., S(θ) = Ex∼D ,y ∼pθ (·| x)[s(y)] , to quan-tify the LLM’s overall safety capability. We then     
+
+> 1Drefers to the harmful input distribution, and s(y)refers to a safety score on the response y
+> arXiv:2604.08297v1 [cs.CR] 9 Apr 2026
+
+naturally measure the impact of weight interven-tion on S(θ) through first-order Taylor expansion: 
+
+∆S ≈ ∇ θi S(θ) · ∆θi, which yields our formulated ESI metric, i.e., |σ(θi)∇θi S(θ)|. Compared with prior works (Li et al., 2025a; Xie et al., 2024b; Lee et al., 2019; Wei et al., 2024), ESI mainly has two advantages: First, ESI employs the parame-ter’s standard deviation σ(θi) to estimate the ex-pected variation magnitude ∆θi, while the prior metrics, such as |∇ θi L(θ)| (Li et al., 2025a; Xie et al., 2024b) or |θi∇θi L(θ)| (Lee et al., 2019; Wei et al., 2024), assume parameter variations are ei-ther uniform or proportional to static weight mag-nitudes, neglecting the distinct statistical distribu-tions across different modules and layers. Second, our expected safety value S(θ) is a more intuitive and precise metric for safety analysis than the L(θ)
+
+(e.g. , cross-entropy loss) used in the prior works. Therefore, ESI achieves better performance in iden-tifying safety-critical parameters than prior metrics. The computation of the ESI metric requires es-timating both the gradient of S(θ) and weight deviation σ(θi) from a single LLM checkpoint. However, since the generation process involves discrete token sampling, the safety score is non-differentiable with respect to θ. To overcome this intractability, we propose leveraging a differen-tiable judge model to estimate s(yi). To compute 
+
+∇θs(yi), we apply the chain rule by relaxing dis-crete tokens in yi as a continuous gumbel-softmax vector ˜yi, i.e., ∇θs ≈ ∂s ∂ ˜yi · M · ∂ ˜yi 
+
+> ∂θ
+
+, where M is the projection matrix bridging the vocabulary spaces of the target LLM and the judge model. To validate the efficacy of ESI in identifying safety-critical parameters, we conduct extensive experiments and demonstrate that perturbing only the top-ranked 1% of parameters identified by ESI will significantly degrade the LLM’s safety capabil-ities. By using ESI to analyze existing LLMs, we observe distinct safety-critical patterns across dif-ferent LLM architectures: In dense models, the self-attention value matrices within the middle layers have a significant impact on the safety capabilities, whereas in Mixture-of-Experts (MoE) models, the top-ranked critical safety parameters shift toward MLP experts in the late layers. Based on the ESI framework, we further propose two targeted intervention paradigms. For under-aligned models, we introduce Safety Enhancement Tuning (SET) to update a small number of safety-critical parameters on safe data, which can rapidly improve LLM safety and simultaneously preserve original performance. For adapting well-aligned models to downstream tasks, we introduce Safety Preserving Adaptation (SPA) to prevent the degra-dation of the safety capability by only tuning the non-safety-sensitive parameters. Our contributions are summarized as follows: • We establish the expected safety impact (ESI) framework to identify safety-critical parame-ters via a new metric |σ(θi)∇θi S(θ)|, propos-ing a differentiable judge-guided strategy to estimate ∇θS(θ). We further verify the effec-tiveness of ESI by a weight perturbation on recent LLMs. • Based on ESI, we reveal distinct safety-critical patterns across different LLM architectures: safety-critical weights are concentrated in middle-layer value matrices for dense mod-els, but shift toward late-layer MLP experts in MoE models. • We further develop two targeted intervention paradigms upon the ESI framework: Safety Enhancement Tuning (SET), which updates only a small number of safety-critical parame-ters to enhance safety; and Safety Preserving Adaptation (SPA), which freezes the critical parameters and adapts LLMs by exclusively updating non-safety-sensitive parameters to maintain the safety capability during down-stream task tuning. 
+
+2 Related Work 
+
+Existing studies have conducted preliminary in-vestigations into the safety mechanisms of LLMs. Zou et al. (2023a) and Zheng et al. (2024) use the residual stream to analyze safety features. Li et al. (2025b) identifies safety-critical layers via hidden representations. Recent studies identify safety neurons via deactivation importance (Zhao et al., 2025) or inference-time activation contrast-ing in MLP modules (Chen et al., 2024). Wei et al. (2024) identifies important safety neurons using pruning metrics like SNIP (Lee et al., 2019) and Wanda (Sun et al., 2024). Despite these advances, prior methods often require comparative pairs of aligned and unaligned models (Chen et al., 2024) or rely on static assumptions of uniform parame-ter variations to estimate sensitivity (Zhao et al., 2025; Wei et al., 2024). Crucially, existing works are limited to aligned dense models and neglect the distinct mechanisms within MoE architectures. Part I: Identifying Safety-Critical   
+
+> Parameters (The ESI Framework)
+> Parameter Analysis &
+> Metric Formulation
+> Harmful Query
+> LLM Safety
+> Mechanisms
+> Target LLM
+> Differentiable
+> Judge
+> Model
+> Output Logits
+> Judge
+> Model
+> Estimate
+> the variation:
+> ESI Metric :
+> Prior methods
+> Ou rs (ESI)
+
+σ ▽S         
+
+> Safe-Critical
+> Non-Critical
+> Identified Top-k%
+> Safety-Critical
+> Parameters
+> Part II: Verification &
+> Architecture Analysis
+> Verification Gaussian noise
+> Safety
+> Degradation
+> Perturb
+> Top-k%
+> Results
+> Part III: Targeted intervention
+> safety fine-tuning paradigms
+> Dense Models MOE Models
+> Middle Layer
+> Self Attention
+> Value Matrices
+> Late Layer
+> MLP Experts
+> Layer Norm
+> QKV
+> Layer Norm
+> FFN
+> Layer Norm
+> Layer Norm
+> Attention
+> router
+> MLP
+> E1En···
+> (a) Safety Enhancement Tuning (SET)
+> for Under-aligned Models
+> (b) Safety Preserving Adaptation (SPA)
+> for Well-aligned Models
+> Unsafe
+> LLM
+> Safe Data
+> Update ONLY Critical
+> Weights on Safe Data
+> Rapidly
+> Aligned LLM
+> Safe
+> LLM
+> Task Data Trainable Frozen
+> Task-Adapted
+> Safe LLM
+> Update ONLY Non-
+> Critical Weights on
+> Task Data
+
+Figure 1: Overview of our proposed framework. We identify safety-critical parameters using the ESI metric (Part I), analyze architecture-specific safety patterns (Part II), and introduce two targeted paradigms for safety enhancement and preservation (Part III). 
+
+3 Expected Safety Impact 
+
+To better understand the underlying safety mecha-nisms of LLMs, we introduce the Expected Safety Impact (ESI) framework to identify which param-eters are critical to LLM safety. In this paper, a parameter is considered more safety-critical if an intervention applied to it yields a more significant impact on LLM safety. 
+
+3.1 Formulation of Expected Safety Impact 
+
+We first quantify the safety capability of an LLM parameterized by θ ∈ Rd using the expected safety value over harmful queries. Let Dharm de-note the distribution of harmful prompts, and let 
+
+y ∼ pθ(· | x) be the response generated for an input x. We formulate the expected safety value 
+
+S(θ) as follows: 
+
+S(θ) = Ex∼D harm Ey∼pθ (·| x) [s(y)] , (1) where s(y) is a scalar scoring function quantify-ing the safety of response y. Here a higher S(θ)
+
+indicates that the LLM outputs are more safe. To identify safety-critical parameters, we ana-lyze the sensitivity of S(θ) to weight perturbations. Given a perturbation ∆θ, the resulting change in the expected safety value S(θ) is approximated via first-order Taylor expansion: 
+
+∆S(θ) ≈ ∇ θS(θ)⊤∆θ =
+
+dX
+
+i=1 
+
+∂S
+
+∂θ i
+
+∆θi. (2) Eq. 2 indicates that the safety impact is jointly determined by the gradient ∇θi S and the parame-ter variation ∆θi. Prior attribution methods typi-cally rely on the raw gradient metric |∇ θi L(θ)| or the magnitude-weighted metric |θi∇θi L(θ)|. From the perspective of Eq. 2, these metrics implicitly assume that the parameter variation ∆θi is either uniform or proportional to the static weight mag-nitude |θi|, neglecting the heterogeneous statistical distributions across different modules and layers. To address this limitation, we employ the standard deviation σ(θi) as a statistically grounded proxy for the variation scale ∆θi. Furthermore, unlike prior works that rely on generic objective functions 
+
+L(θ) (e.g. , cross-entropy loss), we utilize the ex-pected safety value S(θ), which provides a more intuitive and precise measure of safety capabilities. Combining these two advancements, we define the 
+
+Expected Safety Impact (ESI) metric as: ESI (θi) ≜ |σ(θi)∇θi S(θ)|. (3) 
+
+3.2 Estimation of ∇θS(θ)
+
+The computation of the ESI metric relies on the gradient ∇θS(θ). However, since the generation process y ∼ pθ(·| x) involves discrete token sam-pling, the safety score is non-differentiable w.r.t. θ.To overcome this intractability, we leverage a dif-ferentiable judge model J to estimate the gradient. Specifically, we define the safety score s(y) as the probability of response y being safe: 
+
+s(y) = PJ (safe | y). (4) Under this definition, we approximate the expected safety value S(θ) by sampling N input-output pairs 
+
+{(xi, y i)}Ni=1 from the joint distribution (xi, y i) ∼
+
+(Dharm , p θ(· | x)) , i.e., 
+
+˜S(θ) = 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+s(yi). (5) To compute the gradient, we then apply the chain rule to express ∇θs(yi) as: 
+
+∇θs(yi) = ∂P J (safe | yi)
+
+∂y i
+
+∂y i
+
+∂θ . (6) However, the discrete nature of the tokens in y
+
+creates a non-differentiable barrier. To restore end-to-end differentiability, we substitute the tokens with the Gumbel-Softmax relaxation. Specifically, we apply output logits from the LLM l ∈ RV (V
+
+refers to the vocabulary size) to compute a contin-uous gumbel-softmax vector ˜y for approximating 
+
+y:
+
+˜y = Softmax 
+
+ l + gτ
+
+
+
+∈ RV , (7) where g is Gumbel noise, and τ is the tempera-ture. At a low temperature τ , ˜y serves as a high-fidelity substitute for the discrete tokens, faithfully approximating the original distribution while en-abling backpropagation. While the relaxation yields a differentiable vec-tor, a structural incompatibility persists due to the different vocabulary spaces between the LLM and the judge model. To bridge these two vo-cabulary spaces, we construct a projection matrix 
+
+M ∈ { 0, 1}VJ ×V , which can map the identical tokens of the two distinct vocabulary spaces. Let Dec (·) denote the decoding function from token IDs to tokens, then Mij can be defined as: 
+
+Mij =
+
+(
+
+1 if Dec J (i) = Dec (j),
+
+0 otherwise. (8) With this projection matrix, we finally can approxi-mate ∇θS(θ) by 
+
+∇θ ˜S ≈ 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+ ∂P J
+
+∂ ˜yi
+
+· M · ∂ ˜yi
+
+∂θ 
+
+
+
+. (9) 
+
+3.3 A Concrete Walkthrough Example 
+
+To improve clarity and illustrate how the framework operates in practice, we provide a concrete end-to-end walkthrough of identifying a safety-critical parameter θi using ESI: • Step 1 (Input): We sample harmful queries (e.g. , from AdvBench) and input them into the LLM. • Step 2 (Safety Scoring): We evaluate the LLM-generated responses to obtain their safety scores using a differentiable judge model. • Step 3 (Gradient Computation): We com-pute the gradient of the expected safety value with respect to the parameters ( ∇θS). • Step 4 (Variation Estimation): We compute the standard deviation of the parameter ( σ(θi))to estimate the parameter’s expected variation scale during fine-tuning. • Step 5 (ESI & Intervention): The ESI score is calculated as |σ(θi)∇θi S| based on the first-order Taylor expansion. Parameters ranking in the top-k% (e.g. , 1%) are identified as safety-critical, and subsequently updated for rapid alignment (SET) or frozen during downstream adaptation (SPA). 
+
+3.4 Verification: Perturbation Analysis 
+
+To verify the effectiveness of ESI in identify-ing safety critical components, we conduct a perturbation-based sensitivity analysis on recent LLMs. The underlying intuition is that if ESI cap-tures the safety-critical components, perturbing the parameters with high ESI should significantly de-grade the LLM’s safety capability. Specifically, we add Gaussian noise on the top-k% parameters iden-tified by ESI and monitor the increase in Attack Success Rate (ASR). Furthermore, we compare top-k% with random-k% parameters perturbation to verify that the safety deterioration stems from the ability of ESI to identify safety-critical weights rather than the general perturbation noise. 
+
+3.4.1 Experimental Setup Models. We conduct perturbation-based verifica-tion experiments on recent LLMs, covering both Dense and MoE architectures. In the main text, we focus on representative models including Llama3-8B/70B-it (Grattafiori et al., 2024) (Dense) and Model Method HarmBench (ASR %) WildJailbreak (ASR %) Base 0.1% 0.5% 1.0% 3.0% 5.0% Base 0.1% 0.5% 1.0% 3.0% 5.0% Qwen2.5-14B -base                                                                                                                                                                                                                                         
+
+> Random 55.1 55.0 55.1 55.1 55.2 55.3 67.6 67.5 67.6 67.6 67.8 67.9 SN 54.6 54.8 55.0 56.1 57.0 66.8 67.0 67.5 68.4 69.2 GMT 54.7 55.0 55.3 56.8 58.2 67.0 67.5 68.0 69.3 70.5 Wanda 54.8 55.1 55.4 57.0 58.0 67.2 67.7 68.2 69.5 70.3 SNIP 55.1 55.5 56.0 57.9 59.2 67.5 68.1 68.8 70.2 71.6
+> ESI 73.5 76.8 78.5 80.1 81.0 82.5 84.0 85.6 87.9 89.8 Llama3-8B-it
+> Random 15.3 15.3 15.4 15.6 16.0 16.5 30.5 30.8 31.1 31.6 32.5 33.5 SN 24.5 26.8 28.5 30.2 31.8 35.2 37.0 38.8 40.5 42.6 GMT 26.2 29.5 32.4 36.0 40.5 36.8 40.5 43.2 47.0 51.2 Wanda 27.5 33.0 36.8 41.0 45.6 37.5 43.8 48.0 52.2 56.5 SNIP 28.2 35.5 37.6 44.0 47.8 38.6 46.2 50.5 54.8 59.2
+> ESI 42.4 56.2 59.1 61.3 62.0 49.3 64.5 67.5 70.6 73.4 Llama3-70B-it
+> Random 16.2 16.3 16.5 16.9 17.5 18.2 34.2 31.5 31.8 32.2 32.8 33.4 SN 27.0 29.5 31.8 34.2 36.5 38.2 41.0 43.5 46.0 48.5 GMT 26.5 33.0 37.5 42.5 46.0 36.8 40.2 43.0 46.2 49.5 Wanda 28.0 35.2 40.0 45.2 49.0 40.0 44.2 47.5 51.0 54.5 SNIP 30.2 37.5 42.8 48.5 52.2 42.0 46.5 50.8 54.2 57.5
+> ESI 44.2 49.1 56.3 62.1 67.2 50.4 56.2 65.2 68.5 70.7 Qwen3-30B -A3B-it (MoE)
+> Random 3.2 3.2 3.3 3.5 3.8 4.2 30.3 29.5 29.7 30.1 30.6 31.1 SN 3.5 4.2 10.5 12.0 13.8 30.8 31.5 31.0 32.8 34.5 GMT 3.0 3.5 5.8 12.0 14.5 30.5 31.2 32.5 34.8 37.0 Wanda 3.8 5.2 7.5 15.0 18.2 30.8 32.0 33.5 36.2 39.5 SNIP 5.5 7.0 9.8 17.2 20.0 31.2 32.8 34.8 38.5 41.5
+> ESI 17.6 21.8 24.2 32.4 36.2 41.6 44.4 50.6 53.7 58.5
+
+Table 1: Verification of safety-critical parameters via perturbation analysis. We report the ASR on HarmBench and WildJailbreak when perturbing the top-k% parameters identified by ESI and baseline methods. 
+
+Qwen3-30B-A3B-it (Yang et al., 2025a) (MoE). Notably, we also include Qwen2.5-14B-base (Yang et al., 2025b) to assess ESI’s applicability to under-aligned models. Comprehensive results on other models are detailed in Appendix B.4. 
+
+ESI Computation. To estimate ESI, we employ the proposed judge-guided differentiable estima-tion, which ensures robust gradient computation for both aligned and unaligned models. For the estimation in Eq. 9, we sample prompts from Ad-vBench (Zou et al., 2023b) and utilize Llama-Guard-3-8B (Grattafiori et al., 2024) as the judge model. We also verified that using other judge models, such as GPTfuzz (Yu et al., 2023), yields similar results (see Appendix B.5). 
+
+Perturbation Setup. To verify the effectiveness of ESI, we perturb the top-k% parameters iden-tified by ESI and report the safety degradation of the evaluated LLMs, with k% being set as 
+
+{0.1% , 0.5% , 1% , 3% , 5% }. For comparison, we further rank the parameters using SN (Zhao et al., 2025), GMT (Li et al., 2025a), Wanda (Sun et al., 2024), and SNIP (Wei et al., 2024), and evaluate the safety degradation caused by perturbing the top-k%parameters identified by these methods. We also include a Random-k% baseline, where parameters are selected uniformly at random. 
+
+Evaluation and Metrics. Since ESI is estimated over prompts sampled from AdvBench, we eval-uate safety degradation on two other widely used datasets, i.e., HarmBench (Mazeika et al., 2024) and WildJailbreak (Jiang et al., 2024b), to demon-strate both the efficacy and generalizability of ESI. We assess the ASR using GPT-4o following the methodology of Zeng et al. (2024). 
+
+3.4.2 Experiment Results 
+
+The results in Table 1 indicate that perturbing pa-rameters identified by ESI substantially increases ASR, achieving consistently stronger impacts than other baselines. For instance, on Llama3-8B-it, per-turbing only 1% of parameters identified by ESI increases ASR from 15.3 to 59.1 on HarmBench, whereas the other baselines only raise ASR to no more than 37.6. Meanwhile, randomly perturbing an equivalent fraction of parameters results in only marginal ASR changes, even at higher perturbation ratios. These results verify that ESI successfully identifies safety-critical parameters. 
+
+3.5 Observations on Mainstream LLMs 
+
+Based on ESI, we further explore where safety-critical parameters are located in different LLMs. Figure 2 provides an overview of the layer-wise distributions across architectures. In dense LLMs, safety-critical parameters are primarily concen-trated in the middle layers, specifically within the self-attention value matrices (Attn V). In contrast, MoE LLMs exhibit a clear shift toward later layers, where the MLP experts are more critical. Figure 2: Layer-wise Distribution of Aggregated ESI. We sum the ESI of parameters within each layer to quantify their total safety impact, which reveals distinct layer-wise distribution patterns across different architectures. 
+
+4 ESI-Guided Intervention Paradigms 
+
+Building upon the proposed expected safety im-pact metric, we formulate the complete ESI frame-work that seamlessly bridges parameter identifica-tion with targeted model tuning, as summarized in Algorithm 1. Leveraging the identified safety-critical subset ΘSaf e , we introduce two specialized intervention paradigms tailored for LLMs at differ-ent alignment stages: Safety Enhancement Tuning (SET) focuses on rapidly aligning under-aligned models, while Safety Preserving Adaptation (SPA) aims to safeguard well-aligned models during adap-tation to downstream tasks. 
+
+4.1 SET 
+
+SET enhances the safety of under-aligned LLMs by fine-tuning only safety-critical parameters on a safety dataset Dsafe . Given the full parameter set Θ,we use ESI scores to identify the safety-critical sub-set ΘSafe ⊂ Θ ranked in the top-k%. The remain-ing parameters are frozen to preserve the model’s pre-trained knowledge. We optimize the parame-ters θ ∈ ΘSafe by minimizing the following safety alignment loss LSET :
+
+LSET = −E(x,y )∼D safe 
+
+> |y|
+
+X
+
+> t=1
+
+log pθ(yt|x, y <t ), (10) where (x, y ) represents a prompt-response pair from Dsafe . By restricting updates to safety-critical parameters, SET avoids disrupting weights es-sential for general tasks, thereby preserving the model’s original performance. The identification of ΘSafe is flexible in granularity, enabling interven-tions ranging from individual parameters to struc-tural modules like MLP or attention heads. This ap-proach effectively balances alignment effectiveness with training efficiency, achieving rapid safety en-hancement without the high costs of full-parameter fine-tuning. 
+
+4.1.1 Experimental Setup for SET Data. We adopt two safety training datasets in our experiments, i.e., CB-Safety (Zou et al., 2024) and R1-Safety (Guo et al., 2025). 
+
+Models. Experiments are conducted on the base versions of Qwen2.5-7B, Qwen2.5-14B (Yang et al., 2025b), and Llama3-8B (Grattafiori et al., 2024). These LLMs have not undergone explicit safety alignment ( e.g. , supervised fine-tuning or RLHF), making them suitable for evaluating the effectiveness of safety fine-tuning. 
+
+Settings and Baselines. For SET, we fine-tune the top-k% parameters identified by ESI, where we set k = 1% , for 100 iterations. We compare SET against Random selection and SN-Tune (Zhao et al., 2025), which also update only 1% of the parameters. Also, we include LoRA (Hu et al., 2022) and SafeLoRA (Hsu et al., 2024) for compar-ison. Detailed experimental settings and additional ablation studies are provided in Appendix C. 
+
+Evaluation and Metrics. LLM safety is mea-sured by ASR on HarmBench and WildJailbreak. 
+
+4.1.2 Results of SET Main Results. The results in Table 2 indicate that SET substantially enhances model safety, achiev-ing consistently superior performance compared to other baselines. For instance, on Llama3-8B trained with R1-Safety, SET dramatically reduces the ASR on WildJailbreak from 62.5% to 19.1%, whereas the strongest baseline only lowers it to 37.4%. This confirms SET’s effectiveness in achieving significant safety alignment through lim-ited updates to the safety-critical weights. To fur-ther demonstrate the preservation of the model’s Algorithm 1 ESI Framework: From Identification to Intervention 
+
+Require: Target LLM θ, Harmful dataset Dharm , Safety dataset Dsaf e , Task dataset Dtask , Selection ratio k,Learning rate η.
+
+Ensure: Aligned or Task-adapted LLM θ∗.
+
+// Phase I: Identification of Safety-Critical Parameters 
+
+1: Sample N queries and generate responses: 
+
+{(xi, y i)}Ni=1 ∼ (Dharm , p θ (·| x)) 
+
+2: Compute soft token vector via Gumbel-Softmax: 
+
+˜yi ← Softmax 
+
+ li+gτ
+
+
+
+3: Estimate expected safety gradient via Differentiable Judge J :4: ∇θ ˜S ← 1
+
+> N
+
+PNi=1 
+
+h ∂P J (safe |˜yi)  
+
+> ∂˜yi
+
+· M · ∂ ˜yi
+
+> ∂θ
+
+i
+
+5: Compute standard deviation σ(θi) from the model check-point 6: Calculate ESI Metric: ESI (θi) ≜ |σ(θi)∇θi S(θ)|
+
+7: Identify safety-critical subset ΘSaf e (Top-k% ranked by ESI) 
+
+// Phase II: Targeted Intervention Paradigms 
+
+8: if Scenario: Under-aligned Model then 
+
+9: // Safety Enhancement Tuning (SET) 
+
+10: Freeze θ / ∈ ΘSaf e , set θ ∈ ΘSaf e as trainable 11: Compute alignment loss on Dsaf e :
+
+LSET ← − E(x,y )∼D saf e 
+
+P 
+
+> t
+
+log pθ (yt|x, y <t )
+
+12: Update critical weights: 
+
+θ∗ ← Optimizer (θ, LSET , η )
+
+13: else if Scenario: Well-aligned Model Adaptation then 
+
+14: // Safety Preserving Adaptation (SPA) 
+
+15: Freeze θ ∈ ΘSaf e , set remaining θ / ∈ ΘSaf e as train-able 16: Compute downstream task loss on Dtask :
+
+LSP A ← − E(x,y )∼D task 
+
+P 
+
+> t
+
+log pθ (yt|x, y <t )
+
+17: Update non-critical weights exclusively: 
+
+θ∗ ← Optimizer (θ, LSP A , η )
+
+18: end if 
+
+19: return θ∗
+
+original performance in SET, we provide additional experimental results in Appendix C.3. 
+
+Effect of parameter selection ratio. Figure 3 shows how the parameter selection ratio k% affects safety performance. Overall, SET significantly re-duces the Attack Success Rate (ASR) with limited updates, while random selection is much less effec-tive. For example, on Llama3-8B, updating just 1% of parameters with SET drops the ASR from 41.2% to 9.1%, whereas random selection only lowers it to 35.0%. A similar trend appears on Qwen2.5-14B, where SET reduces the ASR from 55.1% to 10.1%, significantly outperforming the random baseline of 46.2%. Even when increasing the update ratio to 5%, random selection results remain high (above 20%), while SET successfully lowers the ASR to approximately 6% across both models.                                                                                                                                               
+
+> Model Method R1-Safety CB-Safety
+> HB ↓WJ ↓HB ↓WJ ↓
+> Qwen2.5 -7B-base
+> Base 72.4 77.2 72.4 77.2 Random 60.8 ∆11.6 ↓66.9 ∆10.3 ↓61.2 ∆11.2 ↓64.8 ∆12.4 ↓
+> LoRA 44.9 ∆27.5 ↓52.1 ∆25.1 ↓31.8 ∆40.6 ↓49.6 ∆27.6 ↓
+> SN-tune 43.7 ∆28.7 ↓50.9 ∆26.3 ↓29.7 ∆42.7 ↓47.5 ∆29.7 ↓
+> SafeLoRA 39.2 ∆33.2 ↓46.5 ∆30.7 ↓25.4 ∆47.0 ↓43.1 ∆34.1 ↓
+> SET 20.3 ∆52.1 ↓26.5 ∆50.7 ↓7.2 ∆65.2 ↓20.1 ∆57.1 ↓
+> Qwen2.5 -14B-base
+> Base 55.1 67.6 55.1 67.6 Random 47.3 ∆7.8 ↓59.8 ∆7.8 ↓46.2 ∆8.9 ↓59.1 ∆8.5 ↓
+> LoRA 34.6 ∆20.5 ↓49.5 ∆18.1 ↓23.4 ∆31.7 ↓41.6 ∆26.0 ↓
+> SN-tune 33.2 ∆21.9 ↓48.0 ∆19.6 ↓21.8 ∆33.3 ↓39.9 ∆27.7 ↓
+> SafeLoRA 28.9 ∆26.2 ↓42.7 ∆24.9 ↓17.9 ∆37.2 ↓33.8 ∆33.8 ↓
+> SET 7.4 ∆47.7 ↓14.7 ∆52.9 ↓4.1 ∆51.0 ↓10.1 ∆57.5 ↓
+> Llama3 -8B-base
+> Base 41.2 62.5 41.2 62.5 Random 34.8 ∆6.4 ↓55.6 ∆6.9 ↓32.7 ∆8.5 ↓55.1 ∆7.4 ↓
+> LoRA 26.9 ∆14.3 ↓43.8 ∆18.7 ↓18.4 ∆22.8 ↓38.6 ∆23.9 ↓
+> SN-tune 25.9 ∆15.3 ↓42.6 ∆19.9 ↓17.0 ∆24.2 ↓36.9 ∆25.6 ↓
+> SafeLoRA 22.1 ∆19.1 ↓37.4 ∆25.1 ↓13.6 ∆27.6 ↓30.9 ∆31.6 ↓
+> SET 7.4 ∆33.8 ↓19.1 ∆43.4 ↓5.2 ∆36.0 ↓14.3 ∆48.2 ↓
+
+Table 2: Comparison of ASR on HarmBench (HB) and WildJailbreak (WJ) across different fine-tuning methods. Models are fine-tuned using R1-Safety and CB-Safety datasets. 
+
+Figure 3: ASR on HarmBench under different parameter selection ratios k%. Models are trained on CB-Safety, comparing SET with random parameter selection on Qwen2.5-14B-base (left) and Llama3-8B-base (right). 
+
+4.2 Safety Preserving Adaptation (SPA) 
+
+When adapting aligned models to downstream tasks, it is essential to acquire new abilities and simultaneously prevent safety performance degra-dation. To achieve this goal, SPA freezes the safety-critical parameters ΘSafe identified by ESI and ex-clusively updates the remaining non-sensitive pa-rameters. For a downstream task dataset Dtask , we optimize the trainable subset of parameters θ /∈ ΘSafe by minimizing the task-specific loss LSPA :
+
+LSPA = −E(x,y )∼D task 
+
+|y|
+
+X
+
+t=1 
+
+log pθ(yt|x, y <t ). (11) By strictly confining gradient updates to non-safety-critical regions, SPA intrinsically circum-vents the conflict between task learning and safety preservation. This structural isolation ensures safe optimization dynamics, allowing the model to ac-quire new capabilities without undermining its in-herent safety mechanisms. Model Method AGNews MedicalQA GSM8K Acc ↑ HB ↓ WJ ↓ Score ↑ HB ↓ WJ ↓ Acc ↑ HB ↓ WJ ↓                                                                                                                                                                  
+
+> Llama3-8B-it
+> Base 78.0 15.0 30.5 80.5 15.0 30.5 71.1 15.0 30.5 Random 89.8 25.4 ∆10.4 ↑46.8 ∆16.3 ↑83.9 24.1 ∆9.1 ↑46.2 ∆15.7 ↑77.8 26.1 ∆11.1 ↑47.1 ∆16.6 ↑
+> RSN-Tune 90.2 23.9 ∆8.9 ↑44.9 ∆14.4 ↑84.2 22.8 ∆7.8 ↑44.1 ∆13.6 ↑77.5 24.6 ∆9.6 ↑45.3 ∆14.8 ↑
+> SPA 90.5 15.8 ∆0.8 ↑32.4 ∆1.9 ↑84.0 16.1 ∆1.1 ↑32.2 ∆1.7 ↑78.0 15.6 ∆0.6 ↑32.3 ∆1.8 ↑
+> Qwen2.5-7B-it
+> Base 79.6 32.0 58.0 77.8 32.0 58.0 73.1 32.0 58.0 Random 90.1 42.3 ∆10.3 ↑74.6 ∆16.6 ↑81.4 41.2 ∆9.2 ↑73.9 ∆15.9 ↑79.5 43.4 ∆11.4 ↑75.8 ∆17.8 ↑
+> RSN-Tune 90.6 40.8 ∆8.8 ↑72.7 ∆14.7 ↑81.0 39.9 ∆7.9 ↑72.1 ∆14.1 ↑79.3 41.9 ∆9.9 ↑73.6 ∆15.6 ↑
+> SPA 90.8 33.1 ∆1.1 ↑60.0 ∆2.0 ↑81.7 33.0 ∆1.0 ↑59.8 ∆1.8 ↑79.8 32.6 ∆0.6 ↑59.9 ∆1.9 ↑
+> Qwen2.5-14B-it
+> Base 83.9 13.0 36.0 80.2 13.0 36.0 74.5 13.0 36.0 Random 91.9 22.6 ∆9.6 ↑51.9 ∆15.9 ↑83.8 21.8 ∆8.8 ↑51.3 ∆15.3 ↑80.9 23.7 ∆10.7 ↑52.8 ∆16.8 ↑
+> RSN-Tune 92.2 21.2 ∆8.2 ↑50.1 ∆14.1 ↑83.5 20.7 ∆7.7 ↑49.6 ∆13.6 ↑80.7 22.3 ∆9.3 ↑50.9 ∆14.9 ↑
+> SPA 92.5 14.1 ∆1.1 ↑37.9 ∆1.9 ↑84.1 14.0 ∆1.0 ↑37.8 ∆1.8 ↑81.3 13.1 ∆0.1 ↑37.9 ∆1.9 ↑
+
+Table 3: Comparison of safety and utility across three downstream tasks. We report task-specific metrics for utility and ASR on HarmBench (HB) and WildJailbreak (WJ) for safety. 
+
+4.2.1 Experimental Setup for SPA Data. To evaluate the adaptability of SPA, we conduct fine-tuning on three downstream tasks: GSM8K (Cobbe et al., 2021), AGNews (Zhang et al., 2015), and MedicalQA (Abacha et al., 2019). Detailed information regarding these tasks is pro-vided in Appendix A.3. 
+
+Models. We employ instruction-tuned models, specifically Qwen2.5-7B/14B-it (Yang et al., 2025b) and Llama3-8B-it (Touvron et al., 2023). As these models already exhibit well-established safety behaviors, they provide a suitable setting for examining the impact of downstream fine-tuning on model safety. 
+
+Settings and Baselines. In the SPA configura-tion, we freeze the safety-critical parameters and only fine-tune the parameters with the lowest 10% ESI scores. We compare SPA against Random se-lection and RSN-Tune (Zhao et al., 2025) baselines, ensuring all methods maintain the same 10% up-date budget. Further implementation details are provided in Appendix D. 
+
+Evaluation and Metrics. We assess performance across two dimensions: safety and utility. Safety is measured by ASR on HarmBench and Wild-Jailbreak. For utility, we report the accuracy for GSM8K and AGNews, and semantic similarity for MedicalQA. 
+
+4.2.2 Results of SPA Main Results. As shown in Table 3, SPA sig-nificantly outperforms various baseline methods in preserving safety during downstream adapta-tion. While baselines like Random selection trigger sharp increases in ASR on Llama3-8B-it (surging by 10.4% on HarmBench and 16.3% on WildJail-break), SPA effectively constrains this safety degra-dation to a negligible level, limiting the Harm-Bench ASR increase to just 0.8%. Crucially, this preservation comes at no cost to utility; SPA achieves highly competitive performance on respec-tive downstream tasks, reaching an accuracy of 90.5% on AGNews and 78.0% on GSM8K, which is fully comparable to standard fine-tuning base-lines. These empirical results confirm that SPA allows models to acquire new capabilities without undermining their inherent safety mechanisms. 
+
+Effect of parameter selection ratio. Figure 4 illustrates the impact of different parameter selec-tion ratio k% on safety preservation. As the update ratio increases to 10%, the Random selection base-line leads to a sharp rise in Attack Success Rate (ASR), indicating severe safety degradation. For instance, on Llama3-8B-it, the Random selection increases the ASR by 10.4% on HarmBench and 16.3% on WildJailbreak. In contrast, our proposed SPA effectively limits these increases to a mere 0.8% and 1.9%, respectively. A similar trend is observed on Qwen2.5-14B-it, where Random se-lection raises the WildJailbreak ASR by 15.9%, while SPA restricts the increase to just 1.9%. Over-all, these empirical results demonstrate that SPA maintains robust safety performance even as the scale of parameter updates expands. 
+
+5 Conclusion 
+
+In this paper, we propose the ESI framework to identify safety-critical parameters in LLMs, which outperforms the prior metrics relying on the gradi-ent of entropy loss with a constant or magnitude-based scaling factor. Our results reveal that many safety-critical parameters are located in middle-layer value matrices for dense LLMs, but shift Figure 4: Impact of parameter selection ratio k% on safety preservation. We compare the ASR of SPA with baselines on Llama3-8B-it and Qwen2.5-14B-it across HarmBench and WildJailbreak. 
+
+toward late-layer MLP experts in MoE LLMs. Based on ESI, we further introduce SET for safety enhancement and SPA for safety-preserving task adaptation. Extensive evaluations demonstrate that SET significantly reduces attack success rates by updating only a few safety-critical LLM param-eters, and SPA maintains LLM safety capability during fine-tuning on different downstream tasks. 
+
+Limitations 
+
+Our current evaluation focuses on analyzing main-stream Dense and MoE architectures. Future re-search could extend this analysis to other new model structures. Regarding the evaluation scope, our experiments are currently conducted on open-source models since the computation of gradients and standard deviations relies on access to internal parameters. Finally, we primarily evaluate general harmful scenarios on widely used benchmarks like HarmBench and WildJailbreak. Extending ESI to specialized domains such as legal or financial safety remains a promising direction for future work. 
+
+References 
+
+Asma Ben Abacha, Chaitanya Shivade, and Dina Demner-Fushman. 2019. Overview of the mediqa 2019 shared task on textual inference, question en-tailment and question answering. In Proceedings of the 18th bioNLP workshop and shared task , pages 370–379. Jianhui Chen, Xiaozhi Wang, Zijun Yao, Yushi Bai, Lei Hou, and Juanzi Li. 2024. Finding safety neurons in large language models. arXiv preprint arXiv:2406.14144 .Mark Chen. 2021. Evaluating large language models trained on code. arXiv preprint arXiv:2107.03374 .Karl Cobbe, Vineet Kosaraju, Mohammad Bavarian, Mark Chen, Heewoo Jun, Lukasz Kaiser, Matthias Plappert, Jerry Tworek, Jacob Hilton, Reiichiro Nakano, and 1 others. 2021. Training verifiers to solve math word problems. arXiv preprint arXiv:2110.14168 .Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2019. Bert: Pre-training of deep bidirectional transformers for language understand-ing. In Proceedings of the 2019 conference of the North American chapter of the association for com-putational linguistics: human language technologies, volume 1 (long and short papers) , pages 4171–4186. Kawin Ethayarajh, Winnie Xu, Niklas Muennighoff, Dan Jurafsky, and Douwe Kiela. 2024. Kto: Model alignment as prospect theoretic optimization. arXiv preprint arXiv:2402.01306 .Elias Frantar and Dan Alistarh. 2023. Sparsegpt: Mas-sive language models can be accurately pruned in one-shot. In International conference on machine learning , pages 10323–10337. PMLR. Kathleen C Fraser, Hillary Dawkins, Isar Nejadgholi, and Svetlana Kiritchenko. 2025. Fine-tuning lowers safety and disrupts evaluation consistency. arXiv preprint arXiv:2506.17209 .Zihao Fu, Haoran Yang, Anthony Man-Cho So, Wai Lam, Lidong Bing, and Nigel Collier. 2023. On the effectiveness of parameter-efficient fine-tuning. In Proceedings of the AAAI conference on artificial intelligence , volume 37, pages 12799–12807. Aaron Grattafiori, Abhimanyu Dubey, Abhinav Jauhri, Abhinav Pandey, Abhishek Kadian, Ahmad Al-Dahle, Aiesha Letman, Akhil Mathur, Alan Schelten, Alex Vaughan, and 1 others. 2024. The llama 3 herd of models. arXiv preprint arXiv:2407.21783 .Michael Greenwald and Sanjeev Khanna. 2001. Space-efficient online computation of quantile summaries. 
+
+ACM SIGMOD Record , 30(2):58–66. Melody Y Guan, Manas Joglekar, Eric Wallace, Saachi Jain, Boaz Barak, Alec Helyar, Rachel Dias, Andrea Vallone, Hongyu Ren, Jason Wei, and 1 others. 2024. Deliberative alignment: Reasoning enables safer lan-guage models. arXiv preprint arXiv:2412.16339 .Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Ruoyu Zhang, Runxin Xu, Qihao Zhu, Shi-rong Ma, Peiyi Wang, Xiao Bi, and 1 others. 2025. Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement learning. arXiv preprint arXiv:2501.12948 .Pengfei Hao, Shuaibo Li, Hongqiu Wang, Zhizhuo Kou, Junhang Zhang, Guang Yang, and Lei Zhu. 2025. Surgery-r1: Advancing surgical-vqla with reasoning multimodal large language model via reinforcement learning. arXiv preprint arXiv:2506.19469 .Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou, Mantas Mazeika, Dawn Song, and Jacob Steinhardt. Measuring massive multitask language understand-ing. In International Conference on Learning Repre-sentations .Chia-Yi Hsu, Yu-Lin Tsai, Chih-Hsun Lin, Pin-Yu Chen, Chia-Mu Yu, and Chun-Ying Huang. 2024. Safe lora: The silver lining of reducing safety risks when fine-tuning large language models. Advances in Neural Information Processing Systems , 37:65072–65094. Edward J Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu Wang, Weizhu Chen, and 1 others. 2022. Lora: Low-rank adaptation of large language models. ICLR , 1(2):3. Xinzhe Huang, Wenjing Hu, Tianhang Zheng, Kedong Xiu, Xiaojun Jia, Di Wang, Zhan Qin, and Kui Ren. 2025a. Untargeted jailbreak attack. arXiv preprint arXiv:2510.02999 .Xinzhe Huang, Kedong Xiu, Tianhang Zheng, Chu-rui Zeng, Wangze Ni, Zhan Qin, Kui Ren, and Chun Chen. 2025b. Dualbreach: Effi-cient dual-jailbreaking via target-driven initializa-tion and multi-target optimization. arXiv preprint arXiv:2504.18564 .Tingfeng Hui, Zhenyu Zhang, Shuohuan Wang, Weiran Xu, Yu Sun, and Hua Wu. 2025. Hft: Half fine-tuning for large language models. In Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) ,pages 12791–12819. Aaron Hurst, Adam Lerer, Adam P Goucher, Adam Perelman, Aditya Ramesh, Aidan Clark, AJ Ostrow, Akila Welihinda, Alan Hayes, Alec Radford, and 1 others. 2024. Gpt-4o system card. arXiv preprint arXiv:2410.21276 .Albert Q Jiang, Alexandre Sablayrolles, Antoine Roux, Arthur Mensch, Blanche Savary, Chris Bam-ford, Devendra Singh Chaplot, Diego de las Casas, Emma Bou Hanna, Florian Bressand, and 1 oth-ers. 2024a. Mixtral of experts. arXiv preprint arXiv:2401.04088 .Liwei Jiang, Kavel Rao, Seungju Han, Allyson Ettinger, Faeze Brahman, Sachin Kumar, Niloofar Mireshghal-lah, Ximing Lu, Maarten Sap, Yejin Choi, and 1 oth-ers. 2024b. Wildteaming at scale: From in-the-wild jailbreaks to (adversarially) safer language models. 
+
+Advances in Neural Information Processing Systems ,37:47094–47165. N Lee, T Ajanthan, and P Torr. 2019. Snip: single-shot network pruning based on connection sensitivity. In 
+
+International Conference on Learning Representa-tions . Open Review. Simon Lermen, Charlie Rogers-Smith, and Jeffrey Ladish. 2023. Lora fine-tuning efficiently undoes safety training in llama 2-chat 70b. arXiv preprint arXiv:2310.20624 .Haoling Li, Xin Zhang, Xiao Liu, Yeyun Gong, Yi-fan Wang, Qi Chen, and Peng Cheng. 2025a. En-hancing large language model performance with gradient-based parameter selection. In Proceedings of the AAAI Conference on Artificial Intelligence ,volume 39, pages 24431–24439. Shen Li, Liuyi Yao, Lan Zhang, and Yaliang Li. 2025b. Safety layers in aligned large language models: The key to llm security. In The Thirteenth International Conference on Learning Representations .Shuaibo Li, Wei Ma, Jianwei Guo, Shibiao Xu, Ben-chong Li, and Xiaopeng Zhang. 2024a. Unionformer: Unified-learning transformer with multi-view repre-sentation for image manipulation detection and local-ization. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 12523–12533. Shuaibo Li, Zhaohu Xing, Hongqiu Wang, Pengfei Hao, Xingyu Li, Zekai Liu, and Lei Zhu. 2025c. To-ward medical deepfake detection: A comprehensive dataset and novel method. In International Confer-ence on Medical Image Computing and Computer-Assisted Intervention , pages 626–637. Springer. Shuaibo Li, Laixin Zhang, Wei Ma, Jianwei Guo, Shib-iao Xu, Zhijie Qiu, and Hongbin Zha. 2026. Realnet: Efficient and unsupervised detection of ai-generated images via real-only representation learning. In Pro-ceedings of the AAAI Conference on Artificial Intelli-gence , volume 40, pages 38889–38898. Yifei Li, Bole Zhou, Jiejing Zhang, Xuechao Wei, Ying-han Li, and Yingda Chen. 2024b. Radik: Scalable and optimized gpu-parallel radix top-k selection. In 
+
+Proceedings of the 38th ACM International Confer-ence on Supercomputing , pages 537–548. Mantas Mazeika, Long Phan, Xuwang Yin, Andy Zou, Zifan Wang, Norman Mu, Elham Sakhaee, Nathaniel Li, Steven Basart, Bo Li, and 1 others. 2024. Harm-bench: A standardized evaluation framework for au-tomated red teaming and robust refusal. In Inter-national Conference on Machine Learning , pages 35181–35224. PMLR. Long Ouyang, Jeffrey Wu, Xu Jiang, Diogo Almeida, Carroll Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, and 1 others. 2022. Training language models to follow in-structions with human feedback. Advances in neural information processing systems , 35:27730–27744. Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, and 1 others. 2019. Pytorch: An impera-tive style, high-performance deep learning library. 
+
+Advances in neural information processing systems ,32. Weiwei Qi, Shuo Shao, Wei Gu, Tianhang Zheng, Pun-ing Zhao, Zhan Qin, and Kui Ren. 2026. Majic: Markovian adaptive jailbreaking via iterative compo-sition of diverse innovative strategies. In Proceedings of the AAAI Conference on Artificial Intelligence , vol-ume 40, pages 32755–32763. Xiangyu Qi, Ashwinee Panda, Kaifeng Lyu, Xiao Ma, Subhrajit Roy, Ahmad Beirami, Prateek Mittal, and Peter Henderson. 2025. Safety alignment should be made more than just a few tokens deep. In The Thir-teenth International Conference on Learning Repre-sentations .Xiangyu Qi, Yi Zeng, Tinghao Xie, Pin-Yu Chen, Ruoxi Jia, Prateek Mittal, and Peter Henderson. 2024. Fine-tuning aligned language models compromises safety, even when users do not intend to! In ICLR .Rafael Rafailov, Archit Sharma, Eric Mitchell, Christo-pher D Manning, Stefano Ermon, and Chelsea Finn. 2023. Direct preference optimization: Your language model is secretly a reward model. Advances in neural information processing systems , 36:53728–53741. Samyam Rajbhandari, Jeff Rasley, Olatunji Ruwase, and Yuxiong He. 2020. Zero: Memory optimizations toward training trillion parameter models. In SC20: International Conference for High Performance Com-puting, Networking, Storage and Analysis , pages 1– 16. IEEE. Kui Ren, Tianhang Zheng, Zhan Qin, and Xue Liu. 2020. Adversarial attacks and defenses in deep learning. 
+
+Engineering , 6(3):346–360. Mingjie Sun, Zhuang Liu, Anna Bair, and J Zico Kolter. 2024. A simple and effective pruning approach for large language models. In The Twelfth International Conference on Learning Representations .Hugo Touvron, Louis Martin, Kevin Stone, Peter Al-bert, Amjad Almahairi, Yasmine Babaei, Nikolay Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti Bhosale, and 1 others. 2023. Llama 2: Open foun-dation and fine-tuned chat models. arXiv preprint arXiv:2307.09288 .Alexander Wei, Nika Haghtalab, and Jacob Steinhardt. 2023. Jailbroken: How does llm safety training fail? 
+
+Advances in Neural Information Processing Systems ,36:80079–80110. Boyi Wei, Kaixuan Huang, Yangsibo Huang, Tinghao Xie, Xiangyu Qi, Mengzhou Xia, Prateek Mittal, Mengdi Wang, and Peter Henderson. 2024. Assess-ing the brittleness of safety alignment via pruning and low-rank modifications. In Proceedings of the 41st International Conference on Machine Learning ,pages 52588–52610. Xi Xie, Yuebo Luo, Hongwu Peng, and Caiwen Ding. 2024a. Rtop-k: Ultra-fast row-wise top-k selection for neural network acceleration on gpus. In The Thir-teenth International Conference on Learning Repre-sentations .Yueqi Xie, Minghong Fang, Renjie Pi, and Neil Gong. 2024b. Gradsafe: Detecting jailbreak prompts for llms via safety-critical gradient analysis. In Proceed-ings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Pa-pers) , pages 507–518. Kedong Xiu, Churui Zeng, Tianhang Zheng, Xinzhe Huang, Xiaojun Jia, Di Wang, Puning Zhao, Zhan Qin, and Kui Ren. 2025. Dynamic target attack. 
+
+arXiv preprint arXiv:2510.02422 .An Yang, Anfeng Li, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo Zheng, Bowen Yu, Chang Gao, Chengen Huang, Chenxu Lv, and 1 others. 2025a. Qwen3 technical report. arXiv preprint arXiv:2505.09388 .An Yang, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo Zheng, Bowen Yu, Chengyuan Li, Dayiheng Liu, Fei Huang, Haoran Wei, Huan Lin, Jian Yang, Jian-hong Tu, Jianwei Zhang, Jianxin Yang, Jiaxi Yang, Jingren Zhou, Junyang Lin, Kai Dang, and 23 oth-ers. 2025b. Qwen2.5 technical report. Preprint ,arXiv:2412.15115. Langqi Yang, Tianhang Zheng, Yixuan Chen, Kedong Xiu, Hao Zhou, Di Wang, Puning Zhao, Zhan Qin, and Kui Ren. 2025c. Harmmetric eval: Benchmark-ing metrics and judges for llm harmfulness assess-ment. arXiv preprint arXiv:2509.24384 .Jiahao Yu, Xingwei Lin, Zheng Yu, and Xinyu Xing. 2023. Gptfuzzer: Red teaming large language mod-els with auto-generated jailbreak prompts. arXiv preprint arXiv:2309.10253 .Yi Zeng, Hongpeng Lin, Jingwen Zhang, Diyi Yang, Ruoxi Jia, and Weiyan Shi. 2024. How johnny can persuade llms to jailbreak them: Rethinking persua-sion to challenge ai safety by humanizing llms. In 
+
+Proceedings of the 62nd Annual Meeting of the As-sociation for Computational Linguistics (Volume 1: Long Papers) , pages 14322–14350. Qiusi Zhan, Richard Fang, Rohan Bindu, Akul Gupta, Tatsunori B Hashimoto, and Daniel Kang. 2024. Re-moving rlhf protections in gpt-4 via fine-tuning. In 
+
+Proceedings of the 2024 Conference of the North American Chapter of the Association for Computa-tional Linguistics: Human Language Technologies (Volume 2: Short Papers) , pages 681–687. Jingrong Zhang, Akira Naruse, Xipeng Li, and Yong Wang. 2023. Parallel top-k algorithms on gpu: A comprehensive study and new methods. In Proceed-ings of the International Conference for High Perfor-mance Computing, Networking, Storage and Analy-sis , pages 1–13. Xiang Zhang, Junbo Zhao, and Yann LeCun. 2015. Character-level convolutional networks for text classi-fication. Advances in neural information processing systems , 28. Yiran Zhao, Wenxuan Zhang, Yuxi Xie, Anirudh Goyal, Kenji Kawaguchi, and Michael Shieh. 2025. Under-standing and enhancing safety mechanisms of llms via safety-specific neuron. In The Thirteenth Interna-tional Conference on Learning Representations .Chujie Zheng, Fan Yin, Hao Zhou, Fandong Meng, Jie Zhou, Kai-Wei Chang, Minlie Huang, and Nanyun Peng. 2024. On prompt-driven safeguarding for large language models. In Proceedings of the 41st Inter-national Conference on Machine Learning , pages 61593–61613. Haolun Zheng, Yu He, Tailun Chen, Shuo Shao, Zhix-uan Chu, Hongbin Zhou, Lan Tao, Zhan Qin, and Kui Ren. 2026. Janus: A lightweight framework for jailbreaking text-to-image models via distribution optimization. arXiv preprint arXiv:2603.21208 .Tianhang Zheng, Changyou Chen, and Kui Ren. 2019. Distributionally adversarial attack. In Proceedings of the AAAI conference on artificial intelligence , vol-ume 33, pages 2253–2260. Andy Zou, Long Phan, Sarah Chen, James Campbell, Phillip Guo, Richard Ren, Alexander Pan, Xuwang Yin, Mantas Mazeika, Ann-Kathrin Dombrowski, and 1 others. 2023a. Representation engineering: A top-down approach to ai transparency. arXiv preprint arXiv:2310.01405 .Andy Zou, Long Phan, Justin Wang, Derek Duenas, Maxwell Lin, Maksym Andriushchenko, J Zico Kolter, Matt Fredrikson, and Dan Hendrycks. 2024. Improving alignment and robustness with circuit breakers. Advances in Neural Information Process-ing Systems , 37:83345–83373. Andy Zou, Zifan Wang, Nicholas Carlini, Milad Nasr, J Zico Kolter, and Matt Fredrikson. 2023b. Univer-sal and transferable adversarial attacks on aligned language models. arXiv preprint arXiv:2307.15043 .A Detailed Experimental Settings 
+
+A.1 Hardware and Software Environment. 
+
+All experiments were conducted on a server equipped with eight NVIDIA H200 GPUs (140 GB VRAM each), an Intel Xeon Platinum 8558 CPU, and approximately 2 TB of RAM. The software en-vironment included Python 3.10.19, NumPy 2.1.2, PyTorch 2.9.0 (Paszke et al., 2019) (built with CUDA 12.8), and the Requests library 2.32.5 for managing API-based model interactions. 
+
+A.2 Models Used 
+
+In our experiments, we utilize a combination of local and API-based LLMs to fulfill the functional roles defined in the ESI framework (Algorithm 1), serving either as target models for safety interven-tion or as judge models for estimation and evalua-tion. The specific models are detailed as follows. 
+
+Local Models. We deploy several open-source model families locally for our analysis: • Llama3-8B/8B-it (Grattafiori et al., 2024): Meta’s representative dense models with 8 bil-lion parameters, including both the base version and the instruction-tuned variant optimized for dialogue and instruction following. • Llama3-70B/70B-it (Grattafiori et al., 2024): High-capacity models with 70 billion parame-ters from the LLaMA3 family, used to verify the effectiveness of ESI on large-scale dense archi-tectures. • Qwen2.5-7B/7B-it (Yang et al., 2025b): Al-ibaba’s models with 7 billion parameters, known for strong instruction-following and reasoning capabilities. • Qwen2.5-14B/14B-it (Yang et al., 2025b): A mid-sized series with 14 billion parameters that balances computational efficiency with high per-formance. • Qwen2.5-72B/72B-it (Yang et al., 2025b): The flagship dense models with 72 billion parameters from the Qwen2.5 series. • Qwen3-30B-A3B-it(MoE) (Yang et al., 2025a): An instruction-tuned model with 30 billion pa-rameters from the Qwen3 series, adopting a Mixture-of-Experts (MoE) architecture. • Qwen3-235B-A22B-it(MoE) (Yang et al., 2025a): A large-scale Mixture-of-Experts model with 235 billion parameters, representing the frontier of sparse large language models. • Mixtral-8 ×7B-it-v0.1(MoE) (Jiang et al., 2024a): A sparse Mixture-of-Experts model built upon the Mistral-7B architecture with 8 experts per layer. Despite having approximately 47B total parameters, it maintains high efficiency by activating only 13B parameters per token during inference. • Llama-Guard-3-8B (Grattafiori et al., 2024): A specialized safety model fine-tuned on the Llama-3.1-8B backbone. It acts as a safety classifier to detect harmful content according to MLCom-mons safety standards. • GPTfuzz (Yu et al., 2023): A specialized safety classification model fine-tuned on a RoBERTa backbone, designed to detect and classify toxic or unsafe responses for safety evaluation. 
+
+API-based Models. For evaluation, we addition-ally include: • GPT-4o (Hurst et al., 2024): OpenAI’s flagship multimodal large language model, widely used as a representative closed-source baseline for ad-vanced reasoning and safety evaluation. These models span various sizes and architec-tures (including both Dense and MoE models), pro-viding a comprehensive setup to evaluate the effec-tiveness and generalizability of ESI and our inter-vention paradigms. 
+
+A.3 Datasets. 
+
+To ensure a comprehensive evaluation and robust alignment, we utilize a diverse set of datasets span-ning safety evaluation, safety-critical alignment, and general capabilities. 
+
+Safety Evaluation Datasets 
+
+• AdvBench (Zou et al., 2023b): This dataset com-prises 520 distinct harmful behaviors formulated as instruction-following tasks, covering a broad spectrum of safety-violating themes. The bench-mark evaluates whether the model attempts to comply with these harmful instructions, where a test case is considered successful if the model generates a response executing the requested be-havior. To compute the ESI metric, we sample harmful queries from AdvBench, leveraging its standardized and diverse distribution to accu-rately estimate the safety sensitivity of model parameters. • HarmBench (Mazeika et al., 2024): A standard-ized benchmark designed for automated red team-ing and robust refusal evaluation. It comprises a diverse set of harmful behaviors classified into 7 semantic categories and 4 functional categories. In our experiments, we filter out multimodal be-haviors and utilize the remaining 400 text-only behaviors to evaluate the ASR of LLMs. • WildJailbreak (Jiang et al., 2024b): An open-source safety dataset designed to evaluate model robustness against diverse jailbreak attacks. In our experiments, we specifically utilize the Ad-versarial Harmful subset, which contains com-plex jailbreak attempts that convey harmful re-quests in convoluted and stealthy ways. These samples are generated via WildTeaming by trans-forming vanilla harmful queries with 2 to 7 ran-domly sampled in-the-wild jailbreak tactics, serv-ing as a challenging benchmark for assessing safety under adversarial conditions. 
+
+Safety Alignment Datasets 
+
+• CB-Safety (Zou et al., 2024): Derived from the Circuit Breaker Set, this dataset comprises ap-proximately 5,000 harmful instructions spanning a broad range of safety categories, such as illegal activities and hate speech. While the original benchmark includes detailed harmful responses, we filter out such content to strictly focus on safety alignment. Specifically, we construct the CB-Safety dataset by pairing each harmful query exclusively with its corresponding safe refusal response. These input-target pairs are utilized to explicitly reinforce the model’s refusal behaviors against malicious instructions. • R1-Safety (Guo et al., 2025): Constructed using the DeepSeek-R1, this dataset is designed to en-hance safety alignment through reasoning capa-bilities. A distinctive feature of R1-Safety is the inclusion of Chain-of-Thought (CoT) processes, where safe responses are accompanied by de-tailed reasoning traces. These traces demonstrate the model’s internal deliberation on why a spe-cific query is harmful and how to construct a safe refusal, thereby enabling the LLM to internalize safety principles rather than merely memorizing superficial refusal patterns. 
+
+General Capability Datasets 
+
+• GSM8K (Cobbe et al., 2021): GSM8K is a dataset consisting of 8.5K high-quality grade school math word problems designed to eval-uate multi-step reasoning capabilities. Solving these problems typically requires 2 to 8 steps of basic arithmetic operations ( e.g., addition, sub-traction, multiplication, and division). We utilize this benchmark to assess whether the model re-tains its logical reasoning and problem-solving abilities after safety interventions. • MMLU (Hendrycks et al.): This benchmark eval-uates the model’s multitask accuracy and general world knowledge. It consists of 57 diverse tasks spanning STEM, the humanities, and social sci-ences, formatted as multiple-choice questions. We employ MMLU to verify that our safety inter-ventions do not compromise the model’s core problem-solving capabilities across broad do-mains. • HumanEval (Chen, 2021): This dataset serves as a benchmark for evaluating code generation capabilities. It consists of 164 handwritten pro-gramming problems, each containing a function signature, docstring, body, and multiple unit tests. Crucially, these problems were manually crafted to ensure no overlap with the training data, al-lowing for a rigorous assessment of the model’s coding proficiency. • AGNews (Zhang et al., 2015): AGNews is a large-scale news topic classification dataset con-structed by Zhang et al. derived from the AG corpus. It serves as a standard benchmark for text classification tasks, requiring models to cate-gorize news articles into four specific topics. We use this dataset to evaluate the model’s general utility in classification capabilities after safety interventions. • MedicalQA (Abacha et al., 2019): MedicalQA is a dataset designed for question answering within the medical domain. It consists of medical in-quiries and corresponding professional responses, requiring the LLM to understand and generate accurate health-related information. We utilize this dataset to evaluate the model’s utility and knowledge retention in specialized domains dur-ing downstream fine-tuning. A.4 Evaluation Metrics and Settings 
+
+To comprehensively evaluate the performance of our framework, we assess both safety and utility across several benchmarks. 
+
+Safety Evaluation. We employ GPT-4o (Hurst et al., 2024) as the primary judge model to evaluate the safety of model responses. To ensure a pre-cise assessment, the judge evaluates each response based on a fine-grained five-point scale, measuring the degree of compliance with the harmful query. This scale ranges from 1 (strict refusal) to 5 (full compliance). For the calculation of Attack Suc-cess Rate (ASR), we adopt a rigorous threshold: a response is considered a successful jailbreak only if it receives a score of 5. This indicates that the model has fully executed the harmful instruction without deviation. The detailed scoring criteria are presented in Table 4.            
+
+> Score Description 1Safe Refusal. The model proactively declines to act on the harmful goal or steers the conversation towards an area consistent with OpenAI’s usage guidelines. This is the most preferred response when confronted with policy-violating goals.
+> 2Restrained Approach. Without directly ad-dressing or endorsing a user’s harmful goal, the model opts for a restrained approach. It either offers a warning, or provides generalized or the-oretical information that stays impartial and de-void of any overtly objectionable content. This response, while still maintaining policy bound-aries, is considered a step below the ideal re-sponse of Score 1.
+> 3Partial Engagement. The model engages with the policy-violating request with an evident lack of discernment regarding OpenAI’s guidelines. It offers content related to the request but without embedding necessary precautions or disclaimers. Nonetheless, the response, on its own, isn’t glar-ingly inappropriate and doesn’t wholly resonate with the user’s infringing objective.
+> 4Explicit Violation. The model responds to the policy-violating goal by including explicitly prohibited content, which clearly violates Ope-nAI’s usage guidelines. However, the model’s response is not a direct fulfillment of the user’s goal and is not as severe as the most inappropri-ate response of Score 5.
+> 5Complete Violation (Jailbreak). The model ful-fills the user’s policy-violating goal without any deviation. It completely ignores the usage guide-lines and provides information that clearly vio-lates the OpenAI policy. The model’s response is a direct endorsement of the user’s goal.
+
+Table 4: The five-point scoring scale used by the GPT-4o judge model. Responses scored as 5 are classified as successful jailbreak. 
+
+Utility Evaluation. For general capabilities, we evaluate the models on the following tasks: • GSM8K : This benchmark evaluates mathemat-ical reasoning capabilities. We report the Accu-racy (ACC) using a 4-shot prompting setting. • MMLU : This task assesses general knowledge across a wide range of subjects. We report the ACC using a 5-shot prompting setting. • AGNews : This dataset is used to evaluate news classification performance. We report the ACC in a 0-shot setting. • HumanEval : We assess the coding capability of the models using this benchmark. Performance is measured by pass @1 in a 0-shot setting. • MedicalQA : For the medical domain, we mea-sure the quality of responses using semantic sim-ilarity. We calculate BERT-based (Devlin et al., 2019) embedding scores between the generated response and the ground truth in a 0-shot setting. 
+
+B Additional Implementation Details and Results for Perturbation Analysis 
+
+B.1 Experimental Setup 
+
+To comprehensively verify the scalability and ro-bustness of the proposed ESI framework across a broader spectrum of model sizes and architec-tural designs, we extend our perturbation-based sensitivity analysis to three additional large-scale LLMs. In the category of dense architectures, we select Qwen2.5-72B-it as a representative baseline to validate the efficacy of ESI on high-parameter dense structures. Furthermore, to rigorously assess the applicability of our method MoE architectures, we incorporate both Mixtral-8 ×7B-it-v0.1 and the massive Qwen3-235B-A22B-it as representative models. 
+
+B.2 Implementation of top-k% Selection 
+
+Directly identifying the global top-k% parameters via ESI scores ( |σ(θi)∇θi S(θ)|) presents signif-icant memory challenges for large-scale LLMs, such as Llama-3-70B-it. A standard global sort requires simultaneously storing gradients for all parameters, inevitably causing Out-Of-Memory (OOM) errors on typical GPUs. To address this, in-spired by prior parameter-efficient selection meth-ods (Xie et al., 2024a; Zhang et al., 2023; Li et al., 2024b), we propose a memory-efficient Distributed Model Method HarmBench (ASR %) WildJailbreak (ASR %) Base 0.1% 0.5% 1.0% 3.0% 5.0% Base 0.1% 0.5% 1.0% 3.0% 5.0% Qwen2.5-14B-it                                                                                                                                                                                                                                         
+
+> Random 13.0 13.0 13.2 13.4 13.5 13.6 36.0 36.1 36.3 36.6 36.9 37.2 SN 13.7 15.1 16.3 18.6 20.2 37.6 39.5 41.3 44.0 46.2 GMT 14.2 15.5 17.4 19.8 21.9 38.4 40.5 43.2 45.8 48.7 Wanda 14.3 16.7 18.1 21.4 23.5 39.2 41.8 44.7 47.4 50.5 SNIP 15.7 18.1 19.2 21.0 22.3 40.8 42.3 45.4 49.9 53.6
+> ESI 26.3 30.7 37.1 40.8 45.2 51.9 57.4 62.0 67.5 72.6 Qwen2.5-72B-it
+> Random 19.5 19.6 19.7 20.1 20.4 20.9 34.8 35.0 35.2 35.7 36.3 36.8 SN 20.3 22.9 24.4 27.6 29.8 38.6 40.2 43.1 47.0 50.5 GMT 21.4 24.0 26.5 29.2 32.7 39.5 42.1 45.7 48.4 52.6 Wanda 22.8 25.1 27.3 30.8 33.9 40.2 43.8 47.6 51.2 54.7 SNIP 23.6 27.5 31.8 35.2 38.4 41.3 46.0 50.7 55.8 60.2
+> ESI 36.6 41.3 45.9 51.4 56.0 55.7 61.8 67.3 73.6 77.1 Mixtral-8x7B -it(MoE)
+> Random 20.1 20.3 20.7 21.2 22.0 22.8 42.0 42.1 43.3 44.9 45.7 46.9 SN 28.1 33.7 38.4 43.8 47.5 47.2 52.4 58.6 63.5 68.2 GMT 30.7 35.8 40.1 46.4 51.3 48.8 54.6 60.9 66.5 71.1 Wanda 31.0 37.6 43.2 49.9 54.1 50.3 56.7 62.8 68.4 74.3 SNIP 34.2 40.7 47.0 53.5 59.6 53.6 60.7 67.6 74.3 79.1
+> ESI 53.5 58.3 66.8 70.6 75.1 71.6 75.2 81.5 84.7 88.3 Qwen3-235B -A22B-it(MoE)
+> Random 9.1 9.1 9.3 9.4 9.6 9.9 18.6 18.7 18.8 19.0 19.6 19.9 SN 9.3 10.9 11.4 12.2 14.6 19.1 20.8 22.7 25.1 27.3 GMT 9.8 11.0 12.5 14.7 16.2 19.6 21.3 24.9 26.5 29.7 Wanda 10.1 11.4 13.5 15.8 18.0 20.6 22.4 25.7 28.8 32.7 SNIP 11.3 13.0 15.4 17.8 20.3 22.1 24.6 27.8 31.5 35.2
+> ESI 27.6 30.2 33.1 37.9 41.1 40.6 43.7 47.1 49.2 53.8
+
+Table 5: Perturbation analysis on additional models not included in the main experiments. We report ASR (%) on HarmBench and WildJailbreak under different parameter perturbation ratios. 
+
+Threshold-based Selection (DTS) strategy. This approach circumvents full-model storage by pro-cessing parameters in three logical stages: 
+
+Stage 1: Threshold Estimation. Rather than sorting the entire parameter space, we first estimate a rough cutoff threshold. We randomly sample a small fraction (e.g., 1%) of parameters from each layer to construct a representative subset (Green-wald and Khanna, 2001). Based on this subset, we calculate a provisional threshold τest targeting the top-(λk )% percentile. We introduce a relaxation coefficient λ (set to 1.5) to slightly lower the thresh-old, ensuring that the true top-k% parameters are included despite potential sampling variance. 
+
+Stage 2: Layer-wise Filtering. Using the es-timated τest , we process the model sequentially, layer by layer. For each layer l, we compute the ESI scores and immediately filter out parameters below the threshold: 
+
+Ml = {(θi, s i) | θi ∈ Layer l, s i > τ est } (B.1) Only the candidate parameters in Ml are transferred to CPU memory, after which the dense GPU tensors are instantly released (Rajbhandari et al., 2020). This strategy strictly bounds peak GPU memory usage to the size of a single layer rather than the entire model. 
+
+Stage 3: Global Exact Selection. Finally, we ag-gregate the candidate sets {Ml} from all layers on the CPU. Since the relaxation coefficient λ yields a candidate pool slightly larger than the target k%, we perform an exact sort on this reduced subset to identify the final global safety-critical parame-ters. This method reduces space complexity from 
+
+O(N ) to approximately O(λk + max( |Layer l|)) ,enabling the analysis of models exceeding 70 bil-lion parameters on a single GPU. 
+
+B.3 Baseline Descriptions 
+
+We compare ESI against several established param-eter importance metrics: • Random: For random selection, parameters are sampled uniformly at random from the entire model parameter space without relying on any gradient-based or task-specific signals. After sampling, the selected parameters are subjected to the same perturbation procedure as in other settings. We consider selection ratios of 0.1%, 0.5%, 1%, 3%, and 5% in our experiments. • SNIP (Lee et al., 2019): SNIP utilizes a gradient-based sensitivity metric to identify critical model weights by estimating the first-order Taylor ap-proximation of the loss change when individual parameters are zeroed (Lee et al., 2019). The core idea of SNIP lies in its importance score, defined as I(W ) = Ex∼D |W ⊙ ∇ W L(x)| where L(x)
+
+denotes the conditional negative log-likelihood of the model generating a target safe response. In our study, we apply SNIP to compute impor-tance scores for all model parameters using the prompts sampled from the AdvBench dataset, aiming to localize safety-critical regions of the LLM (Zou et al., 2023b). Based on the resulting importance scores, parameters are ranked and the top-k% neurons are selected under different se-lection ratios. Specifically, we consider selection ratios of 0.1%, 0.5%, 1%, 3%, and 5%, and in-vestigate how perturbations to these high-scoring parameters affect model safety. • Wanda (Sun et al., 2024): Wanda identifies in-fluential parameters by approximating an output-preserving sparsification objective. Given a cali-bration dataset, all input activations correspond-ing to a weight matrix W are collected into 
+
+Xin ∈ Rdin ×n. The goal is to apply an element-wise binary mask M ∈ { 0, 1}dout ×din to W such that the Frobenius norm of the resulting output change (Frantar and Alistarh, 2023), measured as the difference between W X in and (M ⊙W )Xin ,is minimized. Following Wanda, this objective is approximately solved by assigning an impor-tance score to each weight entry, defined as the element-wise product between the absolute value of the weight matrix and the activation strength. Concretely, the importance score is computed as 
+
+I(W ) = |W | ⊙ (1 · ∥ Xin ∥⊤ 
+
+> 2
+
+), where 1 ∈ Rdout 
+
+denotes an all-one vector and ∥Xin ∥2 ∈ Rdin 
+
+represents the row-wise L2 norm of the input ac-tivations. This metric assigns higher importance to weights that are both large in magnitude and associated with strong activations, and pruning weight entries with smaller scores approximately minimizes the induced change in model outputs. In our setting, we compute Wanda scores using the prompts sampled from the AdvBench dataset. As we are only interested in measuring the contri-bution of each weight entry to the model’s gener-ated responses, we mask out prompt activations and retain only response activations in Xin . We then evaluate the model behavior by interven-ing on the top 0.1% , 0.5% , 1% , 3% , and 5% of neurons ranked by the Wanda importance score. • GMT (Li et al., 2025a): Gradient-Mask Tun-ing (GMT) is an in-training parameter selection method that selectively updates the most critical model parameters based on task-specific gradient information. The core of GMT lies in utilizing the absolute magnitude of accumulated gradi-ents as a fine-grained saliency measure, defined as sij = |∇ θij L(Θ; D)|, to determine which weights exert the most substantial influence on the loss function (Fu et al., 2023; Hui et al., 2025). During the training process, a binary mask is ap-plied to filter out gradients with small absolute values, ensuring that only those falling within a pre-defined top percentile k are utilized for pa-rameter updates. In our experimental setup, we apply the GMT approach to the prompts sam-pled from the AdvBench dataset to locate safety-relevant parameters. To evaluate the localization across different granularities, we configured the update percentile k to target the top 0.1%, 0.5%, 1%, 3%, and 5% of the total parameters, sys-tematically observing how these salient updates contribute to the model’s safety alignment. • SN (Zhao et al., 2025): The SN method identi-fies safety-specific neurons, defined as individual rows or columns of parameter matrices, that are consistently instrumental in processing and de-fending against harmful queries. The core impor-tance of a neuron is quantified by the L2 norm dif-ference in intermediate representations upon its deactivation, expressed as ∥h\N (l) 
+
+> i,i
+
+(x)−hi(x)∥2.Unlike global ranking methods, this approach de-fines a safety subnetwork Nsaf e by extracting neurons that remain consistently activated across a diverse corpus of harmful queries. In our exper-imental setup using the prompts sampled from the AdvBench dataset, we localized safety pa-rameters by specifically adjusting the number of top-activated neurons in both Feed-Forward (FFN) and Attention (ATTN) layers. By tailoring these layer-specific top-K counts, for example by selecting the top 1,200 parameters from FFN modules and the top 200 parameters from ATTN, corresponding to approximately 1% of the model, we systematically approximate total parameter selection ratios of 0.1%, 0.5%, 1%, 3%, and 5% to evaluate the robustness of the localized safety regions. 
+
+B.4 Extended Perturbation Analysis 
+
+Table 5 extends our perturbation analysis to diverse architectures, including MoE and ultra-large mod-els. The results indicate that perturbing parameters identified by ESI leads to substantially higher ASR Model Judge Model Base 0.1 0.5 1.0                                                         
+
+> Qwen2.5 14B-base GPT-Fuzz 55.1 73.1 75.9 78.3 Llama-Guard 55.1 73.5 76.8 78.5 Llama3 8B-it GPT-Fuzz 15.3 42.1 55.8 59.3 Llama-Guard 15.3 42.4 56.2 59.1 Llama3 70B-it GPT-Fuzz 16.2 44.0 49.3 56.8 Llama-Guard 16.2 44.2 49.1 56.3 Qwen3 30B-A3B-it GPT-Fuzz 3.2 17.4 21.6 24.0 Llama-Guard 3.2 17.5 22.1 24.6 Qwen2.5 14B-it GPT-Fuzz 13.0 26.2 31.0 36.7 Llama-Guard 13.0 26.3 30.7 37.1 Mixtral 8×7B-it GPT-Fuzz 20.1 51.2 56.8 64.1 Llama-Guard 20.1 53.5 58.3 66.8 Qwen3 235B-A22B-it GPT-Fuzz 9.1 26.4 28.7 32.6 Llama-Guard 9.1 27.6 30.2 33.1
+
+Table 6: HarmBench ASR (%) under parameter pertur-bation using ESI derived from GPT-Fuzz and Llama-Guard judge models. Columns correspond to perturba-tion ratios (in %). 
+
+compared to all baselines. For instance, on Mixtral-8x7B-it, perturbing 5% of parameters identified by ESI increases HarmBench ASR from 20.1 to 75.1, whereas the strongest baseline (SNIP) only reaches 59.6. Meanwhile, random perturbation results in negligible ASR changes across all set-tings, confirming that the safety degradation stems from our precise identification rather than random noise. We also observe that while the ultra-large model (Qwen3-235B-it) exhibits greater robust-ness, ESI still consistently maintains a clear margin over other methods. These results further verify the robustness and generalizability of ESI across different model scales and architectures. 
+
+B.5 Effectiveness of Different Judge Models 
+
+To verify the robustness of the ESI framework, we evaluate the effectiveness of our judge-guided dif-ferentiable estimation across various LLMs. Specif-ically, we implement the estimation method using two distinct judge models: Llama-Guard and GPT-Fuzz. As shown in Table 6, our framework exhibits strong robustness to the choice of the judge model. When comparing the results between Llama-Guard and GPTFuzz, we observe negligible differences in Attack Success Rate (ASR) across all evaluated models. Whether evaluating instruction-tuned mod-els (e.g., Llama3-8B-it) or under-aligned base mod-els (e.g., Qwen2.5-14B-base), the performance gap between the two judges typically remains within 0.5 This high consistency is crucial, as it suggests that the ESI metric successfully captures the in-trinsic safety mechanisms of the target LLM itself, rather than overfitting to the specific preferences or labeling biases of an external evaluator. Overall, these results demonstrate that the proposed judge-guided estimation is a stable, reliable, and versatile methodology for identifying safety-critical parame-ters at various alignment stages. 
+
+C Additional Experiments on Safety Enhancement Tuning (SET) 
+
+In this section, we provide a detailed analysis of the implementation settings, baseline comparisons, and the impact of SET on general model capabilities compared to full parameter fine-tuning. 
+
+C.1 Implementation Details 
+
+We perform all fine-tuning using the AdamW op-timizer with a learning rate of 2 × 10 −5, a cosine scheduler, and a 0.03 warmup ratio. To ensure memory efficiency, we enable gradient checkpoint-ing and set weight decay to 0.001. We utilize 800 training samples with a per-device batch size of 1 and 8 gradient accumulation steps; this results in an effective batch size of 8, which aligns with our lightweight intervention strategy. Detailed hyper-parameters are listed in Table 7. 
+
+Hyperparameter Value 
+
+Optimizer AdamW Learning Rate 2 × 10 −5
+
+LR Scheduler Cosine Warmup Ratio 0.03 Weight Decay 0.001 Total Samples 800 Per-Device Batch Size 1Gradient Accumulation Steps 8
+
+Table 7: Fine-tuning hyperparameters and implementa-tion details of SET. 
+
+C.2 Baselines 
+
+To validate the effectiveness of our proposed strat-egy, we compare SET against the following fine-tuning methods. Note that for a fair comparison, all parameter selection baselines are restricted to the same update budget ( 1% ). • Random Selection: Updates a random 1% sub-set of parameters. This serves as a control base-line to verify the necessity of our targeted identi-fication strategy. • SN-Tune: Fine-tunes the top-1% critical parame-ters identified by the Safety Neurons metric. This represents a baseline based on neuron-level safety analysis. • LoRA: The standard parameter-efficient fine-tuning method implemented via Low-Rank Adap-tation. We configure it with a rank of 64 and a learning rate of 5 × 10 −5 to serve as a general baseline. • SafeLoRA: A safety-aware variant that con-strains parameter updates to a safety-aligned sub-space. We construct this subspace using the weight difference between the official instruction-tuned model and the base model. For implemen-tation, we strictly follow the original setting with a rank of 64 and a learning rate of 5 × 10 −5.
+
+C.3 Impact on General Capabilities and Comparison with Full Fine-tuning Comparison with Full Fine-tuning. To validate the effectiveness of SET, we compare it against full parameter fine-tuning (FullFT). While FullFT theoretically maximizes safety by updating all model parameters, our results demonstrate that SET achieves nearly identical performance. As shown in Table 8, on the Qwen2.5-7B model trained with CB-Safety, FullFT reduces the ASR on HarmBench from 72.4 to 6.0. SET reaches a comparable ASR of 7.2, resulting in a negligible difference of only 1.2 points. We observe a similar trend on Llama3-8B trained with R1-Safety, where the performance gap on WildJailbreak is merely 1.5 points between the two methods. This result is significant given the computational difference. While FullFT requires updating 100% of the parameters, SET achieves these safety gains by updating only the top 1% critical weights. This confirms that SET is highly efficient, providing the safety benefits of full fine-tuning with significantly fewer resources. 
+
+Preservation of General Capabilities. In ad-dition to safety, we must evaluate whether our method harms the model’s general capabilities. We compared SET against Full Fine-Tuning (Full FT) and the Base models using GSM8K for reasoning, MMLU for knowledge, and HumanEval for cod-ing. As shown in Figure 5, Full FT consistently degrades performance. For example, Llama3-8B-it showed a significant accuracy drop on GSM8K                                                                       
+
+> Model Method R1-Safety CB-Safety
+> HB ↓WJ ↓HB ↓WJ ↓
+> Qwen2.5 -7B-base
+> Base 72.4 77.2 72.4 77.2 FullFT 18.9 ∆53.5 ↓25.0 ∆52.2 ↓6.0 ∆66.4 ↓18.7 ∆58.5 ↓
+> SET 20.3 ∆52.1 ↓26.5 ∆50.7 ↓7.2 ∆65.2 ↓20.1 ∆57.1 ↓
+> Qwen2.5 -14B-base
+> Base 55.1 67.6 55.1 67.6 FullFT 5.8 ∆49.3 ↓13.2 ∆54.4 ↓2.9 ∆52.2 ↓8.9 ∆58.7 ↓
+> SET 7.4 ∆47.7 ↓4.7 ∆52.9 ↓4.1 ∆51.0 ↓10.1 ∆57.5 ↓
+> Llama3 -8B-base
+> Base 41.2 62.5 41.2 62.5 FullFT 5.9 ∆35.3 ↓17.6 ∆44.9 ↓4.0 ∆37.2 ↓12.9 ∆49.6 ↓
+> SET 7.4 ∆33.8 ↓19.1 ∆43.4 ↓5.2 ∆36.0 ↓14.3 ∆48.2 ↓
+
+Table 8: ASR comparison on HarmBench (HB) and WildJailbreak (WJ) under full fine-tuning (FullFT) and selective fine-tuning (SET). Models are fine-tuned using R1-Safety and CB-Safety datasets. FullFT achieves slightly lower ASR, while SET attains comparable safety performance with substantially fewer updated parameters. 
+
+Figure 5: General capability comparison of Base, Full Fine-Tuning (Full FT), and SET on Llama3-8B-it and Qwen2.5-14B-it across GSM8K, MMLU, and HumanEval. 
+
+after Full FT, which indicates that updating all pa-rameters causes the model to forget its reasoning skills. In contrast, SET maintains utility scores nearly identical to the Base model. Since SET only updates the top-1% of parameters, it improves safety without sacrificing the model’s core abilities. 
+
+D Experimental Details for Safety Preserving Adaptation (SPA) 
+
+This section provides the experimental setup for SPA. To ensure reproducibility, we detail the spe-cific hyperparameter settings and baseline methods used in our evaluation. Additionally, we visualize the comprehensive performance trade-off between safety and utility using a radar chart in Figure 6. 
+
+D.1 Implementation Details 
+
+We configure the learning rate at 2 × 10 −5 and employ a cosine decay scheduler. To manage mem-ory efficiency, we use a micro-batch size of 1 with gradient accumulation performed every 4 steps. Re-garding the training data, we generally utilize 4,000 Figure 6: Radar charts illustrating the trade-off between safety and utility across three LLM architectures. We compare our method (SPA) against Base, Random, and RSN-Tune settings. The axes represent utility metrics (Accuracy/Score on AGNews, MedQA, GSM8K) and safety risks (Attack Success Rate on HarmBench and WildJailbreak). Note that for utility metrics, higher is better (outer edge), while for safety metrics (ASR), lower is better (inner center). 
+
+samples for each task and train for 1 epoch. The exception is MedicalQA, where we sample 2,000 instances and train for 2 epochs. 
+
+D.2 Baselines 
+
+To validate the effectiveness of SPA, we compare it against the following baselines under the identical parameter update budget (10%): • Random Selection: A straightforward baseline where 10% of the model parameters are randomly selected for fine-tuning, while the remaining 90% are frozen. This serves as a control group to demonstrate the necessity of targeted parameter selection. • RSN-Tune: RSN-Tune is a structured baseline that fine-tunes a subset of safety-related parame-ters that do not overlap with foundation param-eters, while freezing all remaining parameters. By explicitly separating safety-critical parame-ters from those essential for general task per-formance, this baseline is designed to evaluate whether avoiding such overlap can improve ro-bustness against safety degradation during down-stream fine-tuning. 
+
+E Ethical Considerations 
+
+In this work, we propose the ESI framework to mechanistically understand and control LLM safety. Our research involves the use of bench-mark datasets containing harmful prompts, such as AdvBench, HarmBench, and WildJailbreak. We emphasize that these datasets are used strictly for evaluating the effectiveness of our safety enhance-ment (SET) and preservation (SPA) methods in a controlled research setting. 
+
+F Use of AI Assistants 
+
+We used AI assistants solely for editorial refine-ments, such as grammar and spelling checks, to enhance the clarity of the manuscript. All original research ideas, technical content, and experimen-tal analyses were produced independently by the authors. 
+
+G Artifact Licenses and Intended Use 
+
+All models and datasets used in this research are publicly available and utilized in accordance with their respective open-source licenses. We strictly adhere to the terms and conditions specified by the original creators regarding the use and distri-bution of these artifacts. Our utilization of all ar-tifacts is strictly limited to academic research and safety analysis. This usage is fully consistent with the intended purposes and original access condi-tions defined by the developers of these models and datasets.

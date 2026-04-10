@@ -1,0 +1,158 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-001.webp",
+      "caption": "Table 3: Summary of hyperparameter grid search, reporting the best performing configuration (by harmonic mean) for each kurtosis regularization coefficient (λ). η: learning rate, σ: standard deviation threshold for token masking.",
+      "page": 25,
+      "index": 1,
+      "width": 826,
+      "height": 209
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-002.webp",
+      "caption": "Table 4: Selected vocabulary channels for two example neurons, across Wgate, Win, and Wout weight matrices. Top tokens (up to 5) shown per channel.",
+      "page": 26,
+      "index": 2,
+      "width": 826,
+      "height": 565
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-003.webp",
+      "caption": "Figure 8: Weight reconstruction analysis on Gemma-2-2B-it. Left: Per-channel cosine similarity with the original weight vector w across iterations. Right: Cumulative explained norm (1−∥rt∥/∥w∥) over iterations. Lines show medians across 99 neurons; shaded regions indicate inter-quartile ranges. Channels collectively reconstruct nearly all of w within 50 iterations across all layers and weight types.",
+      "page": 21,
+      "index": 3,
+      "width": 820,
+      "height": 277
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-004.webp",
+      "caption": "Figure 1: We propose to disentangle MLP neuron weights (Left) using ROTATE, a data-free method that learns rotations of a neuron’s weight vector w to maximize kurtosis in the model’s vocabulary space, recovering sparse, interpretable directions we call vocabulary channels (Middle). Each channel isolates a distinct concept encoded in w, allowing a finegrained understanding of the neuron’s mechanism across diverse inputs (Right).",
+      "page": 2,
+      "index": 4,
+      "width": 816,
+      "height": 339
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-005.webp",
+      "caption": "Figure 18: Prompt used to describe a single vocabulary channel. Each channel is described independently before synthesis into a neuron-level description. Used with Gemini-2.0-Flash.",
+      "page": 34,
+      "index": 5,
+      "width": 829,
+      "height": 273
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-006.webp",
+      "caption": "Figure 17: Head-to-head pairwise evaluation prompt (§6). Each comparison is run twice with swapped order; a winner is declared only when both orderings agree. Used with Gemini-3-Flash.",
+      "page": 34,
+      "index": 6,
+      "width": 829,
+      "height": 550
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-007.webp",
+      "caption": "Figure 15: Polarity-split neuron description synthesis prompt (§6). wgate and win channel descriptions are provided separately; the LLM produces a unified description of at most 50 words. Used with Gemini-2.0-Flash.",
+      "page": 33,
+      "index": 7,
+      "width": 829,
+      "height": 508
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-008.webp",
+      "caption": "Figure 16: MaxAct+VocabProj baseline description prompt (§6). Combines 20 top-activating examples with LogitLens vocabulary projections of the wgate and win vectors. Used with Gemini-2.0-Flash.",
+      "page": 33,
+      "index": 8,
+      "width": 829,
+      "height": 571
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-009.webp",
+      "caption": "Figure 19: Prompt used to generate activating and neutral examples for the input-side faithfulness evaluation (§5.2). Default: 40 positive + 40 negative examples. Used with Gemini-2.0-Flash.",
+      "page": 35,
+      "index": 9,
+      "width": 829,
+      "height": 425
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-010.webp",
+      "caption": "Figure 20: 5-way channel matching prompt used for the completeness evaluation (§5.4). The LLM judge (Gemini-3.1-Flash-Lite) selects which of five candidate descriptions best matches the activating input.",
+      "page": 35,
+      "index": 10,
+      "width": 829,
+      "height": 258
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-011.webp",
+      "caption": "Figure 10: Effect of token masking on iterative decomposition quality. We compare ROTATE with token masking against independent optimization runs with no depletion over 20 iterations on 50 gate neurons from Layer 18, Gemma-2-2B-it. Left: Per-channel cosine similarity with w. Right: Cumulative explained norm (1− ∥rt∥/∥w∥). Without masking, all iterations converge to the same dominant direction, yielding negligible reconstruction progress (mean explained norm 0.19 vs. 0.78).",
+      "page": 23,
+      "index": 11,
+      "width": 798,
+      "height": 319
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-012.webp",
+      "caption": "Figure 5: A distribution with high kurtosis and positive skewness, concentrated around zero with few extreme outliers (left), compared to a Gaussian (right).",
+      "page": 19,
+      "index": 12,
+      "width": 776,
+      "height": 300
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-013.webp",
+      "caption": "Figure 6: Median vocabulary kurtosis values of neuron weights in Wout across layers and checkpoints of OLMo-2-1124-7B (Walsh et al., 2025). We observe clear learning dynamics, rising sharply in early training and concentrating in middle and late layers. This temporal pattern confirms that vocabulary-aligned monosemantic structure is a learned property.",
+      "page": 19,
+      "index": 13,
+      "width": 487,
+      "height": 268
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-014.webp",
+      "caption": "Table 7: Example wins and losses of ROTATE in head-to-head comparisons against MaxAct++ and MaxAct+VocabProj.",
+      "page": 32,
+      "index": 14,
+      "width": 830,
+      "height": 730
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-015.webp",
+      "caption": "Figure 12: Complete mechanistic decomposition of Neuron 9005 (Layer 18, Gemma-2-2Bit) via vocabulary channels. Top: The neuron activates positively on technical text with negation/polarity concepts and negatively on temporal deferral. Middle: ROTATE’s inputside wgate and win channels explain the sign of the activation, the wgate detects relevant context, while the win channel’s alignment or anti-alignment with the input determines the sign. Bottom: Output-side channels, organized by skewness sign, reveal what the neuron writes to the residual stream. Positive activation promotes polarity vocabulary (“negative”, “positive”); negative activation promotes temporal negation tokens (“wasn’t”, “until”, “wait”). All channels are discovered from weights alone.",
+      "page": 27,
+      "index": 15,
+      "width": 808,
+      "height": 222
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-016.webp",
+      "caption": "Figure 11: Ablation results evaluating weight reconstruction across optimization iterations for Wgate (left) and Wout (right). We compare the ROTATE baseline (token masking, k = 1 Householder matrix) against two variants: utilizing a proper rotation via two Householder matrices (k = 2), and using residual subtraction instead of token masking. Top: Cumulative Explained Norm (1− ∥r∥/∥w∥). Bottom: Cosine similarity between the reconstructed vector and the original weight vector. The baseline (k = 1) matches the performance of the more complex k = 2 parameterization and consistently outperforms residual subtraction.",
+      "page": 24,
+      "index": 16,
+      "width": 813,
+      "height": 564
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-017.webp",
+      "caption": "Figure 4: Head-to-head pairwise evaluation of ROTATE vocabulary channel descriptions against MaxAct+VocabProj and MaxAct++ baselines on Llama-3.1-8B-Instruct. Each bar shows the fraction of comparisons won by ROTATE, tied, or won by the baseline. Columns correspond to layers; rows to evaluation data sources and activation-rank ranges.",
+      "page": 9,
+      "index": 17,
+      "width": 819,
+      "height": 220
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-018.webp",
+      "caption": "Table 6: Stage 1 within-method variant win rates on 20 neurons from Llama-3.1-8BInstruct. Bold denotes the selected variant for each method and polarity. For ROTATE, we select all gate split positive (positive) and all gate split negative (negative). For MaxAct+VocabProj, we select v2 for as it enriches the activation-based evidence with vocabulary-projection tokens from both wgate and win, providing the baseline with the strongest available signal and ensuring the most competitive comparison against ROTATE.",
+      "page": 31,
+      "index": 18,
+      "width": 614,
+      "height": 306
+    },
+    {
+      "url": "assets/figures/arxiv/2604.06005v1/fig-019.webp",
+      "caption": "Figure 7: Per-layer vocabulary kurtosis distributions of Wout neurons for one representative model per family.",
+      "page": 20,
+      "index": 19,
+      "width": 772,
+      "height": 319
+    }
+  ]
+}
